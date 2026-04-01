@@ -1,67 +1,26 @@
 {
   "hosting": {
     "public": ".",
-    "ignore": [
-      "firebase.json",
-      ".firebaserc",
-      "**/.*",
-      "**/node_modules/**",
-      "functions/**",
-      "htp-oracle-daemon/**",
-      "**/*.sh",
-      "**/*.py",
-      "**/*.bak*"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ],
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "headers": [
       {
         "source": "**/*.wasm",
         "headers": [
           { "key": "Content-Type", "value": "application/wasm" },
-          { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
-          { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
+          { "key": "Cross-Origin-Resource-Policy", "value": "cross-origin" }
         ]
       },
       {
         "source": "**",
         "headers": [
+          { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
           { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
-          { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
+          { "key": "Cross-Origin-Resource-Policy", "value": "cross-origin" }
         ]
       }
+    ],
+    "rewrites": [
+      { "source": "**", "destination": "/index.html" }
     ]
-  },
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "default",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log",
-        "*.local"
-      ]
-    }
-  ],
-  "database": {
-    "rules": "database.rules.json"
-  },
-  "firestore": {
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  },
-  "emulators": {
-    "functions": { "port": 5001 },
-    "firestore": { "port": 8080 },
-    "database": { "port": 9000 },
-    "hosting": { "port": 5000 },
-    "ui": { "enabled": true, "port": 4000 },
-    "singleProjectMode": true
   }
 }
