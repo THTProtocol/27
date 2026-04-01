@@ -1,0 +1,37 @@
+{
+  "rules": {
+    "matches": {
+      ".indexOn": ["status", "playerA", "playerB", "createdAt"],
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "events": {
+      ".indexOn": ["status", "creatorAddress", "createdAt"],
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "settlements": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "settlement_requests": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "watcher": {
+      ".read": true,
+      ".write": false
+    },
+    "balances": {
+      "$address": {
+        ".read": true,
+        ".write": "auth != null"
+      }
+    },
+    "bets": {
+      ".indexOn": ["eventId", "userAddress", "outcome"],
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}
