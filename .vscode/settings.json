@@ -1,0 +1,9 @@
+{
+  "javascript.validate.enable": false,
+  "typescript.validate.enable": false,
+  "html.validate.scripts": false,
+  "html.validate.styles": false,
+  "typescript.disableAutomaticTypeAcquisition": true,
+  "eslint.enable": false,
+  "editor.formatOnSave": false
+}
