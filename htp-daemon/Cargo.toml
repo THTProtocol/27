@@ -27,19 +27,20 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Kaspa crypto primitives
-# secp256k1 for P2PK signing (P2SH uses same curve)
+# secp256k1 for P2PK signing
 secp256k1 = { version = "0.29", features = ["rand", "global-context"] }
 
-# SHA-256 for address derivation
+# SHA-256, HMAC-SHA256 (oracle signing)
 sha2 = "0.10"
+hmac = "0.12"
 
-# BLAKE2B for P2SH script hash (Kaspa uses blake2b-256)
+# BLAKE2B (Kaspa P2SH script hash)
 blake2 = "0.10"
 
 # Hex encoding
 hex = "0.4"
 
-# Base64 (Firebase JWT auth)
+# Base64 (Firebase JWT)
 base64 = "0.22"
 
 # Timestamps
@@ -49,7 +50,7 @@ chrono = { version = "0.4", features = ["serde"] }
 anyhow = "1"
 thiserror = "1"
 
-# Random (escrow keypair generation)
+# Random
 rand = "0.8"
 
 [profile.release]
