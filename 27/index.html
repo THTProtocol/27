@@ -35915,6 +35915,34 @@ document.querySelectorAll('button').forEach(function(b){
 <script src="htp-checkers-multijump.js"></script>
 <script src="htp-c4-animation.js"></script>
 <script src="htp-silverscript-live.js"></script>
+
+<script id="htp-wallet-v3-init">
+// Initialize wallet-v3 when ready
+window.addEventListener('load', async function() {
+  if (window.htpWalletV3 && window.htpWalletV3.init) {
+    try {
+      await window.htpWalletV3.init();
+      console.log('[HTP Bootstrap] Wallet V3 initialized');
+    } catch(e) {
+      console.warn('[HTP Bootstrap] Wallet V3 init error:', e);
+    }
+  }
+  
+  // Also ensure WASM ready is called if not already fired
+  if (window.whenWasmReady && !window.wasmReady) {
+    window.whenWasmReady(function() {
+      console.log('[HTP Bootstrap] WASM confirmed ready via bootstrap');
+    });
+  }
+});
+
+// Hook balance updates from RPC
+window.addEventListener('htp:balance:updated', function(e) {
+  if (window.htpWalletV3 && window.htpWalletV3.updateUI) {
+    window.htpWalletV3.updateUI();
+  }
+});
+</script>
 </body>
 
 </html>
