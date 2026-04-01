@@ -7,7 +7,7 @@
 
 ## Abstract
 
-High Table Protocol (HTP) is a non-custodial, trustless gaming and prediction market infrastructure built natively on the Kaspa blockchain. The protocol enables two or more parties to compete in verifiable skill-based games or take positions in binary prediction markets, with funds locked on-chain and payouts executed automatically upon outcome resolution. No platform holds user funds at any point. No KYC is required. No intermediary can interfere with, delay, or redirect a payout. Funds flow directly from the on-chain escrow to the winner's wallet.
+High Table Protocol (HTP) is a non-custodial, trustless gaming and prediction market infrastructure built natively on the Kaspa blockDAG. The protocol enables two or more parties to compete in verifiable skill-based games or take positions in binary prediction markets, with funds locked on-chain and payouts executed automatically upon outcome resolution. No platform holds user funds at any point. No KYC is required. No intermediary can interfere with, delay, or redirect a payout. Funds flow directly from the on-chain escrow to the winner's wallet.
 
 HTP operates in three successive architectural phases, each unlocking a higher degree of cryptographic trustlessness as Kaspa's protocol capabilities mature. The current implementation operates on Kaspa Testnet TN12. Production deployment targets the Kaspa mainnet following the Q2 2026 hard fork activating covenant opcodes (KIP-17).
 
@@ -355,7 +355,7 @@ Phase 3 also enables privacy-preserving games where the move sequence is never r
 
 ### Long-Term Vision
 
-HTP's long-term objective is to be the canonical trustless gaming layer for any UTXO blockchain. The three-layer architecture is chain-agnostic at the application and settlement layers. As Kaspa's ecosystem grows, HTP will expand to additional game types, higher-stakes prediction markets, and cross-platform tournaments with fully on-chain prize pools.
+HTP's long-term objective is to be the canonical trustless gaming layer for any UTXO blockDAG. The three-layer architecture is chain-agnostic at the application and settlement layers. As Kaspa's ecosystem grows, HTP will expand to additional game types, higher-stakes prediction markets, and cross-platform tournaments with fully on-chain prize pools.
 
 ---
 
@@ -390,7 +390,7 @@ HTP's long-term objective is to be the canonical trustless gaming layer for any 
 
 | Component | Technology |
 |-----------|-----------|
-| Blockchain | Kaspa (TN12 testnet, mainnet post-HF) |
+| BlockDAG | Kaspa (TN12 testnet, mainnet post-HF) |
 | Smart contracts | SilverScript (Kaspa native covenant language) |
 | Client SDK | Kaspa WASM SDK (rusty-kaspa compiled to WebAssembly) |
 | Real-time coordination | Firebase Realtime Database (Phase 1 transitional) |
