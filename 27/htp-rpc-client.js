@@ -1,216 +1,307 @@
 /**
- * htp-rpc-client.js — Live Kaspa RPC layer for HTP
- * Replaces Firebase-based balance polling with direct on-chain reads.
+ * htp-rpc-client.js  —  High Table Protocol  —  v3.0
  *
- * Provides:
- *   - window.htpRpc         → live RpcClient (Resolver, auto-reconnect)
- *   - window.htpDaaScore    → current virtual DAA score (updates ~10x/sec)
- *   - window.htpUtxoContext → UtxoContext for the connected wallet address
- *   - window.htpBalance     → live balance in KAS (float, updates on chain events)
- *   - HTPRpc.getBalance(address) → one-shot balance fetch (bigint sompi)
- *   - HTPRpc.waitForDaaScore(target) → resolves when DAA score reaches target
- *   - HTPRpc.onBalance(cb)  → subscribe to balance changes
- *   - HTPRpc.networkId      → "mainnet" | "testnet-12"
+ * RESPONSIBILITIES:
+ *  - Connect to window.HTP_RPC_URL (set by htp-init.js, TN12 or mainnet)
+ *  - Reconnect with exponential backoff on disconnect
+ *  - Subscribe to virtual-daa-score-changed
+ *  - Start UTXO tracking when htp:wallet:connected fires
+ *  - Expose window.htpRpc public API used by escrow, settlement, oracle modules
  *
- * Load order requirement: AFTER wasm-bridge.js, BEFORE htp-init.js
+ * LOAD ORDER: after htp-init.js (network config must be set)
+ *             after WASM is initialised (_onWasmReady must have fired or will fire)
  */
 
-(function () {
+(function (window) {
   'use strict';
 
-  // ── Config ────────────────────────────────────────────────────────────────
-  // Change to "testnet-12" for TN12 testing
-  const NETWORK_ID = (window.HTP_NETWORK || 'testnet-12');
-  const SOMPI_PER_KAS = 100_000_000n;
-  const RECONNECT_DELAY_MS = 3000;
+  var SOMPI_PER_KAS    = 100000000n;
+  var MAX_BACKOFF_MS   = 30000;
+  var BASE_BACKOFF_MS  = 2000;
 
-  // ── State ─────────────────────────────────────────────────────────────────
-  let rpc = null;
-  let utxoProcessor = null;
-  let utxoContext = null;
-  let connected = false;
-  let daaScore = 0n;
-  let balanceSompi = 0n;
-  let trackedAddress = null;
-  const balanceCallbacks = new Set();
-  const daaWaiters = [];   // [{target: bigint, resolve}]
+  /* ══ State ════════════════════════════════════════════════════════════════ */
+  var _rpc              = null;
+  var _utxoProcessor    = null;
+  var _utxoContext      = null;
+  var _connected        = false;
+  var _daaScore         = 0n;
+  var _balanceSompi     = 0n;
+  var _trackedAddress   = null;
+  var _retryCount       = 0;
+  var _retryTimer       = null;
+  var _balanceCbs       = new Set();
+  var _daaWaiters       = [];  // [{target: bigint, resolve}]
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  /* ══ Helpers ══════════════════════════════════════════════════════════════ */
   function sompiToKas(sompi) {
-    const s = sompi.toString().padStart(9, '0');
+    var s = sompi.toString().padStart(9, '0');
     return parseFloat(s.slice(0, -8) + '.' + s.slice(-8));
   }
 
+  function backoffMs() {
+    var delay = Math.min(BASE_BACKOFF_MS * Math.pow(2, _retryCount), MAX_BACKOFF_MS);
+    return delay + Math.random() * 1000; // jitter
+  }
+
   function notifyBalance(newSompi) {
-    balanceSompi = newSompi;
-    window.htpBalance = sompiToKas(newSompi);
-    balanceCallbacks.forEach(cb => { try { cb(window.htpBalance, newSompi); } catch(e) {} });
-    // Also push to Firebase mirror (keeps legacy code working)
-    if (trackedAddress && window.firebase && window.firebase.database) {
-      try {
-        window.firebase.database()
-          .ref(`balances/${trackedAddress}`)
-          .set({ kas: window.htpBalance, sompi: newSompi.toString(), ts: Date.now() });
-      } catch(e) {}
-    }
+    _balanceSompi       = newSompi;
+    window.htpBalance   = sompiToKas(newSompi);
+    _balanceCbs.forEach(function (cb) {
+      try { cb(window.htpBalance, newSompi); } catch (e) {}
+    });
+    // Dispatch event so UI components can react without polling
+    window.dispatchEvent(new CustomEvent('htp:balance:updated', {
+      detail: { kas: window.htpBalance, sompi: newSompi.toString(), address: _trackedAddress }
+    }));
   }
 
   function fireDaaWaiters() {
-    for (let i = daaWaiters.length - 1; i >= 0; i--) {
-      if (daaScore >= daaWaiters[i].target) {
-        daaWaiters[i].resolve(daaScore);
-        daaWaiters.splice(i, 1);
+    for (var i = _daaWaiters.length - 1; i >= 0; i--) {
+      if (_daaScore >= _daaWaiters[i].target) {
+        _daaWaiters[i].resolve(_daaScore);
+        _daaWaiters.splice(i, 1);
       }
     }
   }
 
-  // ── Core init ─────────────────────────────────────────────────────────────
-  async function initRpc() {
-    // Wait for WASM to be ready
-    const kaspa = await waitForKaspaWasm();
-    if (!kaspa) { console.error('[HTPRpc] WASM not available'); return; }
+  /* ══ WASM wait ═══════════════════════════════════════════════════════════ */
+  function waitForWasm() {
+    return new Promise(function (resolve) {
+      // Already ready
+      if (window.wasmReady && window.kaspaSDK && window.kaspaSDK.RpcClient) {
+        return resolve(window.kaspaSDK);
+      }
+      // Use the gate from htp-init.js
+      if (window.whenWasmReady) {
+        window.whenWasmReady(function () {
+          resolve(window.kaspaSDK || null);
+        });
+        return;
+      }
+      // Fallback poll
+      var iv = setInterval(function () {
+        if (window.kaspaSDK && window.kaspaSDK.RpcClient) {
+          clearInterval(iv);
+          resolve(window.kaspaSDK);
+        }
+      }, 100);
+      setTimeout(function () { clearInterval(iv); resolve(null); }, 15000);
+    });
+  }
 
-    const { RpcClient, Resolver, UtxoProcessor, UtxoContext } = kaspa;
+  /* ══ UTXO tracking ═════════════════════════════════════════════════════════ */
+  async function startUtxoTracking(sdk, address) {
+    if (_utxoProcessor) {
+      try { await _utxoProcessor.stop(); } catch (e) {}
+      _utxoProcessor = null;
+      _utxoContext   = null;
+    }
 
-    rpc = new RpcClient({
-      resolver: new Resolver(),
-      networkId: NETWORK_ID,
+    var networkId = window.HTP_NETWORK_ID || 'testnet-12';
+    _utxoProcessor = new sdk.UtxoProcessor({ rpc: _rpc, networkId: networkId });
+    _utxoContext   = new sdk.UtxoContext({ processor: _utxoProcessor });
+
+    _utxoProcessor.addEventListener('utxo-proc-start', async function () {
+      await _utxoContext.trackAddresses([address]);
     });
 
-    // ── Event: connected ──────────────────────────────────────────────────
-    rpc.addEventListener('connect', async () => {
-      connected = true;
-      console.log(`[HTPRpc] Connected to ${rpc.url} (${NETWORK_ID})`);
-      window.dispatchEvent(new CustomEvent('htp:rpc:connected', { detail: { url: rpc.url } }));
+    _utxoContext.addEventListener('balance', function (e) {
+      var mature = BigInt((e.data && e.data.balance && e.data.balance.mature) ? e.data.balance.mature : 0);
+      notifyBalance(mature);
+    });
 
-      // Re-subscribe every reconnect (required by SDK)
-      await rpc.subscribeVirtualDaaScoreChanged();
+    await _utxoProcessor.start();
+    window.htpUtxoContext  = _utxoContext;
+    window.htpUtxoProc     = _utxoProcessor;
+    console.log('[HTPRpc] UTXO tracking started for', address);
+  }
 
-      // If wallet already connected, re-register UTXO tracking
-      if (trackedAddress) {
-        await startUtxoTracking(kaspa, trackedAddress);
+  /* ══ Core connect ══════════════════════════════════════════════════════════ */
+  async function initRpc() {
+    var sdk = await waitForWasm();
+    if (!sdk || !sdk.RpcClient) {
+      console.error('[HTPRpc] WASM SDK unavailable — RPC not started');
+      return;
+    }
+
+    var networkId   = window.HTP_NETWORK_ID || 'testnet-12';
+    var rpcEndpoint = window.HTP_RPC_URL    || null;  // null = use Resolver
+
+    try {
+      if (rpcEndpoint) {
+        // Direct endpoint (set by htp-init.js)
+        _rpc = new sdk.RpcClient({ url: rpcEndpoint, networkId: networkId });
+      } else {
+        // Fallback: let Resolver pick the best public node
+        _rpc = new sdk.RpcClient({ resolver: new sdk.Resolver(), networkId: networkId });
+      }
+    } catch (e) {
+      console.error('[HTPRpc] RpcClient construction failed:', e);
+      scheduleRetry();
+      return;
+    }
+
+    // Connected
+    _rpc.addEventListener('connect', async function () {
+      _connected   = true;
+      _retryCount  = 0;
+      if (_retryTimer) { clearTimeout(_retryTimer); _retryTimer = null; }
+      console.log('[HTPRpc] Connected →', _rpc.url || networkId);
+      window.dispatchEvent(new CustomEvent('htp:rpc:connected', { detail: { url: _rpc.url, networkId: networkId } }));
+
+      try { await _rpc.subscribeVirtualDaaScoreChanged(); } catch (e) {}
+
+      if (_trackedAddress) {
+        try { await startUtxoTracking(sdk, _trackedAddress); } catch (e) {}
       }
     });
 
-    rpc.addEventListener('disconnect', () => {
-      connected = false;
-      console.warn('[HTPRpc] Disconnected — will retry in', RECONNECT_DELAY_MS, 'ms');
+    // Disconnected — exponential backoff retry
+    _rpc.addEventListener('disconnect', function () {
+      _connected = false;
+      console.warn('[HTPRpc] Disconnected');
       window.dispatchEvent(new Event('htp:rpc:disconnected'));
+      scheduleRetry();
     });
 
-    // ── Event: DAA score ──────────────────────────────────────────────────
-    rpc.addEventListener('virtual-daa-score-changed', (e) => {
-      daaScore = BigInt(e.data.virtualDaaScore);
-      window.htpDaaScore = daaScore;
+    // DAA score heartbeat
+    _rpc.addEventListener('virtual-daa-score-changed', function (e) {
+      _daaScore         = BigInt(e.data.virtualDaaScore);
+      window.htpDaaScore = _daaScore;
       fireDaaWaiters();
     });
 
     try {
-      await rpc.connect();
+      await _rpc.connect();
     } catch (err) {
-      console.error('[HTPRpc] Initial connect failed:', err);
-      setTimeout(initRpc, RECONNECT_DELAY_MS);
+      console.error('[HTPRpc] Connect failed:', err.message || err);
+      scheduleRetry();
     }
   }
 
-  async function startUtxoTracking(kaspa, address) {
-    const { UtxoProcessor, UtxoContext } = kaspa;
-
-    // Teardown existing processor if any
-    if (utxoProcessor) {
-      try { await utxoProcessor.stop(); } catch(e) {}
-    }
-
-    utxoProcessor = new UtxoProcessor({ rpc, networkId: NETWORK_ID });
-    utxoContext = new UtxoContext({ processor: utxoProcessor });
-
-    utxoProcessor.addEventListener('utxo-proc-start', async () => {
-      await utxoContext.trackAddresses([address]);
-    });
-
-    utxoContext.addEventListener('balance', (e) => {
-      const mature = BigInt(e.data?.balance?.mature ?? 0n);
-      notifyBalance(mature);
-    });
-
-    await utxoProcessor.start();
-    window.htpUtxoContext = utxoContext;
+  function scheduleRetry() {
+    if (_retryTimer) return;
+    var delay = backoffMs();
+    _retryCount++;
+    console.log('[HTPRpc] Retry #' + _retryCount + ' in ' + Math.round(delay / 1000) + 's');
+    _retryTimer = setTimeout(function () {
+      _retryTimer = null;
+      if (_rpc) {
+        try { _rpc.connect().catch(function () { scheduleRetry(); }); } catch (e) { scheduleRetry(); }
+      } else {
+        initRpc();
+      }
+    }, delay);
   }
 
-  // ── WASM wait ─────────────────────────────────────────────────────────────
-  function waitForKaspaWasm(timeout = 10000) {
-    return new Promise((resolve) => {
-      if (window.kaspa && window.kaspa.RpcClient) return resolve(window.kaspa);
-      const start = Date.now();
-      const iv = setInterval(() => {
-        if (window.kaspa && window.kaspa.RpcClient) {
-          clearInterval(iv); resolve(window.kaspa);
-        } else if (Date.now() - start > timeout) {
-          clearInterval(iv); resolve(null);
-        }
-      }, 100);
-    });
-  }
+  /* ══ Public API  (window.htpRpc) ═══════════════════════════════════════════════ */
+  window.htpRpc = {
 
-  // ── Public API ────────────────────────────────────────────────────────────
-  window.HTPRpc = {
-    get networkId() { return NETWORK_ID; },
-    get isConnected() { return connected; },
-    get daaScore() { return daaScore; },
+    get isConnected()  { return _connected; },
+    get daaScore()     { return _daaScore; },
+    get networkId()    { return window.HTP_NETWORK_ID || 'testnet-12'; },
+    get rpc()          { return _rpc; },
+    get utxoContext()  { return _utxoContext; },
 
-    /** One-shot balance fetch — returns sompi as BigInt */
+    /**
+     * Get UTXOs for an address.
+     * Returns array of UtxoEntryReference (Kaspa WASM type).
+     */
+    async getUtxos(address) {
+      if (!_rpc || !_connected) throw new Error('[HTPRpc] Not connected');
+      var res = await _rpc.getUtxosByAddresses({ addresses: [address] });
+      return res.entries || [];
+    },
+
+    /**
+     * Get balance in sompi (BigInt) for an address.
+     */
     async getBalance(address) {
-      if (!rpc || !connected) throw new Error('RPC not connected');
-      const { entries } = await rpc.getUtxosByAddresses({ addresses: [address] });
-      return entries.reduce((sum, e) => sum + BigInt(e.utxoEntry.amount), 0n);
+      var entries = await this.getUtxos(address);
+      return entries.reduce(function (sum, e) {
+        return sum + BigInt(e.utxoEntry.amount);
+      }, 0n);
     },
 
-    /** Start tracking balance for a wallet address (call after wallet connect) */
+    /**
+     * Submit a signed transaction to the network.
+     * @param {Transaction} tx  — Kaspa WASM Transaction object (already signed)
+     * @returns {string} txId
+     */
+    async submitTransaction(tx) {
+      if (!_rpc || !_connected) throw new Error('[HTPRpc] Not connected');
+      var res = await _rpc.submitTransaction({ transaction: tx, allowOrphan: false });
+      var txId = res.transactionId || res.txId || res;
+      console.log('[HTPRpc] TX submitted:', txId);
+      window.dispatchEvent(new CustomEvent('htp:tx:submitted', { detail: { txId: txId } }));
+      return txId;
+    },
+
+    /**
+     * Start tracking balance + UTXOs for a wallet address.
+     * Called automatically on htp:wallet:connected event.
+     */
     async trackAddress(address) {
-      trackedAddress = address;
-      if (!connected) return;                // will auto-start on next connect event
-      const kaspa = await waitForKaspaWasm();
-      if (kaspa) await startUtxoTracking(kaspa, address);
+      _trackedAddress = address;
+      if (!_connected) return;  // will restart on next connect event
+      var sdk = await waitForWasm();
+      if (sdk) await startUtxoTracking(sdk, address);
     },
 
-    /** Subscribe to balance changes. cb(kasFloat, sompi) */
-    onBalance(cb) {
-      balanceCallbacks.add(cb);
-      return () => balanceCallbacks.delete(cb);   // returns unsubscribe fn
-    },
-
-    /**
-     * Resolves when the live DAA score reaches or passes `targetDaa`.
-     * Use for chain-verified match deadlines.
-     * @param {bigint|number} targetDaa
-     */
-    waitForDaaScore(targetDaa) {
-      const target = BigInt(targetDaa);
-      if (daaScore >= target) return Promise.resolve(daaScore);
-      return new Promise(resolve => daaWaiters.push({ target, resolve }));
+    /** Subscribe to balance changes. Returns unsubscribe fn. */
+    onBalance: function (cb) {
+      _balanceCbs.add(cb);
+      return function () { _balanceCbs.delete(cb); };
     },
 
     /**
-     * Returns a DAA score that is `secondsFromNow` in the future.
-     * Kaspa ~= 10 blocks/sec, so 1 DAA ≈ 100ms.
+     * Resolves when the live DAA score reaches targetDaa.
+     * Used by covenant deadline enforcement.
      */
-    daaScoreAfter(secondsFromNow) {
-      return daaScore + BigInt(Math.ceil(secondsFromNow * 10));
+    waitForDaaScore: function (targetDaa) {
+      var target = BigInt(targetDaa);
+      if (_daaScore >= target) return Promise.resolve(_daaScore);
+      return new Promise(function (resolve) {
+        _daaWaiters.push({ target: target, resolve: resolve });
+      });
     },
 
-    sompiToKas,
-    get rpc() { return rpc; },
+    /**
+     * Returns the DAA score that will be reached ~secondsFromNow.
+     * Kaspa = ~10 blocks/sec ⇒ 1 DAA ≈ 100ms.
+     */
+    daaScoreAfter: function (secondsFromNow) {
+      return _daaScore + BigInt(Math.ceil(secondsFromNow * 10));
+    },
+
+    sompiToKas: sompiToKas,
   };
 
-  // Expose on window for legacy code
-  window.htpDaaScore = 0n;
-  window.htpBalance  = 0;
+  // Backwards compat alias used by older modules
+  window.HTPRpc = window.htpRpc;
 
-  // Auto-init when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initRpc);
+  // Seed globals
+  window.htpDaaScore  = 0n;
+  window.htpBalance   = 0;
+
+  /* ══ Bootstrap ═══════════════════════════════════════════════════════════════ */
+
+  // Start RPC once WASM is ready (uses whenWasmReady gate from htp-init.js)
+  if (window.whenWasmReady) {
+    window.whenWasmReady(initRpc);
   } else {
-    initRpc();
+    // htp-init.js not loaded yet — wait for event
+    window.addEventListener('htp:wasm:ready', function () { initRpc(); }, { once: true });
   }
 
-})();
+  // Auto-track wallet when connected
+  window.addEventListener('htp:wallet:connected', function (e) {
+    var address = e.detail && e.detail.address;
+    if (address) {
+      window.htpRpc.trackAddress(address);
+    }
+  });
+
+  console.log('[HTPRpc] v3.0 loaded | waiting for WASM...');
+
+})(window);
