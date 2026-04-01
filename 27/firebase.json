@@ -3,9 +3,37 @@
     "public": ".",
     "ignore": [
       "firebase.json",
+      ".firebaserc",
       "**/.*",
       "**/node_modules/**",
-      "functions/**"
+      "functions/**",
+      "htp-oracle-daemon/**",
+      "**/*.sh",
+      "**/*.py",
+      "**/*.bak*"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.wasm",
+        "headers": [
+          { "key": "Content-Type", "value": "application/wasm" },
+          { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
+          { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
+        ]
+      },
+      {
+        "source": "**",
+        "headers": [
+          { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
+          { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
+        ]
+      }
     ]
   },
   "functions": [
@@ -23,5 +51,17 @@
   ],
   "database": {
     "rules": "database.rules.json"
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "emulators": {
+    "functions": { "port": 5001 },
+    "firestore": { "port": 8080 },
+    "database": { "port": 9000 },
+    "hosting": { "port": 5000 },
+    "ui": { "enabled": true, "port": 4000 },
+    "singleProjectMode": true
   }
 }
