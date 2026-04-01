@@ -8,7 +8,7 @@
  *  3. BREADCRUMB — always shows current section path under the header
  *  4. FAB      — floating "+" button on Skill / Markets / Create views
  *  5. DEEP-LINK — reads ?tab=XXX on load, writes history.pushState on nav
- *  6. BACK-BTN — browser back/forward works correctly
+ *  6. BACK-BTN — browser back/forward works correctly (SVG chevron, no text)
  *  7. SECTION JUMP — within-section anchor links via #htp-jump-XXX ids
  *  8. TRANSITION — smooth fade+slide between views
  *
@@ -101,13 +101,8 @@
       '#htpBreadcrumb a { color:#49e8c2; text-decoration:none; font-weight:600; }',
       '#htpBreadcrumb a:hover { text-decoration:underline; }',
       '#htpBreadcrumb .sep { color:#334155; }',
-      '#htpBreadcrumb .crumb-back {',
-      '  display:inline-flex; align-items:center; gap:4px; margin-right:8px;',
-      '  color:#64748b; cursor:pointer; font-size:11px; font-weight:600;',
-      '  padding:3px 8px; border-radius:10px; border:none; background:none;',
-      '  transition:all .15s;',
-      '}',
-      '#htpBreadcrumb .crumb-back:hover { color:#e2e8f0; background:rgba(255,255,255,.05); }',
+      '#htpBreadcrumb .crumb-back { display:inline-flex; align-items:center; justify-content:center; margin-right:10px; width:26px; height:26px; border-radius:8px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.04); color:#64748b; cursor:pointer; transition:all .15s; flex-shrink:0; }',
+      '#htpBreadcrumb .crumb-back:hover { color:#e2e8f0; background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.15); }',
 
       /* ── MOBILE BOTTOM TAB BAR ── */
       '#htpBottomBar {',
@@ -182,21 +177,21 @@
       '  background:rgba(255,255,255,.06); display:flex; align-items:center; justify-content:center;',
       '  font-size:18px; flex-shrink:0;',
       '}',
-      '#htpMoreSheet .sheet-item .si-sub { font-size:11px; color:#64748b; font-weight:400; }',
-      '#htpMoreSheet .sheet-cancel {',
-      '  display:block; width:calc(100% - 32px); margin:8px 16px 8px;',
-      '  padding:14px; border-radius:12px;',
-      '  background:rgba(255,255,255,.06); border:none; color:#e2e8f0;',
-      '  font-size:14px; font-weight:700; cursor:pointer;',
+      '#htpMoreSheet .sheet-item svg { width:18px; height:18px; flex-shrink:0; }',
+      '#htpMoreSheet .sheet-close {',
+      '  display:block; width:calc(100% - 32px); margin:8px 16px 16px;',
+      '  padding:14px; border-radius:14px; background:rgba(255,255,255,.06); border:none;',
+      '  color:#e2e8f0; font-size:14px; font-weight:600; cursor:pointer;',
+      '  transition:background .15s;',
       '}',
+      '#htpMoreSheet .sheet-close:hover { background:rgba(255,255,255,.1); }',
 
       /* ── FAB ── */
       '#htpFAB {',
-      '  position:fixed; bottom:74px; right:18px; z-index:9400;',
-      '  display:none; align-items:center; gap:8px;',
-      '  background:linear-gradient(135deg,#49e8c2,#3b82f6);',
-      '  color:#0f172a; border:none; border-radius:28px;',
-      '  padding:13px 20px; font-size:13px; font-weight:800;',
+      '  display:none; position:fixed; right:20px; bottom:80px; z-index:9400;',
+      '  width:52px; height:52px; border-radius:50%;',
+      '  background:linear-gradient(135deg,#49e8c2,#3b82f6); border:none;',
+      '  align-items:center; justify-content:center; color:#020617;',
       '  cursor:pointer; box-shadow:0 6px 24px rgba(73,232,194,.35);',
       '  transition:transform .15s, box-shadow .15s;',
       '}',
@@ -283,15 +278,15 @@
    * BREADCRUMB
    * ───────────────────────────────────────────────────────────────────────── */
   var SECTION_META = {
-    overview:  { title: 'Overview',  desc: 'Protocol home and live stats' },
-    markets:   { title: 'Markets',   desc: 'Browse and join prediction markets' },
+    overview:  { title: 'Overview',    desc: 'Protocol home and live stats' },
+    markets:   { title: 'Markets',     desc: 'Browse and join prediction markets' },
     skill:     { title: 'Skill Games', desc: 'Chess · Connect4 · Checkers — stake KAS' },
-    create:    { title: 'Create',    desc: 'Launch a new prediction market' },
-    oracle:    { title: 'Oracle',    desc: 'Run a miner oracle node' },
-    portfolio: { title: 'Portfolio', desc: 'Your positions, history, rewards' },
-    wallet:    { title: 'Wallet',    desc: 'Connect and manage your Kaspa wallet' },
-    kaspa:     { title: 'Kaspa',     desc: 'About the Kaspa network' },
-    terms:     { title: 'Terms',     desc: 'Protocol terms and conditions' },
+    create:    { title: 'Create',      desc: 'Launch a new prediction market' },
+    oracle:    { title: 'Oracle',      desc: 'Run a miner oracle node' },
+    portfolio: { title: 'Portfolio',   desc: 'Your positions, history, rewards' },
+    wallet:    { title: 'Wallet',      desc: 'Connect and manage your Kaspa wallet' },
+    kaspa:     { title: 'Kaspa',       desc: 'About the Kaspa network' },
+    terms:     { title: 'Terms',       desc: 'Protocol terms and conditions' },
   };
 
   function injectBreadcrumb() {
@@ -308,7 +303,7 @@
     if (!bc) return;
     var meta = SECTION_META[key] || { title: key, desc: '' };
     var backBtn = _history.length > 1
-      ? '<button class="crumb-back" onclick="window._htpNavBack()">&#8592; Back</button>'
+      ? '<button class="crumb-back" title="Go back" onclick="window._htpNavBack()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>'
       : '';
     bc.innerHTML = backBtn +
       '<a href="javascript:void(0)" onclick="go(\'overview\')" >HTP</a>' +
@@ -338,67 +333,87 @@
     MOBILE_TABS.forEach(function (tab) {
       var btn = document.createElement('button');
       btn.className = 'tab-item' + (tab.key === 'skill' ? ' play-btn' : '');
-      btn.dataset.key = tab.key;
+      btn.setAttribute('data-tab', tab.key);
 
       if (tab.key === 'skill') {
         btn.innerHTML =
           '<div class="play-disc">' + tab.svg + '</div>' +
           '<span class="tab-lbl">Play</span>';
+      } else if (tab.key === '__more') {
+        btn.innerHTML = tab.svg + '<span class="tab-lbl">' + tab.label + '</span>';
+        btn.onclick = function () { openMoreSheet(); };
       } else {
         btn.innerHTML = tab.svg + '<span class="tab-lbl">' + tab.label + '</span>';
+        btn.onclick = (function (k) { return function () { go(k); }; })(tab.key);
       }
 
-      btn.addEventListener('click', function () {
-        if (tab.key === '__more') { openMoreSheet(); return; }
-        _navigate(tab.key, true);
-      });
+      if (tab.key !== '__more') {
+        btn.onclick = (function (k) {
+          return function () {
+            if (k === '__more') { openMoreSheet(); return; }
+            if (k === 'skill') { go('skill'); return; }
+            go(k);
+          };
+        })(tab.key);
+      }
+
       inner.appendChild(btn);
     });
 
     bar.appendChild(inner);
     document.body.appendChild(bar);
+    injectMoreSheet();
   }
 
   function updateBottomBar(key) {
-    var items = document.querySelectorAll('#htpBottomBar .tab-item');
-    items.forEach(function (it) {
-      var isMobileKey = MOBILE_TABS.some(function (t) { return t.key === key && t.key === it.dataset.key; });
-      it.classList.toggle('act', isMobileKey);
+    var bar = document.getElementById('htpBottomBar');
+    if (!bar) return;
+    bar.querySelectorAll('.tab-item').forEach(function (btn) {
+      var t = btn.getAttribute('data-tab');
+      btn.classList.toggle('act', t === key);
     });
   }
 
   /* ─────────────────────────────────────────────────────────────────────────
    * MORE SHEET
    * ───────────────────────────────────────────────────────────────────────── */
-  var MORE_ITEMS = [
-    { key: 'create',   icon: '✦', label: 'Create Market',  sub: 'Launch a new prediction market' },
-    { key: 'oracle',   icon: '⬡', label: 'Oracle Node',    sub: 'Run a miner oracle' },
-    { key: 'wallet',   icon: '◈', label: 'Wallet',         sub: 'Connect your Kaspa wallet' },
-    { key: 'kaspa',    icon: '⬡', label: 'About Kaspa',    sub: 'Learn about the network' },
-    { key: 'terms',    icon: '✦', label: 'Terms',          sub: 'Protocol terms' },
-  ];
-
   function injectMoreSheet() {
     if (document.getElementById('htpMoreSheet')) return;
     var sheet = document.createElement('div');
     sheet.id = 'htpMoreSheet';
-    sheet.innerHTML = '<div class="sheet-bg" onclick="closeMoreSheet()"></div>' +
+
+    var MORE_ITEMS = SECTIONS.filter(function (s) {
+      return !MOBILE_TABS.some(function (t) { return t.key === s.key; }) && s.key !== '__more';
+    });
+
+    var itemsHtml = MORE_ITEMS.map(function (s) {
+      return '<button class="sheet-item" onclick="go(\'' + s.key + '\');closeMoreSheet()">' +
+        '<div class="si-icon">' + (s.icon || '◈') + '</div>' +
+        '<span>' + s.label + '</span>' +
+        '</button>';
+    }).join('');
+
+    sheet.innerHTML =
+      '<div class="sheet-bg" onclick="closeMoreSheet()"></div>' +
       '<div class="sheet-body">' +
-      '<div class="sheet-handle"></div>' +
-      '<div class="sheet-title">More</div>' +
-      MORE_ITEMS.map(function (it) {
-        return '<button class="sheet-item" onclick="closeMoreSheet();_navigate(\''+it.key+'\',true)">' +
-          '<div class="si-icon">' + it.icon + '</div>' +
-          '<div><div>' + it.label + '</div><div class="si-sub">' + it.sub + '</div></div>' +
-          '</button>';
-      }).join('') +
-      '<button class="sheet-cancel" onclick="closeMoreSheet()">Cancel</button>' +
+        '<div class="sheet-handle"></div>' +
+        '<div class="sheet-title">More</div>' +
+        itemsHtml +
+        '<button class="sheet-close" onclick="closeMoreSheet()">Close</button>' +
       '</div>';
+
     document.body.appendChild(sheet);
   }
 
-  W.openMoreSheet  = function () { document.getElementById('htpMoreSheet').classList.add('open'); };
-  W.closeMoreSheet = function () { document.getElementById('htpMoreSheet').classList.remove('open'); };
+  function openMoreSheet() {
+    var s = document.getElementById('htpMoreSheet');
+    if (s) s.classList.add('open');
+  }
+
+  W.closeMoreSheet = function () {
+    var s = document.getElementById('htpMoreSheet');
+    if (s) s.classList.remove('open');
+  };
 
   /* ─────────────────────────────────────────────────────────────────────────
    * FAB
@@ -407,263 +422,136 @@
     if (document.getElementById('htpFAB')) return;
     var fab = document.createElement('button');
     fab.id = 'htpFAB';
-    fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
-      '<span id="htpFABLabel">Create Match</span>';
-    fab.addEventListener('click', function () {
-      var sec = SECTIONS.find(function (s) { return s.key === _current; });
-      if (_current === 'skill') {
-        var btn = document.querySelector('[onclick*="createMatchWithLobby"]') ||
-                  document.querySelector('[onclick*="createMatch"]');
-        if (btn) { btn.click(); return; }
-        if (typeof W.createMatchWithLobby === 'function') { W.createMatchWithLobby(); return; }
-        _navigate('create', true);
-      } else if (_current === 'markets') {
-        var fEl = document.querySelector('#v-markets input[type="text"]');
-        if (fEl) { fEl.focus(); fEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-      } else {
-        _navigate('create', true);
+    fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+    fab.onclick = function () {
+      var meta = SECTIONS.find(function (s) { return s.key === _current; });
+      if (meta && meta.fabLabel) {
+        if (_current === 'skill')   { go('skill'); }
+        if (_current === 'markets') { go('create'); }
+        if (_current === 'create')  { document.querySelector('[onclick*="createEvent"]') && document.querySelector('[onclick*="createEvent"]').click(); }
       }
-    });
+    };
     document.body.appendChild(fab);
   }
 
   function updateFAB(key) {
     var fab = document.getElementById('htpFAB');
-    var lbl = document.getElementById('htpFABLabel');
     if (!fab) return;
-    var sec = SECTIONS.find(function (s) { return s.key === key; });
-    if (sec && sec.fab) {
-      fab.className = 'show';
-      if (lbl) lbl.textContent = sec.fabLabel || 'Go';
-    } else {
-      fab.className = '';
-    }
+    var meta = SECTIONS.find(function (s) { return s.key === key; });
+    var isMobile = window.innerWidth < 960;
+    fab.classList.toggle('show', !!meta && !!meta.fab && isMobile);
   }
 
   /* ─────────────────────────────────────────────────────────────────────────
-   * SECTION HEADER INJECTION
+   * DEEP-LINK + HISTORY
    * ───────────────────────────────────────────────────────────────────────── */
-  function injectSectionHeaders() {
-    SECTIONS.forEach(function (sec) {
-      var view = document.getElementById('v-' + sec.key);
-      if (!view || view.querySelector('.htp-section-header')) return;
-      var meta = SECTION_META[sec.key];
-      if (!meta) return;
-      var hd = document.createElement('div');
-      hd.className = 'htp-section-header';
-      hd.innerHTML = '<h1>' + meta.title + '</h1><p>' + meta.desc + '</p>';
-      view.insertBefore(hd, view.firstChild);
-    });
+  function readDeepLink() {
+    var params = new URLSearchParams(W.location.search);
+    var tab = params.get('tab') || params.get('section') || 'overview';
+    var hash = W.location.hash.replace('#', '');
+    if (hash && SECTIONS.some(function (s) { return s.key === hash; })) tab = hash;
+    return tab;
   }
 
+  W.addEventListener('popstate', function (e) {
+    var state = e.state;
+    if (state && state.htpSection) {
+      _navigate(state.htpSection, false);
+    }
+  });
+
   /* ─────────────────────────────────────────────────────────────────────────
-   * CORE NAVIGATION
+   * NAVIGATE
    * ───────────────────────────────────────────────────────────────────────── */
-  function _navigate(key, pushHistory) {
-    if (!key || key === _current && document.getElementById('v-' + key)) {
-      // If same section, just scroll to top
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // Validate section exists
-    var viewEl = document.getElementById('v-' + key);
-    if (!viewEl) {
-      // Fallback: try calling native go()
-      if (typeof W.go === 'function') { W.go(key); }
-      return;
-    }
-
-    _current = key;
-    if (pushHistory) {
-      _history.push(key);
-      if (_history.length > 30) _history.shift();
-    }
+  function _navigate(key, pushState) {
+    if (pushState === undefined) pushState = true;
+    if (!SECTIONS.some(function (s) { return s.key === key; })) key = 'overview';
 
     // Hide all views
     document.querySelectorAll('.view').forEach(function (v) {
       v.classList.remove('show');
     });
 
-    // Show target with transition
-    requestAnimationFrame(function () {
-      viewEl.classList.add('show');
-      window.scrollTo(0, 0);
-    });
-
-    // Update all nav indicators
-    updateDesktopNav(key);
-    updateBottomBar(key);
-    updateBreadcrumb(key);
-    updateFAB(key);
-    document.body.className = document.body.className
-      .replace(/\bon-\S+/g, '').trim() + ' on-' + key;
-
-    // URL deep-link
-    if (pushHistory && W.history && W.history.pushState) {
-      try {
-        W.history.pushState({ htpTab: key }, '', '?tab=' + key);
-      } catch (e) {}
+    // Show target
+    var target = document.getElementById('v-' + key);
+    if (target) {
+      target.classList.add('show');
+      target.scrollTop = 0;
     }
 
-    // Close mobile menu
-    var nav = document.querySelector('.hdr-nav');
-    if (nav) nav.classList.remove('open');
+    _current = key;
 
-    // Trigger section-specific loaders
-    triggerSectionLoad(key);
-  }
-
-  function updateDesktopNav(key) {
-    document.querySelectorAll('.htp-nav-pill, .nav-btn').forEach(function (btn) {
-      var v = btn.dataset.v || btn.dataset.key;
-      btn.classList.toggle('act', v === key);
-    });
-  }
-
-  function triggerSectionLoad(key) {
-    if (key === 'portfolio') {
-      if (typeof W.renderSkillPortfolio === 'function')  W.renderSkillPortfolio('skill-portfolio');
-      if (typeof W.renderClaimableRewards === 'function') W.renderClaimableRewards('claimsList');
-      if (typeof W.renderMatchHistory === 'function')     W.renderMatchHistory('historyList');
-      if (typeof W.loadPortfolioPositions === 'function') setTimeout(W.loadPortfolioPositions, 80);
-    }
-    if (key === 'oracle') {
-      if (typeof W.renderOracleEventsPanel === 'function')  setTimeout(W.renderOracleEventsPanel, 80);
-      if (typeof W.htpOracleDaemonSyncInputs === 'function') W.htpOracleDaemonSyncInputs();
-    }
-    if (key === 'markets') {
-      if (typeof W.loadMarkets === 'function') setTimeout(W.loadMarkets, 80);
-    }
-    if (key === 'skill') {
-      if (typeof W.renderMatchLobby === 'function') setTimeout(W.renderMatchLobby, 80);
-    }
-  }
-
-  /* ─────────────────────────────────────────────────────────────────────────
-   * PATCH window.go()
-   * ───────────────────────────────────────────────────────────────────────── */
-  function patchGoFunction() {
-    var orig = W.go;
-    if (orig && orig._v4patched) return;
-    W.go = function (key) {
-      _navigate(key, true);
-      if (orig && !orig._v4patched) {
-        try { orig.call(W, key); } catch (e) {}
+    // Add to history stack
+    if (pushState) {
+      if (_history[_history.length - 1] !== key) {
+        _history.push(key);
+        if (_history.length > 20) _history.shift();
       }
-    };
-    W.go._v4patched = true;
-    W._navigate = _navigate;
-  }
-
-  /* ─────────────────────────────────────────────────────────────────────────
-   * DEEP-LINK ON LOAD
-   * ───────────────────────────────────────────────────────────────────────── */
-  function handleDeepLink() {
-    var params = new URLSearchParams(W.location.search);
-    var tab    = params.get('tab');
-    var hash   = W.location.hash.replace('#', '');
-    var target = tab || hash || 'overview';
-    var valid  = SECTIONS.some(function (s) { return s.key === target; });
-    if (valid) {
-      setTimeout(function () { _navigate(target, true); }, 400);
+      W.history.pushState({ htpSection: key }, '', '?tab=' + key);
     } else {
-      _navigate('overview', true);
+      if (_history.length === 0) _history.push(key);
     }
+
+    // Update UI
+    updateBreadcrumb(key);
+    updateBottomBar(key);
+    updateFAB(key);
+    updateDesktopPills(key);
+
+    // Scroll to top
+    W.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Fire event for other modules
+    document.dispatchEvent(new CustomEvent('htp:nav', { detail: { key: key } }));
   }
 
-  /* ─────────────────────────────────────────────────────────────────────────
-   * BROWSER BACK/FORWARD
-   * ───────────────────────────────────────────────────────────────────────── */
-  W.addEventListener('popstate', function (e) {
-    if (e.state && e.state.htpTab) {
-      _navigate(e.state.htpTab, false);
-    }
-  });
-
-  /* ─────────────────────────────────────────────────────────────────────────
-   * HAMBURGER TOGGLE (mobile header menu)
-   * ───────────────────────────────────────────────────────────────────────── */
-  function patchHamburger() {
-    var toggle = document.querySelector('.menu-toggle') ||
-                 document.getElementById('menuToggle')  ||
-                 document.querySelector('[onclick*="hdr-nav"]');
-    if (toggle && !toggle._v4patched) {
-      toggle._v4patched = true;
-      var orig = toggle.onclick;
-      toggle.onclick = function (e) {
-        var nav = document.querySelector('.hdr-nav');
-        if (nav) nav.classList.toggle('open');
-      };
-    }
-  }
-
-  /* ─────────────────────────────────────────────────────────────────────────
-   * KEYBOARD SHORTCUTS
-   * ───────────────────────────────────────────────────────────────────────── */
-  function initKeyboard() {
-    W.addEventListener('keydown', function (e) {
-      // Alt+number to jump sections
-      if (e.altKey && !e.ctrlKey && !e.metaKey) {
-        var idx = parseInt(e.key) - 1;
-        if (idx >= 0 && idx < SECTIONS.length) {
-          e.preventDefault();
-          _navigate(SECTIONS[idx].key, true);
-        }
+  function updateDesktopPills(key) {
+    document.querySelectorAll('.htp-nav-pill').forEach(function (pill) {
+      var k = pill.getAttribute('data-section') || pill.getAttribute('onclick');
+      if (k && k.indexOf(key) !== -1) {
+        pill.classList.add('act');
+      } else {
+        pill.classList.remove('act');
       }
-      // Escape: close overlays
-      if (e.key === 'Escape') {
-        W.closeMoreSheet && W.closeMoreSheet();
-        var sheet = document.getElementById('htpMoreSheet');
-        if (sheet) sheet.classList.remove('open');
-      }
+    });
+    // Also update legacy nav-btn
+    document.querySelectorAll('.nav-btn').forEach(function (btn) {
+      var k = btn.getAttribute('onclick') || '';
+      btn.classList.toggle('act', k.indexOf("'" + key + "'") !== -1 || k.indexOf('"' + key + '"') !== -1);
     });
   }
 
   /* ─────────────────────────────────────────────────────────────────────────
-   * SWIPE GESTURE (mobile left/right to switch main sections)
+   * PUBLIC API — override global go() with our version
    * ───────────────────────────────────────────────────────────────────────── */
-  function initSwipe() {
-    var MOBILE_ORDER = ['overview', 'markets', 'skill', 'portfolio'];
-    var startX = 0, startY = 0;
-    document.addEventListener('touchstart', function (e) {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-    }, { passive: true });
-    document.addEventListener('touchend', function (e) {
-      var dx = e.changedTouches[0].clientX - startX;
-      var dy = e.changedTouches[0].clientY - startY;
-      if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx)) return;
-      var idx = MOBILE_ORDER.indexOf(_current);
-      if (idx === -1) return;
-      if (dx < 0 && idx < MOBILE_ORDER.length - 1) _navigate(MOBILE_ORDER[idx + 1], true);
-      if (dx > 0 && idx > 0) _navigate(MOBILE_ORDER[idx - 1], true);
-    }, { passive: true });
-  }
+  var _origGo = W.go;
+  W.go = function (key) {
+    _navigate(key, true);
+  };
 
   /* ─────────────────────────────────────────────────────────────────────────
    * BOOT
    * ───────────────────────────────────────────────────────────────────────── */
   function boot() {
     injectStyles();
+    upgradeDesktopNav();
     injectBreadcrumb();
     injectBottomBar();
-    injectMoreSheet();
     injectFAB();
-    upgradeDesktopNav();
-    injectSectionHeaders();
-    patchGoFunction();
-    patchHamburger();
-    initKeyboard();
-    initSwipe();
-    handleDeepLink();
-    console.log('%c[HTP Nav v4] ✓ Desktop pill nav · Mobile bottom bar · FAB · Breadcrumb · Deep-link · Swipe', 'color:#49e8c2;font-weight:bold');
+
+    // Show initial view
+    var initial = readDeepLink();
+    _navigate(initial, false);
+    if (_history.length === 0) _history.push(initial);
+
+    // Resize FAB on window resize
+    W.addEventListener('resize', function () { updateFAB(_current); });
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 600); });
+    document.addEventListener('DOMContentLoaded', boot);
   } else {
-    setTimeout(boot, 600);
+    boot();
   }
-  setTimeout(boot, 2000); // safety re-run
 
 })(window);
