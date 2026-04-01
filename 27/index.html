@@ -17993,93 +17993,33 @@ body:not(.on-overview) .bg-glow3 { opacity: 0.25 !important; }
             // Auto-initialize (DISABLED -- using external nightly SDK module instead)
             // The inline glue has import mismatches with the nightly WASM binary.
             
-    <!-- Kaspa WASM SDK -- external nightly loader (matches kaspa_bg.wasm binary) -->
-    <script type="module">
-        import init, * as kaspa from '/kaspa/kaspa.js';
-        try {
-            window._kaspaExternalLoaded = true;
-            await init('/kaspa_bg.wasm');
-            // Populate window.kaspaSDK with all exports
-            var sdk2 = {};
-            var exportNames = [
-                'PrivateKey', 'PublicKey', 'Transaction', 'TransactionInput', 'TransactionOutput',
-                'ScriptPublicKey', 'UtxoEntryReference', 'UtxoEntry',
-                'createTransactions', 'createTransaction', 'signTransaction',
-                'Address', 'addressFromScriptPublicKey',
-                'Mnemonic', 'XPrv', 'XPub', 'DerivationPath',
-                'kaspaToSompi', 'sompiToKaspaString',
-                'NetworkType', 'NetworkId',
-                'RpcClient', 'Resolver',
-                'initSync'
-            ];
-            exportNames.forEach(function (n) {
-                if (kaspa[n]) { sdk2[n] = kaspa[n]; window[n] = kaspa[n]; }
-            });
-            window.kaspaSDK = sdk2;
-            window.wasmReady = true;
-            window.kaspaWasmReady = function () { return true; };
-            // Unlock all wasm-gated elements (inline init failed, external succeeded)
-            document.querySelectorAll('.wasm-gate').forEach(function(el) {
-                el.disabled = false; el.style.opacity = '1'; el.title = '';
-            });
-            if (window._onWasmReady) window._onWasmReady();
-            console.log('[HTP] External WASM loader: gates unlocked, _onWasmReady fired');
-
-            // kaspaFromMnemonic helper
-            window.kaspaFromMnemonic = async function (mnemonic, prefix) {
-                prefix = prefix || 'kaspa';
-                var k = window.kaspaSDK;
-                var mn = new k.Mnemonic(mnemonic);
-                var seed = mn.toSeed();
-                var xprv = new k.XPrv(seed);
-                var path = "m/44'/111111'/0'/0/0";
-                var derived = xprv.derivePath(path);
-                var privKey = derived.toPrivateKey();
-                var pubKey = privKey.toPublicKey();
-                var address = pubKey.toAddress(prefix === 'kaspatest' ? k.NetworkType.Testnet : k.NetworkType.Mainnet);
-                return {
-                    privateKey: privKey.toString(),
-                    publicKey: pubKey.toString(),
-                    address: address.toString(),
-                    xprv: xprv.intoString('xprv'),
-                    mnemonic: mnemonic
-                };
-            };
-
-            // generateMnemonic helper
-            window.generateMnemonic = function (words) {
-                try {
-                    var mn = kaspa.Mnemonic.random(words);
-                    return mn.phrase;
-                } catch (e) { return null; }
-            };
-
-            console.log('[HTP] Kaspa WASM external loaded OK, keys:', Object.keys(sdk2).filter(function (k) { return sdk2[k]; }).join(', '));
-
-            // Fire onWasmReady
-            if (window._onWasmReady) window._onWasmReady();
-
-            // Auto-reconnect wallet from persistent session
-            setTimeout(function () {
-                if (window.htpKeys && window.htpKeys.address && typeof conn !== 'undefined' && !conn) {
-                    window.walletAddress = window.htpKeys.address;
-                    window.walletProvider = 'mnemonic';
-                    window.conn = true;
-                    window.htpSeedAddress = window.htpKeys.address;
-                    if (typeof startBalancePoller === 'function') startBalancePoller();
-                    console.log('[HTP] Wallet auto-reconnected from WASM module');
+    <script>
+        // Wire inline WASM SDK (already embedded above) to _onWasmReady gate
+        (async function() {
+            try {
+                if (typeof __wbg_init !== 'undefined') {
+                    await __wbg_init({ module_or_path: '/kaspa_bg.wasm' });
+                } else if (typeof initSync !== 'undefined') {
+                    var resp = await fetch('/kaspa_bg.wasm');
+                    var bytes = await resp.arrayBuffer();
+                    initSync({ module: bytes });
                 }
-            }, 500);
-
-            // Enable WASM-gated UI
-            document.querySelectorAll('.wasm-gate').forEach(function (el) {
-                el.disabled = false; el.style.opacity = '1'; el.title = '';
-            });
-        } catch (e) {
-            console.error('[HTP] External WASM init failed:', e);
-            console.log('[HTP] Falling back to inline WASM...');
-            window._kaspaExternalLoaded = false;
-        }
+                window.kaspaSDK = window.kaspaSDK || {};
+                var exports = ['PrivateKey','PublicKey','Transaction','TransactionInput','TransactionOutput',
+                    'ScriptPublicKey','UtxoEntryReference','UtxoEntry','createTransactions','signTransaction',
+                    'Address','addressFromScriptPublicKey','Mnemonic','XPrv','XPub','DerivationPath',
+                    'kaspaToSompi','sompiToKaspaString','NetworkType','NetworkId','RpcClient','Resolver'];
+                exports.forEach(function(n){ if(window[n]) window.kaspaSDK[n] = window[n]; });
+                window.wasmReady = true;
+                document.querySelectorAll('.wasm-gate').forEach(function(el){
+                    el.disabled=false; el.style.opacity='1'; el.title='';
+                });
+                if (window._onWasmReady) window._onWasmReady();
+                console.log('[HTP] WASM inline loader: ready');
+            } catch(e) {
+                console.error('[HTP] WASM load error:', e);
+            }
+        })();
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
