@@ -1,0 +1,33 @@
+[package]
+name = "htp-rust-backend"
+version = "0.1.0"
+edition = "2021"
+description = "High Table Protocol – Rust backend replacing browser WASM implementation"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+axum = "0.7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tower-http = { version = "0.5", features = ["cors"] }
+tokio-stream = "0.1"
+
+# TODO: Kaspa dependencies are NOT on crates.io.
+# Clone https://github.com/kaspanet/rusty-kaspa locally, then uncomment
+# and adjust the path (or use git rev) entries below.
+#
+# [dependencies.kaspa-rpc-client]
+# git = "https://github.com/kaspanet/rusty-kaspa"
+# branch = "master"
+#
+# [dependencies.kaspa-wallet-core]
+# git = "https://github.com/kaspanet/rusty-kaspa"
+# branch = "master"
+#
+# [dependencies.kaspa-addresses]
+# git = "https://github.com/kaspanet/rusty-kaspa"
+# branch = "master"
+#
+# [dependencies.kaspa-consensus-core]
+# git = "https://github.com/kaspanet/rusty-kaspa"
+# branch = "master"
