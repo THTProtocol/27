@@ -20435,12 +20435,13 @@ event MyMarket {
 
         const kaspa = {
             async connect() {
-                const cfg = KASPA_NETS[activeNet] || KASPA_NETS.tn12 || null;
+                const activeNetKey = (typeof window.HTP_NETWORK === 'string' ? window.HTP_NETWORK : 'tn12');
+                const cfg = KASPA_NETS[activeNetKey] || KASPA_NETS.tn12 || null;
                 if (!cfg) {
                     updateNodeStatus('error', 'Network config missing for ' + activeNet);
                     return false;
                 }
-                updateNodeStatus('connecting', 'Connecting to ' + activeNet + '...');
+                updateNodeStatus('connecting', 'Connecting to ' + activeNetKey + '...');
 
                 // Try WASM RPC first (auto-discovery via Resolver)
                 try {
@@ -20451,7 +20452,7 @@ event MyMarket {
                             nodeInfo.synced = true;
                             nodeInfo.daaScore = dag.virtualDaaScore || 0;
                             nodeInfo.networkName = activeNet;
-                            updateNodeStatus('rest', activeNet.toUpperCase() + ' LOCAL wRPC | DAA ' + nodeInfo.daaScore.toLocaleString());
+                            updateNodeStatus('rest', activeNetKey.toUpperCase() + ' LOCAL wRPC | DAA ' + nodeInfo.daaScore.toLocaleString());
                             if ($('daaScore')) $('daaScore').textContent = nodeInfo.daaScore.toLocaleString();
                             if (typeof subscribeLobbyIfActiveNetTN12 === 'function') subscribeLobbyIfActiveNetTN12();
                             return true;
@@ -20469,7 +20470,7 @@ event MyMarket {
                             nodeInfo.synced = true;
                             nodeInfo.daaScore = dag.virtualDaaScore || dag.daaScore || 0;
                             nodeInfo.networkName = activeNet;
-                            updateNodeStatus('rest', activeNet.toUpperCase() + ' REST | DAA ' + nodeInfo.daaScore.toLocaleString());
+                            updateNodeStatus('rest', activeNetKey.toUpperCase() + ' REST | DAA ' + nodeInfo.daaScore.toLocaleString());
                             if ($('daaScore')) $('daaScore').textContent = nodeInfo.daaScore.toLocaleString();
                             if (typeof subscribeLobbyIfActiveNetTN12 === 'function') subscribeLobbyIfActiveNetTN12();
                             return true;
@@ -20519,7 +20520,7 @@ event MyMarket {
                     }
                 }
 
-                updateNodeStatus('error', 'No ' + activeNet + ' node reachable');
+                updateNodeStatus('error', 'No ' + activeNetKey + ' node reachable');
                 return false;
             },
 
