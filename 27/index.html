@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="High Table Protocol: Trustless skill games, prediction markets, and escrow on Kaspa BlockDAG">
+  <meta name="description" content="High Table Protocol: trustless skill-based wagering and prediction markets on Kaspa BlockDAG">
   <meta name="theme-color" content="#080c17">
   <title>High Table Protocol</title>
 
@@ -13,11 +13,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
-    /* ========================================================================
+    /* ================================================================
        CSS RESET + DESIGN SYSTEM
-       ======================================================================== */
+       ================================================================ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
 
     :root {
       --bg: #080c17;
@@ -37,12 +36,15 @@
       --error: #ef4444;
       --red: #e84040;
       --gold: #d4a017;
-      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      --font-heading: 'Space Grotesk', 'Inter', sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --font-heading: 'Space Grotesk', sans-serif;
       --max-w: 1200px;
-      --side-pad: 24px;
-      --header-h: 64px;
+      --pad-x: 24px;
+      --radius: 8px;
+      --radius-sm: 6px;
     }
+
+    html { scroll-behavior: smooth; }
 
     body {
       background: var(--bg);
@@ -50,127 +52,322 @@
       font-family: var(--font-body);
       font-size: 15px;
       line-height: 1.6;
+      min-height: 100vh;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      overflow-x: hidden;
     }
 
     h1, h2, h3, h4, h5, h6 {
       font-family: var(--font-heading);
-      font-weight: 600;
-      line-height: 1.25;
+      line-height: 1.2;
       color: var(--text);
     }
-    h1 { font-size: clamp(28px, 4vw, 42px); font-weight: 700; }
-    h2 { font-size: clamp(22px, 3vw, 30px); }
-    h3 { font-size: clamp(18px, 2.5vw, 22px); }
 
     a { color: var(--primary); text-decoration: none; }
     a:hover { color: var(--primary-h); }
 
     img, svg { display: block; max-width: 100%; }
+    button, input, select, textarea { font-family: inherit; font-size: inherit; }
 
-    /* ── Focus ── */
-    :focus-visible {
-      outline: 2px solid var(--primary);
-      outline-offset: 3px;
-    }
-
-    /* ── Scrollbar ── */
+    /* Scrollbar */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
 
-    /* ========================================================================
+    /* ================================================================
        LAYOUT
-       ======================================================================== */
-    .container {
-      width: 100%;
+       ================================================================ */
+    .mx {
       max-width: var(--max-w);
       margin: 0 auto;
-      padding: 0 var(--side-pad);
+      padding-left: var(--pad-x);
+      padding-right: var(--pad-x);
     }
 
-    .section-pad {
-      padding: clamp(48px, 6vw, 96px) 0;
+    .sec-pad {
+      padding-top: clamp(48px, 6vw, 96px);
+      padding-bottom: clamp(48px, 6vw, 96px);
     }
 
-    /* ========================================================================
-       HEADER
-       ======================================================================== */
-    .hdr {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      height: var(--header-h);
-      background: rgba(8,12,23,0.92);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      z-index: 1000;
-      display: flex;
+    /* ================================================================
+       COMPONENTS: CARDS
+       ================================================================ */
+    .card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .card:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    /* ================================================================
+       COMPONENTS: BUTTONS
+       ================================================================ */
+    .btn {
+      display: inline-flex;
       align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      line-height: 1;
     }
-    .hdr-inner {
+    .btn:hover { transform: scale(1.02); }
+    .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #080c17;
+    }
+    .btn-primary:hover { background: var(--primary-h); }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-secondary:hover { border-color: var(--border-hover); }
+
+    .btn-full { width: 100%; }
+
+    /* ================================================================
+       COMPONENTS: INPUTS
+       ================================================================ */
+    .input, .textarea, .select {
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 10px 14px;
       width: 100%;
-      max-width: var(--max-w);
-      margin: 0 auto;
-      padding: 0 var(--side-pad);
+      transition: border-color 0.15s ease;
+    }
+    .input:focus, .textarea:focus, .select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+    .textarea { resize: vertical; min-height: 80px; }
+    .select { appearance: none; cursor: pointer; }
+
+    .input-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-group label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    /* ================================================================
+       COMPONENTS: PILLS / CHIPS
+       ================================================================ */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.15s ease;
+    }
+    .pill:hover { border-color: var(--border-hover); color: var(--text); }
+    .pill.active {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: rgba(79,152,163,0.08);
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--surface-3);
+      color: var(--text-muted);
+    }
+
+    /* ================================================================
+       COMPONENTS: TABLES
+       ================================================================ */
+    .tbl {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .tbl th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-faint);
+      border-bottom: 1px solid var(--border);
+    }
+    .tbl td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(79,152,163,0.08);
+      color: var(--text-muted);
+    }
+    .tbl tr:hover td { background: rgba(79,152,163,0.04); }
+    .tbl .addr {
+      font-family: 'Space Grotesk', monospace;
+      font-size: 13px;
+      color: var(--primary);
+    }
+
+    /* ================================================================
+       COMPONENTS: STATUS DOTS
+       ================================================================ */
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .dot-green { background: var(--success); }
+    .dot-red { background: var(--error); }
+    .dot-grey { background: var(--text-faint); }
+    .dot-pulse {
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    /* ================================================================
+       COMPONENTS: MODAL / DRAWER
+       ================================================================ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 28px;
+    }
+
+    .modal-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .modal-header h2 {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .modal-close {
+      width: 32px; height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: var(--surface-2);
+      border-radius: 6px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 18px;
+    }
+    .modal-close:hover { background: var(--surface-3); color: var(--text); }
+
+    /* ================================================================
+       HEADER
+       ================================================================ */
+    .hdr {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 60px;
+      background: rgba(8,12,23,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      z-index: 900;
+      display: flex;
+      align-items: center;
     }
 
-    /* Logo */
+    .hdr-inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 0 var(--pad-x);
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
     .hdr-logo {
       display: flex;
       align-items: center;
       gap: 10px;
       flex-shrink: 0;
-      text-decoration: none;
     }
-    .hdr-logo-mark {
-      width: 36px; height: 36px;
-    }
-    .hdr-logo-text {
+    .hdr-logo svg { width: 32px; height: 32px; }
+    .hdr-logo span {
       font-family: var(--font-heading);
       font-weight: 700;
       font-size: 18px;
       color: var(--primary);
-      letter-spacing: 0.02em;
+      letter-spacing: -0.02em;
     }
 
-    /* Nav */
     .hdr-nav {
       display: flex;
       align-items: center;
-      gap: 2px;
-    }
-    .nav-btn {
-      display: inline-flex;
-      align-items: center;
-      padding: 7px 14px;
-      border-radius: 20px;
-      font-family: var(--font-body);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--text-faint);
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      transition: color 0.18s, background 0.18s;
-      white-space: nowrap;
-      position: relative;
-    }
-    .nav-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); }
-    .nav-btn.act {
-      color: var(--primary);
-      background: rgba(79,152,163,0.12);
+      gap: 4px;
+      flex: 1;
+      justify-content: center;
     }
 
-    /* Right section */
+    .nav-btn {
+      padding: 8px 14px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: color 0.15s ease, border-color 0.15s ease;
+      white-space: nowrap;
+    }
+    .nav-btn:hover { color: var(--text); }
+    .nav-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
     .hdr-r {
       display: flex;
       align-items: center;
@@ -178,127 +375,58 @@
       flex-shrink: 0;
     }
 
-    /* Block height */
-    .block-height {
+    .hdr-stat {
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 12px;
-      font-weight: 500;
+      font-size: 13px;
       color: var(--text-muted);
-      font-variant-numeric: tabular-nums;
     }
-    .pulse-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--success);
-      animation: pulse 2s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
-      50% { opacity: 0.6; box-shadow: 0 0 6px 2px rgba(34,197,94,0.3); }
+    .hdr-stat .val {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      color: var(--text);
     }
 
-    /* Network badge */
     .net-badge {
-      display: inline-flex;
-      align-items: center;
       padding: 3px 8px;
-      border-radius: 10px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
       text-transform: uppercase;
-      background: rgba(79,152,163,0.15);
+      letter-spacing: 0.05em;
+      background: rgba(79,152,163,0.12);
       color: var(--primary);
       border: 1px solid var(--border);
     }
 
-    /* Wallet button */
-    .wallet-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+    #connectWalletBtn, #htp-connect-wallet-btn {
       padding: 8px 16px;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 13px;
       background: var(--primary);
       color: #080c17;
-      font-family: var(--font-body);
-      font-size: 13px;
-      font-weight: 600;
       border: none;
       cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s;
+      transition: background 0.15s ease;
     }
-    .wallet-btn:hover {
-      transform: scale(1.02);
-      box-shadow: 0 4px 16px var(--primary-glow);
-    }
-    .wallet-btn.connected {
-      background: var(--surface-2);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
+    #connectWalletBtn:hover, #htp-connect-wallet-btn:hover { background: var(--primary-h); }
 
-    /* Hamburger */
     .hamburger {
       display: none;
-      flex-direction: column;
+      width: 36px; height: 36px;
+      align-items: center;
       justify-content: center;
-      gap: 5px;
-      width: 32px; height: 32px;
       background: none;
       border: none;
       cursor: pointer;
-      padding: 4px;
-    }
-    .hamburger span {
-      display: block;
-      width: 100%;
-      height: 2px;
-      background: var(--text);
-      border-radius: 1px;
-      transition: transform 0.2s, opacity 0.2s;
-    }
-    .hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
-    .hamburger.open span:nth-child(2) { opacity: 0; }
-    .hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
-
-    /* Mobile drawer */
-    .mobile-drawer {
-      display: none;
-      position: fixed;
-      top: var(--header-h); left: 0; right: 0; bottom: 0;
-      background: var(--bg);
-      z-index: 999;
-      padding: 24px;
-      overflow-y: auto;
-    }
-    .mobile-drawer.open { display: block; }
-    .mobile-drawer .nav-btn {
-      display: flex;
-      width: 100%;
-      padding: 14px 16px;
-      font-size: 14px;
-      border-radius: 8px;
+      color: var(--text);
     }
 
-    @media (max-width: 768px) {
-      .hdr-nav { display: none; }
-      .hamburger { display: flex; }
-      .block-height { display: none; }
-      .net-badge { display: none; }
-    }
-
-    /* ========================================================================
-       MAIN CONTENT AREA
-       ======================================================================== */
-    main {
-      margin-top: var(--header-h);
-      min-height: calc(100vh - var(--header-h));
-    }
-
-    /* ── View system (used by htp-nav-v4.js) ── */
+    /* ================================================================
+       VIEWS (SPA Sections)
+       ================================================================ */
     .view {
       display: none;
       opacity: 0;
@@ -311,1321 +439,1508 @@
       transform: translateY(0);
     }
 
-    /* ========================================================================
-       CARDS
-       ======================================================================== */
-    .card {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 24px;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .card:hover {
-      border-color: var(--border-hover);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    }
-    .card-compact {
-      padding: 16px;
-    }
+    #app { padding-top: 60px; }
 
-    /* ========================================================================
-       BUTTONS
-       ======================================================================== */
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 24px;
-      background: var(--primary);
-      color: #080c17;
-      border: none;
-      border-radius: 6px;
-      font-family: var(--font-body);
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s;
-    }
-    .btn-primary:hover {
-      transform: scale(1.02);
-      box-shadow: 0 4px 16px var(--primary-glow);
-    }
-    .btn-primary:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-    .btn-primary.full-width { width: 100%; }
-
-    .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 24px;
-      background: transparent;
+    /* ================================================================
+       SECTION: OVERVIEW
+       ================================================================ */
+    .hero { padding: 64px 0 48px; text-align: center; }
+    .hero h1 {
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 700;
+      margin-bottom: 16px;
       color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-family: var(--font-body);
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
     }
-    .btn-secondary:hover {
-      border-color: var(--border-hover);
-      background: rgba(255,255,255,0.03);
-    }
-
-    /* ========================================================================
-       FORM ELEMENTS
-       ======================================================================== */
-    .input, .textarea, .select {
-      width: 100%;
-      padding: 10px 14px;
-      background: var(--surface-3);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-family: var(--font-body);
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .input:focus, .textarea:focus, .select:focus {
-      border-color: var(--primary);
-    }
-    .input::placeholder, .textarea::placeholder { color: var(--text-faint); }
-    .textarea { resize: vertical; min-height: 80px; }
-    .select { cursor: pointer; appearance: none; }
-
-    .label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+    .hero h1 .teal { color: var(--primary); }
+    .hero p {
+      font-size: 17px;
       color: var(--text-muted);
-      margin-bottom: 6px;
+      max-width: 640px;
+      margin: 0 auto 32px;
+      line-height: 1.7;
     }
-
-    .field { margin-bottom: 20px; }
-
-    /* ── Quick-select pills ── */
-    .pill-row {
+    .hero-actions {
       display: flex;
-      gap: 8px;
+      gap: 12px;
+      justify-content: center;
       flex-wrap: wrap;
-      margin-top: 8px;
-    }
-    .pill {
-      padding: 6px 14px;
-      border-radius: 16px;
-      font-size: 13px;
-      font-weight: 500;
-      background: var(--surface-3);
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .pill:hover, .pill.selected {
-      background: rgba(79,152,163,0.15);
-      color: var(--primary);
-      border-color: var(--primary);
     }
 
-    /* ========================================================================
-       STAT CARDS
-       ======================================================================== */
     .stats-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
-      margin: 24px 0;
+      margin-bottom: 48px;
     }
     .stat-card {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 20px;
       text-align: center;
+      padding: 24px;
     }
-    .stat-value {
+    .stat-card .stat-val {
       font-family: var(--font-heading);
       font-size: 28px;
       font-weight: 700;
       color: var(--primary);
-      font-variant-numeric: tabular-nums;
+      margin-bottom: 4px;
     }
-    .stat-label {
-      font-size: 12px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+    .stat-card .stat-label {
+      font-size: 13px;
       color: var(--text-muted);
-      margin-top: 4px;
     }
 
-    /* ========================================================================
-       TABLES
-       ======================================================================== */
-    .data-table {
+    .overview-dag {
       width: 100%;
-      border-collapse: collapse;
+      height: 200px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 48px;
+      position: relative;
+      overflow: hidden;
     }
-    .data-table th {
-      text-align: left;
+    .overview-dag canvas { width: 100%; height: 100%; }
+    .overview-dag .dag-label {
+      position: absolute;
+      bottom: 12px; right: 16px;
       font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
       color: var(--text-faint);
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-    .data-table td {
-      padding: 14px 16px;
-      font-size: 14px;
-      border-bottom: 1px solid rgba(79,152,163,0.08);
-      color: var(--text);
-      font-variant-numeric: tabular-nums;
-    }
-    .data-table tbody tr {
-      transition: background 0.15s;
-    }
-    .data-table tbody tr:hover {
-      background: rgba(79,152,163,0.05);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
 
-    /* ========================================================================
-       GAME SELECTOR CARDS
-       ======================================================================== */
-    .game-grid {
+    /* ================================================================
+       SECTION: SKILL GAMES
+       ================================================================ */
+    .sh { margin-bottom: 32px; }
+    .sh h2 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .sh p { color: var(--text-muted); font-size: 14px; }
+
+    .game-selector {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 16px;
-      margin: 16px 0;
+      margin-bottom: 28px;
     }
     .game-card {
       background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 24px 16px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
       text-align: center;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s ease;
     }
-    .game-card:hover {
-      border-color: var(--border-hover);
-    }
+    .game-card:hover { border-color: var(--border-hover); }
     .game-card.selected {
-      border: 2px solid var(--primary);
+      border-color: var(--primary);
       background: var(--surface-3);
-      box-shadow: 0 0 20px var(--primary-glow);
+      box-shadow: 0 0 24px var(--primary-glow);
     }
-    .game-card-icon {
+    .game-card .game-icon {
       width: 64px; height: 64px;
       margin: 0 auto 12px;
     }
-    .game-card-name {
+    .game-card .game-icon svg { width: 100%; height: 100%; }
+    .game-card .game-name {
       font-family: var(--font-heading);
       font-weight: 600;
       font-size: 16px;
     }
 
-    @media (max-width: 480px) {
-      .game-grid { grid-template-columns: 1fr; }
+    .escrow-field {
+      margin-bottom: 24px;
+    }
+    .escrow-input-wrap {
+      display: flex;
+      align-items: center;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .escrow-input-wrap input {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-family: var(--font-heading);
+      font-size: 24px;
+      font-weight: 600;
+      padding: 14px 16px;
+    }
+    .escrow-input-wrap input:focus { outline: none; }
+    .escrow-input-wrap .kas-suffix {
+      padding: 0 16px;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+    .escrow-usd {
+      font-size: 13px;
+      color: var(--text-faint);
+      margin-top: 6px;
+    }
+    .quick-pills {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .quick-pills .pill { font-family: var(--font-heading); font-weight: 600; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
     }
 
-    /* ========================================================================
-       MATCH LIFECYCLE STEPPER
-       ======================================================================== */
-    .stepper {
-      position: relative;
-      padding-left: 40px;
+    .time-custom {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
     }
-    .stepper::before {
+    .time-custom.show { display: grid; }
+
+    .series-pills {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Match Lifecycle Stepper */
+    .stepper {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 48px;
+      padding-top: 48px;
+      border-top: 1px solid var(--border);
+    }
+    .step {
+      display: flex;
+      gap: 16px;
+      padding: 20px 0;
+      position: relative;
+    }
+    .step::before {
       content: '';
       position: absolute;
-      left: 15px; top: 0; bottom: 0;
+      left: 19px;
+      top: 56px;
+      bottom: 0;
       width: 2px;
       background: var(--border);
     }
-    .step {
-      position: relative;
-      padding: 16px 0 32px 24px;
-      opacity: 0.4;
-      transition: opacity 0.2s;
-      cursor: pointer;
-    }
-    .step.active {
-      opacity: 1;
-      border-left: 2px solid var(--primary);
-      margin-left: -2px;
-    }
-    .step.completed { opacity: 0.6; }
+    .step:last-child::before { display: none; }
+
     .step-icon {
-      position: absolute;
-      left: -40px; top: 16px;
-      width: 30px; height: 30px;
+      width: 40px; height: 40px;
       border-radius: 50%;
-      background: var(--surface-2);
       border: 2px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
+      background: var(--surface);
     }
-    .step.active .step-icon { border-color: var(--primary); }
+    .step-icon svg { width: 18px; height: 18px; color: var(--text-faint); }
+
     .step.completed .step-icon {
       border-color: var(--primary);
-      background: rgba(79,152,163,0.15);
+      background: rgba(79,152,163,0.12);
     }
-    .step-icon svg { width: 14px; height: 14px; }
-    .step-title {
-      font-family: var(--font-heading);
-      font-weight: 600;
+    .step.completed .step-icon svg { color: var(--primary); }
+    .step.completed .step-body { opacity: 0.6; }
+
+    .step.active {
+      border-left: 3px solid var(--primary);
+      padding-left: 16px;
+      margin-left: -19px;
+    }
+    .step.active .step-icon {
+      border-color: var(--primary);
+      background: rgba(79,152,163,0.12);
+    }
+    .step.active .step-icon svg { color: var(--primary); }
+
+    .step.future .step-icon { opacity: 0.4; }
+    .step.future .step-body { opacity: 0.4; }
+
+    .step-body h4 {
       font-size: 16px;
+      font-weight: 600;
       margin-bottom: 4px;
     }
-    .step-desc {
+    .step-body p {
       font-size: 13px;
       color: var(--text-muted);
       line-height: 1.5;
     }
     .step-detail {
-      display: none;
-      margin-top: 12px;
+      margin-top: 8px;
       padding: 12px;
       background: var(--surface-3);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       font-size: 12px;
-      color: var(--text-muted);
-      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      color: var(--text-faint);
+      display: none;
     }
     .step-detail.open { display: block; }
 
-    /* ========================================================================
-       WALLET MODAL
-       ======================================================================== */
-    .wallet-modal-overlay {
+    /* Game Boards */
+    .board-wrap {
       display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      z-index: 2000;
+      margin-top: 24px;
+    }
+    .board-wrap.active { display: block; }
+
+    .chess-board {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      aspect-ratio: 1;
+      max-width: 560px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .chess-sq {
+      aspect-ratio: 1;
+      display: flex;
       align-items: center;
       justify-content: center;
     }
-    .wallet-modal-overlay.open {
-      display: flex;
+    .chess-sq.dark { background: #1a2235; }
+    .chess-sq.light { background: #243050; }
+    .chess-sq img { width: 80%; height: 80%; }
+    .chess-sq.legal::after {
+      content: '';
+      width: 28%;
+      height: 28%;
+      border-radius: 50%;
+      background: var(--primary-glow);
     }
-    .wallet-modal {
+
+    .chess-clocks {
+      display: flex;
+      justify-content: space-between;
+      margin: 12px 0;
+      max-width: 560px;
+    }
+    .chess-clock {
+      font-family: var(--font-heading);
+      font-size: 24px;
+      font-weight: 700;
+      padding: 8px 20px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .chess-clock.low { color: var(--error); }
+
+    .board-controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      max-width: 560px;
+    }
+
+    .c4-board {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      max-width: 480px;
+      background: var(--surface-2);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px;
+    }
+    .c4-cell {
+      aspect-ratio: 1;
+      border-radius: 50%;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      width: 90%;
-      max-width: 520px;
-      max-height: 85vh;
-      overflow-y: auto;
-      padding: 32px;
+      transition: background 0.28s ease;
     }
-    .wallet-modal-header {
+    .c4-cell.p1 { background: var(--primary); }
+    .c4-cell.p2 { background: var(--red); }
+    .c4-cell.win { box-shadow: 0 0 0 3px white; }
+
+    .checkers-board {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      aspect-ratio: 1;
+      max-width: 560px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .checkers-sq { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+    .checkers-sq.dark { background: #1a2235; }
+    .checkers-sq.light { background: #243050; }
+    .checkers-piece {
+      width: 70%; height: 70%;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+    .checkers-piece.teal { background: var(--primary); }
+    .checkers-piece.red { background: var(--red); }
+
+    /* ================================================================
+       SECTION: PREDICTIONS
+       ================================================================ */
+    .create-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    .outcome-row {
       display: flex;
+      gap: 8px;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
+      margin-bottom: 8px;
     }
-    .wallet-modal-title {
-      font-family: var(--font-heading);
-      font-size: 20px;
-      font-weight: 600;
-    }
-    .wallet-modal-close {
+    .outcome-row input { flex: 1; }
+    .outcome-remove {
       width: 32px; height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 6px;
-      background: var(--surface-2);
       border: 1px solid var(--border);
-      color: var(--text-muted);
+      background: none;
+      border-radius: var(--radius-sm);
+      color: var(--text-faint);
       cursor: pointer;
-      transition: background 0.15s;
     }
-    .wallet-modal-close:hover { background: var(--surface-3); }
+    .outcome-remove:hover { border-color: var(--error); color: var(--error); }
 
-    /* Wallet extension grid */
-    .wallet-extension-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-    .wallet-card {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .wallet-card:hover {
-      border-color: var(--border-hover);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-    }
-    .wallet-card[data-connected="true"] {
-      border-color: var(--success);
-    }
-    .wallet-card-logo {
-      width: 40px; height: 40px;
-      flex-shrink: 0;
-    }
-    .wallet-card-logo svg { width: 40px; height: 40px; }
-    .wallet-card-info { flex: 1; min-width: 0; }
-    .wallet-card-name {
-      font-weight: 600;
-      font-size: 14px;
-      margin-bottom: 2px;
-    }
-    .wallet-card-desc {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-    .wallet-status-indicator {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--text-faint);
-      flex-shrink: 0;
-    }
-    .wallet-card[data-connected="true"] .wallet-status-indicator {
-      background: var(--success);
+    .char-count {
+      font-size: 12px;
+      color: var(--text-faint);
+      text-align: right;
+      margin-top: 2px;
     }
 
-    @media (max-width: 480px) {
-      .wallet-extension-grid { grid-template-columns: 1fr; }
-    }
-
-    /* Expandable sections */
-    .expandable-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 0;
-      cursor: pointer;
-      border-top: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 14px;
-      font-weight: 500;
-    }
-    .expandable-header:hover { color: var(--text); }
-    .expandable-content {
-      display: none;
-      padding-bottom: 16px;
-    }
-    .expandable-content.open { display: block; }
-
-    /* ========================================================================
-       SILVERSCRIPT COMPILER PANEL
-       ======================================================================== */
+    /* SilverScript Panel */
     .ss-panel {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius);
       overflow: hidden;
-      margin-top: 24px;
     }
     .ss-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 12px 16px;
-      background: var(--surface-2);
       border-bottom: 1px solid var(--border);
     }
-    .ss-title {
+    .ss-header span {
       font-family: var(--font-heading);
-      font-size: 14px;
       font-weight: 600;
+      font-size: 14px;
     }
     .ss-status {
       display: flex;
       align-items: center;
       gap: 6px;
       font-size: 12px;
+      color: var(--text-faint);
     }
-    .ss-status-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-    }
-    .ss-status-dot.ok { background: var(--success); }
-    .ss-status-dot.err { background: var(--error); }
     .ss-code {
       padding: 16px;
-      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-family: 'Space Grotesk', monospace;
       font-size: 13px;
       line-height: 1.7;
+      white-space: pre-wrap;
       overflow-x: auto;
-      white-space: pre;
+      max-height: 360px;
+      overflow-y: auto;
       counter-reset: line;
     }
     .ss-code .line {
-      display: block;
-      counter-increment: line;
+      display: flex;
+      gap: 16px;
     }
-    .ss-code .line::before {
-      content: counter(line);
-      display: inline-block;
-      width: 32px;
-      text-align: right;
-      margin-right: 16px;
+    .ss-code .line-num {
       color: var(--text-faint);
-      font-size: 11px;
+      user-select: none;
+      min-width: 28px;
+      text-align: right;
     }
-    .ss-kw { color: var(--primary); }
-    .ss-val { color: var(--text); }
-    .ss-cm { color: var(--text-faint); font-style: italic; }
+    .ss-code .kw { color: var(--primary); }
+    .ss-code .val { color: var(--text); }
+    .ss-code .cmt { color: var(--text-faint); font-style: italic; }
+    .ss-copy {
+      padding: 4px 10px;
+      font-size: 12px;
+    }
 
-    /* ========================================================================
-       BLOCKDAG VISUALIZATION
-       ======================================================================== */
-    .blockdag-container {
+    /* ================================================================
+       SECTION: KASPA
+       ================================================================ */
+    .kaspa-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 32px;
+    }
+    .kaspa-stat {
+      background: var(--surface-2);
+      padding: 16px 20px;
+      text-align: center;
+    }
+    .kaspa-stat .ks-val {
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+      transition: opacity 0.3s ease;
+    }
+    .kaspa-stat .ks-val.updating { opacity: 0.4; }
+    .kaspa-stat .ks-label {
+      font-size: 12px;
+      color: var(--text-faint);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .dag-viz {
       width: 100%;
       height: 320px;
       background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
+      border-radius: var(--radius);
       position: relative;
+      overflow: hidden;
     }
-    .blockdag-label {
+    .dag-viz canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .dag-viz .dag-label {
       position: absolute;
       bottom: 12px; right: 16px;
       font-size: 11px;
-      font-weight: 600;
+      color: var(--text-faint);
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: var(--text-faint);
     }
-    .blockdag-skeleton {
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(
-        90deg,
-        var(--surface) 25%,
-        var(--surface-2) 50%,
-        var(--surface) 75%
-      );
-      background-size: 200% 100%;
-      animation: shimmer 2s ease-in-out infinite;
+    .dag-viz .dag-error {
+      position: absolute;
+      inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 14px;
       color: var(--text-faint);
-      font-size: 13px;
-    }
-    @keyframes shimmer {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
     }
 
-    /* ========================================================================
-       ORACLE TABS
-       ======================================================================== */
+    /* Skeleton shimmer */
+    .shimmer {
+      background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ================================================================
+       SECTION: LEADERBOARD
+       ================================================================ */
+    .lb-wrap {
+      overflow-x: auto;
+    }
+    .lb-rank {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      color: var(--text);
+    }
+    .lb-rank.gold { color: var(--gold); }
+    .lb-kas {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .lb-rate { color: var(--success); font-weight: 600; }
+
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateX(-12px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .lb-anim { animation: slide-in 0.3s ease forwards; }
+
+    /* ================================================================
+       SECTION: PORTFOLIO
+       ================================================================ */
+    .port-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+    }
+    .port-wallet-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+    }
+    .port-wallet-pill .addr {
+      font-family: var(--font-heading);
+      font-size: 13px;
+      color: var(--primary);
+    }
+    .port-wallet-pill .bal {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .port-section { margin-bottom: 40px; }
+    .port-section h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .port-section h3 svg { width: 20px; height: 20px; color: var(--primary); }
+
+    .port-empty {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-faint);
+      font-size: 14px;
+    }
+    .port-connect-prompt {
+      text-align: center;
+      padding: 80px 24px;
+    }
+    .port-connect-prompt p {
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    /* ================================================================
+       SECTION: ORACLE
+       ================================================================ */
     .oracle-tabs {
       display: flex;
-      gap: 0;
-      border-bottom: 1px solid var(--border);
+      gap: 4px;
       margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
     }
     .oracle-tab {
-      padding: 12px 20px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
       background: none;
       border: none;
-      color: var(--text-faint);
-      font-family: var(--font-body);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
       border-bottom: 2px solid transparent;
-      transition: color 0.15s, border-color 0.15s;
+      cursor: pointer;
+      transition: color 0.15s ease, border-color 0.15s ease;
     }
-    .oracle-tab:hover { color: var(--text-muted); }
+    .oracle-tab:hover { color: var(--text); }
     .oracle-tab.active {
       color: var(--primary);
       border-bottom-color: var(--primary);
     }
-    .oracle-panel { display: none; }
-    .oracle-panel.active { display: block; }
 
-    /* ========================================================================
-       PORTFOLIO
-       ======================================================================== */
-    .portfolio-wallet-pill {
-      display: inline-flex;
+    .oracle-panel { display: none; }
+    .oracle-panel.show { display: block; }
+
+    .oracle-status {
+      display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 18px;
+      gap: 8px;
+      padding: 12px 16px;
       background: var(--surface-2);
       border: 1px solid var(--border);
-      border-radius: 24px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
       font-size: 14px;
-      margin-bottom: 24px;
-    }
-    .portfolio-wallet-pill .addr {
-      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-      font-size: 13px;
-      color: var(--primary);
-    }
-    .portfolio-wallet-pill .bal {
-      color: var(--text-muted);
-      font-variant-numeric: tabular-nums;
     }
 
-    /* ========================================================================
-       MISC UTILITIES
-       ======================================================================== */
-    .truncate {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    /* ================================================================
+       WALLET MODAL
+       ================================================================ */
+    .wallet-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
     }
-    .mono {
-      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    .wallet-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .wallet-card:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    .wallet-card .wc-icon {
+      width: 40px; height: 40px;
+      flex-shrink: 0;
+    }
+    .wallet-card .wc-icon svg { width: 100%; height: 100%; }
+    .wallet-card .wc-info { flex: 1; min-width: 0; }
+    .wallet-card .wc-name {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+    .wallet-card .wc-desc {
+      font-size: 12px;
+      color: var(--text-faint);
+    }
+    .wallet-card .wc-dot { flex-shrink: 0; }
+
+    .wallet-expand {
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+      margin-top: 8px;
+    }
+    .wallet-expand-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 0;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .wallet-expand-btn:hover { color: var(--text); }
+    .wallet-expand-btn svg {
+      width: 16px; height: 16px;
+      transition: transform 0.2s ease;
+    }
+    .wallet-expand-btn.open svg { transform: rotate(90deg); }
+    .wallet-expand-content {
+      display: none;
+      padding-top: 12px;
+    }
+    .wallet-expand-content.show { display: block; }
+
+    .mnemonic-warning {
+      display: flex;
+      gap: 10px;
+      padding: 12px;
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: var(--radius-sm);
       font-size: 13px;
+      color: var(--warning);
+      margin-bottom: 16px;
     }
+    .mnemonic-warning svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+
+    .mnemonic-input {
+      width: 100%;
+      min-height: 80px;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 12px;
+      font-size: 14px;
+      resize: vertical;
+      margin-bottom: 12px;
+    }
+    .mnemonic-input:focus { outline: none; border-color: var(--primary); }
+
+    .word-count-pills {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    /* ================================================================
+       MOBILE
+       ================================================================ */
+    @media (max-width: 768px) {
+      .hdr-nav { display: none; }
+      .hdr-stat { display: none; }
+      .net-badge { display: none; }
+      .hamburger { display: flex; }
+
+      .mobile-menu {
+        position: fixed;
+        top: 60px; left: 0; right: 0; bottom: 0;
+        background: var(--bg);
+        z-index: 899;
+        display: none;
+        padding: 24px;
+        overflow-y: auto;
+      }
+      .mobile-menu.open { display: block; }
+      .mobile-menu .mobile-nav-item {
+        display: block;
+        width: 100%;
+        padding: 14px 0;
+        font-size: 18px;
+        font-weight: 500;
+        color: var(--text-muted);
+        background: none;
+        border: none;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        text-align: left;
+      }
+      .mobile-menu .mobile-nav-item.active { color: var(--primary); }
+
+      .game-selector { grid-template-columns: 1fr; }
+      .create-grid { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .wallet-grid { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 480px) {
+      :root { --pad-x: 16px; }
+      .stats-row { grid-template-columns: 1fr; }
+    }
+
+    /* ================================================================
+       UTILITY
+       ================================================================ */
+    .wasm-gate { opacity: 0.5; pointer-events: none; }
+    .wasm-gate.unlocked { opacity: 1; pointer-events: auto; }
+
+    .hidden { display: none !important; }
     .text-muted { color: var(--text-muted); }
     .text-faint { color: var(--text-faint); }
     .text-primary { color: var(--primary); }
     .text-success { color: var(--success); }
     .text-error { color: var(--error); }
-    .text-gold { color: var(--gold); }
-    .text-center { text-align: center; }
-    .mt-8 { margin-top: 8px; }
+    .font-heading { font-family: var(--font-heading); }
     .mt-16 { margin-top: 16px; }
     .mt-24 { margin-top: 24px; }
-    .mt-32 { margin-top: 32px; }
     .mb-16 { margin-bottom: 16px; }
     .mb-24 { margin-bottom: 24px; }
-    .gap-16 { gap: 16px; }
+    .gap-8 { gap: 8px; }
     .flex { display: flex; }
     .flex-col { flex-direction: column; }
     .items-center { align-items: center; }
     .justify-between { justify-content: space-between; }
-    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-
-    .wasm-gate { opacity: 0.4; pointer-events: none; }
-    .wasm-gate.ready { opacity: 1; pointer-events: auto; }
-
-    /* ========================================================================
-       CHESS BOARD (base, extended by htp-board-engine.js)
-       ======================================================================== */
-    .chess-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(8,12,23,0.95);
-      z-index: 3000;
-      overflow-y: auto;
-    }
-    .chess-overlay.open { display: flex; }
-
-    /* ========================================================================
-       ANIMATIONS
-       ======================================================================== */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateX(-12px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
-    .fade-in { animation: fadeIn 0.3s ease forwards; }
-    .slide-in { animation: slideIn 0.3s ease forwards; }
   </style>
 </head>
-<body>
 
-  <!-- ====================================================================
+<body>
+  <!-- ================================================================
        HEADER
-       ==================================================================== -->
-  <header class="hdr">
+       ================================================================ -->
+  <header class="hdr" id="hdr">
     <div class="hdr-inner">
       <!-- Logo -->
       <a href="/" class="hdr-logo">
-        <svg class="hdr-logo-mark" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M18 2L32.5 10.5V27.5L18 34L3.5 27.5V10.5L18 2Z" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
-          <path d="M12 14V22M24 14V22M12 18H24" stroke="#4f98a3" stroke-width="2.5" stroke-linecap="round"/>
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="20,2 37,11 37,29 20,38 3,29 3,11"
+            stroke="#4f98a3" stroke-width="2" fill="none"/>
+          <path d="M13 14v12M27 14v12M13 20h14"
+            stroke="#4f98a3" stroke-width="2.5" stroke-linecap="round"/>
         </svg>
-        <span class="hdr-logo-text">HTP</span>
+        <span>HTP</span>
       </a>
 
-      <!-- Desktop Navigation -->
-      <nav id="nav" class="hdr-nav">
-        <button class="nav-btn act" data-tab="overview" data-section="overview">Overview</button>
-        <button class="nav-btn" data-tab="skill" data-section="skill">Skill Games</button>
-        <button class="nav-btn" data-tab="markets" data-section="markets">Predictions</button>
-        <button class="nav-btn" data-tab="kaspa" data-section="kaspa">Kaspa</button>
-        <button class="nav-btn" data-tab="leaderboard" data-section="leaderboard">Leaderboard</button>
-        <button class="nav-btn" data-tab="portfolio" data-section="portfolio">Portfolio</button>
+      <!-- Desktop Nav -->
+      <nav class="hdr-nav" id="nav">
+        <button class="nav-btn active" onclick="showView('overview')">Overview</button>
+        <button class="nav-btn" onclick="showView('skill')">Skill Games</button>
+        <button class="nav-btn" onclick="showView('markets')">Predictions</button>
+        <button class="nav-btn" onclick="showView('kaspa')">Kaspa</button>
+        <button class="nav-btn" onclick="showView('leaderboard')">Leaderboard</button>
+        <button class="nav-btn" onclick="showView('portfolio')">Portfolio</button>
       </nav>
 
-      <!-- Right section -->
+      <!-- Hamburger (mobile) -->
+      <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+
+      <!-- Right: stats + wallet -->
       <div class="hdr-r">
-        <div class="block-height">
-          <div class="pulse-dot"></div>
-          <span id="htpBlockHeight">--</span>
+        <div class="hdr-stat" id="blockHeightStat">
+          <span class="dot dot-green dot-pulse"></span>
+          <span class="val" id="liveBlockHeight">--</span>
         </div>
-        <span class="net-badge" id="htpConnBadge">TN12</span>
-        <button class="wallet-btn" id="htp-connect-wallet-btn" data-action="connect-wallet">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <rect x="2" y="6" width="20" height="14" rx="2"/><path d="M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
-          </svg>
-          <span id="htp-wallet-status">Connect</span>
-        </button>
-        <button class="hamburger" id="hamburger" aria-label="Menu">
-          <span></span><span></span><span></span>
-        </button>
+        <span class="net-badge" id="netBadge">TN12</span>
+        <button id="connectWalletBtn" data-action="connect-wallet">Connect</button>
       </div>
     </div>
   </header>
 
-  <!-- Mobile drawer -->
-  <div class="mobile-drawer" id="mobileDrawer">
-    <button class="nav-btn" data-tab="overview">Overview</button>
-    <button class="nav-btn" data-tab="skill">Skill Games</button>
-    <button class="nav-btn" data-tab="markets">Predictions</button>
-    <button class="nav-btn" data-tab="kaspa">Kaspa</button>
-    <button class="nav-btn" data-tab="leaderboard">Leaderboard</button>
-    <button class="nav-btn" data-tab="portfolio">Portfolio</button>
-    <button class="nav-btn" data-tab="wallet">Wallet</button>
+  <!-- Mobile Menu Drawer -->
+  <div class="mobile-menu" id="mobileMenu">
+    <button class="mobile-nav-item active" onclick="showView('overview');closeMobileMenu()">Overview</button>
+    <button class="mobile-nav-item" onclick="showView('skill');closeMobileMenu()">Skill Games</button>
+    <button class="mobile-nav-item" onclick="showView('markets');closeMobileMenu()">Predictions</button>
+    <button class="mobile-nav-item" onclick="showView('kaspa');closeMobileMenu()">Kaspa</button>
+    <button class="mobile-nav-item" onclick="showView('leaderboard');closeMobileMenu()">Leaderboard</button>
+    <button class="mobile-nav-item" onclick="showView('portfolio');closeMobileMenu()">Portfolio</button>
   </div>
 
-  <!-- ====================================================================
-       WALLET MODAL
-       ==================================================================== -->
-  <div class="wallet-modal-overlay" id="walletModal">
-    <div class="wallet-modal">
-      <div class="wallet-modal-header">
-        <h3 class="wallet-modal-title">Connect Wallet</h3>
-        <button class="wallet-modal-close" id="walletModalClose">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
+  <!-- ================================================================
+       MAIN APP
+       ================================================================ -->
+  <div id="app">
 
-      <!-- Connected status (hidden by default) -->
-      <div id="wallet-connected-status" style="display:none; margin-bottom: 20px;">
-        <div class="card card-compact" style="border-color: var(--success);">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="text-muted" style="font-size:12px;">Connected</div>
-              <div class="mono text-primary" id="connected-address">--</div>
-            </div>
-            <div class="text-primary mono" id="connected-balance">-- KAS</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Wallet extension grid -->
-      <div class="wallet-extension-grid">
-        <div class="wallet-card" data-wallet="KasWare">
-          <div class="wallet-card-logo">
-            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="40" height="40" rx="10" fill="#1a3a2a"/>
-              <path d="M10 20L20 10L30 20L20 30Z" stroke="#49eacb" stroke-width="2" fill="none"/>
-              <circle cx="20" cy="20" r="4" fill="#49eacb"/>
-            </svg>
-          </div>
-          <div class="wallet-card-info">
-            <div class="wallet-card-name">KasWare</div>
-            <div class="wallet-card-desc">Browser extension</div>
-          </div>
-          <div class="wallet-status-indicator"></div>
-        </div>
-
-        <div class="wallet-card" data-wallet="Kastle">
-          <div class="wallet-card-logo">
-            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="40" height="40" rx="10" fill="#1a1a2e"/>
-              <rect x="12" y="18" width="16" height="12" stroke="#49eacb" stroke-width="2" fill="none"/>
-              <path d="M10 18L20 10L30 18" stroke="#49eacb" stroke-width="2" fill="none"/>
-              <rect x="17" y="22" width="6" height="8" fill="#49eacb" opacity="0.6"/>
-            </svg>
-          </div>
-          <div class="wallet-card-info">
-            <div class="wallet-card-name">Kastle</div>
-            <div class="wallet-card-desc">Browser extension</div>
-          </div>
-          <div class="wallet-status-indicator"></div>
-        </div>
-
-        <div class="wallet-card" data-wallet="Kasanova">
-          <div class="wallet-card-logo">
-            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="40" height="40" rx="10" fill="#1e1a30"/>
-              <path d="M12 28L20 12L28 28" stroke="#49eacb" stroke-width="2" fill="none"/>
-              <path d="M15 22H25" stroke="#49eacb" stroke-width="2"/>
-            </svg>
-          </div>
-          <div class="wallet-card-info">
-            <div class="wallet-card-name">Kasanova</div>
-            <div class="wallet-card-desc">Browser extension</div>
-          </div>
-          <div class="wallet-status-indicator"></div>
-        </div>
-
-        <div class="wallet-card" data-wallet="Kaspium">
-          <div class="wallet-card-logo">
-            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="40" height="40" rx="10" fill="#0d1f1a"/>
-              <circle cx="20" cy="20" r="10" stroke="#49eacb" stroke-width="2" fill="none"/>
-              <path d="M15 20L18 17L21 20L25 15" stroke="#49eacb" stroke-width="2" fill="none"/>
-            </svg>
-          </div>
-          <div class="wallet-card-info">
-            <div class="wallet-card-name">Kaspium</div>
-            <div class="wallet-card-desc">Mobile wallet</div>
-          </div>
-          <div class="wallet-status-indicator"></div>
-        </div>
-
-        <div class="wallet-card" data-wallet="KaspaCom">
-          <div class="wallet-card-logo">
-            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="40" height="40" rx="10" fill="#0f1f18"/>
-              <path d="M10 15H30M10 20H25M10 25H20" stroke="#49eacb" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div class="wallet-card-info">
-            <div class="wallet-card-name">KaspaCom</div>
-            <div class="wallet-card-desc">Web wallet</div>
-          </div>
-          <div class="wallet-status-indicator"></div>
-        </div>
-
-        <div class="wallet-card" data-wallet="DEXcc">
-          <div class="wallet-card-logo">
-            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="40" height="40" rx="10" fill="#1a1a1a"/>
-              <circle cx="14" cy="20" r="5" stroke="#49eacb" stroke-width="2" fill="none"/>
-              <circle cx="26" cy="20" r="5" stroke="#49eacb" stroke-width="2" fill="none"/>
-              <path d="M19 20H21" stroke="#49eacb" stroke-width="2"/>
-            </svg>
-          </div>
-          <div class="wallet-card-info">
-            <div class="wallet-card-name">DEX.cc</div>
-            <div class="wallet-card-desc">DEX wallet</div>
-          </div>
-          <div class="wallet-status-indicator"></div>
-        </div>
-      </div>
-
-      <!-- Manual address -->
-      <div class="expandable-header" id="manualAddrToggle">
-        <span>Enter address manually</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-      </div>
-      <div class="expandable-content" id="manualAddrPanel">
-        <div class="field">
-          <label class="label" for="manual-address-input">Kaspa Address</label>
-          <input class="input mono" id="manual-address-input" type="text" placeholder="kaspa:qr..." spellcheck="false">
-        </div>
-        <button class="btn-primary full-width" id="manualAddrConnect">Connect</button>
-      </div>
-
-      <!-- Mnemonic import -->
-      <div class="expandable-header" id="mnemonicToggle">
-        <span>Import from mnemonic</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="mnemonic-toggle-arrow"><path d="M6 9l6 6 6-6"/></svg>
-      </div>
-      <div class="expandable-content" id="mnemonic-import-panel">
-        <div class="card card-compact" style="background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); margin-bottom: 16px;">
-          <p style="font-size:13px; color: var(--error);">Mnemonic import is for testing only. Use a browser extension wallet for real funds.</p>
-        </div>
-        <div class="field">
-          <div class="flex items-center justify-between mb-16" style="flex-wrap:wrap;">
-            <label class="label" style="margin:0;">Seed phrase</label>
-            <div class="pill-row" style="margin:0;">
-              <button class="pill selected" data-words="12">12 words</button>
-              <button class="pill" data-words="24">24 words</button>
-            </div>
-          </div>
-          <textarea class="textarea mono" id="mnemonic-input" rows="3" placeholder="Enter your 12 or 24 word seed phrase" spellcheck="false"></textarea>
-          <div id="mnemonic-status" class="mt-8 text-muted" style="font-size:12px;"></div>
-        </div>
-        <div class="field">
-          <label class="label">Network</label>
-          <div class="pill-row">
-            <button class="pill selected" id="network-tn12">TN12 (Testnet)</button>
-            <button class="pill" id="network-mainnet">Mainnet</button>
-          </div>
-        </div>
-        <button class="btn-primary full-width" id="mnemonicConnect">Derive and Connect</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ====================================================================
-       CHESS OVERLAY (rendered by htp-board-engine.js / htp-chess-ui.js)
-       ==================================================================== -->
-  <div class="chess-overlay" id="chessOverlay"></div>
-
-  <!-- ====================================================================
-       MAIN CONTENT
-       ==================================================================== -->
-  <main>
-
-    <!-- ================================================================
-         SECTION: OVERVIEW
-         ================================================================ -->
+    <!-- ============================================================
+         OVERVIEW
+         ============================================================ -->
     <section id="v-overview" class="view show">
-      <div class="container section-pad">
-        <!-- Hero -->
-        <div style="max-width: 720px; margin-bottom: 48px;">
-          <h1>Trustless Competition on Kaspa</h1>
-          <p class="mt-16 text-muted" style="font-size: 17px; line-height: 1.7;">
-            High Table Protocol enables peer-to-peer skill games and prediction markets
-            with on-chain escrow, oracle resolution, and instant settlement on the
-            Kaspa BlockDAG network.
-          </p>
-          <div class="flex gap-16 mt-24" style="flex-wrap: wrap;">
-            <button class="btn-primary" data-action="nav" data-target="skill">Create a Match</button>
-            <button class="btn-secondary" data-action="nav" data-target="markets">Browse Predictions</button>
+      <div class="mx sec-pad">
+        <div class="hero">
+          <h1>Trustless Wagering on <span class="teal">Kaspa</span></h1>
+          <p>Skill-based games and prediction markets secured by P2SH escrow on the Kaspa BlockDAG. No custodian, no counterparty risk: your keys, your funds.</p>
+          <div class="hero-actions">
+            <button class="btn btn-primary" onclick="showView('skill')">Create Match</button>
+            <button class="btn btn-secondary" onclick="showView('markets')">Browse Markets</button>
           </div>
         </div>
 
-        <!-- Stats -->
-        <div class="stats-row">
-          <div class="stat-card">
-            <div class="stat-value" id="statTotalMatches">--</div>
+        <div class="stats-row" id="overviewStats">
+          <div class="card stat-card">
+            <div class="stat-val" id="statMatches">0</div>
             <div class="stat-label">Total Matches</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-value" id="statTotalKAS">--</div>
+          <div class="card stat-card">
+            <div class="stat-val" id="statKAS">0 KAS</div>
             <div class="stat-label">Total KAS Wagered</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-value" id="statActiveMarkets">--</div>
+          <div class="card stat-card">
+            <div class="stat-val" id="statMarkets">0</div>
             <div class="stat-label">Active Markets</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-value" id="statBlockRate">--</div>
-            <div class="stat-label">Block Rate (bps)</div>
+          <div class="card stat-card">
+            <div class="stat-val" id="statPlayers">0</div>
+            <div class="stat-label">Active Players</div>
           </div>
         </div>
 
-        <!-- Mini BlockDAG widget -->
-        <div class="blockdag-container" style="height: 200px; margin-top: 32px;" id="overviewBlockdag">
-          <div class="blockdag-skeleton">Connecting to Kaspa network...</div>
-          <div class="blockdag-label">KASPA BLOCKDAG</div>
+        <div class="overview-dag" id="overviewDag">
+          <canvas id="overviewDagCanvas"></canvas>
+          <div class="dag-label">KASPA BLOCKDAG</div>
+        </div>
+
+        <div class="sh">
+          <h2>Quick Links</h2>
+        </div>
+        <div class="stats-row">
+          <div class="card" style="cursor:pointer" onclick="showView('skill')">
+            <h3 style="font-size:16px; margin-bottom:6px">Skill Games</h3>
+            <p class="text-muted" style="font-size:13px">Challenge opponents in chess, connect 4, or checkers with KAS on the line.</p>
+          </div>
+          <div class="card" style="cursor:pointer" onclick="showView('markets')">
+            <h3 style="font-size:16px; margin-bottom:6px">Prediction Markets</h3>
+            <p class="text-muted" style="font-size:13px">Create and trade on event outcomes with trustless oracle resolution.</p>
+          </div>
+          <div class="card" style="cursor:pointer" onclick="showView('kaspa')">
+            <h3 style="font-size:16px; margin-bottom:6px">Live BlockDAG</h3>
+            <p class="text-muted" style="font-size:13px">Visualize the Kaspa network in real time: blocks, parents, and DAG structure.</p>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ================================================================
-         SECTION: SKILL GAMES
-         ================================================================ -->
+    <!-- ============================================================
+         SKILL GAMES
+         ============================================================ -->
     <section id="v-skill" class="view">
-      <div class="container section-pad">
-        <h2>Skill Games</h2>
-        <p class="text-muted mt-8 mb-24">Create or join a peer-to-peer match with on-chain escrow.</p>
+      <div class="mx sec-pad">
+        <div class="sh">
+          <h2>Create Match</h2>
+          <p>Choose a game, set your escrow, and challenge an opponent. Winner takes all.</p>
+        </div>
 
-        <!-- Match Creation Form -->
-        <div class="card" id="matchCreationForm">
-          <h3 class="mb-24">Create Match</h3>
-
-          <!-- Game Selector -->
-          <div class="field">
-            <label class="label">Select Game</label>
-            <div class="game-grid" id="gameSelector">
-              <!-- Chess -->
-              <div class="game-card selected" data-game="chess">
-                <div class="game-card-icon">
-                  <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="8" y="8" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="#1d2840"/>
-                    <rect x="20" y="8" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
-                    <rect x="32" y="8" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="#1d2840"/>
-                    <rect x="44" y="8" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
-                    <rect x="8" y="20" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
-                    <rect x="20" y="20" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="#1d2840"/>
-                    <rect x="32" y="20" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
-                    <rect x="44" y="20" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="#1d2840"/>
-                    <path d="M28 42V36C28 34 30 32 32 30L36 26C37 25 36 23 34 23H30L29 20H35C38 20 40 22 40 25L36 30C35 31 34 33 34 35V42H28Z" fill="#4f98a3" opacity="0.8"/>
-                    <rect x="24" y="42" width="16" height="3" rx="1.5" fill="#4f98a3"/>
-                  </svg>
-                </div>
-                <div class="game-card-name">Chess</div>
-              </div>
-
-              <!-- Connect 4 -->
-              <div class="game-card" data-game="connect4">
-                <div class="game-card-icon">
-                  <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="8" y="12" width="48" height="40" rx="4" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
-                    <circle cx="20" cy="24" r="5" fill="none" stroke="#4f98a3" stroke-width="1.5"/>
-                    <circle cx="32" cy="24" r="5" fill="none" stroke="#4f98a3" stroke-width="1.5"/>
-                    <circle cx="44" cy="24" r="5" fill="none" stroke="#4f98a3" stroke-width="1.5"/>
-                    <circle cx="20" cy="40" r="5" fill="#4f98a3" opacity="0.6"/>
-                    <circle cx="32" cy="40" r="5" fill="#e84040" opacity="0.6"/>
-                    <circle cx="44" cy="40" r="5" fill="#4f98a3" opacity="0.6"/>
-                    <circle cx="20" cy="32" r="5" fill="#e84040" opacity="0.6"/>
-                    <circle cx="32" cy="32" r="5" fill="#4f98a3" opacity="0.6"/>
-                  </svg>
-                </div>
-                <div class="game-card-name">Connect 4</div>
-              </div>
-
-              <!-- Checkers -->
-              <div class="game-card" data-game="checkers">
-                <div class="game-card-icon">
-                  <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="8" y="8" width="12" height="12" fill="#1d2840"/>
-                    <rect x="20" y="8" width="12" height="12" fill="#0f1623"/>
-                    <rect x="32" y="8" width="12" height="12" fill="#1d2840"/>
-                    <rect x="44" y="8" width="12" height="12" fill="#0f1623"/>
-                    <rect x="8" y="20" width="12" height="12" fill="#0f1623"/>
-                    <rect x="20" y="20" width="12" height="12" fill="#1d2840"/>
-                    <rect x="32" y="20" width="12" height="12" fill="#0f1623"/>
-                    <rect x="44" y="20" width="12" height="12" fill="#1d2840"/>
-                    <rect x="8" y="32" width="12" height="12" fill="#1d2840"/>
-                    <rect x="20" y="32" width="12" height="12" fill="#0f1623"/>
-                    <rect x="32" y="32" width="12" height="12" fill="#1d2840"/>
-                    <rect x="44" y="32" width="12" height="12" fill="#0f1623"/>
-                    <rect x="8" y="44" width="12" height="12" fill="#0f1623"/>
-                    <rect x="20" y="44" width="12" height="12" fill="#1d2840"/>
-                    <rect x="32" y="44" width="12" height="12" fill="#0f1623"/>
-                    <rect x="44" y="44" width="12" height="12" fill="#1d2840"/>
-                    <circle cx="14" cy="14" r="4" fill="#4f98a3"/>
-                    <circle cx="38" cy="14" r="4" fill="#4f98a3"/>
-                    <circle cx="26" cy="50" r="4" fill="#e84040"/>
-                    <circle cx="50" cy="50" r="4" fill="#e84040"/>
-                  </svg>
-                </div>
-                <div class="game-card-name">Checkers</div>
-              </div>
+        <!-- Game Selector -->
+        <div class="game-selector" id="gameSelector">
+          <div class="game-card selected" data-game="chess" onclick="selectGame(this)">
+            <div class="game-icon">
+              <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="8" y="8" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
+                <rect x="20" y="8" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="#1d2840"/>
+                <rect x="32" y="8" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
+                <rect x="44" y="8" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="#1d2840"/>
+                <rect x="8" y="20" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="#1d2840"/>
+                <rect x="20" y="20" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
+                <rect x="32" y="20" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="#1d2840"/>
+                <rect x="44" y="20" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
+                <rect x="8" y="32" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
+                <rect x="20" y="32" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="#1d2840"/>
+                <rect x="32" y="32" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
+                <rect x="44" y="32" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="#1d2840"/>
+                <rect x="8" y="44" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="#1d2840"/>
+                <rect x="20" y="44" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
+                <rect x="32" y="44" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="#1d2840"/>
+                <rect x="44" y="44" width="12" height="12" rx="1" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
+                <!-- Knight silhouette -->
+                <path d="M26 42V30l-4 4 2-10h6l4 6-2 4h4v8z" fill="#4f98a3" opacity="0.7"/>
+              </svg>
             </div>
+            <div class="game-name">Chess</div>
           </div>
 
-          <!-- Escrow Input -->
-          <div class="field">
-            <label class="label">Escrow Amount</label>
-            <div style="position:relative;">
-              <input class="input" id="escrowAmount" type="number" placeholder="0" min="1" step="0.1"
-                     style="font-family: var(--font-heading); font-size: 24px; padding-right: 60px;">
-              <span style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-weight:600; font-size:14px;">KAS</span>
+          <div class="game-card" data-game="connect4" onclick="selectGame(this)">
+            <div class="game-icon">
+              <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="8" y="8" width="48" height="48" rx="4" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
+                <circle cx="20" cy="20" r="5" fill="none" stroke="#4f98a3" stroke-width="1.5"/>
+                <circle cx="32" cy="20" r="5" fill="#4f98a3" opacity="0.5"/>
+                <circle cx="44" cy="20" r="5" fill="none" stroke="#4f98a3" stroke-width="1.5"/>
+                <circle cx="20" cy="32" r="5" fill="#e84040" opacity="0.5"/>
+                <circle cx="32" cy="32" r="5" fill="#4f98a3" opacity="0.5"/>
+                <circle cx="44" cy="32" r="5" fill="#e84040" opacity="0.5"/>
+                <circle cx="20" cy="44" r="5" fill="#4f98a3" opacity="0.5"/>
+                <circle cx="32" cy="44" r="5" fill="#e84040" opacity="0.5"/>
+                <circle cx="44" cy="44" r="5" fill="#4f98a3" opacity="0.5"/>
+              </svg>
             </div>
-            <div class="flex items-center justify-between mt-8">
-              <div class="pill-row">
-                <button class="pill" data-amount="5">5</button>
-                <button class="pill" data-amount="10">10</button>
-                <button class="pill" data-amount="25">25</button>
-                <button class="pill" data-amount="50">50</button>
-                <button class="pill" data-amount="100">100</button>
-              </div>
-              <span class="text-muted" style="font-size:12px;" id="escrowUSD"></span>
-            </div>
+            <div class="game-name">Connect 4</div>
           </div>
 
-          <!-- Time Control -->
-          <div class="field">
-            <label class="label">Time Control</label>
-            <select class="select" id="timeControl">
+          <div class="game-card" data-game="checkers" onclick="selectGame(this)">
+            <div class="game-icon">
+              <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="8" y="8" width="12" height="12" fill="#1d2840"/>
+                <rect x="20" y="8" width="12" height="12" fill="#243050"/>
+                <rect x="32" y="8" width="12" height="12" fill="#1d2840"/>
+                <rect x="44" y="8" width="12" height="12" fill="#243050"/>
+                <rect x="8" y="20" width="12" height="12" fill="#243050"/>
+                <rect x="20" y="20" width="12" height="12" fill="#1d2840"/>
+                <rect x="32" y="20" width="12" height="12" fill="#243050"/>
+                <rect x="44" y="20" width="12" height="12" fill="#1d2840"/>
+                <rect x="8" y="32" width="12" height="12" fill="#1d2840"/>
+                <rect x="20" y="32" width="12" height="12" fill="#243050"/>
+                <rect x="32" y="32" width="12" height="12" fill="#1d2840"/>
+                <rect x="44" y="32" width="12" height="12" fill="#243050"/>
+                <rect x="8" y="44" width="12" height="12" fill="#243050"/>
+                <rect x="20" y="44" width="12" height="12" fill="#1d2840"/>
+                <rect x="32" y="44" width="12" height="12" fill="#243050"/>
+                <rect x="44" y="44" width="12" height="12" fill="#1d2840"/>
+                <!-- Pieces -->
+                <circle cx="26" cy="14" r="4" fill="#4f98a3"/>
+                <circle cx="50" cy="14" r="4" fill="#4f98a3"/>
+                <circle cx="14" cy="50" r="4" fill="#e84040"/>
+                <circle cx="38" cy="50" r="4" fill="#e84040"/>
+              </svg>
+            </div>
+            <div class="game-name">Checkers</div>
+          </div>
+        </div>
+
+        <!-- Escrow Input -->
+        <div class="escrow-field">
+          <label style="font-size:13px; font-weight:500; color:var(--text-muted); display:block; margin-bottom:8px">Escrow Amount</label>
+          <div class="escrow-input-wrap">
+            <input type="number" id="escrowAmount" placeholder="0" min="1" step="any">
+            <span class="kas-suffix">KAS</span>
+          </div>
+          <div class="escrow-usd" id="escrowUSD"></div>
+          <div class="quick-pills">
+            <button class="pill" onclick="setEscrow(5)">5 KAS</button>
+            <button class="pill" onclick="setEscrow(10)">10 KAS</button>
+            <button class="pill" onclick="setEscrow(25)">25 KAS</button>
+            <button class="pill" onclick="setEscrow(50)">50 KAS</button>
+            <button class="pill" onclick="setEscrow(100)">100 KAS</button>
+          </div>
+        </div>
+
+        <!-- Time Control + Series -->
+        <div class="form-grid">
+          <div class="input-group">
+            <label>Time Control</label>
+            <select class="select" id="timeControl" onchange="handleTimeControl()">
               <option value="1|0">Bullet - 1 min</option>
               <option value="3|0" selected>Blitz - 3 min</option>
               <option value="5|0">Blitz - 5 min</option>
               <option value="10|0">Rapid - 10 min</option>
-              <option value="5|3">5+3 (increment)</option>
-              <option value="10|5">10+5 (increment)</option>
+              <option value="5|3">5 + 3</option>
+              <option value="10|5">10 + 5</option>
               <option value="30|0">Classical - 30 min</option>
               <option value="custom">Custom</option>
             </select>
-            <div id="customTimeFields" style="display:none;" class="grid-2 mt-8">
-              <div>
-                <label class="label">Minutes</label>
-                <input class="input" id="customMinutes" type="number" min="1" max="180" value="10">
+            <div class="time-custom" id="timeCustom">
+              <div class="input-group">
+                <label>Minutes</label>
+                <input type="number" class="input" id="customMinutes" placeholder="10" min="1" max="180">
               </div>
-              <div>
-                <label class="label">Increment (sec)</label>
-                <input class="input" id="customIncrement" type="number" min="0" max="60" value="0">
+              <div class="input-group">
+                <label>Increment (sec)</label>
+                <input type="number" class="input" id="customIncrement" placeholder="0" min="0" max="60">
               </div>
             </div>
           </div>
 
-          <!-- Series -->
-          <div class="field">
-            <label class="label">Series</label>
-            <div class="pill-row" id="seriesSelector">
-              <button class="pill selected" data-bestof="1">Single Game</button>
-              <button class="pill" data-bestof="3">Best of 3</button>
-              <button class="pill" data-bestof="5">Best of 5</button>
+          <div class="input-group">
+            <label>Series</label>
+            <div class="series-pills" id="seriesSelector">
+              <button class="pill active" data-best-of="1" onclick="selectSeries(this)">Single Game</button>
+              <button class="pill" data-best-of="3" onclick="selectSeries(this)">Best of 3</button>
+              <button class="pill" data-best-of="5" onclick="selectSeries(this)">Best of 5</button>
             </div>
           </div>
-
-          <!-- Opponent -->
-          <div class="field">
-            <label class="label">Opponent Address (optional)</label>
-            <input class="input mono" id="opponentAddress" type="text" placeholder="kaspa:qr... (leave empty for open challenge)" spellcheck="false">
-          </div>
-
-          <!-- Submit -->
-          <button class="btn-primary full-width mt-16 wasm-gate" id="createMatchBtn">Create Match and Lock Escrow</button>
         </div>
+
+        <!-- Opponent -->
+        <div class="input-group mb-24">
+          <label>Opponent Address (optional - leave blank for open challenge)</label>
+          <input type="text" class="input" id="opponentAddress" placeholder="kaspatest:qr...">
+        </div>
+
+        <!-- Submit -->
+        <button class="btn btn-primary btn-full wasm-gate" id="createMatchBtn" style="padding:16px; font-size:16px">
+          Create Match and Lock Escrow
+        </button>
 
         <!-- Match Lifecycle Stepper -->
-        <div class="mt-32">
-          <h3 class="mb-24">Match Lifecycle</h3>
-          <div class="stepper">
-            <!-- Step 1: Create -->
-            <div class="step active">
-              <div class="step-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#4f98a3" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
-              </div>
-              <div class="step-title">Create</div>
-              <div class="step-desc">Lock KAS in P2SH escrow contract. Generates invite link for opponent.</div>
-              <div class="step-detail">P2SH address derived from match parameters. UTXO locked with 2-of-2 multisig until oracle resolution.</div>
+        <div class="stepper" id="matchStepper">
+          <div class="step completed">
+            <div class="step-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
             </div>
-            <!-- Step 2: Accept -->
-            <div class="step">
-              <div class="step-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            <div class="step-body">
+              <h4>Create</h4>
+              <p>Player A creates a match, selects game type and escrow amount. A P2SH address is generated client-side and the escrow TX is broadcast to the Kaspa network.</p>
+              <button class="btn btn-secondary" style="font-size:12px; padding:4px 10px; margin-top:8px" onclick="toggleDetail(this)">Details</button>
+              <div class="step-detail">
+                P2SH script: OP_IF [player_a_pubkey] OP_CHECKSIG OP_ELSE [timeout] OP_CHECKLOCKTIMEVERIFY OP_DROP [player_b_pubkey] OP_CHECKSIG OP_ENDIF. Escrow UTXO is locked to this script. Firebase doc stores match metadata, escrow txid, and P2SH address.
               </div>
-              <div class="step-title">Accept</div>
-              <div class="step-desc">Opponent matches escrow. Both funds locked in contract.</div>
-              <div class="step-detail">Second UTXO added to escrow. Total pot = 2x escrow minus protocol fee.</div>
             </div>
-            <!-- Step 3: Play -->
-            <div class="step">
-              <div class="step-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21"/></svg>
-              </div>
-              <div class="step-title">Play</div>
-              <div class="step-desc">Game begins. Moves synced in real-time via Firebase. Clocks enforced.</div>
-              <div class="step-detail">Move validation on client and server. Clock managed by htp-chess-sync with Firebase serverTimestamp.</div>
+          </div>
+
+          <div class="step active">
+            <div class="step-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M22 21v-2a4 4 0 00-3-3.87"/>
+                <path d="M16 3.13a4 4 0 010 7.75"/>
+              </svg>
             </div>
-            <!-- Step 4: Resolve -->
-            <div class="step">
-              <div class="step-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            <div class="step-body">
+              <h4>Accept</h4>
+              <p>Player B joins by matching the escrow amount. Both deposits are now locked in the P2SH address until the game resolves.</p>
+              <button class="btn btn-secondary" style="font-size:12px; padding:4px 10px; margin-top:8px" onclick="toggleDetail(this)">Details</button>
+              <div class="step-detail">
+                Player B sends their escrow to the same P2SH address. Firebase match doc is updated with player B's address and the acceptance txid. Game clock starts upon acceptance confirmation (1 block).
               </div>
-              <div class="step-title">Resolve</div>
-              <div class="step-desc">Oracle verifies result. ZK proof submitted or bonded oracle attests.</div>
-              <div class="step-detail">Oracle daemon monitors match completion. Generates attestation or ZK proof for on-chain verification.</div>
             </div>
-            <!-- Step 5: Settle -->
-            <div class="step">
-              <div class="step-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          </div>
+
+          <div class="step future">
+            <div class="step-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/>
+              </svg>
+            </div>
+            <div class="step-body">
+              <h4>Play</h4>
+              <p>Players compete in real-time. All moves are synced via Firebase Realtime Database and validated on both clients.</p>
+              <button class="btn btn-secondary" style="font-size:12px; padding:4px 10px; margin-top:8px" onclick="toggleDetail(this)">Details</button>
+              <div class="step-detail">
+                Game state is stored at /matches/{id}/board in Firebase RTDB. Each move is validated by chess.js (or equivalent engine) on both clients. Time controls are enforced client-side with Firebase server timestamps for sync. Disconnect detection: 30s grace period, then forfeit.
               </div>
-              <div class="step-title">Settle</div>
-              <div class="step-desc">Winner receives pot. Transaction broadcast to Kaspa network.</div>
-              <div class="step-detail">Auto-payout engine constructs settlement TX. Winner receives (2x escrow - fee). Loser escrow released to winner address.</div>
+            </div>
+          </div>
+
+          <div class="step future">
+            <div class="step-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <div class="step-body">
+              <h4>Resolve</h4>
+              <p>The oracle attests to the game result. The signed attestation is published to Firebase and can be independently verified.</p>
+              <button class="btn btn-secondary" style="font-size:12px; padding:4px 10px; margin-top:8px" onclick="toggleDetail(this)">Details</button>
+              <div class="step-detail">
+                Oracle signs: SHA256(matchId + winner + finalState). The attestation uses a Schnorr signature (secp256k1). For ZK path: a Groth16 proof is generated off-chain and verified on-chain via KIP-16. Settlement is possible with either oracle attestation or ZK proof.
+              </div>
+            </div>
+          </div>
+
+          <div class="step future">
+            <div class="step-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+              </svg>
+            </div>
+            <div class="step-body">
+              <h4>Settle</h4>
+              <p>The winner's browser constructs and broadcasts the settlement TX, sending the escrowed funds (minus protocol fee) to the winner's address.</p>
+              <button class="btn btn-secondary" style="font-size:12px; padding:4px 10px; margin-top:8px" onclick="toggleDetail(this)">Details</button>
+              <div class="step-detail">
+                Settlement TX spends the P2SH UTXO using the oracle's signature as the witness. Protocol fee (2%) is sent to the HTP fee address. Remaining funds go to the winner. TX is broadcast via the connected wRPC node. Confirmation is tracked and displayed in the match history.
+              </div>
             </div>
           </div>
         </div>
 
+        <!-- Game Board Containers (rendered when match is active) -->
+        <div class="board-wrap" id="chessBoardWrap">
+          <div class="chess-clocks">
+            <div class="chess-clock" id="clockWhite">5:00</div>
+            <div class="chess-clock" id="clockBlack">5:00</div>
+          </div>
+          <div class="chess-board" id="chessBoard"></div>
+          <div class="board-controls">
+            <button class="btn btn-secondary" id="offerDrawBtn">Offer Draw</button>
+            <button class="btn btn-secondary" id="resignBtn" style="border-color:var(--error);color:var(--error)">Resign</button>
+          </div>
+        </div>
+
+        <div class="board-wrap" id="c4BoardWrap">
+          <div class="c4-board" id="c4Board"></div>
+        </div>
+
+        <div class="board-wrap" id="checkersBoardWrap">
+          <div class="checkers-board" id="checkersBoard"></div>
+        </div>
       </div>
     </section>
 
-    <!-- ================================================================
-         SECTION: PREDICTIONS (maps to v-markets for htp-nav-v4.js)
-         ================================================================ -->
+    <!-- ============================================================
+         PREDICTIONS (Markets / Create)
+         ============================================================ -->
     <section id="v-markets" class="view">
-      <div class="container section-pad">
-        <h2>Prediction Markets</h2>
-        <p class="text-muted mt-8 mb-24">Create and trade on event outcomes with SilverScript smart contracts.</p>
-
-        <!-- Event Creation Form -->
-        <div class="card" id="eventCreationForm">
-          <h3 class="mb-24">Create Event</h3>
-
-          <div class="field">
-            <label class="label" for="htp-ev-title">Event Title</label>
-            <input class="input" id="htp-ev-title" type="text" maxlength="120" placeholder="What will happen?">
-            <div class="text-faint mt-8" style="font-size:11px; text-align:right;"><span id="titleCharCount">0</span>/120</div>
-          </div>
-
-          <div class="field">
-            <label class="label" for="htp-ev-desc">Description</label>
-            <textarea class="textarea" id="htp-ev-desc" maxlength="1000" rows="3" placeholder="Provide context and resolution criteria"></textarea>
-          </div>
-
-          <div class="grid-2">
-            <div class="field">
-              <label class="label" for="htp-ev-category">Category</label>
-              <select class="select" id="htp-ev-category">
-                <option value="crypto">Crypto</option>
-                <option value="sports">Sports</option>
-                <option value="politics">Politics</option>
-                <option value="tech">Technology</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div class="field">
-              <label class="label" for="htp-ev-date">Resolution Date</label>
-              <input class="input" id="htp-ev-date" type="datetime-local">
-            </div>
-          </div>
-
-          <div class="field">
-            <label class="label" for="htp-ev-source">Resolution Source URL</label>
-            <input class="input" id="htp-ev-source" type="url" placeholder="https://...">
-          </div>
-
-          <!-- Outcomes -->
-          <div class="field">
-            <label class="label">Outcomes</label>
-            <div id="htp-outcomes-list">
-              <div class="flex items-center gap-16 mb-16" data-outcome="0">
-                <input class="input" type="text" value="Yes" placeholder="Outcome">
-                <button class="btn-secondary" style="padding:8px 12px; flex-shrink:0; color:var(--error);" data-remove-outcome>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-              </div>
-              <div class="flex items-center gap-16 mb-16" data-outcome="1">
-                <input class="input" type="text" value="No" placeholder="Outcome">
-                <button class="btn-secondary" style="padding:8px 12px; flex-shrink:0; color:var(--error);" data-remove-outcome>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-              </div>
-            </div>
-            <button class="btn-secondary" id="htp-add-outcome" style="font-size:13px;">+ Add Outcome</button>
-          </div>
-
-          <div class="grid-2">
-            <div class="field">
-              <label class="label" for="htp-ev-volume">Expected Pool Volume (KAS)</label>
-              <input class="input" id="htp-ev-volume" type="number" min="1" placeholder="1000">
-            </div>
-            <div class="field">
-              <label class="label" for="htp-ev-oracle">Oracle Type</label>
-              <select class="select" id="htp-ev-oracle">
-                <option value="bonded">Bonded Oracle</option>
-                <option value="zk">ZK Verification</option>
-                <option value="miner">Miner Oracle</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Maximizer preview -->
-          <div class="card card-compact" style="background: var(--surface-3); margin-bottom: 20px;">
-            <div class="flex items-center justify-between mb-16">
-              <span class="label" style="margin:0;">Parasitic Fee Curve</span>
-              <span class="text-primary" style="font-size:14px; font-weight:600;" id="htp-mx-pct-val">3%</span>
-            </div>
-            <input type="range" id="htp-mx-pct-slider" min="1" max="10" value="3" step="0.5"
-                   style="width:100%; accent-color: var(--primary);">
-            <div class="grid-2 mt-16" style="grid-template-columns: repeat(3, 1fr);">
-              <div class="text-center">
-                <div class="text-faint" style="font-size:11px;">Max KAS at Launch</div>
-                <div class="text-primary" style="font-weight:600;" id="htp-prev-cap">--</div>
-              </div>
-              <div class="text-center">
-                <div class="text-faint" style="font-size:11px;">Cap at 2x Volume</div>
-                <div class="text-primary" style="font-weight:600;" id="htp-prev-2x">--</div>
-              </div>
-              <div class="text-center">
-                <div class="text-faint" style="font-size:11px;">Fee Percentage</div>
-                <div class="text-primary" style="font-weight:600;" id="htp-prev-pct">3%</div>
-              </div>
-            </div>
-          </div>
-
-          <button class="btn-primary full-width wasm-gate" id="htp-ev-submit">Create Prediction Market</button>
-        </div>
-
-        <!-- SilverScript Compiler Panel -->
-        <div class="ss-panel mt-24" id="silverscriptPanel">
-          <div class="ss-header">
-            <span class="ss-title">SilverScript Output</span>
-            <div class="flex items-center gap-16">
-              <div class="ss-status">
-                <span class="ss-status-dot ok"></span>
-                <span>Ready</span>
-              </div>
-              <button class="btn-secondary" style="padding:4px 10px; font-size:11px;" id="ssCopyBtn">Copy</button>
-            </div>
-          </div>
-          <div class="ss-code" id="ssCodeOutput">
-<span class="line"><span class="ss-cm">// SilverScript contract will render here</span></span>
-<span class="line"><span class="ss-kw">contract</span> <span class="ss-val">PredictionMarket</span> {</span>
-<span class="line">  <span class="ss-kw">oracle</span>: <span class="ss-val">bonded</span>,</span>
-<span class="line">  <span class="ss-kw">outcomes</span>: [<span class="ss-val">"Yes"</span>, <span class="ss-val">"No"</span>],</span>
-<span class="line">  <span class="ss-kw">fee</span>: <span class="ss-val">3%</span>,</span>
-<span class="line">}</span>
-          </div>
+      <div class="mx sec-pad">
+        <div class="sh">
+          <h2>Prediction Markets</h2>
+          <p>Create events, define outcomes, and let the market decide. Oracle-resolved, trustless settlement.</p>
         </div>
 
         <!-- Active Markets List -->
-        <div class="mt-32" id="activeMarketsList">
-          <h3 class="mb-16">Active Markets</h3>
-          <div class="text-muted" style="font-size:14px;">Markets will appear here when connected to Firebase.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ================================================================
-         SECTION: KASPA
-         ================================================================ -->
-    <section id="v-kaspa" class="view">
-      <div class="container section-pad">
-        <h2>Kaspa Network</h2>
-        <p class="text-muted mt-8 mb-24">Live BlockDAG statistics and visualization.</p>
-
-        <!-- Network Stats Bar -->
-        <div class="stats-row" id="kaspaStatsBar">
-          <div class="stat-card">
-            <div class="stat-value" id="kaspaBlockHeight">--</div>
-            <div class="stat-label">Block Height</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="kaspaDaaScore">--</div>
-            <div class="stat-label">DAA Score</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="kaspaHashrate">--</div>
-            <div class="stat-label">Hashrate</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="kaspaBlockRate">--</div>
-            <div class="stat-label">Block Rate</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="kaspaMedianFee">--</div>
-            <div class="stat-label">Median TX Fee</div>
-          </div>
+        <div id="activeMarketsList" class="mb-24">
+          <div class="port-empty">No active markets yet. Create the first one below.</div>
         </div>
 
-        <!-- BlockDAG Visualization -->
+        <!-- Event Creation Form -->
+        <div class="card" style="padding:28px">
+          <h3 style="font-size:18px; font-weight:600; margin-bottom:20px; font-family:var(--font-heading)">Create Event</h3>
+
+          <div class="create-grid">
+            <div>
+              <div class="input-group mb-16">
+                <label>Event Title</label>
+                <input type="text" class="input" id="htp-ev-title" maxlength="120" placeholder="Will BTC reach $100k by EOY?">
+                <div class="char-count"><span id="titleCharCount">0</span>/120</div>
+              </div>
+
+              <div class="input-group mb-16">
+                <label>Description</label>
+                <textarea class="textarea" id="htp-ev-desc" maxlength="1000" placeholder="Describe the event and resolution criteria..."></textarea>
+                <div class="char-count"><span id="descCharCount">0</span>/1000</div>
+              </div>
+
+              <div class="form-grid mb-16">
+                <div class="input-group">
+                  <label>Resolution Date</label>
+                  <input type="datetime-local" class="input" id="htp-ev-date">
+                </div>
+                <div class="input-group">
+                  <label>Category</label>
+                  <select class="select" id="htp-ev-category">
+                    <option value="crypto">Crypto</option>
+                    <option value="sports">Sports</option>
+                    <option value="politics">Politics</option>
+                    <option value="technology">Technology</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="input-group mb-16">
+                <label>Resolution Source URL</label>
+                <input type="url" class="input" id="htp-ev-source" placeholder="https://...">
+              </div>
+
+              <div class="input-group mb-16">
+                <label>Outcomes</label>
+                <div id="htp-outcomes-list">
+                  <div class="outcome-row">
+                    <input type="text" class="input" value="Yes" placeholder="Outcome">
+                    <button class="outcome-remove" onclick="removeOutcome(this)" title="Remove">X</button>
+                  </div>
+                  <div class="outcome-row">
+                    <input type="text" class="input" value="No" placeholder="Outcome">
+                    <button class="outcome-remove" onclick="removeOutcome(this)" title="Remove">X</button>
+                  </div>
+                </div>
+                <button class="btn btn-secondary mt-16" id="htp-add-outcome" style="font-size:13px; padding:6px 14px">+ Add Outcome</button>
+              </div>
+
+              <div class="form-grid mb-16">
+                <div class="input-group">
+                  <label>Min Position (KAS)</label>
+                  <input type="number" class="input" id="htp-ev-volume" placeholder="1" min="0.1" step="any">
+                </div>
+                <div class="input-group">
+                  <label>Oracle Type</label>
+                  <select class="select" id="htp-ev-oracle">
+                    <option value="bonded">Bonded Oracle</option>
+                    <option value="zk">ZK Verification</option>
+                    <option value="miner">Miner Oracle</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-grid mb-16">
+                <div class="input-group">
+                  <label>Max Participants (optional)</label>
+                  <input type="number" class="input" id="htp-ev-max-participants" placeholder="Unlimited" min="2">
+                </div>
+              </div>
+
+              <button class="btn btn-primary btn-full wasm-gate" id="htp-ev-submit" style="padding:14px; font-size:15px">
+                Create Prediction Market
+              </button>
+            </div>
+
+            <!-- SilverScript Compiler Panel -->
+            <div>
+              <div class="ss-panel" id="silverscriptPanel">
+                <div class="ss-header">
+                  <span>SilverScript Output</span>
+                  <div style="display:flex;gap:8px;align-items:center">
+                    <div class="ss-status" id="ssStatus">
+                      <span class="dot dot-grey"></span>
+                      <span>Waiting for input</span>
+                    </div>
+                    <button class="btn btn-secondary ss-copy" onclick="copySilverScript()">Copy</button>
+                  </div>
+                </div>
+                <div class="ss-code" id="silverscriptCode">
+                  <div class="line"><span class="line-num">1</span><span class="cmt">// Define your event to see compiled SilverScript</span></div>
+                  <div class="line"><span class="line-num">2</span><span class="cmt">// Output updates in real time as you fill the form</span></div>
+                </div>
+              </div>
+
+              <!-- Maximizer Preview -->
+              <div class="card mt-24" id="maximizerPreview" style="display:none">
+                <h4 style="font-size:14px; margin-bottom:12px; font-family:var(--font-heading)">Position Preview</h4>
+                <div class="flex flex-col gap-8">
+                  <div class="flex justify-between">
+                    <span class="text-muted" style="font-size:13px">Market Cap</span>
+                    <span class="font-heading" style="font-weight:600" id="htp-prev-cap">--</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-muted" style="font-size:13px">2x Payout</span>
+                    <span class="font-heading text-primary" style="font-weight:600" id="htp-prev-2x">--</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-muted" style="font-size:13px">Your Share</span>
+                    <span class="font-heading" style="font-weight:600" id="htp-prev-pct">--</span>
+                  </div>
+                  <div>
+                    <input type="range" id="htp-mx-pct-slider" min="0" max="100" value="50" style="width:100%">
+                    <div class="text-faint" style="font-size:12px;text-align:center" id="htp-mx-pct-val">50%</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Oracle Section -->
         <div class="mt-24">
-          <div class="blockdag-container" id="blockdagViz">
-            <canvas id="blockdagCanvas" style="width:100%; height:100%;"></canvas>
-            <div class="blockdag-skeleton" id="blockdagSkeleton">Connecting to Kaspa network...</div>
-            <div class="blockdag-label">KASPA BLOCKDAG</div>
+          <div class="sh">
+            <h2>Oracle Network</h2>
+            <p>Decentralized resolution infrastructure: ZK proofs, bonded oracles, and miner attestation.</p>
+          </div>
+
+          <div class="oracle-tabs" id="oracleTabs">
+            <button class="oracle-tab active" onclick="showOraclePanel('zk')">ZK Verification</button>
+            <button class="oracle-tab" onclick="showOraclePanel('bonded')">Bonded Oracle</button>
+            <button class="oracle-tab" onclick="showOraclePanel('miner')">Miner Oracle</button>
+          </div>
+
+          <!-- ZK Panel -->
+          <div class="oracle-panel show" id="oracle-zk">
+            <div class="oracle-status">
+              <span class="dot dot-green dot-pulse"></span>
+              ZK Verification Oracle: Active
+            </div>
+            <div class="card">
+              <h4 style="font-size:16px; margin-bottom:12px">Zero-Knowledge Verification</h4>
+              <p class="text-muted" style="font-size:14px; margin-bottom:16px">
+                Game results are verified using a SHA-256 commit-reveal scheme with an optional Groth16 ZK proof path (KIP-16). The prover commits to the game state hash before the match begins, then reveals the preimage upon completion.
+              </p>
+              <div class="form-grid">
+                <div class="card" style="padding:16px">
+                  <div class="text-faint" style="font-size:12px; margin-bottom:4px">Commit Scheme</div>
+                  <div class="font-heading" style="font-weight:600">SHA-256 Hash</div>
+                </div>
+                <div class="card" style="padding:16px">
+                  <div class="text-faint" style="font-size:12px; margin-bottom:4px">ZK Backend</div>
+                  <div class="font-heading" style="font-weight:600">Groth16 (KIP-16)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bonded Panel -->
+          <div class="oracle-panel" id="oracle-bonded">
+            <div class="oracle-status">
+              <span class="dot dot-green dot-pulse"></span>
+              Bonded Oracle Registry: Active
+            </div>
+            <div class="card">
+              <h4 style="font-size:16px; margin-bottom:12px">Become a Bonded Oracle</h4>
+              <p class="text-muted" style="font-size:14px; margin-bottom:16px">
+                Bond a minimum of 1000 KAS (TN12) to register as an oracle. Your bond is slashable if you submit incorrect attestations. Earn resolution fees for honest participation.
+              </p>
+              <div class="input-group mb-16">
+                <label>Bond Amount (min 1000 KAS)</label>
+                <input type="number" class="input wasm-gate" id="oracleBondInput" placeholder="1000" min="1000">
+              </div>
+              <button class="btn btn-primary wasm-gate" id="registerOracleBtn">Register as Oracle</button>
+
+              <div class="mt-24">
+                <h4 style="font-size:14px; margin-bottom:12px; color:var(--text-muted)">Active Bonded Oracles</h4>
+                <div id="bondedOracleList" class="port-empty">No bonded oracles registered yet.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Miner Panel -->
+          <div class="oracle-panel" id="oracle-miner">
+            <div class="oracle-status">
+              <span class="dot dot-grey"></span>
+              Miner Oracle: Experimental
+            </div>
+            <div class="card">
+              <h4 style="font-size:16px; margin-bottom:12px">Miner Oracle Attestation</h4>
+              <p class="text-muted" style="font-size:14px; margin-bottom:16px">
+                Run the oracle daemon as a background process or in-browser Web Worker. The miner oracle watches for game completions and submits signed attestations. Requires a funded address for TX fees.
+              </p>
+              <div class="flex gap-8">
+                <button class="btn btn-secondary" id="downloadDaemonBtn">Download Daemon</button>
+                <button class="btn btn-primary wasm-gate" id="runWorkerBtn">Run in Browser</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ================================================================
-         SECTION: LEADERBOARD
-         ================================================================ -->
-    <section id="v-leaderboard" class="view">
-      <div class="container section-pad">
-        <h2>Leaderboard</h2>
-        <p class="text-muted mt-8 mb-24">Top players ranked by total KAS won.</p>
+    <!-- ============================================================
+         KASPA
+         ============================================================ -->
+    <section id="v-kaspa" class="view">
+      <div class="mx sec-pad">
+        <div class="sh">
+          <h2>Kaspa Network</h2>
+          <p>Live network statistics and BlockDAG visualization.</p>
+        </div>
 
-        <div class="card" style="padding: 0; overflow-x: auto;">
-          <table class="data-table" id="leaderboardTable">
+        <!-- Stats Bar -->
+        <div class="kaspa-stats" id="kaspaStats">
+          <div class="kaspa-stat">
+            <div class="ks-val" id="ksBlockHeight">--</div>
+            <div class="ks-label">Block Height</div>
+          </div>
+          <div class="kaspa-stat">
+            <div class="ks-val" id="ksDaaScore">--</div>
+            <div class="ks-label">DAA Score</div>
+          </div>
+          <div class="kaspa-stat">
+            <div class="ks-val" id="ksHashrate">--</div>
+            <div class="ks-label">Hashrate</div>
+          </div>
+          <div class="kaspa-stat">
+            <div class="ks-val" id="ksBlockRate">--</div>
+            <div class="ks-label">Blocks/sec</div>
+          </div>
+          <div class="kaspa-stat">
+            <div class="ks-val" id="ksMedianFee">--</div>
+            <div class="ks-label">Median TX Fee</div>
+          </div>
+        </div>
+
+        <!-- BlockDAG Canvas -->
+        <div class="dag-viz" id="dagViz">
+          <canvas id="dagCanvas"></canvas>
+          <span class="dag-label">KASPA BLOCKDAG</span>
+          <div class="dag-error" id="dagError" style="display:none">
+            <div style="text-align:center">
+              <div class="shimmer" style="width:200px;height:12px;border-radius:4px;margin:0 auto 8px"></div>
+              <div>Connecting to Kaspa network...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Kaspa Info -->
+        <div class="stats-row mt-24">
+          <div class="card">
+            <h4 style="font-size:14px; margin-bottom:8px">Network</h4>
+            <p class="text-muted" style="font-size:13px">Testnet 12 (TN12). High Table Protocol uses the Kaspa testnet for development and testing. Switch to mainnet via URL parameter: ?net=mainnet</p>
+          </div>
+          <div class="card">
+            <h4 style="font-size:14px; margin-bottom:8px">BlockDAG</h4>
+            <p class="text-muted" style="font-size:13px">Kaspa uses a BlockDAG (directed acyclic graph) instead of a linear blockchain. Multiple blocks can be mined in parallel, enabling high throughput and fast confirmations.</p>
+          </div>
+          <div class="card">
+            <h4 style="font-size:14px; margin-bottom:8px">PHANTOM/GhostDAG</h4>
+            <p class="text-muted" style="font-size:13px">The GhostDAG consensus protocol orders blocks in the DAG, assigning blue scores to honest blocks and maintaining security under high block rates (currently 10 BPS).</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         LEADERBOARD
+         ============================================================ -->
+    <section id="v-leaderboard" class="view">
+      <div class="mx sec-pad">
+        <div class="sh">
+          <h2>Leaderboard</h2>
+          <p>Top players ranked by total KAS won. Real-time from match settlements.</p>
+        </div>
+
+        <div class="lb-wrap">
+          <table class="tbl" id="leaderboardTable">
             <thead>
               <tr>
-                <th>Rank</th>
+                <th style="width:60px">Rank</th>
                 <th>Address</th>
                 <th>Game</th>
                 <th>Wins</th>
@@ -1636,9 +1951,7 @@
             </thead>
             <tbody id="leaderboardBody">
               <tr>
-                <td colspan="7" class="text-muted" style="text-align:center; padding:48px 16px;">
-                  Connect to Firebase to see leaderboard data.
-                </td>
+                <td colspan="7" class="port-empty">Leaderboard data loads from live matches. Connect wallet and play to appear here.</td>
               </tr>
             </tbody>
           </table>
@@ -1646,479 +1959,591 @@
       </div>
     </section>
 
-    <!-- ================================================================
-         SECTION: PORTFOLIO
-         ================================================================ -->
+    <!-- ============================================================
+         PORTFOLIO
+         ============================================================ -->
     <section id="v-portfolio" class="view">
-      <div class="container section-pad">
-        <h2>Portfolio</h2>
-        <p class="text-muted mt-8 mb-24">Your positions, matches, and history.</p>
-
-        <!-- Connected wallet pill -->
-        <div class="portfolio-wallet-pill" id="portfolioWalletPill" style="display:none;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="flex-shrink:0;">
-            <rect x="2" y="6" width="20" height="14" rx="2"/><path d="M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
-          </svg>
-          <span class="addr" id="portfolioAddr">--</span>
-          <span class="bal" id="portfolioBal">-- KAS</span>
+      <div class="mx sec-pad">
+        <div class="sh">
+          <h2>Portfolio</h2>
+          <p>Your positions, match history, and performance summary.</p>
         </div>
 
-        <div id="portfolioNotConnected" class="card" style="text-align:center; padding: 48px;">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="1.5" style="margin:0 auto 16px;">
-            <rect x="2" y="6" width="20" height="14" rx="2"/><path d="M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+        <!-- Not connected state -->
+        <div id="portfolioNotConnected" class="port-connect-prompt">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="1.5" style="margin:0 auto 16px;display:block">
+            <rect x="2" y="7" width="20" height="14" rx="2"/>
+            <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
           </svg>
-          <p class="text-muted mb-16">Connect your wallet to view your portfolio.</p>
-          <button class="btn-primary" data-action="connect-wallet">Connect Wallet</button>
+          <p>Connect your wallet to view your portfolio</p>
+          <button class="btn btn-primary" onclick="document.getElementById('connectWalletBtn').click()">Connect Wallet</button>
         </div>
 
-        <!-- Portfolio content (shown when connected) -->
-        <div id="portfolioContent" style="display:none;">
-          <div class="mb-24">
-            <h3 class="flex items-center gap-16 mb-16">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <!-- Connected state -->
+        <div id="portfolioConnected" style="display:none">
+          <div class="port-header">
+            <h3 style="font-size:18px">Your Portfolio</h3>
+            <div class="port-wallet-pill">
+              <span class="dot dot-green"></span>
+              <span class="addr" id="portAddress">--</span>
+              <span class="bal" id="portBalance">-- KAS</span>
+            </div>
+          </div>
+
+          <!-- Open Positions -->
+          <div class="port-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
               Open Positions
             </h3>
-            <div id="openPositions" class="text-muted" style="font-size:14px;">No active matches.</div>
+            <div id="openPositions" class="port-empty">No open positions</div>
           </div>
 
-          <div class="mb-24">
-            <h3 class="flex items-center gap-16 mb-16">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="flex-shrink:0;"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
-              Event Positions
+          <!-- Event Positions -->
+          <div class="port-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+              Market Positions
             </h3>
-            <div id="eventPositions" class="text-muted" style="font-size:14px;">No market positions.</div>
+            <div id="eventPositions" class="port-empty">No market positions</div>
           </div>
 
-          <div class="mb-24">
-            <h3 class="flex items-center gap-16 mb-16">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="flex-shrink:0;"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+          <!-- Match History -->
+          <div class="port-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               Match History
             </h3>
-            <div id="matchHistory" class="text-muted" style="font-size:14px;">No settled matches yet.</div>
+            <div id="matchHistory" class="port-empty">No match history yet</div>
           </div>
-        </div>
-      </div>
-    </section>
 
-    <!-- ================================================================
-         SECTION: WALLET (view, used by htp-wallet-v3.js)
-         ================================================================ -->
-    <section id="v-wallet" class="view">
-      <div class="container section-pad">
-        <h2>Wallet</h2>
-        <p class="text-muted mt-8 mb-24">Manage your Kaspa wallet connection.</p>
-        <div id="v-wallet-v3"></div>
-      </div>
-    </section>
-
-    <!-- ================================================================
-         SECTION: CREATE (navigated from FAB)
-         ================================================================ -->
-    <section id="v-create" class="view">
-      <div class="container section-pad">
-        <h2>Create</h2>
-        <p class="text-muted mt-8 mb-24">Choose what to create.</p>
-        <div class="grid-2">
-          <div class="card" style="cursor:pointer;" data-action="nav" data-target="skill">
-            <h3>Skill Game Match</h3>
-            <p class="text-muted mt-8">Create a chess, connect 4, or checkers match with KAS escrow.</p>
-          </div>
-          <div class="card" style="cursor:pointer;" data-action="nav" data-target="markets">
-            <h3>Prediction Market</h3>
-            <p class="text-muted mt-8">Create a prediction event with oracle resolution.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ================================================================
-         SECTION: ORACLE
-         ================================================================ -->
-    <section id="v-oracle" class="view">
-      <div class="container section-pad">
-        <h2>Oracle Network</h2>
-        <p class="text-muted mt-8 mb-24">Decentralized verification and resolution infrastructure.</p>
-
-        <!-- Oracle Tabs -->
-        <div class="oracle-tabs" id="oracleTabs">
-          <button class="oracle-tab active" data-oracle="zk">ZK Verification</button>
-          <button class="oracle-tab" data-oracle="bonded">Bonded Oracle</button>
-          <button class="oracle-tab" data-oracle="miner">Miner Oracle</button>
-        </div>
-
-        <!-- ZK Verification -->
-        <div class="oracle-panel active" id="oracle-zk">
-          <div class="card">
-            <h3 class="mb-16">ZK Verification Oracle</h3>
-            <div class="stats-row" style="grid-template-columns: repeat(3, 1fr);">
-              <div class="stat-card">
-                <div class="stat-value text-success" id="zkStatus">Standby</div>
-                <div class="stat-label">Status</div>
+          <!-- PnL Summary -->
+          <div class="port-section">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              PnL Summary
+            </h3>
+            <div class="stats-row">
+              <div class="card stat-card">
+                <div class="stat-val text-success" id="pnlWon">0 KAS</div>
+                <div class="stat-label">Total Won</div>
               </div>
-              <div class="stat-card">
-                <div class="stat-value" id="zkProofsVerified">0</div>
-                <div class="stat-label">Proofs Verified</div>
+              <div class="card stat-card">
+                <div class="stat-val text-error" id="pnlLost">0 KAS</div>
+                <div class="stat-label">Total Lost</div>
               </div>
-              <div class="stat-card">
-                <div class="stat-value" id="zkLastProof">--</div>
-                <div class="stat-label">Last Proof</div>
+              <div class="card stat-card">
+                <div class="stat-val" id="pnlNet">0 KAS</div>
+                <div class="stat-label">Net PnL</div>
               </div>
-            </div>
-            <div class="mt-24">
-              <h4 class="mb-16" style="font-size:14px;">Resolution Pipeline</h4>
-              <div class="card card-compact" style="background: var(--surface-3);">
-                <div class="mono text-muted" style="font-size:12px; line-height:1.8;">
-                  1. SHA-256 commit scheme: hash(result || salt) posted pre-game<br>
-                  2. Game completes: move log + result submitted<br>
-                  3. KIP-16 Groth16 circuit verifies game integrity<br>
-                  4. ZK proof submitted on-chain for settlement
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bonded Oracle -->
-        <div class="oracle-panel" id="oracle-bonded">
-          <div class="card">
-            <h3 class="mb-16">Bonded Oracle</h3>
-            <p class="text-muted mb-24">Stake KAS as bond to become a resolution oracle. Bond is slashed for incorrect attestations.</p>
-            <div class="field">
-              <label class="label">Bond Amount (min 1000 KAS on TN12)</label>
-              <div style="position:relative;">
-                <input class="input" id="bondAmount" type="number" min="1000" placeholder="1000"
-                       style="font-family: var(--font-heading); font-size: 20px; padding-right: 60px;">
-                <span style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-weight:600;">KAS</span>
-              </div>
-            </div>
-            <button class="btn-primary full-width wasm-gate" id="registerOracleBtn">Register as Oracle</button>
-            <div class="mt-24">
-              <h4 class="mb-16" style="font-size:14px;">Active Oracles</h4>
-              <div id="activeOraclesList" class="text-muted" style="font-size:14px;">No active oracles registered.</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Miner Oracle -->
-        <div class="oracle-panel" id="oracle-miner">
-          <div class="card">
-            <h3 class="mb-16">Miner Oracle</h3>
-            <p class="text-muted mb-24">Run the oracle daemon to verify and attest match outcomes for the network.</p>
-            <div class="flex gap-16" style="flex-wrap:wrap;">
-              <button class="btn-primary" id="downloadDaemonBtn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download Daemon
-              </button>
-              <button class="btn-secondary" id="runBrowserOracleBtn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21"/></svg>
-                Run in Browser (Web Worker)
-              </button>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ================================================================
-         SECTION: TERMS
-         ================================================================ -->
+    <!-- ============================================================
+         TERMS (hidden section, accessible via nav)
+         ============================================================ -->
     <section id="v-terms" class="view">
-      <div class="container section-pad">
-        <h2>Terms of Service</h2>
-        <div class="card mt-24">
-          <p class="text-muted" style="line-height: 1.8;">
-            High Table Protocol is experimental software operating on the Kaspa testnet (TN12).
-            All matches and predictions involve testnet KAS with no real-world value.
-            Use at your own risk. The protocol is provided as-is with no warranty.
-            Smart contract escrow is enforced on-chain but oracle resolution depends on
-            network participants. Do not use real funds or mainnet KAS until the protocol
-            has been audited and deployed to mainnet.
+      <div class="mx sec-pad">
+        <div class="sh">
+          <h2>Terms of Use</h2>
+        </div>
+        <div class="card" style="padding:32px">
+          <p class="text-muted" style="line-height:1.8; font-size:14px">
+            High Table Protocol is experimental software running on the Kaspa Testnet (TN12). All KAS used on this platform has no monetary value. This is a research and development project. Use at your own risk. No guarantees are made about the security, reliability, or correctness of the protocol. Smart contract escrows are generated client-side and never custodied by any server. The oracle network is decentralized and may produce incorrect results. By using this software, you acknowledge these risks.
           </p>
         </div>
       </div>
     </section>
 
-  </main>
+    <!-- ============================================================
+         WALLET (also accessible as a section for htp-nav-v4 compat)
+         ============================================================ -->
+    <section id="v-wallet" class="view">
+      <div class="mx sec-pad">
+        <div class="sh">
+          <h2>Wallet</h2>
+          <p>Connect a wallet extension or import a mnemonic for testing.</p>
+        </div>
+        <div id="walletSectionContent"></div>
+      </div>
+    </section>
 
-  <!-- ====================================================================
-       INLINE BOOTSTRAP SCRIPT
-       ==================================================================== -->
+    <!-- Hidden compat sections for htp-nav-v4 -->
+    <section id="v-create" class="view">
+      <div class="mx sec-pad">
+        <div class="sh"><h2>Create</h2></div>
+      </div>
+    </section>
+    <section id="v-oracle" class="view">
+      <div class="mx sec-pad">
+        <div class="sh"><h2>Oracle</h2></div>
+      </div>
+    </section>
+
+  </div><!-- end #app -->
+
+  <!-- ================================================================
+       WALLET CONNECTION MODAL
+       ================================================================ -->
+  <div class="modal-overlay" id="walletModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Connect Wallet</h2>
+        <button class="modal-close" onclick="closeWalletModal()">&times;</button>
+      </div>
+
+      <!-- Wallet Grid -->
+      <div class="wallet-grid" id="walletGrid">
+        <div class="wallet-card" data-wallet="KasWare" onclick="connectWallet('KasWare')">
+          <div class="wc-icon" id="wc-logo-kasware"></div>
+          <div class="wc-info">
+            <div class="wc-name">KasWare</div>
+            <div class="wc-desc">Browser extension wallet</div>
+          </div>
+          <span class="dot dot-grey wc-dot" id="wc-status-kasware"></span>
+        </div>
+
+        <div class="wallet-card" data-wallet="Kastle" onclick="connectWallet('Kastle')">
+          <div class="wc-icon" id="wc-logo-kastle"></div>
+          <div class="wc-info">
+            <div class="wc-name">Kastle</div>
+            <div class="wc-desc">Desktop and mobile wallet</div>
+          </div>
+          <span class="dot dot-grey wc-dot" id="wc-status-kastle"></span>
+        </div>
+
+        <div class="wallet-card" data-wallet="Kasanova" onclick="connectWallet('Kasanova')">
+          <div class="wc-icon" id="wc-logo-kasanova"></div>
+          <div class="wc-info">
+            <div class="wc-name">Kasanova</div>
+            <div class="wc-desc">Lightweight web wallet</div>
+          </div>
+          <span class="dot dot-grey wc-dot" id="wc-status-kasanova"></span>
+        </div>
+
+        <div class="wallet-card" data-wallet="Kaspium" onclick="connectWallet('Kaspium')">
+          <div class="wc-icon" id="wc-logo-kaspium"></div>
+          <div class="wc-info">
+            <div class="wc-name">Kaspium</div>
+            <div class="wc-desc">Mobile-first wallet</div>
+          </div>
+          <span class="dot dot-grey wc-dot" id="wc-status-kaspium"></span>
+        </div>
+
+        <div class="wallet-card" data-wallet="KaspaCom" onclick="connectWallet('KaspaCom')">
+          <div class="wc-icon" id="wc-logo-kaspacom"></div>
+          <div class="wc-info">
+            <div class="wc-name">KaspaCom</div>
+            <div class="wc-desc">Community wallet</div>
+          </div>
+          <span class="dot dot-grey wc-dot" id="wc-status-kaspacom"></span>
+        </div>
+
+        <div class="wallet-card" data-wallet="DEXcc" onclick="connectWallet('DEXcc')">
+          <div class="wc-icon" id="wc-logo-dexcc"></div>
+          <div class="wc-info">
+            <div class="wc-name">DEX.cc</div>
+            <div class="wc-desc">DEX integrated wallet</div>
+          </div>
+          <span class="dot dot-grey wc-dot" id="wc-status-dexcc"></span>
+        </div>
+      </div>
+
+      <!-- Manual Address Entry -->
+      <div class="wallet-expand">
+        <button class="wallet-expand-btn" onclick="toggleWalletExpand('manual')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          Enter address manually
+        </button>
+        <div class="wallet-expand-content" id="manualAddressSection">
+          <div class="input-group mb-16">
+            <input type="text" class="input" id="manualAddress" placeholder="kaspatest:qr...">
+          </div>
+          <button class="btn btn-primary btn-full" onclick="connectManualAddress()">View Portfolio</button>
+        </div>
+      </div>
+
+      <!-- Mnemonic Import -->
+      <div class="wallet-expand">
+        <button class="wallet-expand-btn" onclick="toggleWalletExpand('mnemonic')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          Import from mnemonic
+        </button>
+        <div class="wallet-expand-content" id="mnemonicSection">
+          <div class="mnemonic-warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span>Mnemonic import is for testing only. Use a browser extension wallet for real funds.</span>
+          </div>
+          <div class="word-count-pills mb-16">
+            <button class="pill active" onclick="setWordCount(12, this)">12 words</button>
+            <button class="pill" onclick="setWordCount(24, this)">24 words</button>
+          </div>
+          <textarea class="mnemonic-input" id="mnemonicInput" placeholder="Enter your 12-word mnemonic phrase..." rows="3"></textarea>
+          <button class="btn btn-primary btn-full wasm-gate" onclick="importMnemonic()">Import Wallet</button>
+        </div>
+      </div>
+
+      <!-- Disconnect -->
+      <div class="wallet-expand" id="disconnectSection" style="display:none">
+        <button class="btn btn-secondary btn-full" onclick="disconnectWallet()" style="border-color:var(--error);color:var(--error);margin-top:12px">
+          Disconnect Wallet
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       INLINE APP JS (Nav, Wallet Modal, Form Helpers)
+       ================================================================ -->
   <script>
+    /* -- View Switching -- */
+    function showView(key) {
+      document.querySelectorAll('.view').forEach(function(v) {
+        v.classList.remove('show');
+      });
+      var target = document.getElementById('v-' + key);
+      if (target) {
+        target.classList.add('show');
+      }
+
+      // Update nav pills
+      document.querySelectorAll('.nav-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+        if (btn.textContent.trim().toLowerCase().replace(/\s+/g, '') ===
+            getNavLabel(key).toLowerCase().replace(/\s+/g, '')) {
+          btn.classList.add('active');
+        }
+      });
+
+      // Update mobile nav
+      document.querySelectorAll('.mobile-nav-item').forEach(function(btn) {
+        btn.classList.remove('active');
+        if (btn.textContent.trim().toLowerCase().replace(/\s+/g, '') ===
+            getNavLabel(key).toLowerCase().replace(/\s+/g, '')) {
+          btn.classList.add('active');
+        }
+      });
+
+      // Push history state
+      try {
+        var url = new URL(window.location);
+        url.searchParams.set('tab', key);
+        history.pushState({ tab: key }, '', url);
+      } catch(e) {}
+    }
+
+    function getNavLabel(key) {
+      var labels = {
+        overview: 'Overview', skill: 'Skill Games', markets: 'Predictions',
+        kaspa: 'Kaspa', leaderboard: 'Leaderboard', portfolio: 'Portfolio'
+      };
+      return labels[key] || key;
+    }
+
+    /* -- Mobile Menu -- */
+    function closeMobileMenu() {
+      document.getElementById('mobileMenu').classList.remove('open');
+    }
+
+    document.getElementById('hamburgerBtn').addEventListener('click', function() {
+      document.getElementById('mobileMenu').classList.toggle('open');
+    });
+
+    /* -- Deep Link on Load -- */
     (function() {
-      'use strict';
-
-      // ── Hamburger menu ──
-      var hamburger = document.getElementById('hamburger');
-      var drawer = document.getElementById('mobileDrawer');
-      if (hamburger) {
-        hamburger.addEventListener('click', function() {
-          hamburger.classList.toggle('open');
-          drawer.classList.toggle('open');
-          document.body.style.overflow = drawer.classList.contains('open') ? 'hidden' : '';
-        });
-      }
-
-      // ── Wallet modal ──
-      var walletModal = document.getElementById('walletModal');
-      var walletModalClose = document.getElementById('walletModalClose');
-
-      document.addEventListener('click', function(e) {
-        var btn = e.target.closest('[data-action="connect-wallet"]');
-        if (btn && walletModal) {
-          walletModal.classList.add('open');
-        }
-      });
-      if (walletModalClose) {
-        walletModalClose.addEventListener('click', function() {
-          walletModal.classList.remove('open');
-        });
-      }
-      if (walletModal) {
-        walletModal.addEventListener('click', function(e) {
-          if (e.target === walletModal) walletModal.classList.remove('open');
-        });
-      }
-
-      // ── Expandable sections ──
-      document.querySelectorAll('.expandable-header').forEach(function(h) {
-        h.addEventListener('click', function() {
-          var content = h.nextElementSibling;
-          if (content) content.classList.toggle('open');
-        });
-      });
-
-      // ── Game selector ──
-      var gameSelector = document.getElementById('gameSelector');
-      if (gameSelector) {
-        gameSelector.addEventListener('click', function(e) {
-          var card = e.target.closest('.game-card');
-          if (!card) return;
-          gameSelector.querySelectorAll('.game-card').forEach(function(c) { c.classList.remove('selected'); });
-          card.classList.add('selected');
-        });
-      }
-
-      // ── Escrow quick-select pills ──
-      var escrowInput = document.getElementById('escrowAmount');
-      document.querySelectorAll('[data-amount]').forEach(function(pill) {
-        pill.addEventListener('click', function() {
-          if (escrowInput) escrowInput.value = pill.dataset.amount;
-          pill.closest('.pill-row').querySelectorAll('.pill').forEach(function(p) { p.classList.remove('selected'); });
-          pill.classList.add('selected');
-          updateEscrowUSD();
-        });
-      });
-
-      // ── Time control custom ──
-      var timeControl = document.getElementById('timeControl');
-      var customFields = document.getElementById('customTimeFields');
-      if (timeControl) {
-        timeControl.addEventListener('change', function() {
-          customFields.style.display = timeControl.value === 'custom' ? 'grid' : 'none';
-        });
-      }
-
-      // ── Series selector ──
-      var seriesSelector = document.getElementById('seriesSelector');
-      if (seriesSelector) {
-        seriesSelector.addEventListener('click', function(e) {
-          var pill = e.target.closest('.pill');
-          if (!pill) return;
-          seriesSelector.querySelectorAll('.pill').forEach(function(p) { p.classList.remove('selected'); });
-          pill.classList.add('selected');
-        });
-      }
-
-      // ── Outcome add/remove ──
-      var addOutcome = document.getElementById('htp-add-outcome');
-      var outcomesList = document.getElementById('htp-outcomes-list');
-      if (addOutcome && outcomesList) {
-        var outcomeCount = 2;
-        addOutcome.addEventListener('click', function() {
-          if (outcomeCount >= 10) return;
-          var row = document.createElement('div');
-          row.className = 'flex items-center gap-16 mb-16';
-          row.setAttribute('data-outcome', outcomeCount);
-          row.innerHTML = '<input class="input" type="text" placeholder="Outcome">' +
-            '<button class="btn-secondary" style="padding:8px 12px;flex-shrink:0;color:var(--error);" data-remove-outcome>' +
-            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>';
-          outcomesList.appendChild(row);
-          outcomeCount++;
-        });
-        outcomesList.addEventListener('click', function(e) {
-          var btn = e.target.closest('[data-remove-outcome]');
-          if (!btn) return;
-          var row = btn.closest('[data-outcome]');
-          if (row && outcomeCount > 2) {
-            row.remove();
-            outcomeCount--;
-          }
-        });
-      }
-
-      // ── Title char count ──
-      var titleInput = document.getElementById('htp-ev-title');
-      var charCount = document.getElementById('titleCharCount');
-      if (titleInput && charCount) {
-        titleInput.addEventListener('input', function() {
-          charCount.textContent = titleInput.value.length;
-        });
-      }
-
-      // ── Oracle tabs ──
-      var oracleTabs = document.getElementById('oracleTabs');
-      if (oracleTabs) {
-        oracleTabs.addEventListener('click', function(e) {
-          var tab = e.target.closest('.oracle-tab');
-          if (!tab) return;
-          oracleTabs.querySelectorAll('.oracle-tab').forEach(function(t) { t.classList.remove('active'); });
-          document.querySelectorAll('.oracle-panel').forEach(function(p) { p.classList.remove('active'); });
-          tab.classList.add('active');
-          var panel = document.getElementById('oracle-' + tab.dataset.oracle);
-          if (panel) panel.classList.add('active');
-        });
-      }
-
-      // ── Step expander ──
-      document.querySelectorAll('.step').forEach(function(step) {
-        step.addEventListener('click', function() {
-          var detail = step.querySelector('.step-detail');
-          if (detail) detail.classList.toggle('open');
-        });
-      });
-
-      // ── Nav data-action links ──
-      document.addEventListener('click', function(e) {
-        var navAction = e.target.closest('[data-action="nav"]');
-        if (navAction) {
-          var target = navAction.dataset.target;
-          var navBtn = document.querySelector('.nav-btn[data-tab="' + target + '"]');
-          if (navBtn) navBtn.click();
-        }
-      });
-
-      // ── Mnemonic word count pills ──
-      document.querySelectorAll('[data-words]').forEach(function(pill) {
-        pill.addEventListener('click', function() {
-          pill.closest('.pill-row').querySelectorAll('.pill').forEach(function(p) { p.classList.remove('selected'); });
-          pill.classList.add('selected');
-        });
-      });
-
-      // ── Network pills ──
-      var tn12 = document.getElementById('network-tn12');
-      var mainnet = document.getElementById('network-mainnet');
-      if (tn12 && mainnet) {
-        tn12.addEventListener('click', function() { tn12.classList.add('selected'); mainnet.classList.remove('selected'); });
-        mainnet.addEventListener('click', function() { mainnet.classList.add('selected'); tn12.classList.remove('selected'); });
-      }
-
-      // ── SilverScript copy ──
-      var ssCopyBtn = document.getElementById('ssCopyBtn');
-      var ssCode = document.getElementById('ssCodeOutput');
-      if (ssCopyBtn && ssCode) {
-        ssCopyBtn.addEventListener('click', function() {
-          navigator.clipboard.writeText(ssCode.textContent).then(function() {
-            ssCopyBtn.textContent = 'Copied';
-            setTimeout(function() { ssCopyBtn.textContent = 'Copy'; }, 1500);
-          });
-        });
-      }
-
-      // ── KAS price fetch for escrow USD display ──
-      function fetchKasPrice() {
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd')
-          .then(function(r) { return r.json(); })
-          .then(function(data) {
-            if (data && data.kaspa && data.kaspa.usd) {
-              window.htpKasUsd = data.kaspa.usd;
-              updateEscrowUSD();
-            }
-          })
-          .catch(function() {});
-      }
-      function updateEscrowUSD() {
-        var el = document.getElementById('escrowUSD');
-        var input = document.getElementById('escrowAmount');
-        if (el && input && window.htpKasUsd) {
-          var val = parseFloat(input.value) || 0;
-          el.textContent = val > 0 ? '~$' + (val * window.htpKasUsd).toFixed(2) + ' USD' : '';
-        }
-      }
-      if (escrowInput) {
-        escrowInput.addEventListener('input', updateEscrowUSD);
-      }
-      fetchKasPrice();
-      setInterval(fetchKasPrice, 60000);
-
-      // ── Kaspa network stats polling ──
-      function fetchKaspaStats() {
-        fetch('https://api-tn12.kaspa.org/info/blockdag')
-          .then(function(r) { return r.json(); })
-          .then(function(data) {
-            if (!data) return;
-            var bh = document.getElementById('kaspaBlockHeight');
-            var htpBh = document.getElementById('htpBlockHeight');
-            var daa = document.getElementById('kaspaDaaScore');
-            var hr = document.getElementById('kaspaHashrate');
-            var br = document.getElementById('kaspaBlockRate');
-
-            if (bh && data.blockCount) bh.textContent = Number(data.blockCount).toLocaleString();
-            if (htpBh && data.blockCount) htpBh.textContent = Number(data.blockCount).toLocaleString();
-            if (daa && data.difficulty) daa.textContent = Number(data.difficulty).toFixed(2);
-            if (hr && data.networkHashesPerSecond) {
-              var h = data.networkHashesPerSecond;
-              if (h > 1e15) hr.textContent = (h / 1e15).toFixed(2) + ' PH/s';
-              else if (h > 1e12) hr.textContent = (h / 1e12).toFixed(2) + ' TH/s';
-              else if (h > 1e9) hr.textContent = (h / 1e9).toFixed(2) + ' GH/s';
-              else hr.textContent = (h / 1e6).toFixed(2) + ' MH/s';
-            }
-            if (br && data.blockCount && data.headerCount) {
-              br.textContent = (data.blockCount / Math.max(data.headerCount, 1)).toFixed(2);
-            }
-          })
-          .catch(function() {});
-      }
-      fetchKaspaStats();
-      setInterval(fetchKaspaStats, 5000);
-
+      var params = new URLSearchParams(window.location.search);
+      var tab = params.get('tab');
+      if (tab) showView(tab);
     })();
+
+    window.addEventListener('popstate', function(e) {
+      if (e.state && e.state.tab) showView(e.state.tab);
+    });
+
+    /* -- Game Selector -- */
+    function selectGame(el) {
+      document.querySelectorAll('.game-card').forEach(function(c) {
+        c.classList.remove('selected');
+      });
+      el.classList.add('selected');
+    }
+
+    /* -- Escrow Quick Select -- */
+    function setEscrow(amount) {
+      document.getElementById('escrowAmount').value = amount;
+      updateEscrowUSD();
+      // Highlight active pill
+      document.querySelectorAll('.quick-pills .pill').forEach(function(p) {
+        p.classList.remove('active');
+      });
+      if (event && event.target) event.target.classList.add('active');
+    }
+
+    /* -- KAS Price + USD Conversion -- */
+    var _kasPrice = 0;
+    function fetchKasPrice() {
+      fetch('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d && d.kaspa && d.kaspa.usd) {
+            _kasPrice = d.kaspa.usd;
+            updateEscrowUSD();
+          }
+        })
+        .catch(function() {});
+    }
+
+    function updateEscrowUSD() {
+      var val = parseFloat(document.getElementById('escrowAmount').value) || 0;
+      var el = document.getElementById('escrowUSD');
+      if (_kasPrice && val > 0) {
+        el.textContent = '~ $' + (val * _kasPrice).toFixed(2) + ' USD';
+      } else {
+        el.textContent = '';
+      }
+    }
+
+    document.getElementById('escrowAmount').addEventListener('input', updateEscrowUSD);
+    fetchKasPrice();
+    setInterval(fetchKasPrice, 60000);
+
+    /* -- Time Control -- */
+    function handleTimeControl() {
+      var val = document.getElementById('timeControl').value;
+      var custom = document.getElementById('timeCustom');
+      if (val === 'custom') {
+        custom.classList.add('show');
+      } else {
+        custom.classList.remove('show');
+      }
+    }
+
+    /* -- Series Selector -- */
+    function selectSeries(el) {
+      document.querySelectorAll('#seriesSelector .pill').forEach(function(p) {
+        p.classList.remove('active');
+      });
+      el.classList.add('active');
+    }
+
+    /* -- Stepper Detail Toggle -- */
+    function toggleDetail(btn) {
+      var detail = btn.parentElement.querySelector('.step-detail');
+      if (detail) detail.classList.toggle('open');
+    }
+
+    /* -- Wallet Modal -- */
+    function openWalletModal() {
+      document.getElementById('walletModal').classList.add('open');
+      injectWalletLogos();
+    }
+    function closeWalletModal() {
+      document.getElementById('walletModal').classList.remove('open');
+    }
+
+    document.getElementById('connectWalletBtn').addEventListener('click', openWalletModal);
+
+    document.getElementById('walletModal').addEventListener('click', function(e) {
+      if (e.target === this) closeWalletModal();
+    });
+
+    /* -- Inject wallet logos from htp-wallet-logos.js -- */
+    function injectWalletLogos() {
+      if (!window.HTP_WALLET_LOGOS) return;
+      var map = {
+        kasware: 'KasWare', kastle: 'Kastle', kasanova: 'Kasanova',
+        kaspium: 'Kaspium', kaspacom: 'KaspaCom', dexcc: 'DEXcc'
+      };
+      Object.keys(map).forEach(function(id) {
+        var el = document.getElementById('wc-logo-' + id);
+        if (el && window.HTP_WALLET_LOGOS[map[id]]) {
+          el.innerHTML = window.HTP_WALLET_LOGOS[map[id]];
+        }
+      });
+    }
+
+    /* -- Wallet expand sections -- */
+    function toggleWalletExpand(section) {
+      var sectionId = section === 'manual' ? 'manualAddressSection' : 'mnemonicSection';
+      var el = document.getElementById(sectionId);
+      var btn = el.previousElementSibling;
+      while (btn && !btn.classList.contains('wallet-expand-btn')) {
+        btn = btn.previousElementSibling;
+      }
+      el.classList.toggle('show');
+      if (btn) btn.classList.toggle('open');
+    }
+
+    function setWordCount(count, el) {
+      document.querySelectorAll('.word-count-pills .pill').forEach(function(p) {
+        p.classList.remove('active');
+      });
+      el.classList.add('active');
+      var ta = document.getElementById('mnemonicInput');
+      ta.placeholder = 'Enter your ' + count + '-word mnemonic phrase...';
+    }
+
+    /* -- Wallet Connection Stubs -- */
+    function connectWallet(name) {
+      console.log('[HTP] Connecting wallet:', name);
+      if (window.htpWallet && window.htpWallet.connect) {
+        window.htpWallet.connect(name);
+      }
+    }
+
+    function connectManualAddress() {
+      var addr = document.getElementById('manualAddress').value.trim();
+      if (!addr) return;
+      if (window.htpWallet && window.htpWallet.setAddress) {
+        window.htpWallet.setAddress(addr);
+      }
+      closeWalletModal();
+    }
+
+    function importMnemonic() {
+      var mnemonic = document.getElementById('mnemonicInput').value.trim();
+      if (!mnemonic) return;
+      if (window.htpWallet && window.htpWallet.importMnemonic) {
+        window.htpWallet.importMnemonic(mnemonic);
+      }
+    }
+
+    function disconnectWallet() {
+      if (window.htpWallet && window.htpWallet.disconnect) {
+        window.htpWallet.disconnect();
+      }
+      closeWalletModal();
+    }
+
+    /* -- Oracle Panels -- */
+    function showOraclePanel(key) {
+      document.querySelectorAll('.oracle-panel').forEach(function(p) { p.classList.remove('show'); });
+      document.querySelectorAll('.oracle-tab').forEach(function(t) { t.classList.remove('active'); });
+      var panel = document.getElementById('oracle-' + key);
+      if (panel) panel.classList.add('show');
+      document.querySelectorAll('.oracle-tab').forEach(function(t) {
+        if (t.textContent.toLowerCase().indexOf(key) !== -1 ||
+            (key === 'zk' && t.textContent.indexOf('ZK') !== -1)) {
+          t.classList.add('active');
+        }
+      });
+    }
+
+    /* -- Predictions Form: Outcome Management -- */
+    document.getElementById('htp-add-outcome').addEventListener('click', function() {
+      var list = document.getElementById('htp-outcomes-list');
+      if (list.children.length >= 10) return;
+      var row = document.createElement('div');
+      row.className = 'outcome-row';
+      row.innerHTML = '<input type="text" class="input" placeholder="Outcome">' +
+        '<button class="outcome-remove" onclick="removeOutcome(this)" title="Remove">X</button>';
+      list.appendChild(row);
+    });
+
+    function removeOutcome(btn) {
+      var list = document.getElementById('htp-outcomes-list');
+      if (list.children.length <= 2) return;
+      btn.parentElement.remove();
+    }
+
+    /* -- Character counters -- */
+    document.getElementById('htp-ev-title').addEventListener('input', function() {
+      document.getElementById('titleCharCount').textContent = this.value.length;
+    });
+    document.getElementById('htp-ev-desc').addEventListener('input', function() {
+      document.getElementById('descCharCount').textContent = this.value.length;
+    });
+
+    /* -- SilverScript Copy -- */
+    function copySilverScript() {
+      var code = document.getElementById('silverscriptCode').textContent;
+      navigator.clipboard.writeText(code).catch(function() {});
+    }
+
+    /* -- Kaspa Network Stats Polling -- */
+    var _kaspaStatsInterval = null;
+
+    function fetchKaspaStats() {
+      fetch('https://api-tn12.kaspa.org/info/blockdag')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data) {
+            if (data.blockCount !== undefined) {
+              updateKaspaStat('ksBlockHeight', Number(data.blockCount).toLocaleString());
+              updateKaspaStat('liveBlockHeight', Number(data.blockCount).toLocaleString());
+            }
+            if (data.headerCount !== undefined) {
+              updateKaspaStat('ksDaaScore', Number(data.headerCount).toLocaleString());
+            }
+            if (data.difficulty !== undefined) {
+              var hr = (data.difficulty * Math.pow(2, 32) / 1e12).toFixed(2);
+              updateKaspaStat('ksHashrate', hr + ' TH/s');
+            }
+            if (data.virtualDaaScore !== undefined) {
+              updateKaspaStat('ksBlockRate', '10 BPS');
+            }
+            updateKaspaStat('ksMedianFee', '0.0001 KAS');
+          }
+          document.getElementById('dagError').style.display = 'none';
+        })
+        .catch(function() {
+          document.getElementById('dagError').style.display = 'flex';
+        });
+    }
+
+    function updateKaspaStat(id, value) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (el.textContent !== value) {
+        el.classList.add('updating');
+        setTimeout(function() {
+          el.textContent = value;
+          el.classList.remove('updating');
+        }, 150);
+      }
+    }
+
+    fetchKaspaStats();
+    _kaspaStatsInterval = setInterval(fetchKaspaStats, 5000);
   </script>
 
-  <!-- ====================================================================
+  <!-- ================================================================
        EXTERNAL JS MODULES
-       ==================================================================== -->
+       ================================================================ -->
   <!-- Firebase -->
   <script src="firebase-app-compat.js"></script>
   <script src="firebase-database-compat.js"></script>
   <script src="firebase-config.js"></script>
 
-  <!-- Wallet -->
+  <!-- HTP Core -->
   <script src="htp-wallet-logos.js"></script>
-  <script src="htp-wallet-v3.js"></script>
-
-  <!-- WASM + RPC -->
+  <script src="htp-init.js"></script>
   <script src="htp-wasm-loader.js"></script>
   <script src="htp-rpc-client.js"></script>
 
-  <!-- Core Protocol -->
-  <script src="htp-init.js"></script>
-  <script src="htp-covenant-escrow-v2.js"></script>
-  <script src="htp-fee-engine.js"></script>
-  <script src="htp-utxo-mutex.js"></script>
-  <script src="htp-autopayout-engine.js"></script>
-
-  <!-- Games -->
+  <!-- Game Engines -->
   <script src="chess.min.js"></script>
   <script src="htp-board-engine.js"></script>
   <script src="htp-chess-ui.js"></script>
-  <script src="htp-chess-dnd.js"></script>
   <script src="htp-chess-sync.js"></script>
+  <script src="htp-chess-dnd.js"></script>
   <script src="htp-c4-animation.js"></script>
   <script src="htp-checkers-multijump.js"></script>
-  <script src="htp-games-sync.js"></script>
-  <script src="htp-match-deadline.js"></script>
+
+  <!-- Protocol -->
+  <script src="htp-covenant-escrow-v2.js"></script>
+  <script src="htp-utxo-mutex.js"></script>
+  <script src="htp-fee-engine.js"></script>
   <script src="htp-cancel-flow.js"></script>
+  <script src="htp-match-deadline.js"></script>
+  <script src="htp-autopayout-engine.js"></script>
   <script src="htp-settlement-overlay.js"></script>
   <script src="htp-settlement-preview.js"></script>
 
@@ -2126,19 +2551,29 @@
   <script src="htp-events.js"></script>
   <script src="htp-events-v3.js"></script>
   <script src="htp-event-creator.js"></script>
-  <script src="htp-maximizer-ui.js"></script>
   <script src="htp-silverscript-live.js"></script>
+  <script src="htp-maximizer-ui.js"></script>
+
+  <!-- Wallet + Sync -->
+  <script src="htp-wallet-v3.js"></script>
+  <script src="htp-games-sync.js"></script>
+  <script src="htp-oracle-sync.js"></script>
 
   <!-- Visualization -->
-  <script src="dag-background.js"></script>
   <script src="htp-blockdag-viz.js"></script>
+  <script src="dag-background.js"></script>
 
-  <!-- Oracle -->
-  <script src="htp-oracle-sync.js"></script>
+  <!-- ZK Pipeline -->
   <script src="htp-zk-pipeline.js"></script>
 
-  <!-- Navigation (last) -->
+  <!-- Navigation (loads last, purely additive) -->
   <script src="htp-nav-v4.js"></script>
 
+  <!-- Post-load: inject wallet logos -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      injectWalletLogos();
+    });
+  </script>
 </body>
 </html>
