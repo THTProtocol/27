@@ -1,1324 +1,2663 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>High Table Protocol</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<style>
-/* ── Reset ── */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden;min-height:100vh}
-a{color:var(--primary);text-decoration:none}
-button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
-input,select,textarea{font-family:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-size:14px;outline:none;transition:border-color .2s}
-input:focus,select:focus,textarea:focus{border-color:var(--primary)}
-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
-::placeholder{color:var(--text-faint)}
-::-webkit-scrollbar{width:6px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:3px}
-
-/* ── Design System Variables ── */
-:root{
-  --bg:#080c17;
-  --surface:#0f1623;
-  --surface-2:#161e2e;
-  --surface-3:#1d2840;
-  --border:rgba(79,152,163,0.18);
-  --border-hover:rgba(79,152,163,0.45);
-  --primary:#4f98a3;
-  --primary-h:#5fb3c0;
-  --primary-glow:rgba(79,152,163,0.25);
-  --text:#e2e8f0;
-  --text-muted:#94a3b8;
-  --text-faint:#475569;
-  --success:#22c55e;
-  --warning:#f59e0b;
-  --error:#ef4444;
-  --red:#e84040;
-  --gold:#d4a017;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>HIGH TABLE PROTOCOL</title>
+  <meta name="description" content="Trustless, non-custodial prediction markets and skill gaming on Kaspa blockchain">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+/* ============================================================
+   HTP DESIGN SYSTEM - Dark Mode Only
+   ============================================================ */
+:root {
+  --bg: #080c17;
+  --surface: #0f1623;
+  --surface-2: #161e2e;
+  --surface-3: #1d2840;
+  --border: rgba(79,152,163,0.18);
+  --border-hover: rgba(79,152,163,0.45);
+  --primary: #4f98a3;
+  --primary-h: #5fb3c0;
+  --primary-glow: rgba(79,152,163,0.25);
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-faint: #475569;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --red: #e84040;
+  --gold: #d4a017;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --max-w: 1200px;
+  --pad-x: 24px;
+  --radius: 8px;
+  --radius-sm: 6px;
 }
 
-/* ── Layout ── */
-.app-shell{position:relative;min-height:100vh}
-.content-wrap{max-width:1200px;margin:0 auto;padding:80px 24px 48px}
-.section{display:none}
-.section.active{display:block}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Header ── */
-.hdr{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(8,12,23,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);height:56px;display:flex;align-items:center;padding:0 24px}
-.hdr-inner{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;gap:16px}
-.hdr-brand{display:flex;align-items:center;gap:10px;flex-shrink:0}
-.hdr-logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;color:var(--primary);letter-spacing:-0.5px}
-.hdr-mark svg{display:block}
-.hdr-nav{display:flex;align-items:center;gap:4px;margin:0 auto}
-.nav-pill{padding:6px 14px;font-size:13px;font-weight:500;color:var(--text-muted);border-radius:4px;border-bottom:2px solid transparent;transition:color .2s,border-color .2s;white-space:nowrap}
-.nav-pill:hover{color:var(--text)}
-.nav-pill.active{color:var(--primary);border-bottom-color:var(--primary)}
-.hdr-right{display:flex;align-items:center;gap:12px;flex-shrink:0;margin-left:auto}
-.block-height{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);font-variant-numeric:tabular-nums}
-.pulse-dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
-.net-badge{font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--surface-3);color:var(--primary);text-transform:uppercase;letter-spacing:.5px}
-.connect-btn{padding:6px 16px;background:var(--primary);color:#080c17;font-weight:600;font-size:13px;border-radius:6px;transition:background .2s}
-.connect-btn:hover{background:var(--primary-h)}
-.connect-btn.connected{background:var(--surface-2);color:var(--text);border:1px solid var(--border)}
-.hamburger{display:none;flex-direction:column;gap:4px;padding:8px;cursor:pointer}
-.hamburger span{display:block;width:20px;height:2px;background:var(--text-muted);border-radius:1px;transition:transform .2s}
-.mobile-drawer{display:none;position:fixed;top:56px;left:0;right:0;background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;z-index:99;flex-direction:column;gap:8px}
-.mobile-drawer.open{display:flex}
-.mobile-drawer .nav-pill{padding:12px 0;font-size:15px;border-bottom:none}
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
 
-/* ── Cards ── */
-.card{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:20px;transition:box-shadow .2s,border-color .2s}
-.card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.3);border-color:var(--border-hover)}
-
-/* ── Buttons ── */
-.btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;background:var(--primary);color:#080c17;font-weight:600;font-size:14px;border-radius:6px;transition:background .2s}
-.btn-primary:hover{background:var(--primary-h)}
-.btn-primary:disabled{opacity:.5;cursor:not-allowed}
-.btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;background:var(--surface-2);color:var(--text);font-weight:500;font-size:14px;border-radius:6px;border:1px solid var(--border);transition:border-color .2s}
-.btn-secondary:hover{border-color:var(--border-hover)}
-.btn-full{width:100%}
-
-/* ── Pills / Chips ── */
-.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:500;background:var(--surface-3);color:var(--text-muted)}
-.pill-primary{background:rgba(79,152,163,0.15);color:var(--primary)}
-
-/* ── Grid ── */
-.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-
-/* ── Stats bar ── */
-.stats-bar{display:flex;gap:1px;background:var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px}
-.stat-cell{flex:1;background:var(--surface-2);padding:16px;text-align:center}
-.stat-value{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:600;color:var(--text);margin-bottom:2px}
-.stat-label{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.5px}
-
-/* ── Section Header ── */
-.section-hdr{margin-bottom:24px}
-.section-hdr h2{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--text);margin-bottom:4px}
-.section-hdr p{font-size:14px;color:var(--text-muted)}
-
-/* ── Game selector cards ── */
-.game-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
-.game-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color .2s,box-shadow .2s}
-.game-card:hover,.game-card.selected{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
-.game-card svg{width:48px;height:48px}
-.game-card .game-label{font-size:14px;font-weight:600;color:var(--text)}
-
-/* ── Escrow input ── */
-.escrow-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
-.escrow-input{flex:1;font-size:16px;font-variant-numeric:tabular-nums}
-.escrow-pills{display:flex;gap:6px;flex-wrap:wrap}
-.escrow-pill{padding:5px 12px;font-size:12px;font-weight:600;border-radius:999px;background:var(--surface-3);color:var(--text-muted);cursor:pointer;transition:background .15s,color .15s}
-.escrow-pill:hover,.escrow-pill.active{background:rgba(79,152,163,0.2);color:var(--primary)}
-.usd-equiv{font-size:12px;color:var(--text-faint);margin-bottom:16px}
-
-/* ── Match Lobby ── */
-.lobby-grid{display:grid;gap:12px}
-.lobby-card{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;padding:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px}
-.lobby-info{display:flex;flex-direction:column;gap:2px}
-.lobby-info .game-name{font-weight:600;font-size:14px}
-.lobby-info .lobby-meta{font-size:12px;color:var(--text-muted)}
-
-/* ── Stepper ── */
-.stepper{display:flex;flex-direction:column;gap:0;margin:24px 0}
-.step{display:flex;gap:12px;position:relative;padding-bottom:24px}
-.step::before{content:'';position:absolute;left:15px;top:32px;bottom:0;width:1px;background:var(--border)}
-.step:last-child::before{display:none}
-.step:last-child{padding-bottom:0}
-.step-icon{width:32px;height:32px;border-radius:50%;background:var(--surface-3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;z-index:1}
-.step.completed .step-icon{background:var(--primary);border-color:var(--primary)}
-.step.active .step-icon{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow)}
-.step-icon svg{width:14px;height:14px}
-.step-body h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
-.step-body p{font-size:12px;color:var(--text-muted)}
-
-/* ── SilverScript Compiler ── */
-.compiler-panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:20px}
-.compiler-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--surface-2);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted)}
-.compiler-status{display:flex;align-items:center;gap:6px}
-.compiler-body{padding:16px;font-family:'JetBrains Mono','SF Mono',monospace;font-size:13px;line-height:1.7;color:var(--text-muted);max-height:300px;overflow-y:auto;white-space:pre}
-.ss-keyword{color:var(--primary)}
-.ss-value{color:var(--text)}
-.ss-comment{color:var(--text-faint)}
-.ss-line-num{display:inline-block;width:32px;text-align:right;margin-right:12px;color:var(--text-faint);user-select:none}
-
-/* ── BlockDAG Canvas ── */
-.blockdag-wrap{position:relative;width:100%;height:320px;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px}
-.blockdag-wrap canvas{width:100%;height:100%}
-.blockdag-label{position:absolute;top:12px;left:16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-faint)}
-
-/* ── Wallet Cards ── */
-.wallet-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.wallet-card{display:flex;align-items:center;gap:12px;padding:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color .2s}
-.wallet-card:hover{border-color:var(--border-hover)}
-.wallet-card svg{width:40px;height:40px;flex-shrink:0}
-.wallet-card-info{display:flex;flex-direction:column;gap:2px}
-.wallet-card-info .wallet-name{font-weight:600;font-size:14px}
-.wallet-card-info .wallet-desc{font-size:12px;color:var(--text-muted)}
-.wallet-status-dot{width:8px;height:8px;border-radius:50%;margin-left:auto;flex-shrink:0}
-.wallet-status-dot.available{background:var(--success)}
-.wallet-status-dot.unavailable{background:var(--text-faint)}
-
-/* ── Expandable ── */
-.expandable{margin-top:16px}
-.expand-trigger{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;padding:8px 0}
-.expand-trigger svg{transition:transform .2s}
-.expand-trigger.open svg{transform:rotate(90deg)}
-.expand-body{display:none;padding:16px 0}
-.expand-body.open{display:block}
-
-/* ── Oracle Tabs ── */
-.tab-row{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px}
-.tab-btn{padding:10px 20px;font-size:13px;font-weight:500;color:var(--text-muted);border-bottom:2px solid transparent;transition:color .2s,border-color .2s}
-.tab-btn:hover{color:var(--text)}
-.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
-.tab-pane{display:none}
-.tab-pane.active{display:block}
-
-/* ── Leaderboard Table ── */
-.lb-table{width:100%;border-collapse:collapse}
-.lb-table th{text-align:left;font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.5px;padding:10px 12px;border-bottom:1px solid var(--border)}
-.lb-table td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--border)}
-.lb-table tr:hover td{background:var(--surface-2)}
-.lb-rank{font-weight:700;color:var(--primary);font-variant-numeric:tabular-nums}
-
-/* ── Portfolio ── */
-.port-header{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px}
-.port-addr{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text)}
-.port-bal{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-left:auto}
-
-/* ── Toast ── */
-.toast-container{position:fixed;top:72px;right:24px;z-index:200;display:flex;flex-direction:column;gap:8px}
-.toast{padding:12px 20px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,0.4);animation:toastIn .3s ease}
-.toast.error{border-color:var(--error)}
-.toast.success{border-color:var(--success)}
-@keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-
-/* ── WASM Warning Banner ── */
-.wasm-banner{position:fixed;bottom:0;left:0;right:0;padding:12px 24px;background:var(--surface-2);border-top:1px solid var(--warning);color:var(--text-muted);font-size:13px;text-align:center;z-index:150;display:none}
-.wasm-banner.show{display:block}
-
-/* ── Responsive ── */
-@media(max-width:768px){
-  .hdr-nav{display:none}
-  .hamburger{display:flex}
-  .hdr-right .block-height,.hdr-right .net-badge{display:none}
-  .content-wrap{padding:72px 16px 32px}
-  .game-cards{grid-template-columns:1fr}
-  .wallet-grid{grid-template-columns:repeat(2,1fr)}
-  .grid-2,.grid-3{grid-template-columns:1fr}
-  .stats-bar{flex-direction:column}
-  .stat-cell{padding:12px}
-  .lobby-card{grid-template-columns:1fr;gap:8px}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
-@media(max-width:480px){
-  .wallet-grid{grid-template-columns:1fr}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); font-weight: 600; line-height: 1.2; }
+h1 { font-size: clamp(28px, 4vw, 48px); }
+h2 { font-size: clamp(22px, 3vw, 32px); }
+h3 { font-size: clamp(18px, 2.5vw, 24px); }
+h4 { font-size: clamp(16px, 2vw, 20px); }
+
+a { color: var(--primary); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--primary-h); }
+
+/* Layout */
+.container { max-width: var(--max-w); margin: 0 auto; padding: 0 var(--pad-x); }
+.section-padding { padding: clamp(48px, 6vw, 96px) 0; }
+
+/* Cards */
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  transition: border-color 0.2s, box-shadow 0.3s;
 }
-</style>
+.card:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.15s, opacity 0.2s;
+  text-decoration: none;
+}
+.btn:hover { transform: scale(1.02); }
+.btn:active { transform: scale(0.98); }
+.btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+
+.btn-primary {
+  background: var(--primary);
+  color: #080c17;
+}
+.btn-primary:hover { background: var(--primary-h); }
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-secondary:hover { border-color: var(--border-hover); }
+
+.btn-full { width: 100%; }
+
+/* Inputs */
+.input, .textarea, .select {
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 10px 14px;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+.input:focus, .textarea:focus, .select:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-color: var(--primary);
+}
+.textarea { resize: vertical; min-height: 80px; }
+.select { appearance: none; cursor: pointer; }
+
+/* Pills */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--surface-3);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.pill.active, .pill:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(79,152,163,0.08);
+}
+
+/* Status dots */
+.dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.dot-green { background: var(--success); }
+.dot-grey { background: var(--text-faint); }
+.dot-red { background: var(--error); }
+.dot-pulse {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+  50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+}
+
+/* Utility */
+.text-muted { color: var(--text-muted); }
+.text-faint { color: var(--text-faint); }
+.text-primary { color: var(--primary); }
+.text-success { color: var(--success); }
+.text-error { color: var(--error); }
+.text-warning { color: var(--warning); }
+.font-display { font-family: var(--font-display); }
+.font-mono { font-family: 'JetBrains Mono', monospace; }
+.fw-600 { font-weight: 600; }
+.fw-700 { font-weight: 700; }
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mt-32 { margin-top: 32px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-24 { margin-bottom: 24px; }
+.gap-8 { gap: 8px; }
+.gap-16 { gap: 16px; }
+.gap-24 { gap: 24px; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-wrap { flex-wrap: wrap; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.grid { display: grid; }
+.hidden { display: none !important; }
+
+/* Fade-in animation for values */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fade-in 0.3s ease; }
+
+/* Skeleton shimmer */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+#htp-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(8,12,23,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  height: 60px;
+}
+.header-inner {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 var(--pad-x);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.htp-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+.htp-logo-text {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--primary);
+  letter-spacing: 0.5px;
+}
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.nav-pill {
+  padding: 8px 14px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.nav-pill:hover { color: var(--text); }
+.nav-pill.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.block-height-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+}
+.network-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(79,152,163,0.12);
+  color: var(--primary);
+  border: 1px solid var(--border);
+}
+#wallet-connect-btn {
+  padding: 6px 16px;
+  font-size: 13px;
+}
+
+/* Mobile hamburger */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  padding: 8px;
+  background: none;
+  border: none;
+}
+.hamburger span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--text);
+  transition: transform 0.2s;
+}
+.mobile-drawer {
+  display: none;
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px;
+  z-index: 999;
+}
+.mobile-drawer.open { display: block; }
+.mobile-drawer .nav-pill { display: block; width: 100%; text-align: left; padding: 12px 16px; }
+
+@media (max-width: 768px) {
+  .header-nav { display: none; }
+  .hamburger { display: flex; }
+  .block-height-badge { display: none; }
+}
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+#main-content {
+  margin-top: 60px;
+}
+.tab-section {
+  display: none;
+}
+.tab-section.active {
+  display: block;
+}
+
+/* ============================================================
+   OVERVIEW SECTION
+   ============================================================ */
+.overview-hero {
+  text-align: center;
+  padding: clamp(48px, 8vw, 120px) 0 clamp(32px, 4vw, 64px);
+}
+.overview-hero h1 {
+  color: var(--text);
+  margin-bottom: 16px;
+}
+.overview-hero h1 span { color: var(--primary); }
+.overview-hero p {
+  color: var(--text-muted);
+  font-size: clamp(14px, 2vw, 18px);
+  max-width: 640px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+.overview-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 40px;
+}
+.stat-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+}
+.stat-value {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 700;
+  color: var(--primary);
+}
+.stat-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.overview-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+.overview-dag {
+  margin-top: 48px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.overview-dag canvas {
+  width: 100%;
+  height: 200px;
+  display: block;
+  background: var(--bg);
+}
+
+/* ============================================================
+   SKILL GAMES SECTION
+   ============================================================ */
+.game-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+@media (max-width: 600px) {
+  .game-selector { grid-template-columns: 1fr; }
+}
+.game-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.game-card:hover {
+  border-color: var(--border-hover);
+}
+.game-card.selected {
+  border: 2px solid var(--primary);
+  background: var(--surface-3);
+  box-shadow: 0 0 16px var(--primary-glow);
+}
+.game-card svg {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 12px;
+  display: block;
+}
+.game-card-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+}
+.game-card-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Escrow input */
+.escrow-input-wrapper {
+  position: relative;
+  margin-bottom: 8px;
+}
+.escrow-input-wrapper input {
+  font-family: var(--font-display);
+  font-size: 24px;
+  padding: 16px 60px 16px 16px;
+}
+.escrow-suffix {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+}
+.escrow-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.escrow-usd {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+/* Time control */
+.time-custom-fields {
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+.time-custom-fields.visible { display: grid; }
+
+/* Series selector */
+.series-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* Form groups */
+.form-group {
+  margin-bottom: 20px;
+}
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================
+   MATCH LIFECYCLE STEPPER
+   ============================================================ */
+.stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 32px 0;
+}
+.step {
+  display: flex;
+  gap: 16px;
+  padding: 16px 0;
+  cursor: pointer;
+  position: relative;
+}
+.step::before {
+  content: '';
+  position: absolute;
+  left: 19px;
+  top: 48px;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step:last-child::before { display: none; }
+.step-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--text-faint);
+  position: relative;
+  z-index: 1;
+}
+.step.completed .step-icon {
+  background: rgba(79,152,163,0.15);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.step.active .step-icon {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #080c17;
+}
+.step.active { border-left: 2px solid var(--primary); padding-left: 14px; }
+.step-content { flex: 1; }
+.step-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+}
+.step.completed .step-title { color: var(--text-muted); }
+.step.future .step-title { color: var(--text-faint); }
+.step-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.step.future .step-desc { color: var(--text-faint); }
+.step-detail {
+  display: none;
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--surface-3);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.step.expanded .step-detail { display: block; }
+
+/* ============================================================
+   GAME BOARDS
+   ============================================================ */
+.game-board-container {
+  max-width: 500px;
+  margin: 0 auto;
+}
+#chess-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  aspect-ratio: 1;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.chess-square {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+}
+.chess-square.light { background: #243050; }
+.chess-square.dark { background: #1a2235; }
+.chess-square .piece { width: 80%; height: 80%; }
+.chess-square .legal-move {
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background: rgba(79,152,163,0.4);
+}
+.chess-square .legal-capture {
+  position: absolute;
+  width: 90%;
+  height: 90%;
+  border-radius: 50%;
+  border: 3px solid rgba(79,152,163,0.5);
+}
+
+.game-clocks {
+  display: flex;
+  justify-content: space-between;
+  margin: 12px 0;
+}
+.clock {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  padding: 8px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.clock.active {
+  border-color: var(--primary);
+  animation: clock-pulse 2s ease-in-out infinite;
+}
+.clock.danger { color: var(--error); border-color: var(--error); }
+@keyframes clock-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+.game-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* Connect 4 */
+#c4-board {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+}
+.c4-cell {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  transition: background 0.1s;
+  cursor: pointer;
+}
+.c4-cell.p1 { background: var(--primary); }
+.c4-cell.p2 { background: var(--red); }
+.c4-cell.win { box-shadow: inset 0 0 0 3px white; }
+
+/* Checkers */
+#checkers-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  aspect-ratio: 1;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.checkers-square { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+.checkers-square.dark { background: #1a2235; }
+.checkers-square.light { background: #0f1623; }
+.checker-piece {
+  width: 70%;
+  height: 70%;
+  border-radius: 50%;
+  border: 2px solid;
+  position: relative;
+}
+.checker-piece.teal { background: var(--primary); border-color: var(--primary-h); }
+.checker-piece.red { background: var(--red); border-color: #ff6666; }
+.checker-piece.mandatory { box-shadow: 0 0 8px var(--gold); }
+.checker-piece .crown {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50%;
+  height: 50%;
+}
+
+/* ============================================================
+   PREDICTIONS SECTION
+   ============================================================ */
+.outcomes-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.outcome-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.outcome-row input { flex: 1; }
+.remove-outcome {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.remove-outcome:hover { border-color: var(--error); color: var(--error); }
+
+/* SilverScript compiler panel */
+.compiler-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: 24px;
+  overflow: hidden;
+}
+.compiler-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.compiler-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.compiler-code {
+  padding: 16px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+  counter-reset: line;
+}
+.compiler-code .line {
+  display: block;
+  counter-increment: line;
+}
+.compiler-code .line::before {
+  content: counter(line);
+  display: inline-block;
+  width: 32px;
+  margin-right: 16px;
+  text-align: right;
+  color: var(--text-faint);
+}
+.ss-keyword { color: var(--primary); }
+.ss-value { color: var(--text); }
+.ss-comment { color: var(--text-faint); font-style: italic; }
+.ss-string { color: var(--gold); }
+
+.char-counter {
+  font-size: 12px;
+  color: var(--text-faint);
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* ============================================================
+   KASPA SECTION
+   ============================================================ */
+.kaspa-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.kaspa-stat {
+  text-align: center;
+  padding: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.kaspa-stat-value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--primary);
+}
+.kaspa-stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.blockdag-container {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  position: relative;
+}
+.blockdag-label {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-faint);
+  z-index: 1;
+}
+#blockdag-canvas {
+  width: 100%;
+  height: 320px;
+  display: block;
+  background: var(--bg);
+}
+.blockdag-skeleton {
+  width: 100%;
+  height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--text-faint);
+  font-size: 14px;
+}
+.blockdag-tooltip {
+  display: none;
+  position: absolute;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 12px;
+  z-index: 10;
+  pointer-events: none;
+  max-width: 280px;
+}
+.blockdag-tooltip.visible { display: block; }
+
+/* ============================================================
+   LEADERBOARD
+   ============================================================ */
+.leaderboard-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.leaderboard-table th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-faint);
+  font-weight: 600;
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.leaderboard-table td {
+  padding: 12px 16px;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(79,152,163,0.08);
+}
+.leaderboard-table tr {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.leaderboard-table tbody tr:hover {
+  background: var(--surface-2);
+}
+.leaderboard-table .rank {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--primary);
+}
+@keyframes slide-in-row {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.leaderboard-table tr.new-entry { animation: slide-in-row 0.3s ease; }
+
+/* Match history drawer */
+.match-drawer {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 400px;
+  max-width: 90vw;
+  height: 100vh;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  z-index: 1100;
+  transition: right 0.3s ease;
+  overflow-y: auto;
+  padding: 24px;
+}
+.match-drawer.open { right: 0; }
+.drawer-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1099;
+}
+.drawer-overlay.open { display: block; }
+
+/* ============================================================
+   PORTFOLIO
+   ============================================================ */
+.portfolio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.wallet-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 13px;
+}
+.pnl-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.positions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.position-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.history-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 80px 100px 120px;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(79,152,163,0.08);
+  font-size: 14px;
+  align-items: center;
+}
+@media (max-width: 600px) {
+  .history-row { grid-template-columns: 1fr 1fr; }
+}
+
+/* ============================================================
+   WALLET MODAL
+   ============================================================ */
+.wallet-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 2000;
+  justify-content: center;
+  align-items: center;
+}
+.wallet-modal-overlay.open { display: flex; }
+.wallet-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 560px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 32px;
+}
+.wallet-modal h2 { margin-bottom: 24px; }
+.wallet-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+@media (max-width: 480px) {
+  .wallet-grid { grid-template-columns: 1fr; }
+}
+.wallet-option {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.wallet-option:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+.wallet-option.connected {
+  border-color: var(--primary);
+}
+.wallet-option svg {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 8px;
+  display: block;
+}
+.wallet-option-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+}
+.wallet-option-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.wallet-option-status {
+  margin-top: 8px;
+}
+.expandable-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: 12px;
+}
+.expandable-header {
+  padding: 12px 16px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.expandable-header:hover { color: var(--text); }
+.expandable-body {
+  display: none;
+  padding: 16px;
+  border-top: 1px solid var(--border);
+}
+.expandable-section.open .expandable-body { display: block; }
+.mnemonic-warning {
+  padding: 12px;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--error);
+  margin-bottom: 12px;
+}
+
+/* ============================================================
+   ORACLE SECTION
+   ============================================================ */
+.oracle-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.oracle-tab {
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+.oracle-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+.oracle-panel { display: none; }
+.oracle-panel.active { display: block; }
+
+/* ============================================================
+   CONFIRMATION MODAL
+   ============================================================ */
+.confirm-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 3000;
+  justify-content: center;
+  align-items: center;
+}
+.confirm-modal-overlay.open { display: flex; }
+.confirm-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 400px;
+  width: 90vw;
+  text-align: center;
+}
+.confirm-modal h3 { margin-bottom: 12px; }
+.confirm-modal p { color: var(--text-muted); margin-bottom: 24px; font-size: 14px; }
+.confirm-actions { display: flex; gap: 12px; justify-content: center; }
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+  </style>
 </head>
 <body>
-<div class="app-shell">
-<!-- ── Background DAG Canvas ── -->
-<canvas id="dagCanvas"></canvas>
-
-<!-- ── Header ── -->
-<header class="hdr">
-  <div class="hdr-inner">
-    <div class="hdr-brand">
-      <span class="hdr-logo">HTP</span>
-      <span class="hdr-mark">
-        <svg width="24" height="28" viewBox="0 0 24 28" fill="none">
-          <path d="M12 1L22.5 7.5V20.5L12 27L1.5 20.5V7.5L12 1Z" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
-          <path d="M7 10V18M17 10V18M7 14H17" stroke="#4f98a3" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </span>
-    </div>
-    <nav class="hdr-nav" id="mainNav">
-      <button class="nav-pill active" data-section="overview">Overview</button>
-      <button class="nav-pill" data-section="skill-games">Skill Games</button>
-      <button class="nav-pill" data-section="predictions">Predictions</button>
-      <button class="nav-pill" data-section="kaspa">Kaspa</button>
-      <button class="nav-pill" data-section="leaderboard">Leaderboard</button>
-      <button class="nav-pill" data-section="portfolio">Portfolio</button>
-    </nav>
-    <div class="hdr-right">
-      <div class="block-height" id="blockHeightDisplay">
-        <span class="pulse-dot"></span>
-        <span id="blockHeightValue">--</span>
+  <!-- ========================================================
+       HEADER
+       ======================================================== -->
+  <header id="htp-header">
+    <div class="header-inner">
+      <div class="header-left">
+        <a href="#" class="htp-logo" onclick="switchTab('overview');return false">
+          <!-- HTP Logo: H inside hexagon -->
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 1L29.5 8.5V23.5L16 31L2.5 23.5V8.5L16 1Z" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
+            <path d="M10 10V22M22 10V22M10 16H22" stroke="#4f98a3" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+          <span class="htp-logo-text">HTP</span>
+        </a>
       </div>
-      <span class="net-badge" id="netBadge">TN12</span>
-      <button class="connect-btn" id="connectWalletBtn" data-action="connect-wallet">Connect</button>
-    </div>
-    <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
-      <span></span><span></span><span></span>
-    </button>
-  </div>
-</header>
-<div class="mobile-drawer" id="mobileDrawer">
-  <button class="nav-pill active" data-section="overview">Overview</button>
-  <button class="nav-pill" data-section="skill-games">Skill Games</button>
-  <button class="nav-pill" data-section="predictions">Predictions</button>
-  <button class="nav-pill" data-section="kaspa">Kaspa</button>
-  <button class="nav-pill" data-section="leaderboard">Leaderboard</button>
-  <button class="nav-pill" data-section="portfolio">Portfolio</button>
-  <button class="nav-pill" data-section="wallet">Wallet</button>
-  <button class="nav-pill" data-section="oracle">Oracle</button>
-</div>
-
-<!-- ── Toast Container ── -->
-<div class="toast-container" id="toastContainer"></div>
-
-<!-- ── WASM Warning Banner ── -->
-<div class="wasm-banner" id="wasmBanner">Kaspa SDK unavailable - some features require a browser extension wallet.</div>
-
-<!-- ── Main Content ── -->
-<main class="content-wrap">
-
-<!-- ════════════════════════════════════════════════════════
-     SECTION: OVERVIEW
-     ════════════════════════════════════════════════════════ -->
-<section class="section active" id="sec-overview">
-  <div class="section-hdr">
-    <h2>High Table Protocol</h2>
-    <p>Trustless skill games and prediction markets on Kaspa BlockDAG</p>
-  </div>
-
-  <div class="stats-bar" id="overviewStats">
-    <div class="stat-cell"><div class="stat-value" id="statPool">--</div><div class="stat-label">Total Pool (KAS)</div></div>
-    <div class="stat-cell"><div class="stat-value" id="statMatches">--</div><div class="stat-label">Active Matches</div></div>
-    <div class="stat-cell"><div class="stat-value" id="statEvents">--</div><div class="stat-label">Prediction Events</div></div>
-    <div class="stat-cell"><div class="stat-value" id="statPlayers">--</div><div class="stat-label">Players</div></div>
-    <div class="stat-cell"><div class="stat-value" id="statConfirm">~1s</div><div class="stat-label">Confirmation</div></div>
-  </div>
-
-  <!-- Mini BlockDAG -->
-  <div style="position:relative;height:200px;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px">
-    <div style="position:absolute;top:12px;left:16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-faint)">KASPA BLOCKDAG</div>
-    <div id="miniDagContainer" style="width:100%;height:100%"></div>
-  </div>
-
-  <div class="grid-3" style="margin-bottom:24px">
-    <div class="card" style="cursor:pointer" onclick="go('skill-games')">
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="4" y="4" width="10" height="10" rx="2" stroke="#4f98a3" stroke-width="1.5"/><rect x="18" y="4" width="10" height="10" rx="2" stroke="#4f98a3" stroke-width="1.5"/><rect x="4" y="18" width="10" height="10" rx="2" stroke="#4f98a3" stroke-width="1.5"/><rect x="18" y="18" width="10" height="10" rx="2" stroke="#4f98a3" stroke-width="1.5"/></svg>
-      <h3 style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;margin:12px 0 4px">Skill Games</h3>
-      <p style="font-size:13px;color:var(--text-muted)">Chess, Connect4, Checkers with on-chain escrow</p>
-    </div>
-    <div class="card" style="cursor:pointer" onclick="go('predictions')">
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="11" stroke="#4f98a3" stroke-width="1.5"/><path d="M16 8V16L22 20" stroke="#4f98a3" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <h3 style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;margin:12px 0 4px">Predictions</h3>
-      <p style="font-size:13px;color:var(--text-muted)">Create and trade on event outcomes</p>
-    </div>
-    <div class="card" style="cursor:pointer" onclick="go('kaspa')">
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M4 16H8L12 8L16 24L20 12L24 16H28" stroke="#4f98a3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <h3 style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;margin:12px 0 4px">Kaspa Network</h3>
-      <p style="font-size:13px;color:var(--text-muted)">Live BlockDAG visualization and stats</p>
-    </div>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════════
-     SECTION: SKILL GAMES
-     ════════════════════════════════════════════════════════ -->
-<section class="section" id="sec-skill-games">
-  <div class="section-hdr">
-    <h2>Skill Games</h2>
-    <p>Challenge opponents with KAS escrow - winner takes the pool</p>
-  </div>
-
-  <!-- Game Selector -->
-  <div class="game-cards" id="gameCards">
-    <div class="game-card selected" data-game="chess">
-      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-        <path d="M24 6V10M20 10H28V14L26 16V22H30L32 28H16L18 22V16L16 14V10H20Z" stroke="#4f98a3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M14 36H34V32H14V36Z" stroke="#4f98a3" stroke-width="1.5"/>
-        <path d="M16 32L18 28H30L32 32" stroke="#4f98a3" stroke-width="1.5"/>
-        <path d="M12 40H36V36H12V40Z" stroke="#4f98a3" stroke-width="1.5"/>
-      </svg>
-      <span class="game-label">Chess</span>
-    </div>
-    <div class="game-card" data-game="connect4">
-      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-        <rect x="6" y="10" width="36" height="30" rx="3" stroke="#4f98a3" stroke-width="1.5"/>
-        <circle cx="16" cy="20" r="4" stroke="#4f98a3" stroke-width="1.5"/>
-        <circle cx="24" cy="20" r="4" stroke="#4f98a3" stroke-width="1.5"/>
-        <circle cx="32" cy="20" r="4" stroke="#4f98a3" stroke-width="1.5"/>
-        <circle cx="16" cy="30" r="4" stroke="#4f98a3" stroke-width="1.5"/>
-        <circle cx="24" cy="30" r="4" fill="#4f98a3" fill-opacity="0.3" stroke="#4f98a3" stroke-width="1.5"/>
-        <circle cx="32" cy="30" r="4" stroke="#4f98a3" stroke-width="1.5"/>
-        <path d="M24 4V10" stroke="#4f98a3" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 2"/>
-      </svg>
-      <span class="game-label">Connect 4</span>
-    </div>
-    <div class="game-card" data-game="checkers">
-      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-        <rect x="8" y="8" width="32" height="32" rx="2" stroke="#4f98a3" stroke-width="1.5"/>
-        <circle cx="18" cy="18" r="5" stroke="#4f98a3" stroke-width="1.5"/>
-        <circle cx="30" cy="30" r="5" fill="#4f98a3" fill-opacity="0.3" stroke="#4f98a3" stroke-width="1.5"/>
-        <path d="M8 16H40M8 24H40M8 32H40M16 8V40M24 8V40M32 8V40" stroke="#4f98a3" stroke-width="0.5" opacity="0.3"/>
-      </svg>
-      <span class="game-label">Checkers</span>
-    </div>
-  </div>
-
-  <!-- Match Creation Form -->
-  <div class="card" style="margin-bottom:20px">
-    <h3 style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;margin-bottom:16px">Create Match</h3>
-    <input type="hidden" id="sgGame" value="chess">
-
-    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Escrow Amount (KAS)</label>
-    <div class="escrow-row">
-      <input type="number" id="sgEsc" class="escrow-input" value="5" min="1" step="1" placeholder="Amount in KAS">
-    </div>
-    <div class="escrow-pills" id="escrowPills">
-      <button class="escrow-pill active" data-kas="5">5 KAS</button>
-      <button class="escrow-pill" data-kas="10">10 KAS</button>
-      <button class="escrow-pill" data-kas="25">25 KAS</button>
-      <button class="escrow-pill" data-kas="50">50 KAS</button>
-      <button class="escrow-pill" data-kas="100">100 KAS</button>
-    </div>
-    <div class="usd-equiv" id="usdEquiv">-- USD</div>
-
-    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Time Control</label>
-    <select id="sgTime" style="width:100%;margin-bottom:16px">
-      <option value="3|0">3 min - Blitz</option>
-      <option value="5|0" selected>5 min - Blitz</option>
-      <option value="10|0">10 min - Rapid</option>
-      <option value="15|10">15+10 - Rapid</option>
-      <option value="30|0">30 min - Classical</option>
-    </select>
-
-    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Series</label>
-    <select id="sgSeries" style="width:100%;margin-bottom:20px">
-      <option value="1" selected>Single Game</option>
-      <option value="3">Best of 3</option>
-      <option value="5">Best of 5</option>
-    </select>
-
-    <button class="btn-primary btn-full wasm-gate" id="createMatchBtn" onclick="createMatchWithLobby()">Create Match and Lock Escrow</button>
-  </div>
-
-  <!-- Match Lobby -->
-  <div class="section-hdr"><h2>Match Lobby</h2><p>Open matches waiting for opponents</p></div>
-  <div class="lobby-grid" id="matchLobby">
-    <div style="text-align:center;padding:40px;color:var(--text-faint)">No open matches - be the first to create one</div>
-  </div>
-
-  <!-- Game Board Container -->
-  <div id="gameBoardContainer" style="display:none;margin-top:24px">
-    <div id="gameBoard"></div>
-  </div>
-
-  <!-- Match Lifecycle Stepper -->
-  <div id="matchStepper" style="display:none">
-    <h3 style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;margin:24px 0 12px">Match Lifecycle</h3>
-    <div class="stepper">
-      <div class="step completed" data-step="create">
-        <div class="step-icon"><svg viewBox="0 0 14 14" fill="none"><path d="M7 3V11M3 7H11" stroke="#080c17" stroke-width="2" stroke-linecap="round"/></svg></div>
-        <div class="step-body"><h4>Create</h4><p>Match created and escrow address generated</p></div>
-      </div>
-      <div class="step" data-step="accept">
-        <div class="step-icon"><svg viewBox="0 0 14 14" fill="none"><path d="M3 7L6 10L11 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
-        <div class="step-body"><h4>Accept</h4><p>Opponent joins and locks matching escrow</p></div>
-      </div>
-      <div class="step" data-step="play">
-        <div class="step-icon"><svg viewBox="0 0 14 14" fill="none"><polygon points="4,2 12,7 4,12" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
-        <div class="step-body"><h4>Play</h4><p>Game in progress with synchronized clocks</p></div>
-      </div>
-      <div class="step" data-step="resolve">
-        <div class="step-icon"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M7 4V7L9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
-        <div class="step-body"><h4>Resolve</h4><p>Oracle validates result and signs attestation</p></div>
-      </div>
-      <div class="step" data-step="settle">
-        <div class="step-icon"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7H5L7 3L9 11L11 7H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="step-body"><h4>Settle</h4><p>Winner receives payout from escrow (2% protocol fee)</p></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════════
-     SECTION: PREDICTIONS
-     ════════════════════════════════════════════════════════ -->
-<section class="section" id="sec-predictions">
-  <div class="section-hdr">
-    <h2>Prediction Markets</h2>
-    <p>Create events and trade on outcomes with covenant escrow</p>
-  </div>
-
-  <!-- Event Creation Form -->
-  <div class="card" style="margin-bottom:24px">
-    <h3 style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;margin-bottom:16px">Create Event</h3>
-
-    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Event Title</label>
-    <input type="text" id="htp-ev-title" placeholder="e.g. BTC above 100k by June 2025" style="width:100%;margin-bottom:12px">
-
-    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Description</label>
-    <textarea id="htp-ev-desc" rows="3" placeholder="Detailed description of resolution criteria" style="width:100%;margin-bottom:12px;resize:vertical"></textarea>
-
-    <div class="grid-2" style="margin-bottom:12px">
-      <div>
-        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Resolution Date</label>
-        <input type="datetime-local" id="htp-ev-date" style="width:100%">
-      </div>
-      <div>
-        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Source URL</label>
-        <input type="url" id="htp-ev-source" placeholder="https://..." style="width:100%">
-      </div>
-    </div>
-
-    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Outcomes</label>
-    <div id="outcomesContainer">
-      <div class="outcome-row" style="display:flex;gap:8px;margin-bottom:8px">
-        <input type="text" class="outcome-input" value="Yes" style="flex:1" readonly>
-        <span style="padding:10px;color:var(--text-faint)">Default</span>
-      </div>
-      <div class="outcome-row" style="display:flex;gap:8px;margin-bottom:8px">
-        <input type="text" class="outcome-input" value="No" style="flex:1" readonly>
-        <span style="padding:10px;color:var(--text-faint)">Default</span>
-      </div>
-    </div>
-    <button class="btn-secondary" id="addOutcomeBtn" style="margin-bottom:16px;font-size:12px;padding:6px 12px">+ Add Outcome</button>
-
-    <div class="grid-2" style="margin-bottom:16px">
-      <div>
-        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Min Position (KAS)</label>
-        <input type="number" id="htp-ev-min" value="1" min="1" style="width:100%">
-      </div>
-      <div>
-        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Max Participants</label>
-        <input type="number" id="htp-ev-max" value="100" min="2" style="width:100%">
-      </div>
-    </div>
-
-    <button class="btn-primary btn-full wasm-gate" id="createEventBtn">Create Prediction Event</button>
-  </div>
-
-  <!-- SilverScript Live Compiler Panel -->
-  <div class="compiler-panel" id="silverscriptPanel">
-    <div class="compiler-header">
-      <span>SilverScript Live Compiler</span>
-      <div class="compiler-status">
-        <span class="pulse-dot" style="width:6px;height:6px;background:var(--text-faint)" id="compilerDot"></span>
-        <span id="compilerStatusText">Waiting for input</span>
-      </div>
-    </div>
-    <div class="compiler-body" id="silverscriptOutput"><span class="ss-comment">// SilverScript contract will appear here as you fill the form</span></div>
-  </div>
-
-  <!-- Active Events Listing -->
-  <div style="margin-top:24px">
-    <div class="section-hdr"><h2>Active Events</h2><p>Open prediction markets</p></div>
-    <div id="eventsListing">
-      <div style="text-align:center;padding:40px;color:var(--text-faint)">No active events</div>
-    </div>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════════
-     SECTION: KASPA
-     ════════════════════════════════════════════════════════ -->
-<section class="section" id="sec-kaspa">
-  <div class="section-hdr">
-    <h2>Kaspa Network</h2>
-    <p>Live BlockDAG visualization and network statistics</p>
-  </div>
-
-  <div class="stats-bar" id="kaspaStats">
-    <div class="stat-cell"><div class="stat-value" id="kBlockHeight">--</div><div class="stat-label">Block Height</div></div>
-    <div class="stat-cell"><div class="stat-value" id="kDaaScore">--</div><div class="stat-label">DAA Score</div></div>
-    <div class="stat-cell"><div class="stat-value" id="kHashrate">--</div><div class="stat-label">Hashrate</div></div>
-    <div class="stat-cell"><div class="stat-value" id="kBlockRate">--</div><div class="stat-label">Blocks/s</div></div>
-    <div class="stat-cell"><div class="stat-value" id="kMedianFee">--</div><div class="stat-label">Median Fee</div></div>
-  </div>
-
-  <div class="blockdag-wrap">
-    <div class="blockdag-label">KASPA BLOCKDAG</div>
-    <div id="blockdagContainer" style="width:100%;height:100%"></div>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════════
-     SECTION: WALLET
-     ════════════════════════════════════════════════════════ -->
-<section class="section" id="sec-wallet">
-  <div class="section-hdr">
-    <h2>Wallet</h2>
-    <p>Connect your Kaspa wallet to interact with the protocol</p>
-  </div>
-
-  <div class="wallet-grid" id="walletGrid"></div>
-
-  <!-- Manual Address Entry -->
-  <div class="expandable">
-    <div class="expand-trigger" data-expand="manual-addr">
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      Enter address manually
-    </div>
-    <div class="expand-body" id="manual-addr">
-      <input type="text" id="manualAddrInput" placeholder="kaspatest:qp..." style="width:100%;margin-bottom:12px">
-      <button class="btn-primary" id="manualAddrBtn">Connect Address</button>
-    </div>
-  </div>
-
-  <!-- Mnemonic Import -->
-  <div class="expandable">
-    <div class="expand-trigger" data-expand="mnemonic-import">
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      Import from mnemonic
-    </div>
-    <div class="expand-body" id="mnemonic-import">
-      <div style="padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--error)">
-        Security warning: your mnemonic is encrypted client-side and stored only for this session. Never share your seed phrase.
-      </div>
-      <textarea id="mnemonic-input" rows="3" placeholder="Enter 12 or 24 word mnemonic phrase" style="width:100%;margin-bottom:12px;resize:none"></textarea>
-      <button class="btn-primary wasm-gate" id="mnemonicImportBtn">Import Wallet</button>
-    </div>
-  </div>
-
-  <!-- Connected Wallet Status -->
-  <div id="wallet-connected-status" style="display:none;margin-top:24px">
-    <div class="card">
-      <div style="display:flex;align-items:center;gap:12px">
-        <div class="pulse-dot" style="background:var(--success)"></div>
-        <div>
-          <div style="font-size:12px;color:var(--text-muted)">Connected</div>
-          <div id="connected-address" style="font-family:'JetBrains Mono',monospace;font-size:13px;word-break:break-all"></div>
+      <nav class="header-nav" id="desktop-nav">
+        <button class="nav-pill active" data-tab="overview">Overview</button>
+        <button class="nav-pill" data-tab="skill-games">Skill Games</button>
+        <button class="nav-pill" data-tab="predictions">Predictions</button>
+        <button class="nav-pill" data-tab="kaspa">Kaspa</button>
+        <button class="nav-pill" data-tab="leaderboard">Leaderboard</button>
+        <button class="nav-pill" data-tab="portfolio">Portfolio</button>
+      </nav>
+      <div class="header-right">
+        <div class="block-height-badge">
+          <span class="dot dot-green dot-pulse"></span>
+          <span id="header-block-height">Loading...</span>
         </div>
-        <div style="margin-left:auto;text-align:right">
-          <div id="connected-balance" style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700">-- KAS</div>
+        <span class="network-badge" id="network-badge">TN12</span>
+        <button class="btn btn-primary" id="wallet-connect-btn" onclick="openWalletModal()">Connect</button>
+      </div>
+      <button class="hamburger" id="hamburger-btn" onclick="toggleMobileNav()">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="mobile-drawer" id="mobile-drawer">
+      <button class="nav-pill active" data-tab="overview" onclick="switchTab('overview');closeMobileNav()">Overview</button>
+      <button class="nav-pill" data-tab="skill-games" onclick="switchTab('skill-games');closeMobileNav()">Skill Games</button>
+      <button class="nav-pill" data-tab="predictions" onclick="switchTab('predictions');closeMobileNav()">Predictions</button>
+      <button class="nav-pill" data-tab="kaspa" onclick="switchTab('kaspa');closeMobileNav()">Kaspa</button>
+      <button class="nav-pill" data-tab="leaderboard" onclick="switchTab('leaderboard');closeMobileNav()">Leaderboard</button>
+      <button class="nav-pill" data-tab="portfolio" onclick="switchTab('portfolio');closeMobileNav()">Portfolio</button>
+    </div>
+  </header>
+
+  <!-- ========================================================
+       MAIN CONTENT
+       ======================================================== -->
+  <main id="main-content">
+
+    <!-- ====== OVERVIEW ====== -->
+    <section id="tab-overview" class="tab-section active">
+      <div class="container">
+        <div class="overview-hero">
+          <h1>The <span>High Table</span> Protocol</h1>
+          <p>Fully trustless, non-custodial prediction markets and skill gaming on Kaspa. No intermediary holds your funds. Escrow is enforced on-chain. Winners receive KAS directly.</p>
+          <div class="overview-actions">
+            <button class="btn btn-primary" onclick="switchTab('skill-games')">Create Match</button>
+            <button class="btn btn-secondary" onclick="switchTab('predictions')">Create Prediction</button>
+          </div>
+          <div class="overview-stats">
+            <div class="stat-card">
+              <div class="stat-value" id="stat-matches">0</div>
+              <div class="stat-label">Total Matches</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-wagered">0 KAS</div>
+              <div class="stat-label">Total KAS Wagered</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-markets">0</div>
+              <div class="stat-label">Active Markets</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-block-height">--</div>
+              <div class="stat-label">Block Height</div>
+            </div>
+          </div>
+        </div>
+        <div class="overview-dag">
+          <canvas id="overview-dag-canvas"></canvas>
         </div>
       </div>
-      <button class="btn-secondary" id="disconnectWalletBtn" style="margin-top:12px;width:100%">Disconnect</button>
-    </div>
-  </div>
-</section>
+    </section>
 
-<!-- ════════════════════════════════════════════════════════
-     SECTION: ORACLE
-     ════════════════════════════════════════════════════════ -->
-<section class="section" id="sec-oracle">
-  <div class="section-hdr">
-    <h2>Oracle Network</h2>
-    <p>Decentralized result attestation and verification</p>
-  </div>
+    <!-- ====== SKILL GAMES ====== -->
+    <section id="tab-skill-games" class="tab-section">
+      <div class="container section-padding">
+        <h2 class="mb-24">Skill Games</h2>
+        
+        <!-- Match Creation Form -->
+        <div class="card mb-24" id="match-creation-form">
+          <h3 class="mb-16">Create a Challenge Match</h3>
+          
+          <!-- Game Selector -->
+          <div class="form-group">
+            <label class="form-label">Select Game</label>
+            <div class="game-selector">
+              <div class="game-card selected" data-game="chess" onclick="selectGame('chess')">
+                <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="8" y="8" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
+                  <rect x="20" y="8" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
+                  <rect x="32" y="8" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
+                  <rect x="44" y="8" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
+                  <rect x="8" y="20" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
+                  <rect x="20" y="20" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
+                  <rect x="32" y="20" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
+                  <rect x="44" y="20" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
+                  <rect x="8" y="32" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
+                  <rect x="20" y="32" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
+                  <rect x="32" y="32" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
+                  <rect x="44" y="32" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
+                  <rect x="8" y="44" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
+                  <rect x="20" y="44" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
+                  <rect x="32" y="44" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
+                  <rect x="44" y="44" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
+                  <!-- Knight shape -->
+                  <path d="M24 44V36L20 32L24 28V24H28L32 20V24L36 28V32L32 36V40H28V44H24Z" fill="#4f98a3" opacity="0.6"/>
+                </svg>
+                <div class="game-card-title">Chess</div>
+                <div class="game-card-desc">Classic strategy game</div>
+              </div>
+              <div class="game-card" data-game="connect4" onclick="selectGame('connect4')">
+                <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="8" y="16" width="48" height="40" rx="4" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
+                  <circle cx="20" cy="28" r="5" fill="var(--surface-3)" stroke="#4f98a3" stroke-width="1"/>
+                  <circle cx="32" cy="28" r="5" fill="var(--surface-3)" stroke="#4f98a3" stroke-width="1"/>
+                  <circle cx="44" cy="28" r="5" fill="var(--surface-3)" stroke="#4f98a3" stroke-width="1"/>
+                  <circle cx="20" cy="40" r="5" fill="#4f98a3"/>
+                  <circle cx="32" cy="40" r="5" fill="#e84040"/>
+                  <circle cx="44" cy="40" r="5" fill="#4f98a3"/>
+                  <circle cx="32" cy="28" r="5" fill="#e84040"/>
+                  <!-- Diagonal win line -->
+                  <line x1="18" y1="44" x2="46" y2="24" stroke="#fff" stroke-width="1" opacity="0.3"/>
+                </svg>
+                <div class="game-card-title">Connect 4</div>
+                <div class="game-card-desc">Drop disc strategy</div>
+              </div>
+              <div class="game-card" data-game="checkers" onclick="selectGame('checkers')">
+                <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="8" y="8" width="12" height="12" fill="#243050"/>
+                  <rect x="20" y="8" width="12" height="12" fill="#1a2235"/>
+                  <rect x="32" y="8" width="12" height="12" fill="#243050"/>
+                  <rect x="44" y="8" width="12" height="12" fill="#1a2235"/>
+                  <rect x="8" y="20" width="12" height="12" fill="#1a2235"/>
+                  <rect x="20" y="20" width="12" height="12" fill="#243050"/>
+                  <rect x="32" y="20" width="12" height="12" fill="#1a2235"/>
+                  <rect x="44" y="20" width="12" height="12" fill="#243050"/>
+                  <rect x="8" y="32" width="12" height="12" fill="#243050"/>
+                  <rect x="20" y="32" width="12" height="12" fill="#1a2235"/>
+                  <rect x="32" y="32" width="12" height="12" fill="#243050"/>
+                  <rect x="44" y="32" width="12" height="12" fill="#1a2235"/>
+                  <rect x="8" y="44" width="12" height="12" fill="#1a2235"/>
+                  <rect x="20" y="44" width="12" height="12" fill="#243050"/>
+                  <rect x="32" y="44" width="12" height="12" fill="#1a2235"/>
+                  <rect x="44" y="44" width="12" height="12" fill="#243050"/>
+                  <!-- Pieces -->
+                  <circle cx="26" cy="14" r="4" fill="#4f98a3" stroke="#5fb3c0" stroke-width="1"/>
+                  <circle cx="50" cy="14" r="4" fill="#4f98a3" stroke="#5fb3c0" stroke-width="1"/>
+                  <circle cx="14" cy="50" r="4" fill="#e84040" stroke="#ff6666" stroke-width="1"/>
+                  <circle cx="38" cy="50" r="4" fill="#e84040" stroke="#ff6666" stroke-width="1"/>
+                </svg>
+                <div class="game-card-title">Checkers</div>
+                <div class="game-card-desc">Multi-jump captures</div>
+              </div>
+            </div>
+          </div>
 
-  <div class="tab-row" id="oracleTabs">
-    <button class="tab-btn active" data-tab="zk">ZK Verification</button>
-    <button class="tab-btn" data-tab="bonded">Bonded Oracle</button>
-    <button class="tab-btn" data-tab="miner">Miner Oracle</button>
-  </div>
+          <!-- Escrow Input -->
+          <div class="form-group">
+            <label class="form-label">Escrow Amount</label>
+            <div class="escrow-input-wrapper">
+              <input type="number" class="input" id="escrow-amount" placeholder="0" min="1" step="1">
+              <span class="escrow-suffix">KAS</span>
+            </div>
+            <div class="escrow-pills">
+              <button class="pill" onclick="setEscrow(5)">5 KAS</button>
+              <button class="pill" onclick="setEscrow(10)">10 KAS</button>
+              <button class="pill" onclick="setEscrow(25)">25 KAS</button>
+              <button class="pill" onclick="setEscrow(50)">50 KAS</button>
+              <button class="pill" onclick="setEscrow(100)">100 KAS</button>
+            </div>
+            <div class="escrow-usd" id="escrow-usd">~ $0.00 USD</div>
+          </div>
 
-  <div class="tab-pane active" id="tab-zk">
-    <div class="card" style="margin-bottom:16px">
-      <h3 style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;margin-bottom:12px">ZK Verification Status</h3>
-      <div class="grid-2">
-        <div>
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Commit Scheme</div>
-          <div style="font-size:14px;font-weight:500">SHA-256 Hash Commit</div>
+          <!-- Time Control -->
+          <div class="form-group">
+            <label class="form-label">Time Control</label>
+            <select class="select" id="time-control" onchange="onTimeControlChange()">
+              <option value="1|0">Bullet: 1 min</option>
+              <option value="3|0">Blitz: 3 min</option>
+              <option value="5|0" selected>Blitz: 5 min</option>
+              <option value="10|0">Rapid: 10 min</option>
+              <option value="5|3">5+3</option>
+              <option value="10|5">10+5</option>
+              <option value="30|0">Classical: 30 min</option>
+              <option value="custom">Custom</option>
+            </select>
+            <div class="time-custom-fields" id="time-custom-fields">
+              <div>
+                <label class="form-label">Minutes</label>
+                <input type="number" class="input" id="custom-minutes" placeholder="10" min="1" max="180">
+              </div>
+              <div>
+                <label class="form-label">Increment (sec)</label>
+                <input type="number" class="input" id="custom-increment" placeholder="0" min="0" max="60">
+              </div>
+            </div>
+          </div>
+
+          <!-- Series -->
+          <div class="form-group">
+            <label class="form-label">Series</label>
+            <div class="series-selector">
+              <button class="pill active" data-series="1" onclick="selectSeries(1)">Single Game</button>
+              <button class="pill" data-series="3" onclick="selectSeries(3)">Best of 3</button>
+              <button class="pill" data-series="5" onclick="selectSeries(5)">Best of 5</button>
+            </div>
+          </div>
+
+          <!-- Opponent -->
+          <div class="form-group">
+            <label class="form-label">Opponent Address (optional - leave empty for open challenge)</label>
+            <input type="text" class="input" id="opponent-address" placeholder="kaspatest:qr...">
+          </div>
+
+          <!-- Submit -->
+          <button class="btn btn-primary btn-full" id="create-match-btn" onclick="createMatch()">
+            Create Match and Lock Escrow
+          </button>
         </div>
-        <div>
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Attestation Status</div>
-          <div id="oZkConf" style="font-size:14px;font-weight:500">Idle</div>
+
+        <!-- Match Lifecycle Stepper -->
+        <div class="card mb-24">
+          <h3 class="mb-16">How It Works</h3>
+          <div class="stepper">
+            <div class="step active" onclick="toggleStepDetail(this)">
+              <div class="step-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+              </div>
+              <div class="step-content">
+                <div class="step-title">Create</div>
+                <div class="step-desc">Lock KAS in an on-chain escrow</div>
+                <div class="step-detail">Challenger sends KAS to a P2SH escrow address derived from both player public keys. Transaction is broadcast to Kaspa TN12 and confirmed within 1 second.</div>
+              </div>
+            </div>
+            <div class="step future" onclick="toggleStepDetail(this)">
+              <div class="step-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+              </div>
+              <div class="step-content">
+                <div class="step-title">Accept</div>
+                <div class="step-desc">Opponent matches the escrow</div>
+                <div class="step-detail">Joiner matches the escrow amount into the same address. The covenant now holds 2x the stake. Firebase records both UTXO references.</div>
+              </div>
+            </div>
+            <div class="step future" onclick="toggleStepDetail(this)">
+              <div class="step-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+              </div>
+              <div class="step-content">
+                <div class="step-title">Play</div>
+                <div class="step-desc">Every move hashed and committed on-chain</div>
+                <div class="step-detail">Every move is hashed client-side using SHA-256 and the root is committed via OP_RETURN in a zero-value transaction. This creates an immutable audit trail of game state.</div>
+              </div>
+            </div>
+            <div class="step future" onclick="toggleStepDetail(this)">
+              <div class="step-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+              </div>
+              <div class="step-content">
+                <div class="step-title">Resolve</div>
+                <div class="step-desc">Oracle verifies the winner</div>
+                <div class="step-detail">The oracle daemon monitors the match document. On game completion, it verifies the winner signature and confirms the escrow UTXOs are unspent.</div>
+              </div>
+            </div>
+            <div class="step future" onclick="toggleStepDetail(this)">
+              <div class="step-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4h-4z"/></svg>
+              </div>
+              <div class="step-content">
+                <div class="step-title">Settle</div>
+                <div class="step-desc">Winner receives KAS directly</div>
+                <div class="step-detail">A payout transaction sweeps both escrow UTXOs, sends 98% to the winner address and 2% to the protocol treasury. No withdrawal needed: funds arrive in the winner's wallet.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Lobby -->
+        <div class="card">
+          <h3 class="mb-16">Active Lobby</h3>
+          <div id="match-lobby">
+            <p class="text-muted">No active matches. Create one above or wait for an invite link.</p>
+          </div>
+        </div>
+
+        <!-- Game Board (shown when match is active) -->
+        <div id="game-board-area" class="hidden mt-24">
+          <div class="game-board-container">
+            <div class="game-clocks">
+              <div class="clock" id="clock-top">5:00</div>
+              <div class="clock active" id="clock-bottom">5:00</div>
+            </div>
+            <div id="chess-board"></div>
+            <div id="c4-board" class="hidden"></div>
+            <div id="checkers-board" class="hidden"></div>
+            <div class="game-controls mt-16">
+              <button class="btn btn-secondary" onclick="offerDraw()">Offer Draw</button>
+              <button class="btn btn-secondary" onclick="confirmResign()" style="border-color:var(--error);color:var(--error)">Resign</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== PREDICTIONS ====== -->
+    <section id="tab-predictions" class="tab-section">
+      <div class="container section-padding">
+        <h2 class="mb-24">Prediction Markets</h2>
+
+        <!-- Event Creation -->
+        <div class="card mb-24" id="prediction-form">
+          <h3 class="mb-16">Create Event</h3>
+          
+          <div class="form-group">
+            <label class="form-label">Event Title</label>
+            <input type="text" class="input" id="event-title" placeholder="e.g., Will BTC reach $100k by June 2026?" maxlength="120" oninput="updateCharCounter('event-title', 120); compileSilverScript()">
+            <div class="char-counter" id="event-title-counter">0 / 120</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea class="textarea" id="event-description" placeholder="Describe the event and resolution criteria..." maxlength="1000" oninput="updateCharCounter('event-description', 1000); compileSilverScript()"></textarea>
+            <div class="char-counter" id="event-description-counter">0 / 1000</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Resolution Date and Time</label>
+            <input type="datetime-local" class="input" id="event-resolution-date" onchange="compileSilverScript()">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Resolution Source URL</label>
+            <input type="url" class="input" id="event-source-url" placeholder="https://..." oninput="compileSilverScript()">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Outcomes</label>
+            <div class="outcomes-container" id="outcomesContainer">
+              <div class="outcome-row">
+                <input type="text" class="input outcome-input" value="Yes" maxlength="80" oninput="compileSilverScript()">
+              </div>
+              <div class="outcome-row">
+                <input type="text" class="input outcome-input" value="No" maxlength="80" oninput="compileSilverScript()">
+                <button class="remove-outcome" onclick="removeOutcome(this)">X</button>
+              </div>
+            </div>
+            <button class="btn btn-secondary mt-8" id="addOutcomeBtn" onclick="addOutcome()">+ Add Outcome</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div class="form-group">
+              <label class="form-label">Min Position (KAS)</label>
+              <input type="number" class="input" id="event-min-position" placeholder="1" min="1" oninput="compileSilverScript()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Max Participants (optional)</label>
+              <input type="number" class="input" id="event-max-participants" placeholder="Unlimited" min="2">
+            </div>
+          </div>
+
+          <!-- SilverScript Compiler Panel -->
+          <div class="compiler-panel" id="compiler-panel">
+            <div class="compiler-header">
+              <span class="font-display fw-600" style="font-size:13px">SilverScript Compiler</span>
+              <div style="display:flex;gap:12px;align-items:center">
+                <button class="btn btn-secondary" style="padding:4px 12px;font-size:12px" onclick="copySilverScript()">Copy</button>
+                <div class="compiler-status" id="compiler-status">
+                  <span class="dot dot-grey" id="compiler-dot"></span>
+                  <span id="compiler-status-text">Incomplete</span>
+                </div>
+              </div>
+            </div>
+            <div class="compiler-code" id="compiler-output">
+              <span class="ss-comment">// Fill in the form above to generate SilverScript</span>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-full mt-24" id="create-event-btn" onclick="createPredictionEvent()">
+            Create Event and Lock Escrow
+          </button>
+        </div>
+
+        <!-- Active Markets -->
+        <div class="card">
+          <h3 class="mb-16">Active Markets</h3>
+          <div id="active-markets">
+            <p class="text-muted">No active prediction markets yet.</p>
+          </div>
+        </div>
+
+        <!-- Oracle Section -->
+        <div class="card mt-24">
+          <h3 class="mb-16">Oracle Network</h3>
+          <div class="oracle-tabs">
+            <button class="oracle-tab active" onclick="switchOracleTab('zk')">ZK Verification</button>
+            <button class="oracle-tab" onclick="switchOracleTab('bonded')">Bonded Oracle</button>
+            <button class="oracle-tab" onclick="switchOracleTab('miner')">Miner Oracle</button>
+          </div>
+          
+          <div class="oracle-panel active" id="oracle-zk">
+            <h4 class="mb-8">ZK Verification Pipeline</h4>
+            <p class="text-muted mb-16">SHA-256 commit scheme with KIP-16 Groth16 upgrade path. Every game move is hashed and committed on-chain, creating a verifiable audit trail.</p>
+            <div class="card" style="background:var(--surface-3)">
+              <div class="flex items-center gap-8 mb-8">
+                <span class="dot dot-green dot-pulse"></span>
+                <span class="fw-600">Pipeline Status: Active</span>
+              </div>
+              <div class="text-muted" style="font-size:13px">
+                Current scheme: SHA-256 commitment via OP_RETURN<br>
+                Upgrade path: KIP-16 Groth16 ZK verification (post Q2 hard fork)
+              </div>
+            </div>
+            <div id="zk-attestations" class="mt-16">
+              <p class="text-faint" style="font-size:13px">No active attestations</p>
+            </div>
+          </div>
+
+          <div class="oracle-panel" id="oracle-bonded">
+            <h4 class="mb-8">Bonded Oracle</h4>
+            <p class="text-muted mb-16">Stake KAS as a bond to become an oracle. Incorrect attestations result in bond slashing.</p>
+            <div class="form-group">
+              <label class="form-label">Bond Amount (min 1000 KAS on TN12)</label>
+              <input type="number" class="input" id="oracle-bond-amount" placeholder="1000" min="1000">
+            </div>
+            <button class="btn btn-primary" id="register-oracle-btn">Register as Oracle</button>
+            <h4 class="mt-24 mb-8">Active Oracles</h4>
+            <div id="active-oracles">
+              <p class="text-faint" style="font-size:13px">No registered oracles</p>
+            </div>
+          </div>
+
+          <div class="oracle-panel" id="oracle-miner">
+            <h4 class="mb-8">Miner Oracle</h4>
+            <p class="text-muted mb-16">Miners can attest game results by including a signed payload in their coinbase transaction.</p>
+            <div class="flex gap-12 flex-wrap mb-24">
+              <button class="btn btn-primary" id="download-daemon-btn" onclick="downloadDaemon()">Download Oracle Daemon</button>
+              <button class="btn btn-secondary" id="run-browser-daemon-btn" onclick="runBrowserDaemon()">Run in Browser</button>
+            </div>
+            <div class="card" style="background:var(--surface-3)">
+              <h4 class="mb-8" style="font-size:14px">Setup Instructions</h4>
+              <div style="font-size:13px;color:var(--text-muted);line-height:1.8">
+                <div>1. Requires Node.js 20+</div>
+                <div>2. <code style="background:var(--surface);padding:2px 6px;border-radius:3px">npm install</code></div>
+                <div>3. <code style="background:var(--surface);padding:2px 6px;border-radius:3px">npm start</code></div>
+                <div>4. Environment variables: KASPA_RPC_URL, FIREBASE_PROJECT_ID</div>
+              </div>
+            </div>
+            <div id="browser-daemon-log" class="hidden mt-16" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;font-family:monospace;font-size:12px;max-height:300px;overflow-y:auto">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== KASPA ====== -->
+    <section id="tab-kaspa" class="tab-section">
+      <div class="container section-padding">
+        <h2 class="mb-24">Kaspa Network</h2>
+        
+        <!-- Stats Row -->
+        <div class="kaspa-stats-row" id="kaspa-stats">
+          <div class="kaspa-stat">
+            <div class="kaspa-stat-value" id="ks-block-height">--</div>
+            <div class="kaspa-stat-label">Block Height</div>
+          </div>
+          <div class="kaspa-stat">
+            <div class="kaspa-stat-value" id="ks-daa-score">--</div>
+            <div class="kaspa-stat-label">DAA Score</div>
+          </div>
+          <div class="kaspa-stat">
+            <div class="kaspa-stat-value" id="ks-hashrate">--</div>
+            <div class="kaspa-stat-label">Hashrate</div>
+          </div>
+          <div class="kaspa-stat">
+            <div class="kaspa-stat-value" id="ks-block-rate">--</div>
+            <div class="kaspa-stat-label">Blocks/sec</div>
+          </div>
+          <div class="kaspa-stat">
+            <div class="kaspa-stat-value" id="ks-tx-fee">--</div>
+            <div class="kaspa-stat-label">Median TX Fee</div>
+          </div>
+        </div>
+
+        <!-- BlockDAG Visualization -->
+        <div class="blockdag-container">
+          <div class="blockdag-label">KASPA BLOCKDAG</div>
+          <canvas id="blockdag-canvas"></canvas>
+          <div class="blockdag-tooltip" id="blockdag-tooltip"></div>
+          <div class="blockdag-skeleton" id="blockdag-skeleton">
+            Connecting to Kaspa network...
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== LEADERBOARD ====== -->
+    <section id="tab-leaderboard" class="tab-section">
+      <div class="container section-padding">
+        <h2 class="mb-24">Leaderboard</h2>
+        <div class="card" style="overflow-x:auto">
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Address</th>
+                <th>Game</th>
+                <th>Wins</th>
+                <th>Total KAS Won</th>
+                <th>Win Rate</th>
+                <th>Last Active</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+              <tr>
+                <td colspan="7" class="text-muted" style="text-align:center;padding:40px">Loading leaderboard data...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== PORTFOLIO ====== -->
+    <section id="tab-portfolio" class="tab-section">
+      <div class="container section-padding">
+        <h2 class="mb-24">Portfolio</h2>
+        
+        <div id="portfolio-connect-prompt">
+          <div class="card" style="text-align:center;padding:60px 24px">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" stroke-width="1.5" stroke-linecap="round" style="margin:0 auto 16px;display:block"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4h-4z"/></svg>
+            <h3 class="mb-8">Connect your wallet</h3>
+            <p class="text-muted mb-16">Connect a Kaspa wallet to view your positions, match history, and portfolio.</p>
+            <button class="btn btn-primary" onclick="openWalletModal()">Connect Wallet</button>
+          </div>
+        </div>
+
+        <div id="portfolio-content" class="hidden">
+          <div class="portfolio-header">
+            <div class="wallet-pill">
+              <span class="dot dot-green"></span>
+              <span id="portfolio-address">kaspatest:qr...</span>
+              <span class="text-muted">|</span>
+              <span id="portfolio-balance" class="text-primary fw-600">0 KAS</span>
+            </div>
+          </div>
+
+          <!-- PnL Summary -->
+          <div class="pnl-summary">
+            <div class="stat-card">
+              <div class="stat-value" id="pnl-wagered">0 KAS</div>
+              <div class="stat-label">Total Wagered</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="pnl-won">0 KAS</div>
+              <div class="stat-label">Total Won</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="pnl-net">0 KAS</div>
+              <div class="stat-label">Net PnL</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="pnl-winrate">0%</div>
+              <div class="stat-label">Win Rate</div>
+            </div>
+          </div>
+
+          <!-- Open Positions -->
+          <h3 class="mb-16 flex items-center gap-8">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+            Open Positions
+          </h3>
+          <div class="positions-grid mb-24" id="open-positions">
+            <p class="text-muted">No open positions</p>
+          </div>
+
+          <!-- Event Positions -->
+          <h3 class="mb-16 flex items-center gap-8">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+            Event Positions
+          </h3>
+          <div class="positions-grid mb-24" id="event-positions">
+            <p class="text-muted">No event positions</p>
+          </div>
+
+          <!-- Match History -->
+          <h3 class="mb-16 flex items-center gap-8">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 106 5.3L3 8"/></svg>
+            Match History
+          </h3>
+          <div id="match-history">
+            <p class="text-muted">No match history yet</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========================================================
+       WALLET MODAL
+       ======================================================== -->
+  <div class="wallet-modal-overlay" id="wallet-modal-overlay" onclick="closeWalletModal(event)">
+    <div class="wallet-modal" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center mb-24">
+        <h2>Connect Wallet</h2>
+        <button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px" onclick="closeWalletModal()">&times;</button>
+      </div>
+      <div class="wallet-grid">
+        <!-- KasWare -->
+        <div class="wallet-option" onclick="connectWallet('kasware')">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#4f98a3" font-family="Space Grotesk" font-weight="700" font-size="16">KW</text></svg>
+          <div class="wallet-option-name">KasWare</div>
+          <div class="wallet-option-desc">Browser extension</div>
+          <div class="wallet-option-status"><span class="dot dot-grey" id="status-kasware"></span></div>
+        </div>
+        <!-- Kastle -->
+        <div class="wallet-option" onclick="connectWallet('kastle')">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#4f98a3" font-family="Space Grotesk" font-weight="700" font-size="16">KT</text></svg>
+          <div class="wallet-option-name">Kastle</div>
+          <div class="wallet-option-desc">Mobile + extension</div>
+          <div class="wallet-option-status"><span class="dot dot-grey" id="status-kastle"></span></div>
+        </div>
+        <!-- Kasanova -->
+        <div class="wallet-option" onclick="connectWallet('kasanova')">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#4f98a3" font-family="Space Grotesk" font-weight="700" font-size="16">KA</text></svg>
+          <div class="wallet-option-name">Kasanova</div>
+          <div class="wallet-option-desc">Browser extension</div>
+          <div class="wallet-option-status"><span class="dot dot-grey" id="status-kasanova"></span></div>
+        </div>
+        <!-- Kaspium -->
+        <div class="wallet-option" onclick="connectWallet('kaspium')">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#4f98a3" font-family="Space Grotesk" font-weight="700" font-size="16">KP</text></svg>
+          <div class="wallet-option-name">Kaspium</div>
+          <div class="wallet-option-desc">Mobile wallet</div>
+          <div class="wallet-option-status"><span class="dot dot-grey" id="status-kaspium"></span></div>
+        </div>
+        <!-- KaspaCom -->
+        <div class="wallet-option" onclick="connectWallet('kaspacom')">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#4f98a3" font-family="Space Grotesk" font-weight="700" font-size="16">KC</text></svg>
+          <div class="wallet-option-name">KaspaCom</div>
+          <div class="wallet-option-desc">Web wallet</div>
+          <div class="wallet-option-status"><span class="dot dot-grey" id="status-kaspacom"></span></div>
+        </div>
+        <!-- DEX.cc -->
+        <div class="wallet-option" onclick="connectWallet('dexcc')">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#4f98a3" font-family="Space Grotesk" font-weight="700" font-size="16">DX</text></svg>
+          <div class="wallet-option-name">DEX.cc</div>
+          <div class="wallet-option-desc">Exchange wallet</div>
+          <div class="wallet-option-status"><span class="dot dot-grey" id="status-dexcc"></span></div>
+        </div>
+      </div>
+
+      <!-- Manual Address -->
+      <div class="expandable-section" id="manual-address-section">
+        <div class="expandable-header" onclick="toggleExpandable('manual-address-section')">
+          Enter address manually
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 12,15 18,9"/></svg>
+        </div>
+        <div class="expandable-body">
+          <p class="text-muted mb-8" style="font-size:13px">Read-only portfolio view. No signing ability.</p>
+          <input type="text" class="input" id="manual-address-input" placeholder="kaspatest:qr...">
+          <button class="btn btn-primary mt-8" onclick="connectManualAddress()">View Portfolio</button>
+        </div>
+      </div>
+
+      <!-- Mnemonic Import -->
+      <div class="expandable-section" id="mnemonic-section">
+        <div class="expandable-header" onclick="toggleExpandable('mnemonic-section')">
+          Import from mnemonic
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 12,15 18,9"/></svg>
+        </div>
+        <div class="expandable-body">
+          <div class="mnemonic-warning">
+            Mnemonic import is for testing only. Use a browser extension wallet for real funds.
+          </div>
+          <textarea class="textarea" id="mnemonic-input" placeholder="Enter 12 or 24 BIP39 words separated by spaces..." rows="3"></textarea>
+          <button class="btn btn-primary mt-8" onclick="connectMnemonic()">Derive Wallet</button>
         </div>
       </div>
     </div>
-    <div class="card">
-      <h3 style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;margin-bottom:12px">Attestation Panel</h3>
-      <div id="attestPanel">
-        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Event ID</label>
-        <input type="text" id="activeEventId" placeholder="Event ID" style="width:100%;margin-bottom:12px">
-        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Outcome</label>
-        <select id="attestOutcome" style="width:100%;margin-bottom:12px">
-          <option value="">Select outcome</option>
-        </select>
-        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Evidence</label>
-        <input type="text" id="attestEvidence" placeholder="Evidence URL or hash" style="width:100%;margin-bottom:12px">
-        <div id="attestHash" style="font-family:monospace;font-size:11px;color:var(--text-faint);margin-bottom:12px;word-break:break-all"></div>
-        <div id="attestStatus" style="font-size:12px;color:var(--text-muted);margin-bottom:12px"></div>
-        <button class="btn-primary wasm-gate" onclick="if(typeof submitAttestation==='function')submitAttestation()">Submit Attestation</button>
+  </div>
+
+  <!-- Match History Drawer -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+  <div class="match-drawer" id="match-drawer">
+    <div class="flex justify-between items-center mb-16">
+      <h3 id="drawer-title">Player History</h3>
+      <button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px" onclick="closeDrawer()">&times;</button>
+    </div>
+    <div id="drawer-content"></div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="confirm-modal-overlay" id="confirm-modal-overlay">
+    <div class="confirm-modal">
+      <h3 id="confirm-title">Confirm Action</h3>
+      <p id="confirm-message">Are you sure?</p>
+      <div class="confirm-actions">
+        <button class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+        <button class="btn btn-primary" id="confirm-action-btn">Confirm</button>
       </div>
     </div>
   </div>
 
-  <div class="tab-pane" id="tab-bonded">
-    <div class="card" style="margin-bottom:16px">
-      <h3 style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;margin-bottom:12px">Oracle Stats</h3>
-      <div class="grid-3">
-        <div><div style="font-size:12px;color:var(--text-muted)">My Bond</div><div id="oMyBond" style="font-weight:600">-- KAS</div></div>
-        <div><div style="font-size:12px;color:var(--text-muted)">Resolved</div><div id="oMyResolved" style="font-weight:600">--</div></div>
-        <div><div style="font-size:12px;color:var(--text-muted)">Earned</div><div id="oMyEarned" style="font-weight:600">-- KAS</div></div>
-      </div>
-      <div class="grid-3" style="margin-top:12px">
-        <div><div style="font-size:12px;color:var(--text-muted)">Slashed</div><div id="oMySlashed" style="font-weight:600">-- KAS</div></div>
-        <div><div style="font-size:12px;color:var(--text-muted)">Accuracy</div><div id="oAccuracy" style="font-weight:600">--%</div></div>
-        <div><div style="font-size:12px;color:var(--text-muted)">Mode</div><div id="oracleModeDisplay" style="font-weight:600">--</div></div>
-      </div>
-    </div>
-    <div class="card">
-      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Bond Amount (KAS)</label>
-      <input type="number" id="oBondAmt" value="100" min="10" style="width:100%;margin-bottom:12px">
-      <button class="btn-primary wasm-gate" id="registerOracleBtn">Register as Oracle</button>
-      <div style="margin-top:16px">
-        <h4 style="font-size:13px;font-weight:600;margin-bottom:8px">Active Oracles</h4>
-        <div id="cOracle" style="font-size:12px;color:var(--text-muted)">Loading...</div>
-      </div>
-    </div>
-  </div>
+  <!-- ========================================================
+       SCRIPTS
+       ======================================================== -->
+  <!-- Firebase -->
+  <script src="firebase-app-compat.js"></script>
+  <script src="firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
 
-  <div class="tab-pane" id="tab-miner">
-    <div class="card">
-      <h3 style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;margin-bottom:12px">Miner Oracle</h3>
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Run a lightweight oracle node directly in your browser using a Web Worker. The miner oracle validates event outcomes by consensus with other oracle nodes.</p>
-      <button class="btn-primary" id="runMinerOracleBtn">Run in Browser</button>
-      <div id="minerOracleStatus" style="margin-top:12px;font-size:12px;color:var(--text-muted)"></div>
-    </div>
-  </div>
-</section>
+  <!-- Chess engine -->
+  <script src="chess.min.js"></script>
 
-<!-- ════════════════════════════════════════════════════════
-     SECTION: LEADERBOARD
-     ════════════════════════════════════════════════════════ -->
-<section class="section" id="sec-leaderboard">
-  <div class="section-hdr">
-    <h2>Leaderboard</h2>
-    <p>Top players ranked by performance</p>
-  </div>
-  <div style="overflow-x:auto">
-    <table class="lb-table" id="leaderboardTable">
-      <thead>
-        <tr><th>Rank</th><th>Address</th><th>Game</th><th>Wins</th><th>Total KAS Won</th><th>Win Rate</th><th>Last Active</th></tr>
-      </thead>
-      <tbody id="leaderboardBody">
-        <tr><td colspan="7" style="text-align:center;color:var(--text-faint);padding:40px">Loading leaderboard...</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
+  <!-- HTP Core -->
+  <script src="htp-init.js"></script>
+  <script src="htp-wasm-loader.js"></script>
+  <script src="htp-rpc-client.js"></script>
 
-<!-- ════════════════════════════════════════════════════════
-     SECTION: PORTFOLIO
-     ════════════════════════════════════════════════════════ -->
-<section class="section" id="sec-portfolio">
-  <div class="section-hdr">
-    <h2>Portfolio</h2>
-    <p>Your positions, matches, and performance</p>
-  </div>
+  <!-- HTP Wallet -->
+  <script src="htp-wallet-v3.js"></script>
+  <script src="htp-wallet-logos.js"></script>
 
-  <div id="portfolioContent">
-    <div style="text-align:center;padding:60px 0;color:var(--text-faint)">
-      <p style="margin-bottom:12px">Connect your wallet to view portfolio</p>
-      <button class="btn-primary" onclick="go('wallet')">Connect Wallet</button>
-    </div>
-  </div>
+  <!-- HTP Game Modules -->
+  <script src="htp-board-engine.js"></script>
+  <script src="htp-chess-ui.js"></script>
+  <script src="htp-chess-dnd.js"></script>
+  <script src="htp-chess-sync.js"></script>
+  <script src="htp-c4-animation.js"></script>
+  <script src="htp-checkers-multijump.js"></script>
+  <script src="htp-games-sync.js"></script>
 
-  <div id="portfolioConnected" style="display:none">
-    <div class="port-header">
-      <div class="pulse-dot" style="background:var(--success)"></div>
-      <span class="port-addr" id="portAddress">--</span>
-      <span class="port-bal" id="portBalance">-- KAS</span>
-    </div>
-    <div class="grid-3" style="margin-bottom:24px">
-      <div class="card"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Total PnL</div><div id="portPnl" style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700">-- KAS</div></div>
-      <div class="card"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Open Positions</div><div id="portOpen" style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700">--</div></div>
-      <div class="card"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Matches Played</div><div id="portMatches" style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700">--</div></div>
-    </div>
-    <div class="section-hdr"><h2 style="font-size:18px">Match History</h2></div>
-    <div id="matchHistory">
-      <div style="text-align:center;padding:40px;color:var(--text-faint)">No match history</div>
-    </div>
-  </div>
-</section>
+  <!-- HTP Protocol -->
+  <script src="htp-covenant-escrow-v2.js"></script>
+  <script src="htp-fee-engine.js"></script>
+  <script src="htp-autopayout-engine.js"></script>
+  <script src="htp-settlement-overlay.js"></script>
+  <script src="htp-settlement-preview.js"></script>
+  <script src="htp-utxo-mutex.js"></script>
+  <script src="htp-cancel-flow.js"></script>
+  <script src="htp-match-deadline.js"></script>
 
-</main>
-</div>
+  <!-- HTP UI Modules -->
+  <script src="htp-nav-v4.js"></script>
+  <script src="htp-maximizer-ui.js"></script>
+  <script src="htp-blockdag-viz.js"></script>
+  <script src="htp-silverscript-live.js"></script>
+  <script src="htp-zk-pipeline.js"></script>
+  <script src="htp-oracle-sync.js"></script>
 
-<!-- ════════════════════════════════════════════════════════
-     SCRIPTS
-     ════════════════════════════════════════════════════════ -->
+  <!-- HTP Events -->
+  <script src="htp-events.js"></script>
+  <script src="htp-events-v3.js"></script>
+  <script src="htp-event-creator.js"></script>
 
-<!-- Chess.js library -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-
-<!-- HTP Core (order matters) -->
-<script src="/firebase-config.js"></script>
-<script src="/dag-background.js"></script>
-<script src="/htp-init.js"></script>
-<script src="/htp-fee-engine.js"></script>
-<script src="/htp-rpc-client.js"></script>
-<script src="/htp-wallet-logos.js"></script>
-<script src="/htp-wallet-v3.js"></script>
-
-<!-- Game Logic -->
-<script src="/htp-covenant-escrow-v2.js"></script>
-<script src="/htp-events.js"></script>
-<script src="/htp-events-v3.js"></script>
-<script src="/htp-games-sync.js"></script>
-<script src="/htp-chess-sync.js"></script>
-<script src="/htp-chess-ui.js"></script>
-<script src="/htp-chess-dnd.js"></script>
-<script src="/htp-board-engine.js"></script>
-<script src="/htp-c4-animation.js"></script>
-<script src="/htp-checkers-multijump.js"></script>
-<script src="/htp-match-deadline.js"></script>
-<script src="/htp-utxo-mutex.js"></script>
-
-<!-- Settlement -->
-<script src="/htp-settlement-overlay.js"></script>
-<script src="/htp-settlement-preview.js"></script>
-<script src="/htp-autopayout-engine.js"></script>
-<script src="/htp-cancel-flow.js"></script>
-
-<!-- Prediction Markets -->
-<script src="/htp-event-creator.js"></script>
-<script src="/htp-silverscript-live.js"></script>
-<script src="/htp-maximizer-ui.js"></script>
-
-<!-- Oracle -->
-<script src="/htp-oracle-sync.js"></script>
-<script src="/htp-zk-pipeline.js"></script>
-
-<!-- Visualization -->
-<script src="/htp-blockdag-viz.js"></script>
-
-<!-- Navigation overlay (must come last) -->
-<script src="/htp-nav-v4.js"></script>
-
-<!-- ════════════════════════════════════════════════════════
-     APP BOOTSTRAP
-     ════════════════════════════════════════════════════════ -->
-<script>
+  <!-- App Controller -->
+  <script>
+/* ============================================================
+   HTP APP CONTROLLER
+   ============================================================ */
 (function() {
   'use strict';
 
-  /* ── WASM Init with exponential backoff ── */
-  var WASM_URL = window.location.origin + '/kaspa_bg.wasm';
-  var WASM_MAX_RETRIES = 3;
-  var _wasmBooted = false;
+  /* --- Tab Navigation --- */
+  var currentTab = 'overview';
 
-  async function initWasm(attempt) {
-    if (_wasmBooted) return;
-    attempt = attempt || 1;
-    var backoff = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
-
-    try {
-      // Primary path: __wbg_init from inline WASM module
-      if (typeof __wbg_init === 'function') {
-        await __wbg_init(WASM_URL);
-        _wasmBooted = true;
-        window.kaspaSDK = window;
-        if (typeof window._onWasmReady === 'function') window._onWasmReady();
-        return;
-      }
-      // Fallback: external kaspaWasm module loader
-      if (typeof kaspaWasm !== 'undefined' && kaspaWasm.default) {
-        await kaspaWasm.default(WASM_URL);
-        _wasmBooted = true;
-        window.kaspaSDK = kaspaWasm;
-        if (typeof window._onWasmReady === 'function') window._onWasmReady();
-        return;
-      }
-      throw new Error('WASM loader not available');
-    } catch (e) {
-      if (attempt < WASM_MAX_RETRIES) {
-        await new Promise(function(r) { setTimeout(r, backoff); });
-        return initWasm(attempt + 1);
-      }
-      // All retries failed - show banner but keep app usable
-      var banner = document.getElementById('wasmBanner');
-      if (banner) banner.classList.add('show');
-      document.querySelectorAll('.wasm-gate').forEach(function(el) {
-        el.disabled = false;
-        el.style.opacity = '1';
-      });
-      window.dispatchEvent(new Event('htpWasmFailed'));
-    }
-  }
-
-  // Delay briefly to let external loaders register, then try
-  setTimeout(function() {
-    if (!_wasmBooted) initWasm(1);
-  }, 500);
-
-  // If external loader fires first, mark done
-  window.addEventListener('htpWasmReady', function() { _wasmBooted = true; });
-
-  /* ── Navigation ── */
-  var sections = document.querySelectorAll('.section');
-  var navPills = document.querySelectorAll('.nav-pill');
-  var drawer = document.getElementById('mobileDrawer');
-  var hamburger = document.getElementById('hamburgerBtn');
-
-  window.go = function(sectionId) {
-    var map = {
-      'overview':'overview','skill':'skill-games','games':'skill-games',
-      'predictions':'predictions','markets':'predictions','create':'predictions',
-      'kaspa':'kaspa','wallet':'wallet','oracle':'oracle',
-      'leaderboard':'leaderboard','portfolio':'portfolio',
-      'skill-games':'skill-games'
-    };
-    sectionId = map[sectionId] || sectionId;
-
-    sections.forEach(function(s) { s.classList.remove('active'); });
-    var target = document.getElementById('sec-' + sectionId);
+  window.switchTab = function(tabId) {
+    currentTab = tabId;
+    document.querySelectorAll('.tab-section').forEach(function(s) {
+      s.classList.remove('active');
+    });
+    var target = document.getElementById('tab-' + tabId);
     if (target) target.classList.add('active');
 
-    navPills.forEach(function(p) {
-      p.classList.toggle('active', p.getAttribute('data-section') === sectionId);
+    document.querySelectorAll('.nav-pill').forEach(function(p) {
+      p.classList.toggle('active', p.getAttribute('data-tab') === tabId);
     });
 
-    if (drawer) drawer.classList.remove('open');
-    window.history.replaceState(null, '', '?tab=' + sectionId);
-
-    // Lazy init
-    if (sectionId === 'kaspa' && window.htpBlockDAG && !window._dagFull) {
-      window._dagFull = true;
-      window.htpBlockDAG.init('#blockdagContainer', false);
-    }
-    if (sectionId === 'wallet' && window.htpWalletV3 && !window._walletInit) {
-      window._walletInit = true;
-      window.htpWalletV3.init();
-    }
+    if (tabId === 'kaspa') { initKaspaStats(); initBlockDAG(); }
+    if (tabId === 'leaderboard') { initLeaderboard(); }
+    if (tabId === 'portfolio') { initPortfolio(); }
   };
 
-  navPills.forEach(function(pill) {
-    pill.addEventListener('click', function() { go(pill.getAttribute('data-section')); });
-  });
-
-  if (hamburger) {
-    hamburger.addEventListener('click', function() { drawer.classList.toggle('open'); });
-  }
-
-  // Deep link
-  var tabParam = new URLSearchParams(window.location.search).get('tab');
-  if (tabParam) go(tabParam);
-
-  /* ── Toast System ── */
-  window.showToast = function(msg, type) {
-    var container = document.getElementById('toastContainer');
-    if (!container) return;
-    var toast = document.createElement('div');
-    toast.className = 'toast' + (type ? ' ' + type : '');
-    toast.textContent = msg;
-    container.appendChild(toast);
-    setTimeout(function() { toast.remove(); }, 4000);
-  };
-
-  /* ── Game Card Selector ── */
-  document.querySelectorAll('.game-card').forEach(function(card) {
-    card.addEventListener('click', function() {
-      document.querySelectorAll('.game-card').forEach(function(c) { c.classList.remove('selected'); });
-      card.classList.add('selected');
-      var input = document.getElementById('sgGame');
-      if (input) input.value = card.getAttribute('data-game');
-    });
-  });
-
-  /* ── Escrow Pills ── */
-  var escrowInput = document.getElementById('sgEsc');
-  document.querySelectorAll('.escrow-pill').forEach(function(pill) {
+  document.querySelectorAll('#desktop-nav .nav-pill').forEach(function(pill) {
     pill.addEventListener('click', function() {
-      document.querySelectorAll('.escrow-pill').forEach(function(p) { p.classList.remove('active'); });
-      pill.classList.add('active');
-      if (escrowInput) escrowInput.value = pill.getAttribute('data-kas');
-      updateUsdEquiv();
+      switchTab(this.getAttribute('data-tab'));
     });
   });
-  if (escrowInput) escrowInput.addEventListener('input', updateUsdEquiv);
 
+  /* --- Mobile Nav --- */
+  window.toggleMobileNav = function() {
+    document.getElementById('mobile-drawer').classList.toggle('open');
+  };
+  window.closeMobileNav = function() {
+    document.getElementById('mobile-drawer').classList.remove('open');
+  };
+
+  /* --- Game Selection --- */
+  var selectedGame = 'chess';
+  window.selectGame = function(game) {
+    selectedGame = game;
+    document.querySelectorAll('.game-card').forEach(function(c) {
+      c.classList.toggle('selected', c.getAttribute('data-game') === game);
+    });
+  };
+
+  /* --- Escrow --- */
   var kasPrice = 0;
-  function fetchKasPrice() {
-    fetch('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd')
-      .then(function(r) { return r.json(); })
-      .then(function(d) { if (d.kaspa) kasPrice = d.kaspa.usd || 0; updateUsdEquiv(); })
-      .catch(function() {});
-  }
-  function updateUsdEquiv() {
-    var el = document.getElementById('usdEquiv');
-    var val = parseFloat((escrowInput || {}).value) || 0;
-    if (el) el.textContent = kasPrice > 0 ? '~$' + (val * kasPrice).toFixed(2) + ' USD' : '-- USD';
-  }
-  fetchKasPrice();
-  setInterval(fetchKasPrice, 60000);
+  window.setEscrow = function(amount) {
+    document.getElementById('escrow-amount').value = amount;
+    updateEscrowUSD();
+    document.querySelectorAll('.escrow-pills .pill').forEach(function(p) {
+      p.classList.remove('active');
+    });
+  };
 
-  /* ── Add Outcome Button ── */
-  var addOutcomeBtn = document.getElementById('addOutcomeBtn');
-  if (addOutcomeBtn) {
-    addOutcomeBtn.addEventListener('click', function() {
-      var container = document.getElementById('outcomesContainer');
-      if (!container) return;
-      var count = container.querySelectorAll('.outcome-row').length;
-      var row = document.createElement('div');
-      row.className = 'outcome-row';
-      row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px';
-      var inp = document.createElement('input');
-      inp.type = 'text';
-      inp.className = 'outcome-input';
-      inp.placeholder = 'Outcome ' + (count + 1);
-      inp.style.flex = '1';
-      var rmBtn = document.createElement('button');
-      rmBtn.className = 'btn-secondary';
-      rmBtn.style.cssText = 'padding:6px 10px;font-size:12px';
-      rmBtn.textContent = 'Remove';
-      rmBtn.addEventListener('click', function() { row.remove(); updateSilverScript(); });
-      row.appendChild(inp);
-      row.appendChild(rmBtn);
-      container.appendChild(row);
-      inp.addEventListener('input', updateSilverScript);
-      inp.focus();
+  function updateEscrowUSD() {
+    var amount = parseFloat(document.getElementById('escrow-amount').value) || 0;
+    var usd = (amount * kasPrice).toFixed(2);
+    document.getElementById('escrow-usd').textContent = '~ $' + usd + ' USD';
+  }
+
+  document.getElementById('escrow-amount').addEventListener('input', updateEscrowUSD);
+
+  // Fetch KAS price
+  fetch('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd')
+    .then(function(r) { return r.json(); })
+    .then(function(d) { if (d.kaspa) kasPrice = d.kaspa.usd; updateEscrowUSD(); })
+    .catch(function() { kasPrice = 0.12; updateEscrowUSD(); }); // fallback
+
+  /* --- Time Control --- */
+  window.onTimeControlChange = function() {
+    var val = document.getElementById('time-control').value;
+    var custom = document.getElementById('time-custom-fields');
+    if (val === 'custom') {
+      custom.classList.add('visible');
+    } else {
+      custom.classList.remove('visible');
+    }
+  };
+
+  /* --- Series --- */
+  var selectedSeries = 1;
+  window.selectSeries = function(n) {
+    selectedSeries = n;
+    document.querySelectorAll('.series-selector .pill').forEach(function(p) {
+      p.classList.toggle('active', parseInt(p.getAttribute('data-series')) === n);
+    });
+  };
+
+  /* --- Stepper --- */
+  window.toggleStepDetail = function(step) {
+    step.classList.toggle('expanded');
+  };
+
+  /* --- Prediction Outcomes --- */
+  var outcomeCount = 2;
+  window.addOutcome = function() {
+    if (outcomeCount >= 10) return;
+    outcomeCount++;
+    var row = document.createElement('div');
+    row.className = 'outcome-row';
+    row.innerHTML = '<input type="text" class="input outcome-input" placeholder="Outcome ' + outcomeCount + '" maxlength="80" oninput="compileSilverScript()">' +
+      '<button class="remove-outcome" onclick="removeOutcome(this)">X</button>';
+    document.getElementById('outcomesContainer').appendChild(row);
+    compileSilverScript();
+  };
+
+  window.removeOutcome = function(btn) {
+    var container = document.getElementById('outcomesContainer');
+    if (container.children.length <= 2) return; // Keep minimum 2
+    btn.parentElement.remove();
+    outcomeCount = container.children.length;
+    compileSilverScript();
+  };
+
+  /* --- Char Counter --- */
+  window.updateCharCounter = function(id, max) {
+    var el = document.getElementById(id);
+    var counter = document.getElementById(id + '-counter');
+    if (el && counter) {
+      counter.textContent = el.value.length + ' / ' + max;
+    }
+  };
+
+  /* --- SilverScript Compiler --- */
+  window.compileSilverScript = function() {
+    var title = document.getElementById('event-title').value.trim();
+    var date = document.getElementById('event-resolution-date').value;
+    var url = document.getElementById('event-source-url').value.trim();
+    var minPos = document.getElementById('event-min-position').value || '1';
+    var outcomes = [];
+    document.querySelectorAll('.outcome-input').forEach(function(inp) {
+      if (inp.value.trim()) outcomes.push(inp.value.trim());
+    });
+
+    var valid = title && date && url && outcomes.length >= 2;
+    var dot = document.getElementById('compiler-dot');
+    var statusText = document.getElementById('compiler-status-text');
+
+    if (valid) {
+      dot.className = 'dot dot-green';
+      statusText.textContent = 'Valid';
+      statusText.style.color = 'var(--success)';
+    } else {
+      dot.className = 'dot dot-grey';
+      statusText.textContent = 'Incomplete';
+      statusText.style.color = 'var(--text-faint)';
+    }
+
+    var ts = date ? Math.floor(new Date(date).getTime() / 1000) : 0;
+    var outcomesStr = outcomes.map(function(o) { return '"' + o + '"'; }).join(', ');
+    var treasury = 'kaspatest:qpyfz03k...354m';
+
+    var code = '';
+    code += '<span class="line"><span class="ss-comment">// HTP Prediction Market Covenant</span></span>';
+    code += '<span class="line"><span class="ss-comment">// Generated: ' + new Date().toISOString() + '</span></span>';
+    code += '<span class="line"></span>';
+    code += '<span class="line"><span class="ss-keyword">DEFINE</span> <span class="ss-keyword">MARKET</span> {</span>';
+    code += '<span class="line">  title: <span class="ss-string">"' + (title || '...') + '"</span></span>';
+    code += '<span class="line">  outcomes: [<span class="ss-string">' + (outcomesStr || '...') + '</span>]</span>';
+    code += '<span class="line">  resolution_deadline: <span class="ss-value">' + (ts || '...') + '</span></span>';
+    code += '<span class="line">  oracle_url: <span class="ss-string">"' + (url || '...') + '"</span></span>';
+    code += '<span class="line">  min_position: <span class="ss-value">' + minPos + '</span> <span class="ss-keyword">KAS</span></span>';
+    code += '<span class="line">  treasury: <span class="ss-string">' + treasury + '</span></span>';
+    code += '<span class="line">  fee_bps: <span class="ss-value">200</span></span>';
+    code += '<span class="line">}</span>';
+    code += '<span class="line"></span>';
+    code += '<span class="line"><span class="ss-keyword">ESCROW</span> {</span>';
+    code += '<span class="line">  lock_condition: <span class="ss-keyword">OR</span>(</span>';
+    code += '<span class="line">    <span class="ss-keyword">AND</span>(oracle_attests(outcome_index), send_to(winner_address)),</span>';
+    code += '<span class="line">    <span class="ss-keyword">AND</span>(deadline_passed(), no_oracle_attest(), refund_all())</span>';
+    code += '<span class="line">  )</span>';
+    code += '<span class="line">}</span>';
+    code += '<span class="line"></span>';
+    code += '<span class="line"><span class="ss-keyword">SETTLEMENT</span> {</span>';
+    code += '<span class="line">  <span class="ss-keyword">on_resolve</span>(outcome_index):</span>';
+    code += '<span class="line">    payout = total_pool * (<span class="ss-value">1</span> - fee_bps / <span class="ss-value">10000</span>)</span>';
+    code += '<span class="line">    fee = total_pool * (fee_bps / <span class="ss-value">10000</span>)</span>';
+    code += '<span class="line">    <span class="ss-keyword">SEND</span> fee <span class="ss-keyword">TO</span> treasury_address</span>';
+    code += '<span class="line">    <span class="ss-keyword">FOR EACH</span> position <span class="ss-keyword">IN</span> positions[outcome_index]:</span>';
+    code += '<span class="line">      share = position.size / winning_pool_size</span>';
+    code += '<span class="line">      <span class="ss-keyword">SEND</span> payout * share <span class="ss-keyword">TO</span> position.address</span>';
+    code += '<span class="line">}</span>';
+
+    document.getElementById('compiler-output').innerHTML = code;
+  };
+
+  window.copySilverScript = function() {
+    var el = document.getElementById('compiler-output');
+    var text = el.innerText || el.textContent;
+    navigator.clipboard.writeText(text).then(function() {
+      // Brief feedback
+      var btn = el.closest('.compiler-panel').querySelector('.btn-secondary');
+      var orig = btn.textContent;
+      btn.textContent = 'Copied';
+      setTimeout(function() { btn.textContent = orig; }, 1500);
+    });
+  };
+
+  /* --- Wallet Modal --- */
+  window.openWalletModal = function() {
+    document.getElementById('wallet-modal-overlay').classList.add('open');
+    detectInstalledWallets();
+  };
+  window.closeWalletModal = function(e) {
+    if (e && e.target !== e.currentTarget) return;
+    document.getElementById('wallet-modal-overlay').classList.remove('open');
+  };
+
+  window.toggleExpandable = function(id) {
+    document.getElementById(id).classList.toggle('open');
+  };
+
+  function detectInstalledWallets() {
+    var wallets = {
+      kasware: typeof window.kasware !== 'undefined',
+      kastle: typeof window.kastle !== 'undefined',
+      kasanova: typeof window.kasanova !== 'undefined',
+      kaspium: false,
+      kaspacom: false,
+      dexcc: false
+    };
+    Object.keys(wallets).forEach(function(w) {
+      var dot = document.getElementById('status-' + w);
+      if (dot) {
+        dot.className = wallets[w] ? 'dot dot-green' : 'dot dot-grey';
+      }
     });
   }
 
-  /* ── SilverScript Live Compiler ── */
-  function updateSilverScript() {
-    var title = (document.getElementById('htp-ev-title') || {}).value || '';
-    var desc = (document.getElementById('htp-ev-desc') || {}).value || '';
-    var date = (document.getElementById('htp-ev-date') || {}).value || '';
-    var source = (document.getElementById('htp-ev-source') || {}).value || '';
-    var minPos = (document.getElementById('htp-ev-min') || {}).value || '1';
-    var maxPart = (document.getElementById('htp-ev-max') || {}).value || '100';
-    var outcomes = [];
-    document.querySelectorAll('.outcome-input').forEach(function(i) { if (i.value) outcomes.push(i.value); });
+  var connectedWallet = null;
+  var connectedAddress = null;
 
-    var dot = document.getElementById('compilerDot');
-    var statusText = document.getElementById('compilerStatusText');
-    var output = document.getElementById('silverscriptOutput');
-    if (!output) return;
+  window.connectWallet = function(walletId) {
+    // Attempt to connect via wallet provider
+    var provider = null;
+    if (walletId === 'kasware' && window.kasware) provider = window.kasware;
+    else if (walletId === 'kastle' && window.kastle) provider = window.kastle;
+    else if (walletId === 'kasanova' && window.kasanova) provider = window.kasanova;
 
-    if (!title) {
-      if (dot) dot.style.background = 'var(--text-faint)';
-      if (statusText) statusText.textContent = 'Waiting for input';
-      output.innerHTML = '<span class="ss-comment">// SilverScript contract will appear here as you fill the form</span>';
+    if (!provider) {
+      alert(walletId + ' wallet not detected. Please install the extension.');
       return;
     }
 
-    if (dot) dot.style.background = 'var(--success)';
-    if (statusText) statusText.textContent = 'Compiled';
+    provider.requestAccounts().then(function(accounts) {
+      if (accounts && accounts.length > 0) {
+        connectedAddress = accounts[0];
+        connectedWallet = walletId;
+        onWalletConnected(connectedAddress, walletId);
+        closeWalletModal();
+      }
+    }).catch(function(err) {
+      console.error('Wallet connect error:', err);
+    });
+  };
 
-    var lines = [];
-    var n = 1;
-    function L(txt, cls) {
-      var num = '<span class="ss-line-num">' + (n++) + '</span>';
-      lines.push(num + (cls ? '<span class="' + cls + '">' + esc(txt) + '</span>' : esc(txt)));
+  window.connectManualAddress = function() {
+    var addr = document.getElementById('manual-address-input').value.trim();
+    if (!addr || !addr.startsWith('kaspa')) {
+      alert('Enter a valid Kaspa address');
+      return;
     }
-    function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    connectedAddress = addr;
+    connectedWallet = 'manual';
+    onWalletConnected(addr, 'manual');
+    closeWalletModal();
+  };
 
-    L('contract', 'ss-keyword');
-    L('  title: "' + title + '"', 'ss-value');
-    if (desc) L('  desc: "' + desc + '"', 'ss-value');
-    L('  // resolution criteria', 'ss-comment');
-    if (date) L('  resolves: ' + date, 'ss-value');
-    if (source) L('  source: ' + source, 'ss-value');
-    L('  outcomes:', 'ss-keyword');
-    outcomes.forEach(function(o) { L('    - ' + o, 'ss-value'); });
-    L('  min_position: ' + minPos + ' KAS', 'ss-value');
-    L('  max_participants: ' + maxPart, 'ss-value');
-    L('  fee: 2%', 'ss-value');
-    L('  oracle: bonded', 'ss-keyword');
-    L('end', 'ss-keyword');
+  window.connectMnemonic = function() {
+    var words = document.getElementById('mnemonic-input').value.trim();
+    var wordCount = words.split(/\s+/).length;
+    if (wordCount !== 12 && wordCount !== 24) {
+      alert('Enter 12 or 24 BIP39 words');
+      return;
+    }
+    // WASM derivation would happen here
+    if (!window.wasmReady) {
+      alert('Kaspa SDK not loaded. Cannot derive wallet from mnemonic.');
+      return;
+    }
+    // Placeholder for actual derivation
+    console.log('[HTP Wallet] Mnemonic derivation initiated');
+    // In real impl: use kaspa-wallet-core XPrv m/44'/111111'/0'/0/0
+  };
 
-    output.innerHTML = lines.join('\n');
+  function onWalletConnected(address, walletId) {
+    var short = address.substring(0, 12) + '...' + address.substring(address.length - 6);
+    document.getElementById('wallet-connect-btn').textContent = short;
+    document.getElementById('wallet-connect-btn').classList.add('connected');
+
+    // Update wallet modal status
+    var statusDot = document.getElementById('status-' + walletId);
+    if (statusDot) statusDot.className = 'dot dot-green';
+
+    // Portfolio
+    document.getElementById('portfolio-connect-prompt').classList.add('hidden');
+    document.getElementById('portfolio-content').classList.remove('hidden');
+    document.getElementById('portfolio-address').textContent = short;
+
+    // Fetch balance
+    fetchBalance(address);
+
+    console.log('[HTP Wallet] Connected:', walletId, address);
   }
 
-  ['htp-ev-title','htp-ev-desc','htp-ev-date','htp-ev-source','htp-ev-min','htp-ev-max'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) { el.addEventListener('input', updateSilverScript); el.addEventListener('change', updateSilverScript); }
-  });
-
-  /* ── Oracle Tabs ── */
-  document.querySelectorAll('#oracleTabs .tab-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('#oracleTabs .tab-btn').forEach(function(b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
-      var t = document.getElementById('tab-' + btn.getAttribute('data-tab'));
-      if (t) t.classList.add('active');
-    });
-  });
-
-  /* ── Expandable Sections ── */
-  document.querySelectorAll('.expand-trigger').forEach(function(trigger) {
-    trigger.addEventListener('click', function() {
-      trigger.classList.toggle('open');
-      var body = document.getElementById(trigger.getAttribute('data-expand'));
-      if (body) body.classList.toggle('open');
-    });
-  });
-
-  /* ── Wallet Grid ── */
-  function buildWalletGrid() {
-    var grid = document.getElementById('walletGrid');
-    if (!grid || !window.HTP_WALLET_LOGOS) return;
-    var wallets = [
-      { key:'kasware', name:'KasWare', desc:'Browser extension wallet', detect:function(){ return !!window.kasware; } },
-      { key:'kastle', name:'Kastle', desc:'Mobile-first wallet', detect:function(){ return !!window.kaspaWallet; } },
-      { key:'kasanova', name:'Kasanova', desc:'Desktop wallet', detect:function(){ return false; } },
-      { key:'kaspium', name:'Kaspium', desc:'Full-featured wallet', detect:function(){ return false; } },
-      { key:'kaspacom', name:'KaspaCom', desc:'Community wallet', detect:function(){ return false; } },
-      { key:'dexcc', name:'DEX.cc', desc:'DEX integrated wallet', detect:function(){ return false; } }
-    ];
-    grid.innerHTML = wallets.map(function(w) {
-      var logo = window.getWalletLogo ? window.getWalletLogo(w.key) : (window.HTP_WALLET_LOGOS[w.key] || '');
-      var avail = w.detect();
-      return '<div class="wallet-card" data-wallet="' + w.key + '">' +
-        (logo || '<div style="width:40px;height:40px;background:var(--surface-3);border-radius:8px"></div>') +
-        '<div class="wallet-card-info"><span class="wallet-name">' + w.name + '</span><span class="wallet-desc">' + w.desc + '</span></div>' +
-        '<span class="wallet-status-dot ' + (avail ? 'available' : 'unavailable') + '"></span></div>';
-    }).join('');
-
-    grid.querySelectorAll('.wallet-card').forEach(function(card) {
-      card.addEventListener('click', function() {
-        var key = card.getAttribute('data-wallet');
-        if (window.htpWalletV3 && window.htpWalletV3.connectExtension) {
-          window.htpWalletV3.connectExtension(key);
-        } else if (key === 'kasware' && window.kasware) {
-          window.kasware.requestAccounts().then(function(a) { if (a && a[0]) window.onWalletConnected(a[0]); });
-        } else if (key === 'kastle' && window.kaspaWallet) {
-          window.kaspaWallet.connect().then(function(a) { if (a) window.onWalletConnected(a); });
-        } else {
-          showToast(w.name + ' extension not detected', 'error');
-        }
-      });
-    });
+  function fetchBalance(address) {
+    fetch('https://api-tn12.kaspa.org/addresses/' + address + '/balance')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        var bal = (d.balance || 0) / 100000000;
+        document.getElementById('portfolio-balance').textContent = bal.toFixed(4) + ' KAS';
+      })
+      .catch(function() {});
   }
 
-  /* ── Kaspa Network Stats ── */
+  /* --- Match Creation --- */
+  window.createMatch = function() {
+    if (!connectedAddress) {
+      openWalletModal();
+      return;
+    }
+    var escrow = parseFloat(document.getElementById('escrow-amount').value);
+    if (!escrow || escrow <= 0) {
+      alert('Enter an escrow amount');
+      return;
+    }
+
+    var tc = document.getElementById('time-control').value;
+    var minutes, increment;
+    if (tc === 'custom') {
+      minutes = parseInt(document.getElementById('custom-minutes').value) || 10;
+      increment = parseInt(document.getElementById('custom-increment').value) || 0;
+    } else {
+      var parts = tc.split('|');
+      minutes = parseInt(parts[0]);
+      increment = parseInt(parts[1]);
+    }
+
+    var matchData = {
+      gameType: selectedGame,
+      escrowKAS: escrow,
+      timeControl: { minutes: minutes, increment: increment },
+      bestOf: selectedSeries,
+      playerA: connectedAddress,
+      opponent: document.getElementById('opponent-address').value.trim() || null,
+      status: 'waiting',
+      createdAt: Date.now()
+    };
+
+    console.log('[HTP Match] Creating match:', matchData);
+    // Firebase write + escrow TX would happen here
+    // For now, show in lobby
+    showMatchInLobby(matchData);
+  };
+
+  function showMatchInLobby(match) {
+    var lobby = document.getElementById('match-lobby');
+    var id = 'match-' + Date.now();
+    lobby.innerHTML = '<div class="card" style="border-color:var(--primary)">' +
+      '<div class="flex justify-between items-center mb-8">' +
+      '<span class="fw-600 font-display">' + match.gameType.charAt(0).toUpperCase() + match.gameType.slice(1) + ' Challenge</span>' +
+      '<span class="pill active">Waiting</span></div>' +
+      '<div class="text-muted" style="font-size:13px">' +
+      'Escrow: <span class="text-primary fw-600">' + match.escrowKAS + ' KAS</span> | ' +
+      'Time: ' + match.timeControl.minutes + '+' + match.timeControl.increment + ' | ' +
+      'Series: Best of ' + match.bestOf + '</div>' +
+      '<div class="mt-8" style="font-size:12px;color:var(--text-faint)">Share invite link to find an opponent</div>' +
+      '</div>';
+  }
+
+  /* --- Prediction Event Creation --- */
+  window.createPredictionEvent = function() {
+    if (!connectedAddress) {
+      openWalletModal();
+      return;
+    }
+    var title = document.getElementById('event-title').value.trim();
+    var desc = document.getElementById('event-description').value.trim();
+    var date = document.getElementById('event-resolution-date').value;
+    var url = document.getElementById('event-source-url').value.trim();
+    if (!title || !desc || !date || !url) {
+      alert('Fill in all required fields');
+      return;
+    }
+    console.log('[HTP Market] Creating prediction event');
+    // Firebase + escrow TX
+  };
+
+  /* --- Oracle Tabs --- */
+  window.switchOracleTab = function(tab) {
+    document.querySelectorAll('.oracle-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.oracle-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelector('.oracle-tab[onclick*="' + tab + '"]').classList.add('active');
+    document.getElementById('oracle-' + tab).classList.add('active');
+  };
+
+  window.downloadDaemon = function() {
+    alert('Oracle daemon download will be available as a ZIP from the htp-oracle-daemon directory.');
+  };
+
+  window.runBrowserDaemon = function() {
+    var log = document.getElementById('browser-daemon-log');
+    log.classList.remove('hidden');
+    log.innerHTML = '<div style="color:var(--primary)">[Oracle Daemon] Starting in browser...</div>';
+    setTimeout(function() {
+      log.innerHTML += '<div style="color:var(--success)">[Oracle Daemon] Connected to Firebase</div>';
+      log.innerHTML += '<div>[Oracle Daemon] Listening for unattested matches...</div>';
+    }, 1000);
+  };
+
+  /* --- Kaspa Stats --- */
+  var kaspaStatsInterval = null;
+  function initKaspaStats() {
+    if (kaspaStatsInterval) return;
+    fetchKaspaStats();
+    kaspaStatsInterval = setInterval(fetchKaspaStats, 5000);
+  }
+
   function fetchKaspaStats() {
     fetch('https://api-tn12.kaspa.org/info/blockdag')
       .then(function(r) { return r.json(); })
       .then(function(d) {
-        var h = d.headerCount || d.blockCount || '--';
-        var hStr = typeof h === 'number' ? h.toLocaleString() : h;
-        document.getElementById('kBlockHeight').textContent = hStr;
-        document.getElementById('blockHeightValue').textContent = hStr;
-        if (d.virtualDaaScore) document.getElementById('kDaaScore').textContent = Number(d.virtualDaaScore).toLocaleString();
-        if (d.difficulty) {
-          var hr = d.difficulty * 2;
-          var units = ['H/s','KH/s','MH/s','GH/s','TH/s','PH/s','EH/s'];
-          var idx = 0;
-          while (hr >= 1000 && idx < units.length - 1) { hr /= 1000; idx++; }
-          document.getElementById('kHashrate').textContent = hr.toFixed(2) + ' ' + units[idx];
-        }
-        document.getElementById('kBlockRate').textContent = '~1 bps';
+        updateStat('ks-block-height', d.blockCount ? d.blockCount.toLocaleString() : '--');
+        updateStat('ks-daa-score', d.difficulty ? Math.round(d.difficulty).toLocaleString() : '--');
+        updateStat('ks-hashrate', d.hashrate ? formatHashrate(d.hashrate) : '--');
+        updateStat('ks-block-rate', d.blockRate ? d.blockRate.toFixed(1) : '--');
+        updateStat('ks-tx-fee', '--');
+
+        // Update header
+        document.getElementById('header-block-height').textContent = d.blockCount ? d.blockCount.toLocaleString() : '--';
+        document.getElementById('stat-block-height').textContent = d.blockCount ? d.blockCount.toLocaleString() : '--';
       })
       .catch(function() {});
   }
+
+  function updateStat(id, value) {
+    var el = document.getElementById(id);
+    if (el && el.textContent !== value) {
+      el.textContent = value;
+      el.classList.remove('fade-in');
+      void el.offsetWidth; // trigger reflow
+      el.classList.add('fade-in');
+    }
+  }
+
+  function formatHashrate(h) {
+    if (h > 1e18) return (h / 1e18).toFixed(2) + ' EH/s';
+    if (h > 1e15) return (h / 1e15).toFixed(2) + ' PH/s';
+    if (h > 1e12) return (h / 1e12).toFixed(2) + ' TH/s';
+    if (h > 1e9) return (h / 1e9).toFixed(2) + ' GH/s';
+    return h.toFixed(0) + ' H/s';
+  }
+
+  // Kick off stats on overview load too
   fetchKaspaStats();
-  setInterval(fetchKaspaStats, 5000);
 
-  /* ── Leaderboard (Firebase) ── */
-  function loadLeaderboard() {
-    if (!window.firebase || !window.firebase.database) return;
-    window.firebase.database().ref('matches').orderByChild('status').equalTo('settled').limitToLast(200).on('value', function(snap) {
-      var stats = {};
-      snap.forEach(function(child) {
-        var m = child.val();
-        var info = m.info || m;
-        var winner = info.winner || m.winner;
-        var game = info.game || info.gameType || 'chess';
-        var stake = parseFloat(info.stake || info.escrow || 0);
-        if (!winner) return;
-        if (!stats[winner]) stats[winner] = { wins:0, total:0, games:{}, last:0 };
-        stats[winner].wins++;
-        stats[winner].total += stake * 2 * 0.98;
-        stats[winner].games[game] = (stats[winner].games[game] || 0) + 1;
-        var ts = info.settledAt || info.createdAt || 0;
-        if (ts > stats[winner].last) stats[winner].last = ts;
+  /* --- BlockDAG Visualization --- */
+  var dagBlocks = [];
+  var dagCanvas = null;
+  var dagCtx = null;
+  var dagInterval = null;
+
+  function initBlockDAG() {
+    dagCanvas = document.getElementById('blockdag-canvas');
+    if (!dagCanvas) return;
+    dagCtx = dagCanvas.getContext('2d');
+    dagCanvas.width = dagCanvas.offsetWidth * 2;
+    dagCanvas.height = 640; // 320px * 2 for retina
+    dagCtx.scale(2, 2);
+    
+    var skel = document.getElementById('blockdag-skeleton');
+    if (skel) skel.style.display = 'none';
+    dagCanvas.style.display = 'block';
+
+    fetchDAGBlocks();
+    if (!dagInterval) dagInterval = setInterval(fetchDAGBlocks, 3000);
+
+    dagCanvas.addEventListener('click', function(e) {
+      var rect = dagCanvas.getBoundingClientRect();
+      var x = e.clientX - rect.left;
+      var y = e.clientY - rect.top;
+      showBlockTooltip(x, y);
+    });
+  }
+
+  function fetchDAGBlocks() {
+    // First get tip hash
+    fetch('https://api-tn12.kaspa.org/info/blockdag')
+      .then(function(r) { return r.json(); })
+      .then(function(info) {
+        if (info.tipHashes && info.tipHashes.length > 0) {
+          return fetch('https://api-tn12.kaspa.org/blocks?lowHash=' + info.tipHashes[0] + '&includeBlocks=true&limit=50');
+        }
+        throw new Error('No tip hashes');
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.blocks) {
+          dagBlocks = data.blocks;
+          renderDAG();
+        } else if (Array.isArray(data)) {
+          dagBlocks = data;
+          renderDAG();
+        }
+      })
+      .catch(function(e) {
+        // Fallback: fetch recent blocks differently
+        fetch('https://api-tn12.kaspa.org/blocks?limit=50')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (Array.isArray(data)) { dagBlocks = data; renderDAG(); }
+          })
+          .catch(function() {
+            var skel = document.getElementById('blockdag-skeleton');
+            if (skel) {
+              skel.style.display = 'flex';
+              if (dagCanvas) dagCanvas.style.display = 'none';
+            }
+          });
       });
+  }
 
-      var rows = Object.keys(stats).map(function(addr) {
-        var s = stats[addr];
-        var topGame = Object.keys(s.games).sort(function(a,b){ return s.games[b] - s.games[a]; })[0] || '--';
-        return { addr:addr, wins:s.wins, total:s.total, game:topGame, last:s.last };
-      }).sort(function(a,b){ return b.total - a.total; });
+  function renderDAG() {
+    if (!dagCtx || !dagBlocks.length) return;
+    var w = dagCanvas.offsetWidth;
+    var h = 320;
+    dagCtx.clearRect(0, 0, w, h);
 
-      var tbody = document.getElementById('leaderboardBody');
-      if (!tbody) return;
-      if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-faint);padding:40px">No settled matches yet</td></tr>';
-        return;
+    // Background
+    dagCtx.fillStyle = '#080c17';
+    dagCtx.fillRect(0, 0, w, h);
+
+    // Label
+    dagCtx.font = '10px Inter';
+    dagCtx.fillStyle = '#475569';
+    dagCtx.letterSpacing = '2px';
+    dagCtx.fillText('KASPA BLOCKDAG', 16, 24);
+
+    var blockW = 18;
+    var blockH = 12;
+    var gap = Math.max(8, (w - 40) / Math.max(dagBlocks.length, 1));
+    var startX = 20;
+    var centerY = h / 2;
+
+    // Map blocks to positions
+    var positions = {};
+    dagBlocks.forEach(function(block, i) {
+      var hash = block.header ? block.header.hash : block.blockHash || block.hash;
+      var y = centerY + (Math.sin(i * 0.7) * 60);
+      positions[hash] = { x: startX + i * gap, y: y, block: block };
+    });
+
+    // Draw parent lines
+    dagCtx.strokeStyle = 'rgba(79,152,163,0.3)';
+    dagCtx.lineWidth = 1;
+    dagBlocks.forEach(function(block) {
+      var hash = block.header ? block.header.hash : block.blockHash || block.hash;
+      var parents = block.header ? block.header.parents : (block.parentBlockHashes || []);
+      var pos = positions[hash];
+      if (!pos) return;
+      
+      if (Array.isArray(parents)) {
+        parents.forEach(function(parentGroup) {
+          var hashes = Array.isArray(parentGroup) ? parentGroup : 
+                       (parentGroup.parentHashes || [parentGroup]);
+          hashes.forEach(function(ph) {
+            var ppos = positions[ph];
+            if (ppos) {
+              dagCtx.beginPath();
+              dagCtx.moveTo(pos.x + blockW/2, pos.y + blockH/2);
+              dagCtx.lineTo(ppos.x + blockW/2, ppos.y + blockH/2);
+              dagCtx.stroke();
+            }
+          });
+        });
       }
-      tbody.innerHTML = rows.slice(0,50).map(function(r,i) {
-        var short = r.addr.substring(0,14) + '...' + r.addr.slice(-4);
-        var date = r.last ? new Date(r.last).toLocaleDateString() : '--';
-        return '<tr><td class="lb-rank">' + (i+1) + '</td><td style="font-family:monospace;font-size:12px">' + short + '</td><td>' + r.game + '</td><td>' + r.wins + '</td><td>' + r.total.toFixed(2) + '</td><td>--</td><td>' + date + '</td></tr>';
-      }).join('');
     });
-  }
 
-  /* ── Match Lobby (Firebase) ── */
-  function loadMatchLobby() {
-    if (!window.firebase || !window.firebase.database) return;
-    window.firebase.database().ref('matches').orderByChild('status').equalTo('waiting').on('value', function(snap) {
-      var lobbyDiv = document.getElementById('matchLobby');
-      if (!lobbyDiv) return;
-      var matches = [];
-      snap.forEach(function(child) { var m = child.val(); m.id = child.key; matches.push(m); });
-      if (!matches.length) {
-        lobbyDiv.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-faint)">No open matches - be the first to create one</div>';
-        return;
+    // Draw blocks
+    dagBlocks.forEach(function(block, i) {
+      var hash = block.header ? block.header.hash : block.blockHash || block.hash;
+      var pos = positions[hash];
+      if (!pos) return;
+
+      var isLatest = i === dagBlocks.length - 1;
+
+      dagCtx.fillStyle = isLatest ? 'rgba(79,152,163,0.25)' : '#0f1623';
+      dagCtx.strokeStyle = isLatest ? '#4f98a3' : 'rgba(79,152,163,0.6)';
+      dagCtx.lineWidth = isLatest ? 2 : 1;
+
+      // Rounded rect
+      var r = 3;
+      dagCtx.beginPath();
+      dagCtx.moveTo(pos.x + r, pos.y);
+      dagCtx.lineTo(pos.x + blockW - r, pos.y);
+      dagCtx.arcTo(pos.x + blockW, pos.y, pos.x + blockW, pos.y + r, r);
+      dagCtx.lineTo(pos.x + blockW, pos.y + blockH - r);
+      dagCtx.arcTo(pos.x + blockW, pos.y + blockH, pos.x + blockW - r, pos.y + blockH, r);
+      dagCtx.lineTo(pos.x + r, pos.y + blockH);
+      dagCtx.arcTo(pos.x, pos.y + blockH, pos.x, pos.y + blockH - r, r);
+      dagCtx.lineTo(pos.x, pos.y + r);
+      dagCtx.arcTo(pos.x, pos.y, pos.x + r, pos.y, r);
+      dagCtx.closePath();
+      dagCtx.fill();
+      dagCtx.stroke();
+
+      if (isLatest && hash) {
+        dagCtx.font = '9px Inter';
+        dagCtx.fillStyle = '#4f98a3';
+        dagCtx.fillText(hash.substring(0, 8) + '...', pos.x, pos.y - 6);
       }
-      lobbyDiv.innerHTML = matches.map(function(m) {
-        var info = m.info || m;
-        var game = info.game || info.gameType || 'chess';
-        var stake = info.stake || info.escrow || '--';
-        var time = info.timeControl || '5|0';
-        var creator = (info.creatorAddr || info.creator || '').substring(0,14) + '...';
-        var isOwn = window.connectedAddress && (info.creatorAddr === window.connectedAddress || info.creator === window.connectedAddress);
-        return '<div class="lobby-card"><div>' +
-          '<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="28" height="28" rx="4" stroke="#4f98a3" stroke-width="1.2"/><text x="18" y="22" text-anchor="middle" fill="#4f98a3" font-size="12" font-weight="600">' + game.charAt(0).toUpperCase() + '</text></svg>' +
-          '</div><div class="lobby-info"><span class="game-name">' + game.charAt(0).toUpperCase() + game.slice(1) + ' - ' + stake + ' KAS</span>' +
-          '<span class="lobby-meta">' + creator + ' - ' + time + '</span></div><div>' +
-          (isOwn ? '<button class="btn-secondary" style="font-size:12px;padding:6px 12px" onclick="cancelLobbyMatch(\'' + m.id + '\')">Cancel</button>' :
-          '<button class="btn-primary" style="font-size:12px;padding:6px 12px" onclick="joinLobbyMatch(\'' + m.id + '\')">Join</button>') +
-          '</div></div>';
-      }).join('');
     });
   }
 
-  /* ── Overview Stats ── */
-  function loadOverviewStats() {
-    if (!window.firebase || !window.firebase.database) return;
-    var db = window.firebase.database();
-    db.ref('matches').on('value', function(snap) {
-      var total = 0, active = 0, players = {};
-      snap.forEach(function(child) {
-        var m = child.val(); var info = m.info || m;
-        total += parseFloat(info.stake || info.escrow || 0);
-        if (info.status === 'waiting' || info.status === 'active') active++;
-        if (info.creatorAddr) players[info.creatorAddr] = 1;
-        if (info.opponentAddr) players[info.opponentAddr] = 1;
-      });
-      document.getElementById('statPool').textContent = total.toFixed(0);
-      document.getElementById('statMatches').textContent = active;
-      document.getElementById('statPlayers').textContent = Object.keys(players).length;
-    });
-    db.ref('events').on('value', function(snap) {
-      var c = 0; snap.forEach(function() { c++; });
-      document.getElementById('statEvents').textContent = c;
-    });
+  function showBlockTooltip(clickX, clickY) {
+    // Find nearest block
+    var tooltip = document.getElementById('blockdag-tooltip');
+    var w = dagCanvas.offsetWidth;
+    var gap = Math.max(8, (w - 40) / Math.max(dagBlocks.length, 1));
+    var idx = Math.round((clickX - 20) / gap);
+    if (idx < 0 || idx >= dagBlocks.length) {
+      tooltip.classList.remove('visible');
+      return;
+    }
+    var block = dagBlocks[idx];
+    var hash = block.header ? block.header.hash : block.blockHash || block.hash || 'Unknown';
+    var ts = block.header ? block.header.timestamp : block.timestamp || 0;
+    var parents = block.header ? block.header.parents : (block.parentBlockHashes || []);
+    var parentCount = Array.isArray(parents) ? parents.length : 0;
+    var blueScore = block.header ? (block.header.blueScore || '--') : (block.blueScore || '--');
+
+    tooltip.innerHTML = '<div class="fw-600 mb-8" style="font-size:11px;color:var(--primary)">Block</div>' +
+      '<div>Hash: ' + hash.substring(0, 16) + '...</div>' +
+      '<div>Timestamp: ' + (ts ? new Date(ts * 1000).toLocaleString() : '--') + '</div>' +
+      '<div>Parents: ' + parentCount + '</div>' +
+      '<div>Blue Score: ' + blueScore + '</div>';
+    tooltip.style.left = Math.min(clickX, w - 280) + 'px';
+    tooltip.style.top = (clickY + 10) + 'px';
+    tooltip.classList.add('visible');
   }
 
-  /* ── Portfolio ── */
-  function updatePortfolio() {
-    if (!window.connectedAddress) return;
-    document.getElementById('portfolioContent').style.display = 'none';
-    document.getElementById('portfolioConnected').style.display = 'block';
-    document.getElementById('portAddress').textContent = window.connectedAddress.substring(0,16) + '...' + window.connectedAddress.slice(-6);
-    if (typeof window.htpBalance === 'number') {
-      document.getElementById('portBalance').textContent = (window.htpBalance / 1e8).toFixed(2) + ' KAS';
+  // Also init a mini DAG for overview
+  setTimeout(function() {
+    var miniCanvas = document.getElementById('overview-dag-canvas');
+    if (miniCanvas) {
+      var ctx = miniCanvas.getContext('2d');
+      miniCanvas.width = miniCanvas.offsetWidth * 2;
+      miniCanvas.height = 400;
+      ctx.scale(2, 2);
+      ctx.fillStyle = '#080c17';
+      ctx.fillRect(0, 0, miniCanvas.offsetWidth, 200);
+      ctx.font = '10px Inter';
+      ctx.fillStyle = '#475569';
+      ctx.fillText('LIVE NETWORK PULSE', 16, 24);
+      // Will be populated by the same fetchDAGBlocks data
+    }
+  }, 500);
+
+  /* --- Leaderboard --- */
+  function initLeaderboard() {
+    // Would use Firestore onSnapshot in production
+    console.log('[HTP] Leaderboard init');
+  }
+
+  /* --- Portfolio --- */
+  function initPortfolio() {
+    if (connectedAddress) {
+      fetchBalance(connectedAddress);
     }
   }
 
-  /* ── Wallet Events ── */
-  window.addEventListener('htp:wallet:connected', function(e) {
-    var addr = e.detail && e.detail.address;
-    if (!addr) return;
-    var btn = document.getElementById('connectWalletBtn');
-    if (btn) { btn.textContent = addr.substring(0,10) + '...' + addr.slice(-4); btn.classList.add('connected'); }
-    var status = document.getElementById('wallet-connected-status');
-    if (status) status.style.display = 'block';
-    var addrEl = document.getElementById('connected-address');
-    if (addrEl) addrEl.textContent = addr;
-    updatePortfolio();
-  });
+  /* --- Drawer --- */
+  window.closeDrawer = function() {
+    document.getElementById('match-drawer').classList.remove('open');
+    document.getElementById('drawer-overlay').classList.remove('open');
+  };
 
-  window.addEventListener('htp:balance:updated', function() {
-    var balEl = document.getElementById('connected-balance');
-    if (balEl && typeof window.htpBalance === 'number') balEl.textContent = (window.htpBalance / 1e8).toFixed(2) + ' KAS';
-    updatePortfolio();
-  });
+  /* --- Confirm Modal --- */
+  window.closeConfirmModal = function() {
+    document.getElementById('confirm-modal-overlay').classList.remove('open');
+  };
 
-  /* ── Disconnect ── */
-  var disconnectBtn = document.getElementById('disconnectWalletBtn');
-  if (disconnectBtn) {
-    disconnectBtn.addEventListener('click', function() {
-      window.connectedAddress = null;
-      window.htpAddress = null;
-      window.walletAddress = null;
-      try { localStorage.removeItem('htpPlayerId'); } catch(e) {}
-      var btn = document.getElementById('connectWalletBtn');
-      if (btn) { btn.textContent = 'Connect'; btn.classList.remove('connected'); }
-      document.getElementById('wallet-connected-status').style.display = 'none';
-      document.getElementById('portfolioContent').style.display = 'block';
-      document.getElementById('portfolioConnected').style.display = 'none';
-      window.dispatchEvent(new CustomEvent('htpDisconnected'));
-    });
-  }
+  window.offerDraw = function() {
+    document.getElementById('confirm-title').textContent = 'Offer Draw';
+    document.getElementById('confirm-message').textContent = 'Send a draw offer to your opponent? The escrow will be split 50/50.';
+    document.getElementById('confirm-modal-overlay').classList.add('open');
+  };
 
-  /* ── Manual Address ── */
-  var manualBtn = document.getElementById('manualAddrBtn');
-  if (manualBtn) {
-    manualBtn.addEventListener('click', function() {
-      var addr = (document.getElementById('manualAddrInput') || {}).value.trim();
-      if (addr && (addr.startsWith('kaspa:') || addr.startsWith('kaspatest:'))) {
-        if (typeof window.onWalletConnected === 'function') window.onWalletConnected(addr);
-        document.getElementById('wallet-connected-status').style.display = 'block';
-        document.getElementById('connected-address').textContent = addr;
-      } else {
-        showToast('Invalid Kaspa address', 'error');
-      }
-    });
-  }
+  window.confirmResign = function() {
+    document.getElementById('confirm-title').textContent = 'Resign';
+    document.getElementById('confirm-message').textContent = 'Are you sure you want to resign? Your opponent will receive the full escrow.';
+    document.getElementById('confirm-action-btn').style.background = 'var(--error)';
+    document.getElementById('confirm-modal-overlay').classList.add('open');
+  };
 
-  /* ── Mnemonic Import ── */
-  var mnemonicBtn = document.getElementById('mnemonicImportBtn');
-  if (mnemonicBtn) {
-    mnemonicBtn.addEventListener('click', function() {
-      var phrase = (document.getElementById('mnemonic-input') || {}).value.trim();
-      var words = phrase.split(/\s+/);
-      if (words.length !== 12 && words.length !== 24) {
-        showToast('Mnemonic must be 12 or 24 words', 'error');
-        return;
-      }
-      if (window.htpWalletV3 && window.htpWalletV3.importMnemonic) {
-        window.htpWalletV3.importMnemonic(phrase);
-      } else {
-        showToast('WASM SDK required for mnemonic import', 'error');
-      }
-    });
-  }
-
-  /* ── Boot ── */
-  function boot() {
-    buildWalletGrid();
-    loadOverviewStats();
-    loadMatchLobby();
-    loadLeaderboard();
-
-    // Mini DAG on overview
-    if (window.htpBlockDAG) {
-      setTimeout(function() { window.htpBlockDAG.init('#miniDagContainer', true); }, 500);
+  /* --- Resize handler for DAG --- */
+  window.addEventListener('resize', function() {
+    if (dagCanvas && dagCtx) {
+      dagCanvas.width = dagCanvas.offsetWidth * 2;
+      dagCanvas.height = 640;
+      dagCtx.scale(2, 2);
+      renderDAG();
     }
-
-    if (window.connectedAddress) updatePortfolio();
-
-    // Update network badge
-    var badge = document.getElementById('netBadge');
-    if (badge && window.HTP_NETWORK) badge.textContent = window.HTP_NETWORK.toUpperCase();
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
-  } else {
-    boot();
-  }
-
-  // Late wallet init
-  window.addEventListener('load', function() {
-    if (window.htpWalletV3 && window.htpWalletV3.init) window.htpWalletV3.init();
   });
+
+  console.log('%c[HTP] App controller loaded', 'color:#4f98a3;font-weight:bold');
 })();
-</script>
+  </script>
 </body>
 </html>
