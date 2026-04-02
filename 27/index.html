@@ -19616,7 +19616,7 @@ event MyMarket {
                     <div id="nodeFieldsTN12">
                         <div class="fg" style="margin-bottom:8px">
                             <label>TN12 wRPC Endpoint</label>
-                            <input id="tn12Url" class="fi" placeholder="wss://wrpc.tn12.kaspa.org" value="">
+                            <input id="tn12Url" class="fi" placeholder="wss://wrpc.kaspa.org" value="">
                         </div>
                         <div class="fg" style="margin-bottom:8px">
                             <label>TN12 REST API (optional)</label>
@@ -20172,9 +20172,9 @@ event MyMarket {
                 faucet: "https://faucet-tn12.kaspanet.io",
                 wrpcPort: 17110,
                 wrpcJsonPort: 18110,
-                wrpc: "wss://shaft-prefix-post-millions.trycloudflare.com",
+                wrpc: "wss://wrpc.tn12.kaspa.org",
                 customNode: {
-                    url: "wss://shaft-prefix-post-millions.trycloudflare.com"
+                    url: "wss://wrpc.tn12.kaspa.org"
                 }
             }
         };
@@ -34035,7 +34035,7 @@ setInterval(function(){
    D. NODE CONFIG & MINER
 ────────────────────────────────────────────────────────────────────── */
 W.HTP_NODE_REST=W.HTP_NODE_REST||'https://api-tn12.kaspa.org';
-W.HTP_NODE_WSS =W.HTP_NODE_WSS ||'wss://shaft-prefix-post-millions.trycloudflare.com';
+W.HTP_NODE_WSS =W.HTP_NODE_WSS ||'wss://wrpc.tn12.kaspa.org';
 
 (function(){
     try{var c=JSON.parse(localStorage.getItem('htpNodeConfig')||'{}');
@@ -34678,8 +34678,8 @@ W.htpOracleDaemon=OD;
 (function(){
   var W = window;
   var NETS = {
-    tn12:    { label:'TN12',    wrpc:'wss://shaft-prefix-post-millions.trycloudflare.com', rest:'https://api-tn12.kaspa.org', prefix:'kaspatest', dotColor:'#f59e0b' },
-    mainnet: { label:'Mainnet', wrpc:'wss://wrpc.tn12.kaspa.org',        rest:'https://api.kaspa.org',        prefix:'kaspa',     dotColor:'#49e8c2' }
+    tn12:    { label:'TN12',    wrpc:'wss://wrpc.tn12.kaspa.org', rest:'https://api-tn12.kaspa.org', prefix:'kaspatest', dotColor:'#f59e0b' },
+    mainnet: { label:'Mainnet', wrpc:'wss://wrpc.kaspa.org',        rest:'https://api.kaspa.org',        prefix:'kaspa',     dotColor:'#49e8c2' }
   };
   W._htpDaaScores = { tn12: 0, mainnet: 0 };
   var _cur = 'tn12';
@@ -35920,7 +35920,6 @@ document.querySelectorAll('button').forEach(function(b){
 <script src="htp-event-creator.js"></script>
 <script src="htp-autopayout-engine.js"></script>
 <script src="htp-nav-v4.js"></script>
-<script src="htp-wasm-loader.js"></script>
 <script src="htp-wallet-logos.js"></script>
 <script src="htp-chess-dnd.js"></script>
 <script src="htp-checkers-multijump.js"></script>
