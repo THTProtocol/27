@@ -18022,8 +18022,8 @@ body:not(.on-overview) .bg-glow3 { opacity: 0.25 !important; }
                     }
                 }
 
-                console.error('[HTP Init] WASM load timeout after retries');
-                window.dispatchEvent(new CustomEvent('htp:wasm:hard-failure'));
+                console.warn('[HTP Init] WASM not ready yet; keeping app live and retryable');
+                return;
 
 
         </script>
@@ -32987,7 +32987,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
           try {
             mnemonic = sessionStorage.getItem('htp_mnemonic') ||
                        sessionStorage.getItem('htpMnemonic') ||
-                       localStorage.getItem('htp_mnemonic') || '';
+                       null || '';
           } catch (e) { /* storage access failed */ }
 
           if (mnemonic) {
