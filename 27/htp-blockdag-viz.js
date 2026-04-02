@@ -1,13 +1,17 @@
 /**
  * htp-blockdag-viz.js - Live Kaspa BlockDAG Visualization (Canvas-based)
+ *
  * Renders real block data from TN12 on HTML Canvas elements.
+ * Polls blockdag stats every 5s, block data every 3s.
  */
-(function() {
+(function(window) {
   'use strict';
 
-  var API_BASE = 'https://api-tn12.kaspa.org';
-  var BLOCK_POLL_MS = 3000;
-  var STATS_POLL_MS = 5000;
+  var STATS_INTERVAL = 5000;
+  var BLOCKS_INTERVAL = 3000;
+  var STATS_URL = 'https://api-tn12.kaspa.org/info/blockdag';
+  var BLOCKS_URL = 'https://api-tn12.kaspa.org/blocks?limit=20&includeBlocks=true';
+
   var BLOCK_W = 18;
   var BLOCK_H = 12;
   var BLOCK_R = 3;
@@ -15,31 +19,47 @@
   var PRIMARY_GLOW = 'rgba(79,152,163,0.6)';
   var BLOCK_FILL = '#0f1623';
   var BG = '#0a0e1a';
+  var LINE_COLOR = 'rgba(79,152,163,0.3)';
+  var LABEL_COLOR = '#475569';
 
   var _blocks = [];
   var _blockMap = {};
   var _latestHash = null;
-  var _tooltip = null;
-  var _tooltipBlock = null;
-  var _animId = null;
-  var _blockTimer = null;
   var _statsTimer = null;
-  var _canvases = [];
-  var _slideOffset = 0;
+  var _blocksTimer = null;
+  var _animFrames = [];
+  var _tooltip = null;
+  var _connected = false;
 
-  /* ── Utility ─────────────────────────────────────────────── */
+  // ── Stats Polling ──────────────────────────────────────────────────────
 
-  function formatHash(h) {
-    if (!h || h.length < 8) return h || '';
-    return h.substring(0, 6) + '...' + h.slice(-4);
+  function fetchStats() {
+    fetch(STATS_URL).then(function(r) { return r.json(); }).then(function(data) {
+      _connected = true;
+      var el;
+      el = document.getElementById('statBlockHeight') || document.getElementById('kaspaBlockHeight') || document.getElementById('ks-block-height');
+      if (el) el.textContent = (data.blockCount || 0).toLocaleString();
+
+      el = document.getElementById('statDaaScore') || document.getElementById('kaspaDaaScore') || document.getElementById('ks-daa-score');
+      if (el) el.textContent = (data.virtualDaaScore || 0).toLocaleString();
+
+      el = document.getElementById('statHashrate') || document.getElementById('kaspaHashrate') || document.getElementById('ks-hashrate');
+      if (el) {
+        var h = computeHashrate(data.difficulty || 0);
+        el.textContent = h;
+      }
+
+      el = document.getElementById('statBlockRate') || document.getElementById('kaspaBlockRate') || document.getElementById('ks-block-rate');
+      if (el) el.textContent = '10 bps';
+
+      el = document.getElementById('statFee') || document.getElementById('kaspaFee') || document.getElementById('ks-fee');
+      if (el) el.textContent = '~0.0001 KAS';
+    }).catch(function() {
+      _connected = false;
+    });
   }
 
-  function formatNumber(n) {
-    if (n === undefined || n === null) return '--';
-    return Number(n).toLocaleString();
-  }
-
-  function formatHashrate(difficulty) {
+  function computeHashrate(difficulty) {
     if (!difficulty) return '--';
     var hr = difficulty * Math.pow(2, 32) / 1;
     if (hr >= 1e18) return (hr / 1e18).toFixed(2) + ' EH/s';
@@ -50,334 +70,327 @@
     return hr.toFixed(0) + ' H/s';
   }
 
-  /* ── Stats Fetching ──────────────────────────────────────── */
+  // ── Block Polling ──────────────────────────────────────────────────────
 
-  async function fetchStats() {
-    try {
-      var resp = await fetch(API_BASE + '/info/blockdag');
-      if (!resp.ok) return;
-      var data = await resp.json();
-
-      var el;
-      el = document.getElementById('kaspaBlockHeight');
-      if (el) el.textContent = formatNumber(data.blockCount);
-
-      el = document.getElementById('kaspaDaaScore');
-      if (el) el.textContent = formatNumber(data.virtualDaaScore);
-
-      el = document.getElementById('kaspaHashrate');
-      if (el) el.textContent = formatHashrate(data.difficulty);
-
-      el = document.getElementById('kaspaBlockRate');
-      if (el) el.textContent = data.tipHashes ? (data.tipHashes.length > 1 ? data.tipHashes.length + ' bps' : '1 bps') : '-- bps';
-
-      el = document.getElementById('kaspaFee');
-      if (el) el.textContent = '~0.0001 KAS';
-    } catch (e) {
-      console.warn('[BlockDAG] Stats fetch error:', e.message);
-    }
-  }
-
-  /* ── Block Fetching ──────────────────────────────────────── */
-
-  async function fetchBlocks() {
-    try {
-      var resp = await fetch(API_BASE + '/blocks?limit=20&includeBlocks=true');
-      if (!resp.ok) return;
-      var data = await resp.json();
+  function fetchBlocks() {
+    fetch(BLOCKS_URL).then(function(r) { return r.json(); }).then(function(data) {
       if (!data || !data.blocks || !Array.isArray(data.blocks)) return;
-
-      var newBlocks = data.blocks.map(function(b) {
+      _connected = true;
+      var incoming = data.blocks.map(function(b) {
         var hdr = b.header || {};
-        var hash = hdr.hash || b.hash || '';
-        var parents = [];
-        if (hdr.parentsByLevel && Array.isArray(hdr.parentsByLevel) && hdr.parentsByLevel.length > 0) {
-          parents = hdr.parentsByLevel[0] || [];
-        }
         return {
-          hash: hash,
-          parents: parents,
+          hash: hdr.hash || '',
+          parents: (hdr.parentsByLevel && hdr.parentsByLevel[0]) ? hdr.parentsByLevel[0] : [],
           blueScore: hdr.blueScore || 0,
-          timestamp: parseInt(hdr.timestamp || '0', 10),
-          x: 0, y: 0, targetX: 0,
-          isNew: !_blockMap[hash]
+          timestamp: parseInt(hdr.timestamp, 10) || 0,
+          slideIn: 0
         };
+      }).filter(function(b) { return b.hash; });
+
+      // Sort by timestamp ascending (oldest first)
+      incoming.sort(function(a, b) { return a.timestamp - b.timestamp; });
+
+      // Mark new blocks for slide-in animation
+      var oldMap = _blockMap;
+      _blockMap = {};
+      incoming.forEach(function(b) {
+        if (!oldMap[b.hash]) {
+          b.slideIn = 1; // animate from right
+        } else {
+          b.slideIn = 0;
+        }
+        _blockMap[b.hash] = b;
       });
 
-      // Sort by timestamp ascending (oldest left, newest right)
-      newBlocks.sort(function(a, b) { return a.timestamp - b.timestamp; });
-
-      // Detect truly new blocks for slide animation
-      var hasNew = false;
-      newBlocks.forEach(function(b) {
-        if (b.isNew) hasNew = true;
-        _blockMap[b.hash] = true;
-      });
-      if (hasNew && _blocks.length > 0) {
-        _slideOffset = 40;
-      }
-
-      _blocks = newBlocks;
+      _blocks = incoming;
       if (_blocks.length > 0) {
         _latestHash = _blocks[_blocks.length - 1].hash;
       }
-    } catch (e) {
-      console.warn('[BlockDAG] Blocks fetch error:', e.message);
-    }
+    }).catch(function() {
+      _connected = false;
+    });
   }
 
-  /* ── Canvas Rendering ────────────────────────────────────── */
+  // ── Canvas Rendering ───────────────────────────────────────────────────
 
-  function drawDAG(canvas) {
-    var ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    var w = canvas.width;
-    var h = canvas.height;
-    var isMini = h <= 200;
-
-    // Clear
+  function drawDAG(ctx, w, h) {
+    ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = BG;
     ctx.fillRect(0, 0, w, h);
 
-    // Label
-    ctx.fillStyle = '#475569';
-    ctx.font = 'bold 10px Inter, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('KASPA BLOCKDAG', 10, 16);
-
-    if (_blocks.length === 0) {
+    if (!_blocks.length) {
       drawConnecting(ctx, w, h);
       return;
     }
 
-    // Animate slide offset
-    if (_slideOffset > 0) {
-      _slideOffset = Math.max(0, _slideOffset - 2);
-    }
+    // Label
+    ctx.save();
+    ctx.fillStyle = LABEL_COLOR;
+    ctx.font = 'bold 10px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('KASPA BLOCKDAG', 10, 8);
+    ctx.restore();
 
     var padding = 30;
     var usableW = w - padding * 2;
-    var count = _blocks.length;
-    var spacing = Math.min(usableW / Math.max(count - 1, 1), 60);
-    var centerY = h / 2;
+    var usableH = h - padding * 2;
+    var n = _blocks.length;
+    var spacingX = n > 1 ? usableW / (n - 1) : 0;
+    var centerY = padding + usableH / 2;
 
-    // Assign positions
-    _blocks.forEach(function(block, idx) {
-      block.targetX = padding + idx * spacing + _slideOffset;
-      // Stagger Y based on hash to show DAG structure
-      var hashByte = parseInt(block.hash.substring(0, 2), 16) || 0;
-      var yOffset = ((hashByte % 5) - 2) * (isMini ? 8 : 14);
-      block.x = block.targetX;
-      block.y = centerY + yOffset;
+    // Build position lookup for parent lines
+    var posMap = {};
+    _blocks.forEach(function(b, i) {
+      var slideOffset = b.slideIn * 40;
+      b.slideIn = Math.max(0, b.slideIn - 0.08);
+      var bx = padding + i * spacingX + slideOffset;
+      // Stagger Y slightly based on hash to show DAG structure
+      var yOff = ((parseInt(b.hash.substring(0, 4), 16) || 0) % 5 - 2) * (BLOCK_H * 0.8);
+      var by = centerY + yOff - BLOCK_H / 2;
+      posMap[b.hash] = { x: bx, y: by };
     });
 
     // Draw parent lines
-    ctx.strokeStyle = 'rgba(79,152,163,0.3)';
+    ctx.strokeStyle = LINE_COLOR;
     ctx.lineWidth = 1;
-    _blocks.forEach(function(block) {
-      block.parents.forEach(function(parentHash) {
-        var parent = _blocks.find(function(b) { return b.hash === parentHash; });
-        if (parent) {
-          ctx.beginPath();
-          ctx.moveTo(block.x, block.y + BLOCK_H / 2);
-          ctx.lineTo(parent.x + BLOCK_W, parent.y + BLOCK_H / 2);
-          ctx.stroke();
-        }
+    _blocks.forEach(function(b) {
+      var pos = posMap[b.hash];
+      if (!pos) return;
+      b.parents.forEach(function(ph) {
+        var ppos = posMap[ph];
+        if (!ppos) return;
+        ctx.beginPath();
+        ctx.moveTo(ppos.x + BLOCK_W, ppos.y + BLOCK_H / 2);
+        ctx.lineTo(pos.x, pos.y + BLOCK_H / 2);
+        ctx.stroke();
       });
     });
 
     // Draw blocks
-    _blocks.forEach(function(block) {
-      var isLatest = block.hash === _latestHash;
+    _blocks.forEach(function(b) {
+      var pos = posMap[b.hash];
+      if (!pos) return;
+      var isLatest = b.hash === _latestHash;
 
       // Glow for latest
       if (isLatest) {
-        var pulse = 0.3 + 0.2 * Math.sin(Date.now() / 400);
-        ctx.shadowColor = PRIMARY;
-        ctx.shadowBlur = 10;
+        var pulse = 4 + 2 * Math.sin(Date.now() / 300);
+        ctx.save();
+        ctx.shadowColor = PRIMARY_GLOW;
+        ctx.shadowBlur = pulse;
         ctx.fillStyle = PRIMARY_GLOW;
-        roundRect(ctx, block.x - 2, block.y - 2, BLOCK_W + 4, BLOCK_H + 4, BLOCK_R + 1);
+        roundRect(ctx, pos.x - 2, pos.y - 2, BLOCK_W + 4, BLOCK_H + 4, BLOCK_R + 1);
         ctx.fill();
-        ctx.shadowBlur = 0;
+        ctx.restore();
       }
 
       // Block rect
       ctx.fillStyle = isLatest ? PRIMARY_GLOW : BLOCK_FILL;
       ctx.strokeStyle = PRIMARY;
       ctx.lineWidth = isLatest ? 2 : 1;
-      roundRect(ctx, block.x, block.y, BLOCK_W, BLOCK_H, BLOCK_R);
+      roundRect(ctx, pos.x, pos.y, BLOCK_W, BLOCK_H, BLOCK_R);
       ctx.fill();
       ctx.stroke();
 
-      // Hash label for latest confirmed block
+      // Hash label on latest
       if (isLatest) {
-        ctx.fillStyle = PRIMARY;
+        ctx.save();
+        ctx.fillStyle = '#e2e8f0';
         ctx.font = '8px JetBrains Mono, monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(formatHash(block.hash), block.x + BLOCK_W / 2, block.y - 4);
+        ctx.textBaseline = 'top';
+        var label = b.hash.substring(0, 6) + '...' + b.hash.slice(-4);
+        ctx.fillText(label, pos.x + BLOCK_W / 2, pos.y + BLOCK_H + 4);
+        ctx.restore();
       }
     });
-
-    // Reset shadow
-    ctx.shadowBlur = 0;
   }
 
   function drawConnecting(ctx, w, h) {
-    // Shimmer effect
     var t = Date.now() / 1000;
-    var shimmerX = (t % 3) / 3 * w;
-
-    ctx.fillStyle = 'rgba(79,152,163,0.05)';
-    ctx.fillRect(shimmerX - 60, 0, 120, h);
-
-    ctx.fillStyle = 'rgba(226,232,240,0.4)';
+    ctx.save();
     ctx.font = '13px Inter, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Connecting to Kaspa network...', w / 2, h / 2);
+    ctx.textBaseline = 'middle';
 
-    // Pulsing dots
-    for (var i = 0; i < 3; i++) {
-      var dotPhase = Math.sin(t * 3 + i * 0.8);
-      var alpha = 0.3 + 0.4 * Math.max(0, dotPhase);
-      ctx.fillStyle = 'rgba(79,152,163,' + alpha.toFixed(2) + ')';
-      ctx.beginPath();
-      ctx.arc(w / 2 - 12 + i * 12, h / 2 + 20, 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    // Shimmer effect
+    var shimmer = 0.4 + 0.3 * Math.sin(t * 2);
+    ctx.fillStyle = 'rgba(226,232,240,' + shimmer.toFixed(2) + ')';
+    ctx.fillText('Connecting to Kaspa network...', w / 2, h / 2);
+    ctx.restore();
   }
 
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
+    if (ctx.roundRect) {
+      ctx.roundRect(x, y, w, h, r);
+    } else {
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
   }
 
-  /* ── Tooltip ─────────────────────────────────────────────── */
+  // ── Tooltip ────────────────────────────────────────────────────────────
 
-  function showTooltip(block, mouseX, mouseY, canvas) {
-    hideTooltip();
-    _tooltipBlock = block;
-    var tip = document.createElement('div');
-    tip.id = 'dagTooltip';
-    tip.style.cssText = 'position:fixed;background:#1d2840;border:1px solid rgba(79,152,163,0.4);color:#e2e8f0;padding:10px 14px;border-radius:8px;z-index:1000;font-family:JetBrains Mono,monospace;font-size:11px;pointer-events:none;line-height:1.6;max-width:320px;';
-    var ts = block.timestamp ? new Date(block.timestamp * 1000).toLocaleString() : 'N/A';
-    tip.innerHTML = '<div style="color:' + PRIMARY + ';font-weight:600;margin-bottom:4px;">Block</div>' +
-      '<div>Hash: ' + formatHash(block.hash) + '</div>' +
-      '<div>Time: ' + ts + '</div>' +
+  function setupTooltip(canvas) {
+    canvas.addEventListener('click', function(e) {
+      var rect = canvas.getBoundingClientRect();
+      var scaleX = canvas.width / rect.width;
+      var scaleY = canvas.height / rect.height;
+      var mx = (e.clientX - rect.left) * scaleX;
+      var my = (e.clientY - rect.top) * scaleY;
+
+      var padding = 30;
+      var usableW = canvas.width - padding * 2;
+      var n = _blocks.length;
+      var spacingX = n > 1 ? usableW / (n - 1) : 0;
+      var centerY = padding + (canvas.height - padding * 2) / 2;
+
+      var hit = null;
+      _blocks.forEach(function(b, i) {
+        var bx = padding + i * spacingX;
+        var yOff = ((parseInt(b.hash.substring(0, 4), 16) || 0) % 5 - 2) * (BLOCK_H * 0.8);
+        var by = centerY + yOff - BLOCK_H / 2;
+        if (mx >= bx && mx <= bx + BLOCK_W && my >= by && my <= by + BLOCK_H) {
+          hit = b;
+        }
+      });
+
+      removeTooltip();
+      if (hit) {
+        showTooltip(e.clientX, e.clientY, hit);
+      }
+    });
+  }
+
+  function showTooltip(px, py, block) {
+    removeTooltip();
+    _tooltip = document.createElement('div');
+    _tooltip.style.cssText = 'position:fixed;z-index:1000;background:#1a2235;border:1px solid rgba(79,152,163,0.4);color:#e2e8f0;padding:10px 14px;border-radius:8px;font-family:JetBrains Mono,monospace;font-size:12px;line-height:1.6;pointer-events:none;max-width:320px;';
+    _tooltip.style.left = px + 12 + 'px';
+    _tooltip.style.top = py + 12 + 'px';
+    var ts = block.timestamp ? new Date(block.timestamp * 1000).toLocaleString() : '--';
+    _tooltip.innerHTML =
+      '<div style="color:#4f98a3;font-weight:600;margin-bottom:4px;">Block</div>' +
+      '<div>Hash: ' + block.hash.substring(0, 12) + '...' + block.hash.slice(-6) + '</div>' +
+      '<div>Timestamp: ' + ts + '</div>' +
       '<div>Parents: ' + block.parents.length + '</div>' +
-      '<div>Blue Score: ' + formatNumber(block.blueScore) + '</div>';
-
-    var rect = canvas.getBoundingClientRect();
-    tip.style.left = (rect.left + mouseX + 16) + 'px';
-    tip.style.top = (rect.top + mouseY - 20) + 'px';
-    document.body.appendChild(tip);
-    _tooltip = tip;
+      '<div>Blue Score: ' + (block.blueScore || '--') + '</div>';
+    document.body.appendChild(_tooltip);
   }
 
-  function hideTooltip() {
+  function removeTooltip() {
     if (_tooltip) {
       _tooltip.remove();
       _tooltip = null;
-      _tooltipBlock = null;
     }
   }
 
-  function handleCanvasClick(e, canvas) {
-    var rect = canvas.getBoundingClientRect();
-    var scaleX = canvas.width / rect.width;
-    var scaleY = canvas.height / rect.height;
-    var mx = (e.clientX - rect.left) * scaleX;
-    var my = (e.clientY - rect.top) * scaleY;
+  // ── Animation Loop ─────────────────────────────────────────────────────
 
-    var clicked = null;
-    _blocks.forEach(function(b) {
-      if (mx >= b.x && mx <= b.x + BLOCK_W && my >= b.y && my <= b.y + BLOCK_H) {
-        clicked = b;
+  function startLoop(canvas) {
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    function tick() {
+      var dpr = window.devicePixelRatio || 1;
+      var rect = canvas.getBoundingClientRect();
+      if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
       }
+      drawDAG(ctx, rect.width, rect.height);
+      var id = requestAnimationFrame(tick);
+      canvas._animId = id;
+    }
+
+    tick();
+    _animFrames.push(canvas);
+  }
+
+  function stopLoop(canvas) {
+    if (canvas && canvas._animId) {
+      cancelAnimationFrame(canvas._animId);
+      canvas._animId = null;
+    }
+  }
+
+  // ── Resize Handler ─────────────────────────────────────────────────────
+
+  function handleResize() {
+    _animFrames.forEach(function(canvas) {
+      if (!canvas || !canvas.parentElement) return;
+      var container = canvas.parentElement;
+      canvas.style.width = container.clientWidth + 'px';
     });
-
-    if (clicked) {
-      if (_tooltipBlock && _tooltipBlock.hash === clicked.hash) {
-        hideTooltip();
-      } else {
-        showTooltip(clicked, e.clientX - rect.left, e.clientY - rect.top, canvas);
-      }
-    } else {
-      hideTooltip();
-    }
   }
 
-  /* ── Resize ──────────────────────────────────────────────── */
-
-  function resizeCanvas(canvas) {
-    var container = canvas.parentElement;
-    if (!container) return;
-    var w = container.clientWidth;
-    var h = parseInt(canvas.getAttribute('height'), 10) || container.clientHeight;
-    canvas.width = w;
-    canvas.height = h;
-    canvas.style.width = '100%';
-    canvas.style.height = h + 'px';
-  }
-
-  /* ── Animation Loop ──────────────────────────────────────── */
-
-  function animate() {
-    _canvases.forEach(function(c) { drawDAG(c); });
-    _animId = requestAnimationFrame(animate);
-  }
-
-  /* ── Init ────────────────────────────────────────────────── */
+  // ── Init ───────────────────────────────────────────────────────────────
 
   function init() {
-    var main = document.getElementById('dagCanvasFull');
-    var mini = document.getElementById('dagCanvasMini');
+    var mainCanvas = document.getElementById('dagCanvasFull') || document.getElementById('dagCanvas') || document.getElementById('blockdag-canvas');
+    var miniCanvas = document.getElementById('dagCanvasMini') || document.getElementById('overview-dag-canvas');
 
-    if (main) {
-      _canvases.push(main);
-      resizeCanvas(main);
-      main.addEventListener('click', function(e) { handleCanvasClick(e, main); });
-    }
-    if (mini) {
-      _canvases.push(mini);
-      resizeCanvas(mini);
-      mini.addEventListener('click', function(e) { handleCanvasClick(e, mini); });
+    if (mainCanvas) {
+      mainCanvas.style.width = '100%';
+      mainCanvas.style.display = 'block';
+      startLoop(mainCanvas);
+      setupTooltip(mainCanvas);
     }
 
-    if (_canvases.length === 0) {
-      console.warn('[BlockDAG] No canvas elements found');
-      return;
+    if (miniCanvas) {
+      miniCanvas.style.width = '100%';
+      miniCanvas.style.display = 'block';
+      startLoop(miniCanvas);
+      setupTooltip(miniCanvas);
     }
 
-    window.addEventListener('resize', function() {
-      _canvases.forEach(resizeCanvas);
-      hideTooltip();
-    });
-
-    // Hide tooltip on scroll
-    document.addEventListener('scroll', hideTooltip, true);
-
-    // Start animation
-    _animId = requestAnimationFrame(animate);
-
-    // Fetch immediately then poll
-    fetchBlocks();
+    // Start polling
     fetchStats();
-    _blockTimer = setInterval(fetchBlocks, BLOCK_POLL_MS);
-    _statsTimer = setInterval(fetchStats, STATS_POLL_MS);
+    fetchBlocks();
+    _statsTimer = setInterval(fetchStats, STATS_INTERVAL);
+    _blocksTimer = setInterval(fetchBlocks, BLOCKS_INTERVAL);
 
-    console.log('[BlockDAG] Initialized with ' + _canvases.length + ' canvas(es)');
+    window.addEventListener('resize', handleResize);
+
+    // Close tooltip on scroll/click elsewhere
+    document.addEventListener('scroll', removeTooltip, true);
+
+    console.log('[BlockDAG] Initialized');
   }
 
-  // Start when DOM is ready
+  // ── Public API ─────────────────────────────────────────────────────────
+
+  window.htpBlockDAG = {
+    init: init,
+    startPolling: function() {
+      if (!_statsTimer) _statsTimer = setInterval(fetchStats, STATS_INTERVAL);
+      if (!_blocksTimer) _blocksTimer = setInterval(fetchBlocks, BLOCKS_INTERVAL);
+    },
+    stopPolling: function() {
+      clearInterval(_statsTimer); _statsTimer = null;
+      clearInterval(_blocksTimer); _blocksTimer = null;
+      _animFrames.forEach(stopLoop);
+      _animFrames = [];
+    },
+    getLatestBlockHash: function() { return _latestHash; },
+    getBlockCount: function() { return _blocks.length; },
+    isConnected: function() { return _connected; }
+  };
+
+  // Auto-init on DOMContentLoaded
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
-})();
+
+  console.log('[BlockDAG] Module loaded');
+
+})(window);

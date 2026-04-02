@@ -1643,11 +1643,40 @@ a:hover { color: var(--primary-h); }
       </div>
     </section>
 
+    <!-- Predictions: Add Outcome wiring -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var outcomeCount = 2;
+      var addBtn = document.getElementById('addOutcomeBtn');
+      var container = document.getElementById('outcomesContainer');
+      if (addBtn && container) {
+        addBtn.addEventListener('click', function() {
+          if (outcomeCount >= 10) return;
+          outcomeCount++;
+          var row = document.createElement('div');
+          row.className = 'outcome-row';
+          row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:8px;';
+          row.innerHTML = '<input type="text" placeholder="Outcome ' + outcomeCount + '" class="outcome-input" maxlength="80" style="flex:1;background:var(--surface-3);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:6px;font-family:var(--font-body);font-size:14px;"><button type="button" class="remove-outcome" style="background:none;border:1px solid rgba(239,68,68,0.3);color:var(--error);width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:16px;">X</button>';
+          container.appendChild(row);
+        });
+        container.addEventListener('click', function(e) {
+          if (e.target.classList.contains('remove-outcome')) {
+            var row = e.target.closest('.outcome-row');
+            if (row && container.children.length > 2) {
+              row.remove();
+              outcomeCount--;
+            }
+          }
+        });
+      }
+    });
+    </script>
+
     <!-- ====== KASPA ====== -->
     <section id="tab-kaspa" class="tab-section">
       <div class="container section-padding">
         <h2 class="mb-24">Kaspa Network</h2>
-        
+
         <!-- Stats Row -->
         <div class="kaspa-stats-row" id="kaspa-stats">
           <div class="kaspa-stat">
