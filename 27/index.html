@@ -820,6 +820,101 @@ a:hover { color: var(--primary-h); }
   margin-top: 4px;
 }
 
+/* Market cards (predictions listing) */
+.market-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+.market-card:hover { border-color: var(--border-hover); }
+.market-card-header {
+  padding: 16px 20px;
+  cursor: pointer;
+}
+.market-card-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+.market-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.market-meta-item { white-space: nowrap; }
+.market-card-body {
+  padding: 0 20px 20px;
+  border-top: 1px solid var(--border);
+}
+.market-description {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 16px 0 12px;
+}
+.market-source {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-bottom: 8px;
+}
+.market-source a { color: var(--primary); }
+.market-resolution {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-bottom: 16px;
+}
+.market-outcomes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.market-outcome-row {
+  background: var(--surface-3);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.outcome-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.outcome-name { font-size: 14px; font-weight: 600; }
+.outcome-odds { font-size: 14px; font-weight: 700; color: var(--primary); }
+.outcome-bar {
+  height: 4px;
+  background: var(--surface);
+  border-radius: 2px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.outcome-bar-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.outcome-action {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.outcome-bet-input {
+  width: 100px;
+  padding: 6px 10px !important;
+  font-size: 13px !important;
+}
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+.ss-punct { color: var(--text-faint); }
+
 /* ============================================================
    KASPA SECTION
    ============================================================ */
@@ -2153,80 +2248,8 @@ npm start</div>
     }
   };
 
-  /* --- SilverScript Compiler --- */
-  window.compileSilverScript = function() {
-    var title = document.getElementById('event-title').value.trim();
-    var date = document.getElementById('event-resolution-date').value;
-    var url = document.getElementById('event-source-url').value.trim();
-    var minPos = document.getElementById('event-min-position').value || '1';
-    var outcomes = [];
-    document.querySelectorAll('.outcome-input').forEach(function(inp) {
-      if (inp.value.trim()) outcomes.push(inp.value.trim());
-    });
-
-    var valid = title && date && url && outcomes.length >= 2;
-    var dot = document.getElementById('compiler-dot');
-    var statusText = document.getElementById('compiler-status-text');
-
-    if (valid) {
-      dot.className = 'dot dot-green';
-      statusText.textContent = 'Valid';
-      statusText.style.color = 'var(--success)';
-    } else {
-      dot.className = 'dot dot-grey';
-      statusText.textContent = 'Incomplete';
-      statusText.style.color = 'var(--text-faint)';
-    }
-
-    var ts = date ? Math.floor(new Date(date).getTime() / 1000) : 0;
-    var outcomesStr = outcomes.map(function(o) { return '"' + o + '"'; }).join(', ');
-    var treasury = 'kaspatest:qpyfz03k...354m';
-
-    var code = '';
-    code += '<span class="line"><span class="ss-comment">// HTP Prediction Market Covenant</span></span>';
-    code += '<span class="line"><span class="ss-comment">// Generated: ' + new Date().toISOString() + '</span></span>';
-    code += '<span class="line"></span>';
-    code += '<span class="line"><span class="ss-keyword">DEFINE</span> <span class="ss-keyword">MARKET</span> {</span>';
-    code += '<span class="line">  title: <span class="ss-string">"' + (title || '...') + '"</span></span>';
-    code += '<span class="line">  outcomes: [<span class="ss-string">' + (outcomesStr || '...') + '</span>]</span>';
-    code += '<span class="line">  resolution_deadline: <span class="ss-value">' + (ts || '...') + '</span></span>';
-    code += '<span class="line">  oracle_url: <span class="ss-string">"' + (url || '...') + '"</span></span>';
-    code += '<span class="line">  min_position: <span class="ss-value">' + minPos + '</span> <span class="ss-keyword">KAS</span></span>';
-    code += '<span class="line">  treasury: <span class="ss-string">' + treasury + '</span></span>';
-    code += '<span class="line">  fee_bps: <span class="ss-value">200</span></span>';
-    code += '<span class="line">}</span>';
-    code += '<span class="line"></span>';
-    code += '<span class="line"><span class="ss-keyword">ESCROW</span> {</span>';
-    code += '<span class="line">  lock_condition: <span class="ss-keyword">OR</span>(</span>';
-    code += '<span class="line">    <span class="ss-keyword">AND</span>(oracle_attests(outcome_index), send_to(winner_address)),</span>';
-    code += '<span class="line">    <span class="ss-keyword">AND</span>(deadline_passed(), no_oracle_attest(), refund_all())</span>';
-    code += '<span class="line">  )</span>';
-    code += '<span class="line">}</span>';
-    code += '<span class="line"></span>';
-    code += '<span class="line"><span class="ss-keyword">SETTLEMENT</span> {</span>';
-    code += '<span class="line">  <span class="ss-keyword">on_resolve</span>(outcome_index):</span>';
-    code += '<span class="line">    payout = total_pool * (<span class="ss-value">1</span> - fee_bps / <span class="ss-value">10000</span>)</span>';
-    code += '<span class="line">    fee = total_pool * (fee_bps / <span class="ss-value">10000</span>)</span>';
-    code += '<span class="line">    <span class="ss-keyword">SEND</span> fee <span class="ss-keyword">TO</span> treasury_address</span>';
-    code += '<span class="line">    <span class="ss-keyword">FOR EACH</span> position <span class="ss-keyword">IN</span> positions[outcome_index]:</span>';
-    code += '<span class="line">      share = position.size / winning_pool_size</span>';
-    code += '<span class="line">      <span class="ss-keyword">SEND</span> payout * share <span class="ss-keyword">TO</span> position.address</span>';
-    code += '<span class="line">}</span>';
-
-    document.getElementById('compiler-output').innerHTML = code;
-  };
-
-  window.copySilverScript = function() {
-    var el = document.getElementById('compiler-output');
-    var text = el.innerText || el.textContent;
-    navigator.clipboard.writeText(text).then(function() {
-      // Brief feedback
-      var btn = el.closest('.compiler-panel').querySelector('.btn-secondary');
-      var orig = btn.textContent;
-      btn.textContent = 'Copied';
-      setTimeout(function() { btn.textContent = orig; }, 1500);
-    });
-  };
+  /* --- SilverScript Compiler (handled by htp-silverscript-live.js) --- */
+  /* compileSilverScript and copySilverScript are set by the external module */
 
   /* --- Wallet Modal --- */
   window.openWalletModal = function() {
@@ -2400,23 +2423,7 @@ npm start</div>
       '</div>';
   }
 
-  /* --- Prediction Event Creation --- */
-  window.createPredictionEvent = function() {
-    if (!connectedAddress) {
-      openWalletModal();
-      return;
-    }
-    var title = document.getElementById('event-title').value.trim();
-    var desc = document.getElementById('event-description').value.trim();
-    var date = document.getElementById('event-resolution-date').value;
-    var url = document.getElementById('event-source-url').value.trim();
-    if (!title || !desc || !date || !url) {
-      alert('Fill in all required fields');
-      return;
-    }
-    console.log('[HTP Market] Creating prediction event');
-    // Firebase + escrow TX
-  };
+  /* --- Prediction Event Creation (handled by htp-event-creator.js) --- */
 
   /* --- Oracle Tabs --- */
   window.switchOracleTab = function(tab) {
@@ -2689,16 +2696,391 @@ npm start</div>
   }, 500);
 
   /* --- Leaderboard --- */
+  var leaderboardInitialized = false;
+  var leaderboardListener = null;
+
   function initLeaderboard() {
-    // Would use Firestore onSnapshot in production
-    console.log('[HTP] Leaderboard init');
+    if (leaderboardInitialized) return;
+    leaderboardInitialized = true;
+
+    var db = window.firebase && window.firebase.database ? window.firebase.database() : null;
+    if (!db) {
+      document.getElementById('leaderboard-body').innerHTML =
+        '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:40px">Firebase not connected</td></tr>';
+      return;
+    }
+
+    leaderboardListener = db.ref('matches').on('value', function(snapshot) {
+      var stats = {};
+      if (snapshot.exists()) {
+        snapshot.forEach(function(child) {
+          var match = child.val();
+          if (!match || !match.info) return;
+          var info = match.info;
+          if (info.status !== 'finished') return;
+
+          var stake = parseFloat(info.stake || info.stakeKas || 0);
+          var totalPot = stake * 2;
+          var result = match.result || info.result || {};
+          var winner = result.winner;
+          var game = info.game || 'chess';
+
+          // Track creator
+          var creatorAddr = info.creatorAddrFull || (match.players && match.players.creator);
+          var opponentAddr = info.opponentAddrFull || (match.players && match.players.opponentAddrFull);
+
+          [creatorAddr, opponentAddr].forEach(function(addr) {
+            if (!addr) return;
+            if (!stats[addr]) {
+              stats[addr] = { address: addr, wins: 0, losses: 0, totalWon: 0, totalWagered: 0, game: game, lastActive: 0 };
+            }
+            stats[addr].totalWagered += stake;
+            var ts = info.finishedAt || info.created || 0;
+            if (ts > stats[addr].lastActive) stats[addr].lastActive = ts;
+          });
+
+          // Determine winner address
+          var winnerAddr = null;
+          if (winner === 'creator' || winner === (info.creator)) {
+            winnerAddr = creatorAddr;
+          } else if (winner === 'opponent' || winner === (info.opponent)) {
+            winnerAddr = opponentAddr;
+          }
+
+          if (winnerAddr && stats[winnerAddr]) {
+            stats[winnerAddr].wins++;
+            stats[winnerAddr].totalWon += totalPot;
+          }
+          // Loser
+          var loserAddr = winnerAddr === creatorAddr ? opponentAddr : creatorAddr;
+          if (loserAddr && stats[loserAddr]) {
+            stats[loserAddr].losses++;
+          }
+        });
+      }
+
+      // Sort by total KAS won descending
+      var sorted = Object.values(stats).sort(function(a, b) { return b.totalWon - a.totalWon; });
+
+      renderLeaderboard(sorted);
+    });
+
+    console.log('[HTP] Leaderboard initialized');
   }
 
-  /* --- Portfolio --- */
-  function initPortfolio() {
-    if (connectedAddress) {
-      fetchBalance(connectedAddress);
+  function truncateAddress(addr) {
+    if (!addr || addr.length < 12) return addr || '--';
+    return '...' + addr.substring(addr.length - 8);
+  }
+
+  function gameIcon(game) {
+    if (game === 'chess') return '\u265A';
+    if (game === 'checkers') return '\u26C0';
+    if (game === 'connect4') return '\u26AB';
+    return '\u26A1';
+  }
+
+  function timeAgo(ts) {
+    if (!ts) return '--';
+    var diff = Date.now() - ts;
+    if (diff < 60000) return 'just now';
+    if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+    return Math.floor(diff / 86400000) + 'd ago';
+  }
+
+  function renderLeaderboard(entries) {
+    var tbody = document.getElementById('leaderboard-body');
+    if (!tbody) return;
+
+    if (!entries || entries.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:40px">No match data yet</td></tr>';
+      return;
     }
+
+    var html = '';
+    entries.forEach(function(entry, idx) {
+      var total = entry.wins + entry.losses;
+      var winRate = total > 0 ? ((entry.wins / total) * 100).toFixed(1) : '0.0';
+      html += '<tr class="new-entry" onclick="window.htpShowMatchHistory(\'' + entry.address + '\')">';
+      html += '<td class="rank">#' + (idx + 1) + '</td>';
+      html += '<td style="font-family:monospace;font-size:13px">' + truncateAddress(entry.address) + '</td>';
+      html += '<td>' + gameIcon(entry.game) + '</td>';
+      html += '<td class="fw-600">' + entry.wins + '</td>';
+      html += '<td style="color:var(--success);font-weight:700">' + entry.totalWon.toFixed(2) + ' KAS</td>';
+      html += '<td>' + winRate + '%</td>';
+      html += '<td class="text-muted">' + timeAgo(entry.lastActive) + '</td>';
+      html += '</tr>';
+    });
+    tbody.innerHTML = html;
+  }
+
+  // Show match history in side drawer
+  window.htpShowMatchHistory = function(address) {
+    var drawer = document.getElementById('match-drawer');
+    var overlay = document.getElementById('drawer-overlay');
+    if (!drawer || !overlay) return;
+
+    drawer.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
+      '<h3>Match History</h3>' +
+      '<button onclick="closeDrawer()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px">&times;</button></div>' +
+      '<p class="text-muted" style="font-family:monospace;font-size:12px;margin-bottom:16px">...' + address.substring(address.length - 8) + '</p>' +
+      '<div id="drawer-matches">Loading...</div>';
+
+    drawer.classList.add('open');
+    overlay.classList.add('open');
+
+    // Fetch matches for this address
+    var db = window.firebase && window.firebase.database ? window.firebase.database() : null;
+    if (!db) {
+      document.getElementById('drawer-matches').innerHTML = '<p class="text-muted">Firebase not connected</p>';
+      return;
+    }
+
+    db.ref('matches').once('value', function(snapshot) {
+      var matches = [];
+      if (snapshot.exists()) {
+        snapshot.forEach(function(child) {
+          var m = child.val();
+          if (!m || !m.info) return;
+          var info = m.info;
+          var players = m.players || {};
+          if (players.creator === address || players.creatorAddrFull === address ||
+              players.opponentAddrFull === address || info.creatorAddrFull === address || info.opponentAddrFull === address) {
+            matches.push({ id: child.key, info: info, players: players, result: m.result });
+          }
+        });
+      }
+
+      matches.sort(function(a, b) { return (b.info.created || 0) - (a.info.created || 0); });
+
+      var container = document.getElementById('drawer-matches');
+      if (matches.length === 0) {
+        container.innerHTML = '<p class="text-muted">No matches found</p>';
+        return;
+      }
+
+      var html = '';
+      matches.forEach(function(m) {
+        var stake = parseFloat(m.info.stake || 0);
+        var isWinner = false;
+        var result = m.result || m.info.result || {};
+        if (result.winner) {
+          var wAddr = result.winner === 'creator' ? (m.players.creatorAddrFull || m.players.creator) : m.players.opponentAddrFull;
+          isWinner = wAddr === address;
+        }
+        html += '<div style="padding:12px 0;border-bottom:1px solid var(--border);font-size:13px">';
+        html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px">';
+        html += '<span class="fw-600">' + (m.info.game || 'chess') + ' — ' + m.id + '</span>';
+        html += '<span style="color:' + (isWinner ? 'var(--success)' : 'var(--error)') + ';font-weight:700">' + (isWinner ? '+' + (stake * 2).toFixed(2) : '-' + stake.toFixed(2)) + ' KAS</span>';
+        html += '</div>';
+        html += '<div class="text-faint" style="font-size:11px">' + timeAgo(m.info.created) + '</div>';
+        html += '</div>';
+      });
+      container.innerHTML = html;
+    });
+  };
+
+  /* --- Portfolio --- */
+  var portfolioInterval = null;
+
+  function initPortfolio() {
+    if (!connectedAddress) return;
+
+    // Update wallet info
+    fetchBalance(connectedAddress);
+
+    // Live balance refresh every 10s
+    if (portfolioInterval) clearInterval(portfolioInterval);
+    portfolioInterval = setInterval(function() {
+      if (connectedAddress) fetchBalance(connectedAddress);
+    }, 10000);
+
+    loadPortfolioData();
+  }
+
+  function loadPortfolioData() {
+    if (!connectedAddress) return;
+
+    var db = window.firebase && window.firebase.database ? window.firebase.database() : null;
+    if (!db) return;
+
+    db.ref('matches').once('value', function(snapshot) {
+      var openPositions = [];
+      var history = [];
+      var totalWagered = 0;
+      var totalWon = 0;
+      var wins = 0;
+      var totalGames = 0;
+
+      if (snapshot.exists()) {
+        snapshot.forEach(function(child) {
+          var m = child.val();
+          if (!m || !m.info) return;
+          var info = m.info;
+          var players = m.players || {};
+          var isPlayer = players.creator === connectedAddress ||
+                         players.creatorAddrFull === connectedAddress ||
+                         players.opponentAddrFull === connectedAddress ||
+                         info.creatorAddrFull === connectedAddress ||
+                         info.opponentAddrFull === connectedAddress;
+          if (!isPlayer) return;
+
+          var stake = parseFloat(info.stake || info.stakeKas || 0);
+
+          if (info.status === 'waiting' || info.status === 'active') {
+            openPositions.push({ id: child.key, info: info, players: players });
+          }
+
+          if (info.status === 'finished') {
+            totalGames++;
+            totalWagered += stake;
+            var result = m.result || info.result || {};
+            var isWinner = false;
+            if (result.winner) {
+              var wAddr = result.winner === 'creator'
+                ? (players.creatorAddrFull || players.creator)
+                : players.opponentAddrFull;
+              isWinner = wAddr === connectedAddress;
+            }
+            if (isWinner) {
+              wins++;
+              totalWon += stake * 2;
+            }
+            history.push({ id: child.key, info: info, players: players, result: result, won: isWinner, stake: stake });
+          }
+        });
+      }
+
+      // PnL summary
+      var netPnL = totalWon - totalWagered;
+      var winRate = totalGames > 0 ? ((wins / totalGames) * 100).toFixed(1) : '0.0';
+
+      var pnlWagered = document.getElementById('pnl-wagered');
+      var pnlWon = document.getElementById('pnl-won');
+      var pnlNet = document.getElementById('pnl-net');
+      var pnlWinrate = document.getElementById('pnl-winrate');
+
+      if (pnlWagered) pnlWagered.textContent = totalWagered.toFixed(2) + ' KAS';
+      if (pnlWon) pnlWon.textContent = totalWon.toFixed(2) + ' KAS';
+      if (pnlNet) {
+        pnlNet.textContent = (netPnL >= 0 ? '+' : '') + netPnL.toFixed(2) + ' KAS';
+        pnlNet.style.color = netPnL >= 0 ? 'var(--success)' : 'var(--error)';
+      }
+      if (pnlWinrate) pnlWinrate.textContent = winRate + '%';
+
+      // Open positions
+      renderOpenPositions(openPositions);
+
+      // Event positions (from /markets)
+      loadEventPositions();
+
+      // Match history
+      renderMatchHistory(history);
+    });
+  }
+
+  function renderOpenPositions(positions) {
+    var container = document.getElementById('open-positions');
+    if (!container) return;
+
+    if (positions.length === 0) {
+      container.innerHTML = '<p class="text-muted">No open positions</p>';
+      return;
+    }
+
+    var html = '';
+    positions.forEach(function(pos) {
+      var stake = parseFloat(pos.info.stake || 0);
+      var statusColor = pos.info.status === 'active' ? 'var(--success)' : 'var(--warning)';
+      html += '<div class="position-card">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+      html += '<span class="fw-600">' + (pos.info.game || 'chess').toUpperCase() + '</span>';
+      html += '<span style="color:' + statusColor + ';font-size:12px;font-weight:600;text-transform:uppercase">' + (pos.info.status || '--') + '</span>';
+      html += '</div>';
+      html += '<div style="font-size:13px;color:var(--text-muted);margin-bottom:4px">Match: ' + pos.id + '</div>';
+      html += '<div style="font-size:15px;font-weight:700;color:var(--primary)">' + stake.toFixed(2) + ' KAS locked</div>';
+      if (pos.info.timeControl) html += '<div class="text-faint" style="font-size:11px;margin-top:4px">Time: ' + pos.info.timeControl + '</div>';
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  }
+
+  function loadEventPositions() {
+    var container = document.getElementById('event-positions');
+    if (!container || !connectedAddress) return;
+
+    var db = window.firebase && window.firebase.database ? window.firebase.database() : null;
+    if (!db) return;
+
+    db.ref('markets').once('value', function(snapshot) {
+      var eventPos = [];
+      if (snapshot.exists()) {
+        snapshot.forEach(function(child) {
+          var market = child.val();
+          if (!market || !market.positions) return;
+          Object.keys(market.positions).forEach(function(posKey) {
+            var p = market.positions[posKey];
+            if (p && p.address === connectedAddress) {
+              eventPos.push({
+                marketId: child.key,
+                title: market.title,
+                outcome: market.outcomes ? market.outcomes[p.outcomeIndex] : 'Outcome ' + p.outcomeIndex,
+                size: p.size || 0,
+                status: market.status
+              });
+            }
+          });
+        });
+      }
+
+      if (eventPos.length === 0) {
+        container.innerHTML = '<p class="text-muted">No event positions</p>';
+        return;
+      }
+
+      var html = '';
+      eventPos.forEach(function(ep) {
+        html += '<div class="position-card">';
+        html += '<div style="font-weight:600;margin-bottom:6px">' + (ep.title || 'Market') + '</div>';
+        html += '<div style="font-size:13px;color:var(--text-muted);margin-bottom:4px">Outcome: ' + ep.outcome + '</div>';
+        html += '<div style="font-size:15px;font-weight:700;color:var(--primary)">' + ep.size.toFixed(2) + ' KAS</div>';
+        html += '<div class="text-faint" style="font-size:11px;margin-top:4px">' + (ep.status || 'active') + '</div>';
+        html += '</div>';
+      });
+      container.innerHTML = html;
+    });
+  }
+
+  function renderMatchHistory(history) {
+    var container = document.getElementById('match-history');
+    if (!container) return;
+
+    if (history.length === 0) {
+      container.innerHTML = '<p class="text-muted">No match history yet</p>';
+      return;
+    }
+
+    // Sort by date desc
+    history.sort(function(a, b) { return (b.info.finishedAt || b.info.created || 0) - (a.info.finishedAt || a.info.created || 0); });
+
+    var html = '';
+    history.forEach(function(m) {
+      var payout = m.won ? (m.stake * 2) : 0;
+      var resultText = m.won ? 'WIN' : 'LOSS';
+      var resultColor = m.won ? 'var(--success)' : 'var(--error)';
+      var d = new Date(m.info.finishedAt || m.info.created || Date.now());
+      var dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      html += '<div class="history-row">';
+      html += '<span class="text-muted">' + dateStr + '</span>';
+      html += '<span class="fw-600">' + (m.info.game || 'chess') + ' — ' + m.id + '</span>';
+      html += '<span style="color:' + resultColor + ';font-weight:700">' + resultText + '</span>';
+      html += '<span>' + m.stake.toFixed(2) + ' KAS</span>';
+      html += '<span style="color:' + (m.won ? 'var(--success)' : 'var(--error)') + ';font-weight:600">' + (m.won ? '+' + payout.toFixed(2) : '-' + m.stake.toFixed(2)) + ' KAS</span>';
+      html += '</div>';
+    });
+    container.innerHTML = html;
   }
 
   /* --- Drawer --- */

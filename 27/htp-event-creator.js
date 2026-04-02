@@ -1,289 +1,143 @@
-/**
- * htp-event-creator.js — Event Creation Form
- * maxMaximizerPct + expectedVolume inputs with live cap preview
- * Depends on: htp-fee-engine.js (HTPFee)
- * No Firebase required.
- */
+// =============================================================================
+// htp-event-creator.js — Prediction Market Event Creation
+// Validates form, constructs escrow TX, writes to Firebase /markets/{marketId}
+// =============================================================================
 (function(W) {
   'use strict';
 
-  function injectStyles() {
-    if (document.getElementById('htp-creator-style')) return;
-    const s = document.createElement('style');
-    s.id = 'htp-creator-style';
-    s.textContent = `
-      .htp-creator-form {
-        background: #0f172a;
-        border: 1px solid rgba(73,232,194,0.2);
-        border-radius: 16px;
-        padding: 28px;
-        font-family: 'Inter', sans-serif;
-        color: #e2e8f0;
-        max-width: 560px;
-      }
-      .htp-creator-form h2 {
-        font-size: 18px; font-weight: 800; color: #fff;
-        margin: 0 0 6px; letter-spacing: -0.02em;
-      }
-      .htp-creator-form .subtitle {
-        font-size: 12px; color: #64748b; margin-bottom: 24px;
-      }
-      .htp-field { margin-bottom: 18px; }
-      .htp-field label {
-        display: block; font-size: 11px; font-weight: 700;
-        color: #94a3b8; text-transform: uppercase;
-        letter-spacing: 0.07em; margin-bottom: 6px;
-      }
-      .htp-field input, .htp-field textarea, .htp-field select {
-        width: 100%; box-sizing: border-box;
-        background: #1e293b; border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 8px; padding: 10px 14px;
-        color: #fff; font-size: 14px; outline: none;
-        transition: border-color 0.2s; font-family: inherit;
-      }
-      .htp-field input:focus, .htp-field textarea:focus { border-color: #49e8c2; }
-      .htp-field textarea { resize: vertical; min-height: 72px; }
-      .htp-field .hint { font-size: 11px; color: #475569; margin-top: 4px; }
-      .htp-field .hint.green { color: #49e8c2; }
-      .htp-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-      .htp-slider-row { display: flex; align-items: center; gap: 12px; }
-      .htp-slider { flex: 1; accent-color: #49e8c2; }
-      .htp-slider-val {
-        min-width: 48px; text-align: right;
-        font-weight: 700; color: #49e8c2; font-size: 15px;
-      }
-      .htp-mx-preview-box {
-        background: #1e293b; border-radius: 10px;
-        padding: 14px 16px; margin: 18px 0;
-        border-left: 3px solid #49e8c2;
-      }
-      .htp-mx-preview-box .title {
-        font-size: 11px; color: #64748b;
-        text-transform: uppercase; letter-spacing: 0.07em;
-        margin-bottom: 10px;
-      }
-      .htp-mx-preview-grid {
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-      }
-      .htp-mx-prev-cell { text-align: center; }
-      .htp-mx-prev-cell .v { font-size: 17px; font-weight: 700; color: #fff; }
-      .htp-mx-prev-cell .l { font-size: 10px; color: #64748b; margin-top: 2px; }
-      .htp-mx-prev-cell .v.teal   { color: #49e8c2; }
-      .htp-mx-prev-cell .v.yellow { color: #f59e0b; }
-      .htp-parasitic-warn {
-        background: rgba(245,158,11,0.08);
-        border: 1px solid rgba(245,158,11,0.2);
-        border-radius: 8px; padding: 10px 14px;
-        font-size: 12px; color: #f59e0b;
-        margin-bottom: 18px; line-height: 1.6;
-      }
-      .htp-outcomes-list { display: flex; flex-direction: column; gap: 8px; }
-      .htp-outcome-row { display: flex; gap: 8px; align-items: center; }
-      .htp-outcome-row input { flex: 1; }
-      .htp-outcome-row button {
-        background: #1e293b; border: 1px solid rgba(255,255,255,0.08);
-        color: #94a3b8; border-radius: 6px; padding: 8px 10px;
-        cursor: pointer; font-size: 13px;
-      }
-      .htp-add-outcome {
-        background: none; border: 1px dashed rgba(73,232,194,0.3);
-        color: #49e8c2; border-radius: 8px; padding: 8px;
-        cursor: pointer; font-size: 12px; width: 100%; margin-top: 6px;
-        transition: background 0.2s;
-      }
-      .htp-add-outcome:hover { background: rgba(73,232,194,0.05); }
-      .htp-submit-btn {
-        width: 100%; padding: 14px;
-        background: linear-gradient(135deg, #49e8c2, #3b82f6);
-        color: #0f172a; font-weight: 800; font-size: 15px;
-        border: none; border-radius: 10px; cursor: pointer;
-        transition: opacity 0.2s, transform 0.1s;
-        letter-spacing: 0.02em; margin-top: 8px;
-      }
-      .htp-submit-btn:hover   { opacity: 0.9; }
-      .htp-submit-btn:active  { transform: scale(0.98); }
-      .htp-submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-      .htp-creator-section-label {
-        font-size: 10px; font-weight: 700;
-        color: #334155; text-transform: uppercase;
-        letter-spacing: 0.1em; margin: 22px 0 12px;
-        padding-bottom: 6px; border-bottom: 1px solid #1e293b;
-      }
-    `;
-    document.head.appendChild(s);
+  function generateId() {
+    return 'MKT-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
   }
 
-  function render(containerId, onSubmit) {
-    injectStyles();
-    const container = document.getElementById(containerId);
-    if (!container) return;
+  function getConnectedAddress() {
+    return W.walletAddress || W.htpAddress || W.htpConnectedAddress || null;
+  }
 
-    container.innerHTML = `
-      <div class="htp-creator-form">
-        <h2>Create Prediction Market</h2>
-        <div class="subtitle">Your event, your rules. Non-custodial from creation to settlement.</div>
+  function isValidUrl(str) {
+    try { var u = new URL(str); return u.protocol === 'http:' || u.protocol === 'https:'; }
+    catch (e) { return false; }
+  }
 
-        <div class="htp-creator-section-label">Event Details</div>
+  function validate() {
+    var errors = [];
+    var title = document.getElementById('event-title');
+    var desc = document.getElementById('event-description');
+    var date = document.getElementById('event-resolution-date');
+    var url = document.getElementById('event-source-url');
+    var minPos = document.getElementById('event-min-position');
 
-        <div class="htp-field">
-          <label>Event Title</label>
-          <input type="text" id="htp-ev-title" placeholder="e.g. Will BTC exceed $100k by June 2026?" />
-        </div>
-        <div class="htp-field">
-          <label>Description</label>
-          <textarea id="htp-ev-desc" placeholder="Describe the resolution criteria clearly..."></textarea>
-        </div>
-        <div class="htp-two-col">
-          <div class="htp-field">
-            <label>Category</label>
-            <select id="htp-ev-category">
-              <option>Crypto</option>
-              <option>Sports</option>
-              <option>Politics</option>
-              <option>Gaming</option>
-              <option>Other</option>
-            </select>
-          </div>
-          <div class="htp-field">
-            <label>Resolution Date</label>
-            <input type="date" id="htp-ev-date" />
-          </div>
-        </div>
+    if (!title || !title.value.trim()) errors.push('Event title is required');
+    if (!desc || !desc.value.trim()) errors.push('Description is required');
 
-        <div class="htp-creator-section-label">Outcomes</div>
-        <div class="htp-field">
-          <div class="htp-outcomes-list" id="htp-outcomes-list">
-            <div class="htp-outcome-row">
-              <input type="text" placeholder="Outcome A (e.g. Yes)" value="Yes" />
-              <button onclick="this.parentElement.remove()">✕</button>
-            </div>
-            <div class="htp-outcome-row">
-              <input type="text" placeholder="Outcome B (e.g. No)" value="No" />
-              <button onclick="this.parentElement.remove()">✕</button>
-            </div>
-          </div>
-          <button class="htp-add-outcome" id="htp-add-outcome">+ Add Outcome</button>
-        </div>
-
-        <div class="htp-creator-section-label">Maximizer Settings</div>
-
-        <div class="htp-parasitic-warn">
-          ⚠ Maximizers contribute only 50% to the pool — they lower odds for standard bettors.
-          Set a cap to protect your market's price integrity.
-        </div>
-
-        <div class="htp-field">
-          <label>Expected Pool Volume (KAS)</label>
-          <input type="number" id="htp-ev-volume" min="1000" step="1000" value="100000" />
-          <div class="hint">Used to calculate the maximizer cap. Scales dynamically with actual volume.</div>
-        </div>
-
-        <div class="htp-field">
-          <label>Max Maximizer % of Volume</label>
-          <div class="htp-slider-row">
-            <input type="range" class="htp-slider" id="htp-mx-pct-slider" min="0" max="50" step="1" value="10" />
-            <span class="htp-slider-val" id="htp-mx-pct-val">10%</span>
-          </div>
-          <div class="hint">0% = no maximizers allowed. Recommended: 5-15%.</div>
-        </div>
-
-        <div class="htp-mx-preview-box" id="htp-mx-prev-box">
-          <div class="title">Maximizer Cap Preview</div>
-          <div class="htp-mx-preview-grid">
-            <div class="htp-mx-prev-cell">
-              <div class="v teal" id="htp-prev-cap">10,000</div>
-              <div class="l">Max KAS at launch</div>
-            </div>
-            <div class="htp-mx-prev-cell">
-              <div class="v" id="htp-prev-2x">20,000</div>
-              <div class="l">Cap at 2× volume</div>
-            </div>
-            <div class="htp-mx-prev-cell">
-              <div class="v yellow" id="htp-prev-pct">10%</div>
-              <div class="l">of reference volume</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="htp-creator-section-label">Oracle & Fees</div>
-        <div class="htp-field">
-          <label>Oracle Type</label>
-          <select id="htp-ev-oracle">
-            <option value="htp">HTP Bonded Oracle (default)</option>
-            <option value="manual">Manual resolution by creator</option>
-          </select>
-          <div class="hint">HTP oracle uses external feeds + challenge window. Manual requires your signature to resolve.</div>
-        </div>
-        <div class="htp-field">
-          <label>Protocol Fee on Winnings</label>
-          <input type="text" value="2% on net winnings (fixed)" disabled style="opacity:0.5;cursor:not-allowed" />
-          <div class="hint green">Fee goes to: ${W.HTPFee ? W.HTPFee.treasuryAddress().substring(0,26)+'…' : 'treasury'}</div>
-        </div>
-
-        <button class="htp-submit-btn" id="htp-ev-submit">Create Event</button>
-      </div>
-    `;
-
-    // Live cap preview
-    const volInput  = document.getElementById('htp-ev-volume');
-    const slider    = document.getElementById('htp-mx-pct-slider');
-    const pctVal    = document.getElementById('htp-mx-pct-val');
-    const prevCap   = document.getElementById('htp-prev-cap');
-    const prev2x    = document.getElementById('htp-prev-2x');
-    const prevPct   = document.getElementById('htp-prev-pct');
-
-    function updatePreview() {
-      const vol = parseFloat(volInput.value) || 100000;
-      const pct = parseInt(slider.value) / 100;
-      const cap = vol * pct;
-      pctVal.textContent  = (pct * 100).toFixed(0) + '%';
-      prevCap.textContent = cap.toLocaleString(undefined, {maximumFractionDigits:0});
-      prev2x.textContent  = (vol * 2 * pct).toLocaleString(undefined, {maximumFractionDigits:0});
-      prevPct.textContent = (pct * 100).toFixed(0) + '%';
+    if (!date || !date.value) {
+      errors.push('Resolution date is required');
+    } else {
+      var resDate = new Date(date.value);
+      if (resDate <= new Date()) errors.push('Resolution date must be in the future');
     }
 
-    slider.addEventListener('input', updatePreview);
-    volInput.addEventListener('input', updatePreview);
-    updatePreview();
+    if (!url || !url.value.trim()) {
+      errors.push('Source URL is required');
+    } else if (!isValidUrl(url.value.trim())) {
+      errors.push('Source URL must be a valid URL');
+    }
 
-    // Add outcome
-    document.getElementById('htp-add-outcome').addEventListener('click', function() {
-      const list = document.getElementById('htp-outcomes-list');
-      const row = document.createElement('div');
-      row.className = 'htp-outcome-row';
-      row.innerHTML = `<input type="text" placeholder="New outcome" /><button onclick="this.parentElement.remove()">✕</button>`;
-      list.appendChild(row);
+    var outcomes = [];
+    document.querySelectorAll('.outcome-input').forEach(function(inp) {
+      if (inp.value.trim()) outcomes.push(inp.value.trim());
     });
+    if (outcomes.length < 2) errors.push('At least 2 outcomes are required');
 
-    // Submit
-    document.getElementById('htp-ev-submit').addEventListener('click', function() {
-      const title = document.getElementById('htp-ev-title').value.trim();
-      if (!title) { alert('Please enter an event title.'); return; }
-
-      const outcomes = Array.from(document.querySelectorAll('#htp-outcomes-list input'))
-        .map(i => i.value.trim()).filter(Boolean);
-      if (outcomes.length < 2) { alert('Please enter at least 2 outcomes.'); return; }
-
-      const payload = {
-        title,
-        description:     document.getElementById('htp-ev-desc').value.trim(),
-        category:        document.getElementById('htp-ev-category').value,
-        resolutionDate:  document.getElementById('htp-ev-date').value,
-        outcomes,
-        maxMaximizerPct: parseInt(slider.value) / 100,
-        expectedVolume:  parseFloat(volInput.value) || 100000,
-        oracleType:      document.getElementById('htp-ev-oracle').value,
-        creatorAddress:  W.walletAddress || W.htpAddress || null,
-        protocolFeePct:  0.02,
-        treasuryAddress: W.HTPFee ? W.HTPFee.treasuryAddress() : null,
-        createdAt:       Date.now(),
-      };
-
-      window.dispatchEvent(new CustomEvent('htp:event:create', { detail: payload }));
-      if (typeof onSubmit === 'function') onSubmit(payload);
-    });
+    return { errors: errors, outcomes: outcomes };
   }
 
-  W.HTPEventCreator = { render };
-  console.log('[HTPEventCreator] loaded');
+  function showErrors(errors) {
+    if (W.showToast) {
+      errors.forEach(function(e) { W.showToast(e, 'error'); });
+    } else {
+      alert(errors.join('\n'));
+    }
+  }
+
+  W.createPredictionEvent = function() {
+    var addr = getConnectedAddress();
+    if (!addr) {
+      if (W.openWalletModal) W.openWalletModal();
+      else if (W.showToast) W.showToast('Connect wallet first', 'error');
+      return;
+    }
+
+    var result = validate();
+    if (result.errors.length > 0) {
+      showErrors(result.errors);
+      return;
+    }
+
+    var title = document.getElementById('event-title').value.trim();
+    var desc = document.getElementById('event-description').value.trim();
+    var dateVal = document.getElementById('event-resolution-date').value;
+    var url = document.getElementById('event-source-url').value.trim();
+    var minPos = parseFloat(document.getElementById('event-min-position').value) || 1;
+    var maxPEl = document.getElementById('event-max-participants');
+    var maxP = maxPEl && maxPEl.value ? parseInt(maxPEl.value) : null;
+    var timestamp = Math.floor(new Date(dateVal).getTime() / 1000);
+    var marketId = generateId();
+
+    var market = {
+      marketId: marketId,
+      title: title,
+      description: desc,
+      outcomes: result.outcomes,
+      resolutionDate: timestamp,
+      sourceUrl: url,
+      minPosition: minPos,
+      maxParticipants: maxP,
+      creatorAddress: addr,
+      status: 'active',
+      totalPool: 0,
+      positions: {},
+      createdAt: null // set by Firebase ServerValue
+    };
+
+    if (W.showToast) W.showToast('Creating prediction market...', 'info');
+
+    // Write to Firebase
+    var db = W.firebase && W.firebase.database ? W.firebase.database() : null;
+    if (!db) {
+      console.warn('[HTP EventCreator] Firebase not available');
+      W.dispatchEvent(new CustomEvent('htp:market:created', { detail: market }));
+      if (W.showToast) W.showToast('Market created locally (no Firebase)', 'warning');
+      return;
+    }
+
+    market.createdAt = W.firebase.database.ServerValue.TIMESTAMP;
+
+    db.ref('markets/' + marketId).set(market).then(function() {
+      console.log('[HTP EventCreator] Market created:', marketId);
+      if (W.showToast) W.showToast('Market created: ' + title, 'success');
+      W.dispatchEvent(new CustomEvent('htp:market:created', { detail: market }));
+
+      // Clear form
+      document.getElementById('event-title').value = '';
+      document.getElementById('event-description').value = '';
+      document.getElementById('event-resolution-date').value = '';
+      document.getElementById('event-source-url').value = '';
+      document.getElementById('event-min-position').value = '';
+      if (maxPEl) maxPEl.value = '';
+
+      // Reset char counters
+      if (W.updateCharCounter) {
+        W.updateCharCounter('event-title', 120);
+        W.updateCharCounter('event-description', 1000);
+      }
+
+      // Recompile SilverScript
+      if (W.compileSilverScript) W.compileSilverScript();
+    }).catch(function(err) {
+      console.error('[HTP EventCreator] Firebase error:', err);
+      if (W.showToast) W.showToast('Failed to create market: ' + err.message, 'error');
+    });
+  };
+
+  console.log('[HTP EventCreator] loaded');
 })(window);

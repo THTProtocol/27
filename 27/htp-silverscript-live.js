@@ -1,53 +1,213 @@
+// =============================================================================
+// htp-silverscript-live.js — Real-time SilverScript Compiler
+// Watches prediction event form fields and generates syntax-highlighted preview
+// =============================================================================
 (function() {
-  function compileFromForm() {
-    const outcome1 = document.querySelector('[name="outcome1"], #outcome-1, [data-outcome="0"]')?.value || 'Yes';
-    const outcome2 = document.querySelector('[name="outcome2"], #outcome-2, [data-outcome="1"]')?.value || 'No';
-    const allOutcomes = Array.from(document.querySelectorAll('[data-outcome-input]'))
-                            .map(el => el.value).filter(Boolean);
-    const outcomes = allOutcomes.length >= 2 ? allOutcomes : [outcome1, outcome2];
-    const escrow = document.querySelector('[name="escrow"], #escrow-amount')?.value || '10';
-    const deadline = document.querySelector('[name="deadline"], #event-deadline')?.value || '1440';
-    const oracle = document.querySelector('[name="oracle"], #oracle-address')?.value || 'kaspatest:oracle';
+  'use strict';
 
-    const script = `// HTP Event Contract — SilverScript
-// Auto-compiled from form fields
+  var KEYWORDS = ['DEFINE', 'MARKET', 'ESCROW', 'SETTLEMENT', 'SEND', 'TO', 'FOR', 'EACH', 'IN', 'AND', 'OR', 'KAS'];
+  var TREASURY = 'kaspatest:qpyfz03k...354m';
+  var FEE_BPS = 200;
 
-OUTCOMES: [${outcomes.map(o => `"${o}"`).join(', ')}]
-ESCROW: ${escrow} KAS
-DEADLINE: ${deadline} minutes
-ORACLE: ${oracle}
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
 
-OP_PUSHDATA "${outcomes[0]}" 
-OP_PUSHDATA "${outcomes[1]}"
-${outcomes.length > 2 ? outcomes.slice(2).map(o => `OP_PUSHDATA "${o}"`).join('\n') : ''}
-OP_INPUTSPK          // verify caller owns input
-OP_CHECKSIG          // oracle signature check
-OP_IF
-  OP_TXOUTPUTSPK     // route to winning address
-  OP_EQUALVERIFY
-  OP_RETURN 1        // settle
-OP_ELSE
-  // deadline fallback: return escrow
-  OP_RETURN 0
-OP_ENDIF`;
+  function highlightLine(raw) {
+    var escaped = escapeHtml(raw);
 
-    const output = document.querySelector('#silverscript-output, .compiler-output, [data-compiler]');
-    if (output) {
-      output.value = script;
-      output.textContent = script;
-      output.classList.add('compiled');
+    // Comments
+    if (/^\s*\/\//.test(escaped)) {
+      return '<span class="ss-comment">' + escaped + '</span>';
     }
+
+    // Highlight strings (quoted values)
+    escaped = escaped.replace(/"([^"]*)"/g, '<span class="ss-string">"$1"</span>');
+
+    // Highlight numbers (standalone digits, including decimals)
+    escaped = escaped.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="ss-value">$1</span>');
+
+    // Highlight keywords
+    KEYWORDS.forEach(function(kw) {
+      var re = new RegExp('\\b' + kw + '\\b', 'g');
+      escaped = escaped.replace(re, '<span class="ss-keyword">' + kw + '</span>');
+    });
+
+    // Highlight punctuation
+    escaped = escaped.replace(/([{}()\[\]:,])/g, '<span class="ss-punct">$1</span>');
+
+    return escaped;
   }
 
-  function watchForm() {
-    const form = document.querySelector('#event-creator-form, .event-creation-form, [data-form="event"]');
-    if (!form) { setTimeout(watchForm, 1500); return; }
-    form.addEventListener('input', compileFromForm);
-    form.addEventListener('change', compileFromForm);
-    compileFromForm(); // compile immediately on load
-    console.log('[HTP SilverScript] Live compiler wired to form');
+  function getFormValues() {
+    var titleEl = document.getElementById('event-title');
+    var descEl = document.getElementById('event-description');
+    var dateEl = document.getElementById('event-resolution-date');
+    var urlEl = document.getElementById('event-source-url');
+    var minPosEl = document.getElementById('event-min-position');
+
+    var outcomes = [];
+    document.querySelectorAll('.outcome-input').forEach(function(inp) {
+      if (inp.value.trim()) outcomes.push(inp.value.trim());
+    });
+
+    return {
+      title: titleEl ? titleEl.value.trim() : '',
+      description: descEl ? descEl.value.trim() : '',
+      date: dateEl ? dateEl.value : '',
+      url: urlEl ? urlEl.value.trim() : '',
+      minPosition: minPosEl ? (minPosEl.value || '1') : '1',
+      outcomes: outcomes
+    };
   }
 
-  document.addEventListener('DOMContentLoaded', watchForm);
-  setTimeout(watchForm, 2000);
+  function getMissingFields(v) {
+    var missing = [];
+    if (!v.title) missing.push('Title');
+    if (!v.date) missing.push('Resolution Date');
+    if (!v.url) missing.push('Source URL');
+    if (v.outcomes.length < 2) missing.push('At least 2 Outcomes');
+    return missing;
+  }
+
+  function generateRawScript(v) {
+    var ts = v.date ? Math.floor(new Date(v.date).getTime() / 1000) : 0;
+    var outcomesArr = v.outcomes.length >= 2
+      ? v.outcomes.map(function(o) { return '"' + o + '"'; }).join(', ')
+      : '"...", "..."';
+
+    var lines = [
+      '// HTP Prediction Market Covenant',
+      '// Generated: ' + new Date().toISOString(),
+      '',
+      'DEFINE MARKET {',
+      '  title: "' + (v.title || '...') + '"',
+      '  outcomes: [' + outcomesArr + ']',
+      '  resolution_deadline: ' + (ts || '...'),
+      '  oracle_url: "' + (v.url || '...') + '"',
+      '  min_position: ' + v.minPosition + ' KAS',
+      '  treasury: ' + TREASURY,
+      '  fee_bps: ' + FEE_BPS,
+      '}',
+      '',
+      'ESCROW {',
+      '  lock_condition: OR(',
+      '    AND(oracle_attests(outcome_index), send_to(winner_address)),',
+      '    AND(deadline_passed(), no_oracle_attest(), refund_all())',
+      '  )',
+      '}',
+      '',
+      'SETTLEMENT {',
+      '  on_resolve(outcome_index):',
+      '    payout = total_pool * (1 - fee_bps / 10000)',
+      '    fee = total_pool * (fee_bps / 10000)',
+      '    SEND fee TO treasury_address',
+      '    FOR EACH position IN positions[outcome_index]:',
+      '      share = position.size / winning_pool_size',
+      '      SEND payout * share TO position.address',
+      '}'
+    ];
+    return lines;
+  }
+
+  function compile() {
+    var output = document.getElementById('compiler-output');
+    var dot = document.getElementById('compiler-dot');
+    var statusText = document.getElementById('compiler-status-text');
+    if (!output) return;
+
+    var v = getFormValues();
+    var missing = getMissingFields(v);
+    var valid = missing.length === 0;
+
+    // Update status indicator
+    if (dot && statusText) {
+      if (valid) {
+        dot.className = 'dot dot-green';
+        statusText.textContent = 'Valid';
+        statusText.style.color = 'var(--success)';
+      } else {
+        dot.className = 'dot dot-grey';
+        statusText.textContent = 'Incomplete — ' + missing.join(', ');
+        statusText.style.color = 'var(--text-faint)';
+      }
+    }
+
+    // Generate highlighted code with line numbers
+    var lines = generateRawScript(v);
+    var html = lines.map(function(line) {
+      return '<span class="line">' + highlightLine(line) + '</span>';
+    }).join('');
+
+    output.innerHTML = html;
+  }
+
+  function copyToClipboard() {
+    var v = getFormValues();
+    var lines = generateRawScript(v);
+    var raw = lines.join('\n');
+
+    navigator.clipboard.writeText(raw).then(function() {
+      var btn = document.querySelector('#compiler-panel .btn-secondary');
+      if (btn) {
+        var orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(function() { btn.textContent = orig; }, 1500);
+      }
+    }).catch(function() {
+      // Fallback
+      var ta = document.createElement('textarea');
+      ta.value = raw;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    });
+  }
+
+  function init() {
+    // Bind to specific form fields
+    var fields = [
+      '#event-title',
+      '#event-description',
+      '#event-resolution-date',
+      '#event-source-url',
+      '#event-min-position'
+    ];
+
+    fields.forEach(function(sel) {
+      var el = document.querySelector(sel);
+      if (el) {
+        el.addEventListener('input', compile);
+        el.addEventListener('change', compile);
+      }
+    });
+
+    // Delegate for dynamic outcome inputs
+    var outcomesContainer = document.getElementById('outcomesContainer');
+    if (outcomesContainer) {
+      outcomesContainer.addEventListener('input', function(e) {
+        if (e.target.classList.contains('outcome-input')) compile();
+      });
+    }
+
+    // Also observe for added/removed outcome rows
+    if (outcomesContainer && window.MutationObserver) {
+      new MutationObserver(compile).observe(outcomesContainer, { childList: true });
+    }
+
+    // Initial compile
+    compile();
+    console.log('[HTP SilverScript] Live compiler initialized');
+  }
+
+  // Override global compileSilverScript with new implementation
+  window.compileSilverScript = compile;
+  window.copySilverScript = copyToClipboard;
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();

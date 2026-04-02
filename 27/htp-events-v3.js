@@ -1,191 +1,250 @@
 // =============================================================================
-// htp-events-v3.js — HTP Skill Games v3
-// Clean createMatchWithLobby + joinLobbyMatch using covenant escrow v2
-// Fixes: sgEsc read, correct sompi, proper escrow + settlement flow
+// htp-events-v3.js — Prediction Market Listing & Display
+// Listens to Firebase /markets, renders event cards, handles position taking
 // =============================================================================
-(function () {
+(function() {
   'use strict';
 
-  function kasToSompi(kas) {
-    var n = parseFloat(kas); if(isNaN(n)||n<=0) return 0;
-    return Math.round(n * 1e8);
+  var marketsRef = null;
+  var marketsListener = null;
+  var expandedMarket = null;
+
+  function truncateAddr(addr) {
+    if (!addr || addr.length < 16) return addr || '--';
+    return addr.substring(0, 10) + '...' + addr.substring(addr.length - 6);
   }
-  function getVal(id, fb) { var el=document.getElementById(id); return el?(el.value||fb):fb; }
-  function getAddr()      { return window.walletAddress||window.htpAddress||window.htpConnectedAddress||null; }
-  function getBalSompi()  { if(window.walletBalance&&window.walletBalance.total) return Number(window.walletBalance.total); if(window.htpBalanceSompi) return Number(window.htpBalanceSompi); return 0; }
 
-  // ── CREATE MATCH ─────────────────────────────────────────────────────────────
-  async function createMatchWithLobby() {
-    var addr = getAddr();
-    if (!addr) { if(window.showToast)window.showToast('Connect wallet first','error'); if(window.goWallet)window.goWallet(); return; }
+  function formatDate(ts) {
+    if (!ts) return '--';
+    var d = new Date(typeof ts === 'number' && ts < 1e12 ? ts * 1000 : ts);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
 
-    // Read form — HTML uses sgGame, sgEsc, sgTime, sgSeries
-    var game      = getVal('sgGame','chess');
-    var stakeKas  = parseFloat(getVal('sgEsc','5'))||5;
-    var timeCtrl  = getVal('sgTime','5+0');
-    var seriesLen = parseInt(getVal('sgSeries','1'))||1;
-    var stakeSompi = kasToSompi(stakeKas);
+  function timeUntil(ts) {
+    if (!ts) return '--';
+    var target = typeof ts === 'number' && ts < 1e12 ? ts * 1000 : ts;
+    var diff = target - Date.now();
+    if (diff <= 0) return 'Expired';
+    var days = Math.floor(diff / 86400000);
+    var hours = Math.floor((diff % 86400000) / 3600000);
+    if (days > 0) return days + 'd ' + hours + 'h';
+    var mins = Math.floor((diff % 3600000) / 60000);
+    return hours + 'h ' + mins + 'm';
+  }
 
-    if (getBalSompi() < stakeSompi + 10000) { if(window.showToast)window.showToast('Insufficient balance. Need '+stakeKas+' KAS','error'); return; }
-    if (!confirm('Create '+game+' match for '+stakeKas+' KAS?\nTime: '+timeCtrl+' | Series: Bo'+seriesLen)) return;
+  function renderMarketCard(market) {
+    var id = market.marketId || market.id || '';
+    var totalPool = (market.totalPool || 0);
+    var outcomeCount = market.outcomes ? market.outcomes.length : 0;
+    var isExpanded = expandedMarket === id;
 
-    var matchId = 'HTP-'+Date.now().toString(36).toUpperCase();
-    try {
-      if(window.showToast) window.showToast('Generating covenant escrow...','info');
-      if (typeof window.generateMatchEscrow !== 'function') throw new Error('htp-covenant-escrow-v2.js not loaded');
-      var escrow = await window.generateMatchEscrow(matchId, addr);
-      if (!escrow||!escrow.address) throw new Error('Escrow generation failed');
+    var html = '<div class="market-card' + (isExpanded ? ' expanded' : '') + '" data-market-id="' + id + '">';
+    html += '<div class="market-card-header" onclick="window.htpToggleMarket(\'' + id + '\')">';
+    html += '<div class="market-card-title">' + (market.title || 'Untitled') + '</div>';
+    html += '<div class="market-card-meta">';
+    html += '<span class="market-meta-item">By ' + truncateAddr(market.creatorAddress) + '</span>';
+    html += '<span class="market-meta-item">' + totalPool.toFixed(2) + ' KAS pool</span>';
+    html += '<span class="market-meta-item">' + outcomeCount + ' outcomes</span>';
+    html += '<span class="market-meta-item">Resolves ' + timeUntil(market.resolutionDate) + '</span>';
+    html += '</div>';
+    html += '</div>';
 
-      console.log('[HTP v3] Escrow:',escrow.address,'| Script:',escrow.redeemScript?escrow.redeemScript.substring(0,40)+'...':'P2PK fallback');
-      if(window.showToast) window.showToast('Sending '+stakeKas+' KAS to escrow...','info');
+    if (isExpanded) {
+      html += renderExpandedMarket(market);
+    }
 
-      var meta = {type:'create',game:game,stake:String(stakeKas),timeControl:timeCtrl,matchId:matchId,creator:addr};
-      var payloadHex = Array.from(new TextEncoder().encode(JSON.stringify(meta))).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+    html += '</div>';
+    return html;
+  }
 
-      // Call htpSendTx with explicit sompi (integer, no re-conversion needed)
-      var txId = await window.htpSendTx(escrow.address, stakeSompi, {priorityFee:0,payload:payloadHex,matchId:matchId,amount:stakeSompi});
-      if (!txId) throw new Error('Stake TX returned no txId');
-      console.log('[HTP v3] Stake TX:',txId);
+  function renderExpandedMarket(market) {
+    var html = '<div class="market-card-body">';
 
-      var match = {
-        id:matchId, game:game, timeControl:timeCtrl, stake:stakeKas, stakeKas:stakeKas,
-        stakeSompi:String(stakeSompi), seriesLen:seriesLen,
-        creator:window.matchLobby?window.matchLobby.myPlayerId:'P1',
-        creatorAddrFull:addr, opponent:null, status:'waiting',
-        created:Date.now(), escrowAddress:escrow.address, escrowTxId:txId,
-        covenant:true, redeemScript:escrow.redeemScript
-      };
-      escrow.escrowTxId = txId;
+    // Description
+    if (market.description) {
+      html += '<p class="market-description">' + market.description + '</p>';
+    }
 
-      if(window.matchLobby&&window.matchLobby.matches) window.matchLobby.matches.push(match);
+    // Source URL
+    if (market.sourceUrl) {
+      html += '<div class="market-source">Source: <a href="' + market.sourceUrl + '" target="_blank" rel="noopener">' + market.sourceUrl + '</a></div>';
+    }
 
-      try {
-        if(window.firebase&&window.firebase.database) {
-          var db=window.firebase.database();
-          await db.ref('matches/'+matchId+'/info').set(match);
-          await db.ref('matches/'+matchId+'/players').set({creator:addr,creatorAddrFull:addr,opponent:null});
-          await db.ref('lobby/'+matchId).set({id:matchId,game:game,stake:stakeKas,timeControl:timeCtrl,seriesLen:seriesLen,creator:match.creator,creatorAddrFull:addr,escrowAddress:escrow.address,status:'waiting',created:Date.now()});
+    // Resolution date
+    html += '<div class="market-resolution">Resolution: ' + formatDate(market.resolutionDate) + '</div>';
+
+    // Outcomes with odds
+    html += '<div class="market-outcomes">';
+    if (market.outcomes && market.outcomes.length > 0) {
+      var totalPositions = 0;
+      var positionCounts = [];
+      market.outcomes.forEach(function(outcome, idx) {
+        var count = 0;
+        if (market.positions) {
+          Object.keys(market.positions).forEach(function(key) {
+            var pos = market.positions[key];
+            if (pos && pos.outcomeIndex === idx) count += (pos.size || 0);
+          });
         }
-      } catch(e) { console.warn('[HTP v3] Firebase write non-fatal:',e.message); }
+        positionCounts.push(count);
+        totalPositions += count;
+      });
 
-      if(typeof window.saveLobby==='function') window.saveLobby();
-      if(typeof window.renderLobby==='function') window.renderLobby();
-      if(typeof window.refreshBalanceFromChain==='function') setTimeout(window.refreshBalanceFromChain,3000);
-      if(window.showToast) window.showToast('Match created! '+stakeKas+' KAS locked in covenant escrow.','success');
-      console.log('[HTP v3] Match created:',matchId,'| Escrow:',escrow.address);
-    } catch(e) {
-      console.error('[HTP v3] createMatchWithLobby error:',e);
-      if(window.showToast) window.showToast('Match creation failed: '+e.message,'error');
+      market.outcomes.forEach(function(outcome, idx) {
+        var odds = totalPositions > 0
+          ? ((positionCounts[idx] / totalPositions) * 100).toFixed(1)
+          : (100 / market.outcomes.length).toFixed(1);
+        html += '<div class="market-outcome-row">';
+        html += '<div class="outcome-info">';
+        html += '<span class="outcome-name">' + outcome + '</span>';
+        html += '<span class="outcome-odds">' + odds + '%</span>';
+        html += '</div>';
+        html += '<div class="outcome-bar"><div class="outcome-bar-fill" style="width:' + odds + '%"></div></div>';
+        html += '<div class="outcome-action">';
+        html += '<input type="number" class="input outcome-bet-input" placeholder="KAS" min="' + (market.minPosition || 1) + '" data-outcome-idx="' + idx + '" data-market-id="' + (market.marketId || '') + '">';
+        html += '<button class="btn btn-primary btn-sm" onclick="window.htpPlaceBet(\'' + (market.marketId || '') + '\', ' + idx + ')">Bet</button>';
+        html += '</div>';
+        html += '</div>';
+      });
     }
+    html += '</div>';
+    html += '</div>';
+    return html;
   }
 
-  // ── JOIN MATCH ────────────────────────────────────────────────────────────────
-  async function joinLobbyMatch(matchId) {
-    var addr = getAddr();
-    if (!addr) { if(window.showToast)window.showToast('Connect wallet first','error'); return; }
+  function renderMarkets(markets) {
+    var container = document.getElementById('active-markets');
+    if (!container) return;
 
-    var m = null;
-    if(window.matchLobby&&window.matchLobby.matches) m=window.matchLobby.matches.find(function(x){return x.id===matchId;});
-    if (!m&&window.firebase&&window.firebase.database) {
-      try { var s=await window.firebase.database().ref('lobby/'+matchId).once('value'); if(s.exists()) m=s.val(); } catch(e){}
+    if (!markets || markets.length === 0) {
+      container.innerHTML = '<p class="text-muted">No active prediction markets yet.</p>';
+      return;
     }
-    if (!m||m.status!=='waiting') { if(window.showToast)window.showToast('Match no longer available','error'); return; }
-    if (m.creatorAddrFull===addr) { if(window.showToast)window.showToast('Cannot join your own match','error'); return; }
-    if (!m.escrowAddress) { if(window.showToast)window.showToast('No escrow address for this match','error'); return; }
 
-    var stakeKas = parseFloat(m.stake||m.stakeKas||5)||5;
-    var stakeSompi = kasToSompi(stakeKas);
-    if (getBalSompi() < stakeSompi+10000) { if(window.showToast)window.showToast('Insufficient balance. Need '+stakeKas+' KAS','error'); return; }
-    if (!confirm('Join '+m.game+' match for '+stakeKas+' KAS?')) return;
+    // Sort by creation date descending
+    markets.sort(function(a, b) {
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
 
-    try {
-      if(window.showToast) window.showToast('Locking '+stakeKas+' KAS in escrow...','info');
-      var meta={type:'join',game:m.game,stake:String(stakeKas),matchId:matchId,joiner:addr};
-      var payloadHex=Array.from(new TextEncoder().encode(JSON.stringify(meta))).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
-      var txId = await window.htpSendTx(m.escrowAddress, stakeSompi, {priorityFee:0,payload:payloadHex,matchId:matchId,amount:stakeSompi});
-      if (!txId) throw new Error('Join TX returned no txId');
-      console.log('[HTP v3] Join TX:',txId);
+    var html = '';
+    markets.forEach(function(m) {
+      html += renderMarketCard(m);
+    });
+    container.innerHTML = html;
+  }
 
-      m.opponent = window.matchLobby?window.matchLobby.myPlayerId:'P2';
-      m.opponentAddrFull = addr; m.status='active'; m.joinTxId=txId;
-      try {
-        if(window.firebase&&window.firebase.database) {
-          var db2=window.firebase.database();
-          await db2.ref('matches/'+matchId+'/info/status').set('active');
-          await db2.ref('matches/'+matchId+'/players/opponentAddrFull').set(addr);
-          await db2.ref('lobby/'+matchId+'/status').set('active');
+  function listenToMarkets() {
+    if (marketsListener) return;
+
+    var db = window.firebase && window.firebase.database ? window.firebase.database() : null;
+    if (!db) {
+      console.warn('[HTP Events v3] Firebase not available for market listing');
+      return;
+    }
+
+    marketsRef = db.ref('markets');
+    marketsListener = marketsRef.orderByChild('status').equalTo('active').on('value', function(snapshot) {
+      var markets = [];
+      if (snapshot.exists()) {
+        snapshot.forEach(function(child) {
+          var m = child.val();
+          if (m) {
+            m.marketId = m.marketId || child.key;
+            markets.push(m);
+          }
+        });
+      }
+      renderMarkets(markets);
+    }, function(err) {
+      console.error('[HTP Events v3] Firebase listen error:', err);
+    });
+  }
+
+  // Toggle expanded market card
+  window.htpToggleMarket = function(marketId) {
+    expandedMarket = expandedMarket === marketId ? null : marketId;
+    // Re-render by triggering a fresh read
+    if (marketsRef) {
+      marketsRef.orderByChild('status').equalTo('active').once('value', function(snapshot) {
+        var markets = [];
+        if (snapshot.exists()) {
+          snapshot.forEach(function(child) {
+            var m = child.val();
+            if (m) {
+              m.marketId = m.marketId || child.key;
+              markets.push(m);
+            }
+          });
         }
-      } catch(e){ console.warn('[HTP v3] Firebase join update:',e.message); }
-
-      if(typeof window.saveLobby==='function') window.saveLobby();
-      if(typeof window.renderLobby==='function') window.renderLobby();
-      if(window.showToast) window.showToast('Matched! Launching game...','success');
-      setTimeout(function(){
-        if(typeof window.playMatch==='function') window.playMatch(matchId);
-        else if(typeof window.previewMatch==='function') window.previewMatch(matchId);
-      },800);
-    } catch(e) {
-      console.error('[HTP v3] joinLobbyMatch error:',e);
-      if(window.showToast) window.showToast('Join failed: '+e.message,'error');
+        renderMarkets(markets);
+      });
     }
-  }
+  };
 
-  // ── GAME OVER → SETTLE ───────────────────────────────────────────────────────
-  async function handleMatchGameOver(reason, winnerColor) {
-    var match = window.matchLobby&&window.matchLobby.activeMatch; if(!match) return;
-    var iAmCreator = match.creator===(window.matchLobby&&window.matchLobby.myPlayerId);
-    var seed=0; var idStr=(match.id||'').replace('HTP-',''); for(var i=0;i<idStr.length;i++) seed+=idStr.charCodeAt(i);
-    var creatorFirst = seed%2===0;
-    var creatorColor  = match.game==='chess'?(creatorFirst?'w':'b'):(creatorFirst?1:2);
-    var opponentColor = match.game==='chess'?(creatorFirst?'b':'w'):(creatorFirst?2:1);
-    var iWon = reason==='resign' ? true : (winnerColor===(iAmCreator?creatorColor:opponentColor));
-    var stake = parseFloat(match.stake||5);
-    var totalPot = stake*2;
-
-    if (iWon) {
-      if(typeof window.showGameOverOverlay==='function') window.showGameOverOverlay('YOU WIN!','+'+totalPot.toFixed(2)+' KAS','#49e8c2',match);
-      if(window.showToast) window.showToast('Victory! Processing '+totalPot.toFixed(2)+' KAS payout...','success');
-      try {
-        var txId = await window.settleMatchPayout(match.id, getAddr(), false, null, null);
-        if(txId&&typeof window.addToHistory==='function') window.addToHistory({type:'matchwin',amount:totalPot,game:match.game,matchId:match.id,txId:txId,timestamp:Date.now()});
-      } catch(e){ console.error('[HTP v3] Payout failed:',e); }
-    } else {
-      if(typeof window.showGameOverOverlay==='function') window.showGameOverOverlay('YOU LOSE','-'+stake.toFixed(2)+' KAS','#ef4444',match);
+  // Place a bet on a market outcome
+  window.htpPlaceBet = function(marketId, outcomeIndex) {
+    var addr = window.walletAddress || window.htpAddress || window.htpConnectedAddress;
+    if (!addr) {
+      if (window.openWalletModal) window.openWalletModal();
+      else if (window.showToast) window.showToast('Connect wallet first', 'error');
+      return;
     }
-    match.status='finished'; match.result=iWon?'win':'loss'; match.finishedAt=Date.now();
-    if(typeof window.saveLobby==='function') window.saveLobby();
-    try {
-      if(window.firebase&&window.firebase.database){
-        window.firebase.database().ref('lobby/'+match.id+'/status').set('finished');
-        window.firebase.database().ref('relay/'+match.id+'/result').set({winner:iWon?(window.matchLobby&&window.matchLobby.myPlayerId):'opponent',reason:reason,ts:Date.now()});
-      }
-    } catch(e){}
-    if(typeof window.renderLobby==='function') window.renderLobby();
-    if(typeof window.refreshBalanceFromChain==='function') setTimeout(window.refreshBalanceFromChain,3000);
+
+    var input = document.querySelector('input[data-market-id="' + marketId + '"][data-outcome-idx="' + outcomeIndex + '"]');
+    var amount = input ? parseFloat(input.value) : 0;
+    if (!amount || amount <= 0) {
+      if (window.showToast) window.showToast('Enter a valid bet amount', 'error');
+      return;
+    }
+
+    var db = window.firebase && window.firebase.database ? window.firebase.database() : null;
+    if (!db) {
+      if (window.showToast) window.showToast('Firebase not available', 'error');
+      return;
+    }
+
+    var positionId = addr.substring(addr.length - 8) + '-' + Date.now().toString(36);
+    var position = {
+      address: addr,
+      outcomeIndex: outcomeIndex,
+      size: amount,
+      timestamp: window.firebase.database.ServerValue.TIMESTAMP
+    };
+
+    if (window.showToast) window.showToast('Placing position...', 'info');
+
+    var updates = {};
+    updates['markets/' + marketId + '/positions/' + positionId] = position;
+
+    db.ref().update(updates).then(function() {
+      // Update total pool
+      return db.ref('markets/' + marketId + '/totalPool').transaction(function(current) {
+        return (current || 0) + amount;
+      });
+    }).then(function() {
+      if (window.showToast) window.showToast('Position placed: ' + amount + ' KAS', 'success');
+      if (input) input.value = '';
+    }).catch(function(err) {
+      console.error('[HTP Events v3] Bet error:', err);
+      if (window.showToast) window.showToast('Failed: ' + err.message, 'error');
+    });
+  };
+
+  // Listen for new market creation
+  window.addEventListener('htp:market:created', function() {
+    // Markets will auto-update via the Firebase listener
+    console.log('[HTP Events v3] New market detected');
+  });
+
+  // Initialize
+  function init() {
+    listenToMarkets();
+    console.log('[HTP Events v3] Prediction market listing initialized');
   }
 
-  // ── CANCEL ────────────────────────────────────────────────────────────────────
-  async function cancelLobbyMatch(matchId) {
-    try {
-      var addr=getAddr();
-      var db=window.firebase&&window.firebase.database&&window.firebase.database();
-      if(db){
-        var snap=await db.ref('lobby/'+matchId).once('value');
-        var m=snap.exists()?snap.val():null;
-        if(m&&m.creatorAddrFull&&m.creatorAddrFull!==addr){if(window.showToast)window.showToast('Only creator can cancel','error');return;}
-        if(m&&m.status!=='waiting'){if(window.showToast)window.showToast('Match already started','error');return;}
-      }
-      if(typeof window.cancelMatchEscrow==='function') await window.cancelMatchEscrow(matchId);
-      if(db){ await db.ref('lobby/'+matchId).remove(); await db.ref('matches/'+matchId+'/info/status').set('cancelled'); }
-      if(window.htpMatches) delete window.htpMatches[matchId];
-      if(window.showToast) window.showToast('Match cancelled','success');
-      if(typeof window.renderLobby==='function') window.renderLobby();
-    } catch(e){ console.error('[HTP v3] Cancel error:',e); if(window.showToast)window.showToast('Cancel failed: '+e.message,'error'); }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
-
-  window.createMatchWithLobby = createMatchWithLobby;
-  window.joinLobbyMatch       = joinLobbyMatch;
-  window.handleMatchGameOver  = handleMatchGameOver;
-  window.cancelLobbyMatch     = cancelLobbyMatch;
-  console.log('[HTP Skill Games v3] Loaded — createMatchWithLobby, joinLobbyMatch, covenant settlement');
 })();
