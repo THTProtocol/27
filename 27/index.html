@@ -1197,6 +1197,7 @@ a:hover { color: var(--primary-h); }
         <button class="nav-pill" data-tab="skill-games">Skill Games</button>
         <button class="nav-pill" data-tab="predictions">Predictions</button>
         <button class="nav-pill" data-tab="kaspa">Kaspa</button>
+        <button class="nav-pill" data-tab="oracle">Oracle</button>
         <button class="nav-pill" data-tab="leaderboard">Leaderboard</button>
         <button class="nav-pill" data-tab="portfolio">Portfolio</button>
       </nav>
@@ -1217,6 +1218,7 @@ a:hover { color: var(--primary-h); }
       <button class="nav-pill" data-tab="skill-games" onclick="switchTab('skill-games');closeMobileNav()">Skill Games</button>
       <button class="nav-pill" data-tab="predictions" onclick="switchTab('predictions');closeMobileNav()">Predictions</button>
       <button class="nav-pill" data-tab="kaspa" onclick="switchTab('kaspa');closeMobileNav()">Kaspa</button>
+      <button class="nav-pill" data-tab="oracle" onclick="switchTab('oracle');closeMobileNav()">Oracle</button>
       <button class="nav-pill" data-tab="leaderboard" onclick="switchTab('leaderboard');closeMobileNav()">Leaderboard</button>
       <button class="nav-pill" data-tab="portfolio" onclick="switchTab('portfolio');closeMobileNav()">Portfolio</button>
     </div>
@@ -1579,67 +1581,6 @@ a:hover { color: var(--primary-h); }
           </div>
         </div>
 
-        <!-- Oracle Section -->
-        <div class="card mt-24">
-          <h3 class="mb-16">Oracle Network</h3>
-          <div class="oracle-tabs">
-            <button class="oracle-tab active" onclick="switchOracleTab('zk')">ZK Verification</button>
-            <button class="oracle-tab" onclick="switchOracleTab('bonded')">Bonded Oracle</button>
-            <button class="oracle-tab" onclick="switchOracleTab('miner')">Miner Oracle</button>
-          </div>
-          
-          <div class="oracle-panel active" id="oracle-zk">
-            <h4 class="mb-8">ZK Verification Pipeline</h4>
-            <p class="text-muted mb-16">SHA-256 commit scheme with KIP-16 Groth16 upgrade path. Every game move is hashed and committed on-chain, creating a verifiable audit trail.</p>
-            <div class="card" style="background:var(--surface-3)">
-              <div class="flex items-center gap-8 mb-8">
-                <span class="dot dot-green dot-pulse"></span>
-                <span class="fw-600">Pipeline Status: Active</span>
-              </div>
-              <div class="text-muted" style="font-size:13px">
-                Current scheme: SHA-256 commitment via OP_RETURN<br>
-                Upgrade path: KIP-16 Groth16 ZK verification (post Q2 hard fork)
-              </div>
-            </div>
-            <div id="zk-attestations" class="mt-16">
-              <p class="text-faint" style="font-size:13px">No active attestations</p>
-            </div>
-          </div>
-
-          <div class="oracle-panel" id="oracle-bonded">
-            <h4 class="mb-8">Bonded Oracle</h4>
-            <p class="text-muted mb-16">Stake KAS as a bond to become an oracle. Incorrect attestations result in bond slashing.</p>
-            <div class="form-group">
-              <label class="form-label">Bond Amount (min 1000 KAS on TN12)</label>
-              <input type="number" class="input" id="oracle-bond-amount" placeholder="1000" min="1000">
-            </div>
-            <button class="btn btn-primary" id="register-oracle-btn">Register as Oracle</button>
-            <h4 class="mt-24 mb-8">Active Oracles</h4>
-            <div id="active-oracles">
-              <p class="text-faint" style="font-size:13px">No registered oracles</p>
-            </div>
-          </div>
-
-          <div class="oracle-panel" id="oracle-miner">
-            <h4 class="mb-8">Miner Oracle</h4>
-            <p class="text-muted mb-16">Miners can attest game results by including a signed payload in their coinbase transaction.</p>
-            <div class="flex gap-12 flex-wrap mb-24">
-              <button class="btn btn-primary" id="download-daemon-btn" onclick="downloadDaemon()">Download Oracle Daemon</button>
-              <button class="btn btn-secondary" id="run-browser-daemon-btn" onclick="runBrowserDaemon()">Run in Browser</button>
-            </div>
-            <div class="card" style="background:var(--surface-3)">
-              <h4 class="mb-8" style="font-size:14px">Setup Instructions</h4>
-              <div style="font-size:13px;color:var(--text-muted);line-height:1.8">
-                <div>1. Requires Node.js 20+</div>
-                <div>2. <code style="background:var(--surface);padding:2px 6px;border-radius:3px">npm install</code></div>
-                <div>3. <code style="background:var(--surface);padding:2px 6px;border-radius:3px">npm start</code></div>
-                <div>4. Environment variables: KASPA_RPC_URL, FIREBASE_PROJECT_ID</div>
-              </div>
-            </div>
-            <div id="browser-daemon-log" class="hidden mt-16" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;font-family:monospace;font-size:12px;max-height:300px;overflow-y:auto">
-            </div>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -1708,6 +1649,97 @@ a:hover { color: var(--primary-h); }
           <div class="blockdag-tooltip" id="blockdag-tooltip"></div>
           <div class="blockdag-skeleton" id="blockdag-skeleton">
             Connecting to Kaspa network...
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== ORACLE ====== -->
+    <section id="tab-oracle" class="tab-section">
+      <div class="container section-padding">
+        <h2 class="mb-24">Oracle Network</h2>
+        <p class="text-muted mb-24">Decentralized attestation, ZK verification, and miner oracle infrastructure</p>
+
+        <div class="oracle-tabs">
+          <button class="oracle-tab active" onclick="switchOracleTab('zk')">ZK Verification</button>
+          <button class="oracle-tab" onclick="switchOracleTab('bonded')">Bonded Oracle</button>
+          <button class="oracle-tab" onclick="switchOracleTab('miner')">Miner Oracle</button>
+        </div>
+
+        <!-- ZK Verification Tab -->
+        <div class="oracle-panel active" id="oracle-zk">
+          <div class="card mb-16">
+            <div class="flex items-center gap-8 mb-12">
+              <span class="dot dot-green dot-pulse"></span>
+              <span class="fw-600" style="font-size:16px">ZK Pipeline Status</span>
+              <span class="pill" style="margin-left:auto;background:rgba(79,152,163,0.15);color:var(--primary)">Active</span>
+            </div>
+            <p class="text-muted mb-16" style="line-height:1.7">
+              Every match result is committed using a SHA-256 commit scheme. The current pipeline uses hash-based attestation with a planned upgrade path to KIP-16 Groth16 proofs for full zero-knowledge verification on the Kaspa BlockDAG.
+            </p>
+            <div class="flex gap-8 flex-wrap mb-16">
+              <span class="pill">SHA-256 Commit</span>
+              <span class="pill">KIP-16 Groth16 Upgrade Path</span>
+              <span class="pill">OP_RETURN Anchoring</span>
+            </div>
+          </div>
+          <h4 class="mb-8">Active Attestations</h4>
+          <div id="zk-attestations">
+            <p class="text-faint" style="font-size:13px">No active attestations - matches will appear here when oracle verification begins</p>
+          </div>
+        </div>
+
+        <!-- Bonded Oracle Tab -->
+        <div class="oracle-panel" id="oracle-bonded">
+          <div class="card mb-16">
+            <h4 class="mb-8">Register as Oracle</h4>
+            <p class="text-muted mb-16" style="line-height:1.7">
+              Bond KAS to become a bonded oracle. Oracles attest to match outcomes and prediction market resolutions. Dishonest attestations result in bond slashing.
+            </p>
+            <div class="form-group">
+              <label class="form-label">Bond Amount (KAS)</label>
+              <input type="number" class="input" id="oracle-bond-amount" placeholder="1000" min="1000" value="1000">
+              <div class="text-faint" style="font-size:11px;margin-top:4px">Minimum bond: 1,000 KAS on TN12</div>
+            </div>
+            <button class="btn btn-primary btn-full" id="register-oracle-btn">Register as Oracle</button>
+          </div>
+          <h4 class="mb-8">Active Oracles</h4>
+          <div id="active-oracles">
+            <p class="text-faint" style="font-size:13px">No registered oracles yet</p>
+          </div>
+        </div>
+
+        <!-- Miner Oracle Tab -->
+        <div class="oracle-panel" id="oracle-miner">
+          <div class="card mb-16">
+            <h4 class="mb-8">Miner Attestation</h4>
+            <p class="text-muted mb-16" style="line-height:1.7">
+              Kaspa miners can attest to match outcomes by embedding attestation data in the coinbase payload of mined blocks. This provides a secondary, permissionless oracle path that leverages existing proof-of-work security.
+            </p>
+            <div class="flex gap-12 flex-wrap">
+              <a href="htp-oracle-daemon/" class="btn btn-primary" style="text-decoration:none">Download Oracle Daemon</a>
+              <button class="btn btn-secondary" id="run-browser-daemon-btn" onclick="runBrowserDaemon()">Run in Browser</button>
+            </div>
+          </div>
+
+          <!-- Browser daemon log -->
+          <div id="browser-daemon-log" class="hidden mb-16" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;font-family:monospace;font-size:12px;max-height:300px;overflow-y:auto">
+          </div>
+
+          <div class="card">
+            <h4 class="mb-8" style="font-size:14px">Setup Instructions</h4>
+            <div style="font-size:13px;color:var(--text-muted);line-height:1.8">
+              <p class="mb-8">Requirements: Node 20+</p>
+              <div class="compiler-panel" style="margin-top:8px">
+                <div class="compiler-header"><span style="font-size:12px">Terminal</span></div>
+                <div class="compiler-code" style="max-height:none;font-size:12px">cd htp-oracle-daemon
+npm install
+cp .env.example .env
+# Edit .env with your Kaspa address and RPC endpoint
+npm start</div>
+              </div>
+              <p class="mt-12 text-faint" style="font-size:12px">Environment variables: KASPA_RPC_URL, ORACLE_ADDRESS, FIREBASE_URL, BOND_UTXO_TX</p>
+            </div>
           </div>
         </div>
       </div>
