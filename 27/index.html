@@ -1532,10 +1532,10 @@ a:hover { color: var(--primary-h); }
               </div>
               <div class="outcome-row">
                 <input type="text" class="input outcome-input" value="No" maxlength="80" oninput="compileSilverScript()">
-                <button class="remove-outcome" onclick="removeOutcome(this)">X</button>
+                <button class="remove-outcome">X</button>
               </div>
             </div>
-            <button class="btn btn-secondary mt-8" id="addOutcomeBtn" onclick="addOutcome()">+ Add Outcome</button>
+            <button class="btn btn-secondary mt-8" id="addOutcomeBtn">+ Add Outcome</button>
           </div>
 
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
@@ -2044,26 +2044,7 @@ a:hover { color: var(--primary-h); }
     step.classList.toggle('expanded');
   };
 
-  /* --- Prediction Outcomes --- */
-  var outcomeCount = 2;
-  window.addOutcome = function() {
-    if (outcomeCount >= 10) return;
-    outcomeCount++;
-    var row = document.createElement('div');
-    row.className = 'outcome-row';
-    row.innerHTML = '<input type="text" class="input outcome-input" placeholder="Outcome ' + outcomeCount + '" maxlength="80" oninput="compileSilverScript()">' +
-      '<button class="remove-outcome" onclick="removeOutcome(this)">X</button>';
-    document.getElementById('outcomesContainer').appendChild(row);
-    compileSilverScript();
-  };
-
-  window.removeOutcome = function(btn) {
-    var container = document.getElementById('outcomesContainer');
-    if (container.children.length <= 2) return; // Keep minimum 2
-    btn.parentElement.remove();
-    outcomeCount = container.children.length;
-    compileSilverScript();
-  };
+  /* --- Prediction Outcomes (handled by DOMContentLoaded script below) --- */
 
   /* --- Char Counter --- */
   window.updateCharCounter = function(id, max) {
@@ -2658,6 +2639,35 @@ a:hover { color: var(--primary-h); }
 
   console.log('%c[HTP] App controller loaded', 'color:#4f98a3;font-weight:bold');
 })();
+  </script>
+
+  <!-- Predictions: Add/Remove Outcome wiring -->
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var outcomeCount = 2;
+    var addBtn = document.getElementById('addOutcomeBtn');
+    var container = document.getElementById('outcomesContainer');
+    if (addBtn && container) {
+      addBtn.addEventListener('click', function() {
+        if (outcomeCount >= 10) return;
+        outcomeCount++;
+        var row = document.createElement('div');
+        row.className = 'outcome-row';
+        row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:8px;';
+        row.innerHTML = '<input type="text" placeholder="Outcome ' + outcomeCount + '" class="outcome-input" maxlength="80" style="flex:1;background:var(--surface-3);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:6px;font-family:var(--font-body);font-size:14px;"><button type="button" class="remove-outcome" style="background:none;border:1px solid rgba(239,68,68,0.3);color:var(--error);width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:16px;">X</button>';
+        container.appendChild(row);
+      });
+      container.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-outcome')) {
+          var row = e.target.closest('.outcome-row');
+          if (row && container.children.length > 2) {
+            row.remove();
+            outcomeCount--;
+          }
+        }
+      });
+    }
+  });
   </script>
 </body>
 </html>

@@ -1,282 +1,383 @@
 /**
  * htp-blockdag-viz.js - Live Kaspa BlockDAG Visualization (Canvas-based)
- *
- * FEATURES:
- *  1. Real-time block DAG fetching from Kaspa RPC/REST API every 3 seconds
- *  2. Canvas-based animated visualization with teal accent colors
- *  3. Latest block highlighted with pulsing glow4. Smooth fade-in for new blocks
- *  5. Compact mini-widget (120px height) for header/overview
- *  6. Full-size detailed view in the Kaspa section
+ * Renders real block data from TN12 on HTML Canvas elements.
  */
-
-(function(window) {
+(function() {
   'use strict';
 
-  var BLOCK_UPDATE_INTERVAL_MS = 3000;  // Update every 3 seconds
-  var MAX_BLOCKS_IN_VIEW = 50;
-  var BLOCK_WIDTH = 60;
-  var BLOCK_HEIGHT = 24;
-  var BLOCK_RADIUS = 4;
+  var API_BASE = 'https://api-tn12.kaspa.org';
+  var BLOCK_POLL_MS = 3000;
+  var STATS_POLL_MS = 5000;
+  var BLOCK_W = 18;
+  var BLOCK_H = 12;
+  var BLOCK_R = 3;
+  var PRIMARY = '#4f98a3';
+  var PRIMARY_GLOW = 'rgba(79,152,163,0.6)';
+  var BLOCK_FILL = '#0f1623';
+  var BG = '#0a0e1a';
 
-  var _blocks = [];          // Array of {hash, parents: [], height, timestamp}
-  var _latestBlockHash = null;
-  var _isConnected = false;
-  var _animationFrameId = null;
+  var _blocks = [];
+  var _blockMap = {};
+  var _latestHash = null;
+  var _tooltip = null;
+  var _tooltipBlock = null;
+  var _animId = null;
+  var _blockTimer = null;
+  var _statsTimer = null;
+  var _canvases = [];
+  var _slideOffset = 0;
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * 1. BLOCK FETCHING
-   * ═══════════════════════════════════════════════════════════════════════════ */
+  /* ── Utility ─────────────────────────────────────────────── */
 
-  async function fetchBlocksFromRpc() {
+  function formatHash(h) {
+    if (!h || h.length < 8) return h || '';
+    return h.substring(0, 6) + '...' + h.slice(-4);
+  }
+
+  function formatNumber(n) {
+    if (n === undefined || n === null) return '--';
+    return Number(n).toLocaleString();
+  }
+
+  function formatHashrate(difficulty) {
+    if (!difficulty) return '--';
+    var hr = difficulty * Math.pow(2, 32) / 1;
+    if (hr >= 1e18) return (hr / 1e18).toFixed(2) + ' EH/s';
+    if (hr >= 1e15) return (hr / 1e15).toFixed(2) + ' PH/s';
+    if (hr >= 1e12) return (hr / 1e12).toFixed(2) + ' TH/s';
+    if (hr >= 1e9) return (hr / 1e9).toFixed(2) + ' GH/s';
+    if (hr >= 1e6) return (hr / 1e6).toFixed(2) + ' MH/s';
+    return hr.toFixed(0) + ' H/s';
+  }
+
+  /* ── Stats Fetching ──────────────────────────────────────── */
+
+  async function fetchStats() {
     try {
-      var apiUrl = (window.HTP_RPC_URL || '').replace('wss://', 'https://').replace('ws://', 'http://')
-                     .replace('/rpc', '/api');
+      var resp = await fetch(API_BASE + '/info/blockdag');
+      if (!resp.ok) return;
+      var data = await resp.json();
 
-      if (!apiUrl || apiUrl === '//api') {
-        // Fallback to default TN12 API
-        apiUrl = 'https://api-tn12.kaspa.org';
-      }
+      var el;
+      el = document.getElementById('kaspaBlockHeight');
+      if (el) el.textContent = formatNumber(data.blockCount);
 
-      // Set a reasonable timeout
-      var controller = new AbortController();
-      var timeoutId = setTimeout(() => controller.abort(), 5000);
+      el = document.getElementById('kaspaDaaScore');
+      if (el) el.textContent = formatNumber(data.virtualDaaScore);
 
-      try {
-        var resp = await fetch(apiUrl + '/blocks?includeBlocks=true&lowHash=&desiredBlockCount=100', {
-          signal: controller.signal
-        });
+      el = document.getElementById('kaspaHashrate');
+      if (el) el.textContent = formatHashrate(data.difficulty);
 
-        clearTimeout(timeoutId);
+      el = document.getElementById('kaspaBlockRate');
+      if (el) el.textContent = data.tipHashes ? (data.tipHashes.length > 1 ? data.tipHashes.length + ' bps' : '1 bps') : '-- bps';
 
-        if (!resp.ok) {
-          console.warn('[BlockDAG] API error:', resp.status);
-          return false;
-        }
-
-        var data = await resp.json();
-        if (data && data.blocks && Array.isArray(data.blocks)) {
-          updateBlocksFromData(data.blocks);
-          _isConnected = true;
-          return true;
-        }
-      } catch(e) {
-        clearTimeout(timeoutId);
-        if (e.name !== 'AbortError') {
-          console.warn('[BlockDAG] Fetch error:', e.message);
-        }
-      }
-    } catch(e) {
-      console.warn('[BlockDAG] RPC fetch error:', e);
+      el = document.getElementById('kaspaFee');
+      if (el) el.textContent = '~0.0001 KAS';
+    } catch (e) {
+      console.warn('[BlockDAG] Stats fetch error:', e.message);
     }
-    return false;
   }
 
-  function updateBlocksFromData(blocks) {
-    var newBlocks = blocks.slice(0, MAX_BLOCKS_IN_VIEW).map(function(b) {
-      return {
-        hash: b.header ? b.header.hash : b.hash,
-        parents: b.header && b.header.parents ? b.header.parents : (b.parentHashes || []),
-        height: b.header ? b.header.blockLevel : (b.level || 0),
-        timestamp: b.header ? b.header.timestamp : (b.timestamp || 0),
-        opacity: 1  // For animation
-      };
-    });
+  /* ── Block Fetching ──────────────────────────────────────── */
 
-    // Check if latest block changed
-    if (newBlocks.length > 0 && newBlocks[0].hash !== _latestBlockHash) {
-      _latestBlockHash = newBlocks[0].hash;
-      // Mark new blocks for fade-in animation
-      newBlocks.forEach(function(b) {
-        var existing = _blocks.find(x => x.hash === b.hash);
-        if (!existing) {
-          b.opacity = 0;  // Fade in
+  async function fetchBlocks() {
+    try {
+      var resp = await fetch(API_BASE + '/blocks?limit=20&includeBlocks=true');
+      if (!resp.ok) return;
+      var data = await resp.json();
+      if (!data || !data.blocks || !Array.isArray(data.blocks)) return;
+
+      var newBlocks = data.blocks.map(function(b) {
+        var hdr = b.header || {};
+        var hash = hdr.hash || b.hash || '';
+        var parents = [];
+        if (hdr.parentsByLevel && Array.isArray(hdr.parentsByLevel) && hdr.parentsByLevel.length > 0) {
+          parents = hdr.parentsByLevel[0] || [];
         }
+        return {
+          hash: hash,
+          parents: parents,
+          blueScore: hdr.blueScore || 0,
+          timestamp: parseInt(hdr.timestamp || '0', 10),
+          x: 0, y: 0, targetX: 0,
+          isNew: !_blockMap[hash]
+        };
       });
-    }
 
-    _blocks = newBlocks;
-  }
+      // Sort by timestamp ascending (oldest left, newest right)
+      newBlocks.sort(function(a, b) { return a.timestamp - b.timestamp; });
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * 2. CANVAS RENDERING
-   * ═══════════════════════════════════════════════════════════════════════════ */
-
-  function drawBlockDAG(ctx, width, height, isMini) {
-    // Clear
-    ctx.fillStyle = '#0a0e1a';
-    ctx.fillRect(0, 0, width, height);
-
-    if (_blocks.length === 0) {
-      // Show "connecting" message
-      ctx.fillStyle = 'rgba(226,232,240,0.4)';
-      ctx.font = '12px Inter';
-      ctx.textAlign = 'center';
-      ctx.fillText('Connecting to Kaspa...', width / 2, height / 2 - 10);
-
-      // Pulsing dot
-      var scale = 0.5 + 0.5 * Math.sin(Date.now() / 300);
-      ctx.fillStyle = 'rgba(79,152,163,' + (0.5 + scale * 0.5).toFixed(2) + ')';
-      ctx.beginPath();
-      ctx.arc(width / 2, height / 2 + 10, 4 * scale, 0, Math.PI * 2);
-      ctx.fill();
-      return;
-    }
-
-    var blockY = isMini ? height - BLOCK_HEIGHT - 8 : height / 2 - BLOCK_HEIGHT / 2;
-    var startX = isMini ? 8 : 20;
-    var spacing = isMini ? 50 : BLOCK_WIDTH + 10;
-
-    // Draw blocks left to right (oldest to newest)
-    _blocks.forEach(function(block, idx) {
-      var x = startX + idx * spacing;
-
-      if (x + BLOCK_WIDTH > width - 20) return;  // Don't draw off-screen
-
-      var isLatest = block.hash === _latestBlockHash;
-
-      // Fade in animation
-      if (block.opacity < 1) {
-        block.opacity = Math.min(1, block.opacity + 0.1);
+      // Detect truly new blocks for slide animation
+      var hasNew = false;
+      newBlocks.forEach(function(b) {
+        if (b.isNew) hasNew = true;
+        _blockMap[b.hash] = true;
+      });
+      if (hasNew && _blocks.length > 0) {
+        _slideOffset = 40;
       }
 
-      // Draw glow for latest block
-      if (isLatest) {
-        var glowSize = 8 + 4 * Math.sin(Date.now() / 200);
-        ctx.fillStyle = 'rgba(79,152,163,' + (0.2 - glowSize * 0.02).toFixed(2) + ')';
-        ctx.beginPath();
-        ctx.roundRect(x - glowSize, blockY - glowSize, BLOCK_WIDTH + glowSize * 2, BLOCK_HEIGHT + glowSize * 2, BLOCK_RADIUS);
-        ctx.fill();
+      _blocks = newBlocks;
+      if (_blocks.length > 0) {
+        _latestHash = _blocks[_blocks.length - 1].hash;
       }
-
-      // Draw block
-      ctx.fillStyle = 'rgba(17,24,39,' + block.opacity + ')';
-      ctx.strokeStyle = isLatest ? 'rgba(79,152,163,1)' : 'rgba(79,152,163,0.4)';
-      ctx.lineWidth = isLatest ? 2 : 1;
-      ctx.beginPath();
-      ctx.roundRect(x, blockY, BLOCK_WIDTH, BLOCK_HEIGHT, BLOCK_RADIUS);
-      ctx.fill();
-      ctx.stroke();
-
-      // Draw block label (first 3 + last 3 hex chars)
-      ctx.fillStyle = isLatest ? 'rgba(79,152,163,1)' : 'rgba(226,232,240,0.6)';
-      ctx.font = '9px JetBrains Mono';
-      ctx.textAlign = 'center';
-      var label = block.hash.substring(0, 3) + '…' + block.hash.slice(-3);
-      ctx.fillText(label, x + BLOCK_WIDTH / 2, blockY + BLOCK_HEIGHT / 2 + 3);
-    });
-
-    // Draw time stamp
-    if (_blocks.length > 0 && !isMini) {
-      ctx.fillStyle = 'rgba(226,232,240,0.3)';
-      ctx.font = '11px Inter';
-      ctx.textAlign = 'left';
-      var recent = _blocks[0];
-      var time = new Date(recent.timestamp).toLocaleTimeString();
-      ctx.fillText('Latest: ' + time, 20, height - 12);
+    } catch (e) {
+      console.warn('[BlockDAG] Blocks fetch error:', e.message);
     }
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * 3. ANIMATION LOOP
-   * ═══════════════════════════════════════════════════════════════════════════ */
+  /* ── Canvas Rendering ────────────────────────────────────── */
 
-  function startAnimationLoop(canvas) {
-    if (!canvas) return;
+  function drawDAG(canvas) {
     var ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    function animate() {
-      var width = canvas.width;
-      var height = canvas.height;
-      drawBlockDAG(ctx, width, height, height <= 120);
-      _animationFrameId = requestAnimationFrame(animate);
+    var w = canvas.width;
+    var h = canvas.height;
+    var isMini = h <= 200;
+
+    // Clear
+    ctx.fillStyle = BG;
+    ctx.fillRect(0, 0, w, h);
+
+    // Label
+    ctx.fillStyle = '#475569';
+    ctx.font = 'bold 10px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('KASPA BLOCKDAG', 10, 16);
+
+    if (_blocks.length === 0) {
+      drawConnecting(ctx, w, h);
+      return;
     }
 
-    animate();
-  }
-
-  function stopAnimationLoop() {
-    if (_animationFrameId) {
-      cancelAnimationFrame(_animationFrameId);
-      _animationFrameId = null;
+    // Animate slide offset
+    if (_slideOffset > 0) {
+      _slideOffset = Math.max(0, _slideOffset - 2);
     }
-  }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * 4. PUBLIC API
-   * ═══════════════════════════════════════════════════════════════════════════ */
+    var padding = 30;
+    var usableW = w - padding * 2;
+    var count = _blocks.length;
+    var spacing = Math.min(usableW / Math.max(count - 1, 1), 60);
+    var centerY = h / 2;
 
-  window.htpBlockDAG = {
-    async init(containerSelector, isMini) {
-      var container = document.querySelector(containerSelector);
-      if (!container) {
-        console.warn('[BlockDAG] Container not found:', containerSelector);
-        return;
+    // Assign positions
+    _blocks.forEach(function(block, idx) {
+      block.targetX = padding + idx * spacing + _slideOffset;
+      // Stagger Y based on hash to show DAG structure
+      var hashByte = parseInt(block.hash.substring(0, 2), 16) || 0;
+      var yOffset = ((hashByte % 5) - 2) * (isMini ? 8 : 14);
+      block.x = block.targetX;
+      block.y = centerY + yOffset;
+    });
+
+    // Draw parent lines
+    ctx.strokeStyle = 'rgba(79,152,163,0.3)';
+    ctx.lineWidth = 1;
+    _blocks.forEach(function(block) {
+      block.parents.forEach(function(parentHash) {
+        var parent = _blocks.find(function(b) { return b.hash === parentHash; });
+        if (parent) {
+          ctx.beginPath();
+          ctx.moveTo(block.x, block.y + BLOCK_H / 2);
+          ctx.lineTo(parent.x + BLOCK_W, parent.y + BLOCK_H / 2);
+          ctx.stroke();
+        }
+      });
+    });
+
+    // Draw blocks
+    _blocks.forEach(function(block) {
+      var isLatest = block.hash === _latestHash;
+
+      // Glow for latest
+      if (isLatest) {
+        var pulse = 0.3 + 0.2 * Math.sin(Date.now() / 400);
+        ctx.shadowColor = PRIMARY;
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = PRIMARY_GLOW;
+        roundRect(ctx, block.x - 2, block.y - 2, BLOCK_W + 4, BLOCK_H + 4, BLOCK_R + 1);
+        ctx.fill();
+        ctx.shadowBlur = 0;
       }
 
-      // Create canvas
-      var canvas = document.createElement('canvas');
-      var size = isMini ? { width: 600, height: 120 } : { width: 800, height: 250 };
-      canvas.width = size.width;
-      canvas.height = size.height;
-      canvas.style.cssText = 'border:1px solid rgba(79,152,163,0.15);border-radius:8px;background:#0a0e1a;display:block;width:100%';
-      container.appendChild(canvas);
+      // Block rect
+      ctx.fillStyle = isLatest ? PRIMARY_GLOW : BLOCK_FILL;
+      ctx.strokeStyle = PRIMARY;
+      ctx.lineWidth = isLatest ? 2 : 1;
+      roundRect(ctx, block.x, block.y, BLOCK_W, BLOCK_H, BLOCK_R);
+      ctx.fill();
+      ctx.stroke();
 
-      // Start animation loop
-      startAnimationLoop(canvas);
-
-      // Start data fetching
-      this.startPolling();
-
-      console.log('[BlockDAG] Initialized on', containerSelector);
-    },
-
-    startPolling() {
-      // Fetch immediately
-      fetchBlocksFromRpc();
-
-      // Then poll every N seconds
-      this.pollInterval = setInterval(async () => {
-        await fetchBlocksFromRpc();
-      }, BLOCK_UPDATE_INTERVAL_MS);
-    },
-
-    stopPolling() {
-      if (this.pollInterval) {
-        clearInterval(this.pollInterval);
-        this.pollInterval = null;
+      // Hash label for latest confirmed block
+      if (isLatest) {
+        ctx.fillStyle = PRIMARY;
+        ctx.font = '8px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(formatHash(block.hash), block.x + BLOCK_W / 2, block.y - 4);
       }
-      stopAnimationLoop();
-    },
+    });
 
-    getLatestBlockHash() {
-      return _latestBlockHash;
-    },
-
-    getBlockCount() {
-      return _blocks.length;
-    },
-
-    isConnected() {
-      return _isConnected;
-    }
-  };
-
-  // Polyfill roundRect for older browsers
-  if (!CanvasRenderingContext2D.prototype.roundRect) {
-    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
-      if (w < 2 * r) r = w / 2;
-      if (h < 2 * r) r = h / 2;
-      this.beginPath();
-      this.moveTo(x + r, y);
-      this.arcTo(x + w, y, x + w, y + h, r);
-      this.arcTo(x + w, y + h, x, y + h, r);
-      this.arcTo(x, y + h, x, y, r);
-      this.arcTo(x, y, x + w, y, r);
-      this.closePath();
-    };
+    // Reset shadow
+    ctx.shadowBlur = 0;
   }
 
-  console.log('[BlockDAG] Module loaded');
+  function drawConnecting(ctx, w, h) {
+    // Shimmer effect
+    var t = Date.now() / 1000;
+    var shimmerX = (t % 3) / 3 * w;
 
-})(window);
+    ctx.fillStyle = 'rgba(79,152,163,0.05)';
+    ctx.fillRect(shimmerX - 60, 0, 120, h);
+
+    ctx.fillStyle = 'rgba(226,232,240,0.4)';
+    ctx.font = '13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Connecting to Kaspa network...', w / 2, h / 2);
+
+    // Pulsing dots
+    for (var i = 0; i < 3; i++) {
+      var dotPhase = Math.sin(t * 3 + i * 0.8);
+      var alpha = 0.3 + 0.4 * Math.max(0, dotPhase);
+      ctx.fillStyle = 'rgba(79,152,163,' + alpha.toFixed(2) + ')';
+      ctx.beginPath();
+      ctx.arc(w / 2 - 12 + i * 12, h / 2 + 20, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  /* ── Tooltip ─────────────────────────────────────────────── */
+
+  function showTooltip(block, mouseX, mouseY, canvas) {
+    hideTooltip();
+    _tooltipBlock = block;
+    var tip = document.createElement('div');
+    tip.id = 'dagTooltip';
+    tip.style.cssText = 'position:fixed;background:#1d2840;border:1px solid rgba(79,152,163,0.4);color:#e2e8f0;padding:10px 14px;border-radius:8px;z-index:1000;font-family:JetBrains Mono,monospace;font-size:11px;pointer-events:none;line-height:1.6;max-width:320px;';
+    var ts = block.timestamp ? new Date(block.timestamp * 1000).toLocaleString() : 'N/A';
+    tip.innerHTML = '<div style="color:' + PRIMARY + ';font-weight:600;margin-bottom:4px;">Block</div>' +
+      '<div>Hash: ' + formatHash(block.hash) + '</div>' +
+      '<div>Time: ' + ts + '</div>' +
+      '<div>Parents: ' + block.parents.length + '</div>' +
+      '<div>Blue Score: ' + formatNumber(block.blueScore) + '</div>';
+
+    var rect = canvas.getBoundingClientRect();
+    tip.style.left = (rect.left + mouseX + 16) + 'px';
+    tip.style.top = (rect.top + mouseY - 20) + 'px';
+    document.body.appendChild(tip);
+    _tooltip = tip;
+  }
+
+  function hideTooltip() {
+    if (_tooltip) {
+      _tooltip.remove();
+      _tooltip = null;
+      _tooltipBlock = null;
+    }
+  }
+
+  function handleCanvasClick(e, canvas) {
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var mx = (e.clientX - rect.left) * scaleX;
+    var my = (e.clientY - rect.top) * scaleY;
+
+    var clicked = null;
+    _blocks.forEach(function(b) {
+      if (mx >= b.x && mx <= b.x + BLOCK_W && my >= b.y && my <= b.y + BLOCK_H) {
+        clicked = b;
+      }
+    });
+
+    if (clicked) {
+      if (_tooltipBlock && _tooltipBlock.hash === clicked.hash) {
+        hideTooltip();
+      } else {
+        showTooltip(clicked, e.clientX - rect.left, e.clientY - rect.top, canvas);
+      }
+    } else {
+      hideTooltip();
+    }
+  }
+
+  /* ── Resize ──────────────────────────────────────────────── */
+
+  function resizeCanvas(canvas) {
+    var container = canvas.parentElement;
+    if (!container) return;
+    var w = container.clientWidth;
+    var h = parseInt(canvas.getAttribute('height'), 10) || container.clientHeight;
+    canvas.width = w;
+    canvas.height = h;
+    canvas.style.width = '100%';
+    canvas.style.height = h + 'px';
+  }
+
+  /* ── Animation Loop ──────────────────────────────────────── */
+
+  function animate() {
+    _canvases.forEach(function(c) { drawDAG(c); });
+    _animId = requestAnimationFrame(animate);
+  }
+
+  /* ── Init ────────────────────────────────────────────────── */
+
+  function init() {
+    var main = document.getElementById('dagCanvasFull');
+    var mini = document.getElementById('dagCanvasMini');
+
+    if (main) {
+      _canvases.push(main);
+      resizeCanvas(main);
+      main.addEventListener('click', function(e) { handleCanvasClick(e, main); });
+    }
+    if (mini) {
+      _canvases.push(mini);
+      resizeCanvas(mini);
+      mini.addEventListener('click', function(e) { handleCanvasClick(e, mini); });
+    }
+
+    if (_canvases.length === 0) {
+      console.warn('[BlockDAG] No canvas elements found');
+      return;
+    }
+
+    window.addEventListener('resize', function() {
+      _canvases.forEach(resizeCanvas);
+      hideTooltip();
+    });
+
+    // Hide tooltip on scroll
+    document.addEventListener('scroll', hideTooltip, true);
+
+    // Start animation
+    _animId = requestAnimationFrame(animate);
+
+    // Fetch immediately then poll
+    fetchBlocks();
+    fetchStats();
+    _blockTimer = setInterval(fetchBlocks, BLOCK_POLL_MS);
+    _statsTimer = setInterval(fetchStats, STATS_POLL_MS);
+
+    console.log('[BlockDAG] Initialized with ' + _canvases.length + ' canvas(es)');
+  }
+
+  // Start when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
