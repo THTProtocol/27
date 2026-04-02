@@ -75,7 +75,6 @@
 
   var _wasmReadyCallbacks = [];
   var _wasmReadyFired     = false;
-  var _wasmWarnTimer      = null;
 
   function _unlockGates() {
     document.querySelectorAll('.wasm-gate').forEach(function (el) {
@@ -87,23 +86,13 @@
 
   function _onWasmReady() {
     if (_wasmReadyFired) return;
-    
-    // Clear any pending timeouts
-    if (typeof _wasmTimeoutHandle !== 'undefined') {
-      clearTimeout(_wasmTimeoutHandle);
-    }
-    
     _wasmReadyFired      = true;
     window.wasmReady     = true;
     window.kaspaWasmReady = function () { return true; };
     _unlockGates();
-    if (_wasmWarnTimer) {
-      clearTimeout(_wasmWarnTimer);
-      _wasmWarnTimer = null;
-    }
     var oldBanner = document.getElementById('htp-wasm-warning');
     if (oldBanner) oldBanner.remove();
-    console.log('[HTP Init] WASM ready — gates unlocked ✓');
+    console.log('[HTP Init] WASM ready');
     _wasmReadyCallbacks.forEach(function (cb) {
       try { cb(); } catch (e) { console.warn('[HTP Init] wasmReady callback error', e); }
     });
@@ -121,74 +110,52 @@
   window.whenWasmReady = whenWasmReady;
 
   /* ═══════════════════════════════════════════════════════════════════════════
-   * WASM TIMEOUT & RETRY LOGIC (30s with optional single retry)
+   * WASM LOADING: 30s timeout, exponential backoff, 3 attempts
    * ═══════════════════════════════════════════════════════════════════════════ */
-  var _wasmRetried = false;
-  
-  function _showWasmError(msg) {
-    console.error('[HTP Init] WASM ERROR:', msg);
-    var modal = document.createElement('div');
-    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,14,26,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;font-family:"Inter",sans-serif;color:#e2e8f0';
-    var box = document.createElement('div');
-    box.style.cssText = 'max-width:600px;padding:40px;background:#111827;border:1px solid rgba(79,152,163,0.15);border-radius:8px;text-align:left';
-    
-    var title = document.createElement('h2');
-    title.style.cssText = 'font-size:20px;font-weight:600;margin:0 0 16px 0;color:#ef4444';
-    title.textContent = 'Kaspa WASM SDK Failed to Load';
-    
-    var body = document.createElement('p');
-    body.style.cssText = 'margin:0 0 24px 0;line-height:1.6;color:#94a3b8;font-size:14px';
-    body.textContent = msg;
-    
-    var tip = document.createElement('p');
-    tip.style.cssText = 'margin:0 0 24px 0;padding:12px;background:#1a2235;border-left:3px solid #4f98a3;font-size:13px;line-height:1.5;color:#cbd5e1';
-    tip.textContent = 'Try: 1) Hard refresh (Ctrl+Shift+R), 2) Check browser console, 3) Verify network connection';
-    
-    var btn = document.createElement('button');
-    btn.style.cssText = 'padding:10px 20px;background:#4f98a3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:500;font-size:14px';
-    btn.textContent = 'Refresh Page';
-    btn.onclick = function() { window.location.reload(true); };
-    
-    box.appendChild(title);
-    box.appendChild(body);
-    box.appendChild(tip);
-    box.appendChild(btn);
-    modal.appendChild(box);
-    document.body.appendChild(modal);
+  var _wasmAttempt = 0;
+  var _wasmMaxAttempts = 3;
+  var _wasmBaseTimeout = 30000; // 30 seconds
+
+  function _showWasmBanner() {
+    if (document.getElementById('htp-wasm-warning')) return;
+    var banner = document.createElement('div');
+    banner.id = 'htp-wasm-warning';
+    banner.className = 'wasm-banner';
+    banner.innerHTML = 'Kaspa SDK unavailable. Some features require the browser extension wallet.' +
+      '<button class="wasm-banner-close" onclick="this.parentElement.remove()">&times;</button>';
+    document.body.appendChild(banner);
   }
 
-  function _retryWasmLoad() {
-    if (_wasmRetried) {
-      _showWasmError(
-        'Kaspa WASM SDK failed to initialize after retry. ' +
-        'Verify you can reach the network and /kaspa_bg.wasm is accessible. ' +
-        'If this persists, restart your browser and clear cache.'
-      );
-      window.dispatchEvent(new CustomEvent('htp:wasm:fatal'));
-      return;
-    }
-    
-    _wasmRetried = true;
-    console.warn('[HTP Init] WASM retry attempt — reloading module');
-    // Attempt to reload kaspaSDK initialization
-    if (window.location.href.includes('localhost') || window.location.href.includes('127.0.0.1')) {
-      console.log('[HTP Init] Development mode detected — waiting another 20s');
-      setTimeout(_retryWasmLoad, 20000);
-    } else {
-      _showWasmError(
-        'Kaspa WASM SDK failed to load. The blockchain integration is unavailable. ' +
-        'Please try again in a moment or check your internet connection.'
-      );
-      window.dispatchEvent(new CustomEvent('htp:wasm:fatal'));
-    }
+  function _attemptWasmLoad() {
+    if (_wasmReadyFired) return;
+    _wasmAttempt++;
+    var timeout = _wasmBaseTimeout * Math.pow(2, _wasmAttempt - 1);
+    console.log('[HTP Init] WASM load attempt ' + _wasmAttempt + '/' + _wasmMaxAttempts + ' (timeout: ' + (timeout / 1000) + 's)');
+
+    var wasmUrl = window.location.origin + '/kaspa_bg.wasm';
+    window.HTP_WASM_URL = wasmUrl;
+
+    var timer = setTimeout(function () {
+      if (_wasmReadyFired) return;
+      console.warn('[HTP Init] WASM attempt ' + _wasmAttempt + ' timed out');
+      if (_wasmAttempt < _wasmMaxAttempts) {
+        _attemptWasmLoad();
+      } else {
+        console.error('[HTP Init] All ' + _wasmMaxAttempts + ' WASM attempts failed');
+        _showWasmBanner();
+        window.dispatchEvent(new CustomEvent('htp:wasm:fatal'));
+      }
+    }, timeout);
+
+    // If WASM loads before timeout, the _onWasmReady call clears this
+    var origOnReady = window._onWasmReady;
+    window._onWasmReady = function () {
+      clearTimeout(timer);
+      origOnReady();
+    };
   }
 
-  // Primary timeout: 30 seconds
-  var _wasmTimeoutHandle = setTimeout(function () {
-    if (_wasmReadyFired) return; // Already loaded
-    console.warn('[HTP Init] Primary WASM timeout at 30s — attempting recovery');
-    _retryWasmLoad();
-  }, 30000);
+  _attemptWasmLoad();
 
   /* ═══════════════════════════════════════════════════════════════════════════
    * 3.  IDENTITY & SEAT
