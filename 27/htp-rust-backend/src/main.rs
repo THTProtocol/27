@@ -1,167 +1,128 @@
+//! HTP Rust Backend
+//!
+//! Axum HTTP server providing native-speed Kaspa transaction construction
+//! and wallet operations, replacing the browser WASM module.
+//!
+//! Default: http://localhost:3000
+//! Production: deployed to Cloud Run
+
+mod types;
+mod wallet;
+mod escrow;
+mod blockdag;
+mod broadcast;
+
 use axum::{
-    extract::Path,
+    extract::{Path, Json},
     http::StatusCode,
-    response::{sse::Event, Json, Sse},
+    response::IntoResponse,
     routing::{get, post},
     Router,
 };
-use serde::{Deserialize, Serialize};
-use std::convert::Infallible;
-use tokio_stream::Stream;
 use tower_http::cors::CorsLayer;
+use std::net::SocketAddr;
 
-// ---------------------------------------------------------------------------
-// Request / Response types
-// ---------------------------------------------------------------------------
+/// Kaspa TN12 REST API base URL
+const DEFAULT_API_BASE: &str = "https://api-tn12.kaspa.org";
 
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)]
-struct MnemonicRequest {
-    mnemonic: String,
-    network: String,
+fn api_base() -> String {
+    std::env::var("KASPA_API_BASE").unwrap_or_else(|_| DEFAULT_API_BASE.to_string())
 }
 
-#[derive(Debug, Serialize)]
-struct MnemonicResponse {
-    address: String,
-    public_key: String,
-}
+// ============================================================
+// Route Handlers
+// ============================================================
 
-#[derive(Debug, Serialize)]
-struct BalanceResponse {
-    address: String,
-    balance_sompi: u64,
-    balance_kas: f64,
-}
-
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)]
-struct EscrowCreateRequest {
-    pubkey_a: String,
-    pubkey_b: String,
-    amount_sompi: u64,
-}
-
-#[derive(Debug, Serialize)]
-struct EscrowCreateResponse {
-    escrow_address: String,
-    script_hash: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)]
-struct PayoutRequest {
-    escrow_address: String,
-    winner_address: String,
-    amount_sompi: u64,
-    fee_address: String,
-    fee_bps: u16,
-}
-
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)]
-struct BroadcastRequest {
-    raw_tx: String,
-}
-
-#[derive(Debug, Serialize)]
-struct BroadcastResponse {
-    tx_id: String,
-}
-
-#[derive(Debug, Serialize)]
-struct HealthResponse {
-    status: String,
-    version: String,
-}
-
-// ---------------------------------------------------------------------------
-// Handlers
-// ---------------------------------------------------------------------------
-
-async fn health() -> Json<HealthResponse> {
-    Json(HealthResponse {
-        status: "ok".into(),
-        version: "0.1.0".into(),
+/// GET /health
+async fn health() -> impl IntoResponse {
+    Json(types::HealthResponse {
+        status: "ok".to_string(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        network: std::env::var("KASPA_NETWORK").unwrap_or_else(|_| "testnet-12".to_string()),
     })
 }
 
+/// POST /wallet/from-mnemonic
 async fn wallet_from_mnemonic(
-    Json(_body): Json<MnemonicRequest>,
-) -> Json<MnemonicResponse> {
-    // TODO: derive address from BIP39 mnemonic using kaspa-wallet-core
-    Json(MnemonicResponse {
-        address: "kaspa:placeholder_address".into(),
-        public_key: "placeholder_public_key".into(),
-    })
+    Json(req): Json<types::MnemonicRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    wallet::derive_from_mnemonic(&req)
+        .map(|resp| Json(resp))
+        .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))
 }
 
-async fn wallet_balance(Path(addr): Path<String>) -> Json<BalanceResponse> {
-    // TODO: fetch UTXO balance via kaspa-rpc-client
-    Json(BalanceResponse {
-        address: addr,
-        balance_sompi: 0,
-        balance_kas: 0.0,
-    })
+/// GET /wallet/balance/:addr
+async fn wallet_balance(
+    Path(addr): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    wallet::fetch_balance(&addr, &api_base())
+        .await
+        .map(|resp| Json(resp))
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
 }
 
+/// POST /escrow/create
 async fn escrow_create(
-    Json(_body): Json<EscrowCreateRequest>,
-) -> Json<EscrowCreateResponse> {
-    // TODO: construct P2SH escrow address using kaspa-consensus-core
-    Json(EscrowCreateResponse {
-        escrow_address: "kaspa:placeholder_escrow".into(),
-        script_hash: "placeholder_script_hash".into(),
-    })
+    Json(req): Json<types::EscrowCreateRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    escrow::create_escrow(&req)
+        .map(|resp| Json(resp))
+        .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))
 }
 
+/// POST /escrow/payout
 async fn escrow_payout(
-    Json(_body): Json<PayoutRequest>,
-) -> (StatusCode, Json<BroadcastResponse>) {
-    // TODO: build and sign payout tx to winner address
-    (
-        StatusCode::OK,
-        Json(BroadcastResponse {
-            tx_id: "placeholder_tx_id".into(),
-        }),
-    )
+    Json(req): Json<types::EscrowPayoutRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    escrow::build_payout(&req)
+        .map(|resp| Json(resp))
+        .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))
 }
 
+/// POST /escrow/cancel
 async fn escrow_cancel(
-    Json(_body): Json<PayoutRequest>,
-) -> (StatusCode, Json<BroadcastResponse>) {
-    // TODO: build and sign refund tx
-    (
-        StatusCode::OK,
-        Json(BroadcastResponse {
-            tx_id: "placeholder_tx_id".into(),
-        }),
-    )
+    Json(req): Json<types::EscrowCancelRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    escrow::build_cancel(&req)
+        .map(|resp| Json(resp))
+        .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))
 }
 
-async fn blockdag_live() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    // TODO: stream recent block headers from kaspa-rpc-client
-    let stream = tokio_stream::once(Ok(Event::default().data(
-        r#"{"message":"blockdag SSE stream placeholder"}"#,
-    )));
-    Sse::new(stream)
+/// GET /blockdag/live
+async fn blockdag_live() -> Result<impl IntoResponse, (StatusCode, String)> {
+    blockdag::fetch_live_blocks(&api_base())
+        .await
+        .map(|resp| Json(resp))
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
 }
 
+/// POST /tx/broadcast
 async fn tx_broadcast(
-    Json(_body): Json<BroadcastRequest>,
-) -> Json<BroadcastResponse> {
-    // TODO: broadcast raw transaction via kaspa-rpc-client
-    Json(BroadcastResponse {
-        tx_id: "placeholder_tx_id".into(),
-    })
+    Json(req): Json<types::BroadcastRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    broadcast::broadcast_tx(&req, &api_base())
+        .await
+        .map(|resp| Json(resp))
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
 }
 
-// ---------------------------------------------------------------------------
-// Server
-// ---------------------------------------------------------------------------
+// ============================================================
+// Server Setup
+// ============================================================
 
 #[tokio::main]
 async fn main() {
+    // Load .env if present
+    let _ = dotenvy::dotenv();
+
+    // Init tracing
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "htp_backend=info,tower_http=info".into()),
+        )
+        .init();
+
     let cors = CorsLayer::permissive();
 
     let app = Router::new()
@@ -175,10 +136,16 @@ async fn main() {
         .route("/tx/broadcast", post(tx_broadcast))
         .layer(cors);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
-        .await
-        .expect("failed to bind to port 3000");
+    let port: u16 = std::env::var("PORT")
+        .unwrap_or_else(|_| "3000".to_string())
+        .parse()
+        .unwrap_or(3000);
 
-    println!("HTP backend listening on http://0.0.0.0:3000");
-    axum::serve(listener, app).await.expect("server error");
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    tracing::info!("HTP Rust Backend listening on http://{}", addr);
+    tracing::info!("Network: {}", std::env::var("KASPA_NETWORK").unwrap_or_else(|_| "testnet-12".to_string()));
+    tracing::info!("API base: {}", api_base());
+
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
