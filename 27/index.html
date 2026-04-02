@@ -7,7 +7,7 @@
 <title>High Table Protocol</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 /* ====================================================================
    DESIGN SYSTEM
@@ -821,15 +821,18 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
      ================================================================ -->
 <header class="hdr">
   <div class="hdr-inner">
+    <!-- Left: Logo -->
     <div class="hdr-brand">
-      <span class="hdr-logo">HTP</span>
       <span class="hdr-mark">
-        <svg width="24" height="28" viewBox="0 0 24 28" fill="none">
-          <path d="M12 1L22.5 7.5V20.5L12 27L1.5 20.5V7.5L12 1Z" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
-          <path d="M7 10V18M17 10V18M7 14H17" stroke="#4f98a3" stroke-width="2" stroke-linecap="round"/>
+        <svg width="28" height="32" viewBox="0 0 28 32" fill="none">
+          <path d="M14 1L26 8V24L14 31L2 24V8L14 1Z" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
+          <path d="M8 11V21M20 11V21M8 16H20" stroke="#4f98a3" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </span>
+      <span class="hdr-logo">HTP</span>
     </div>
+
+    <!-- Center: Nav Pills -->
     <nav class="hdr-nav" id="mainNav">
       <button class="nav-pill active" data-view="overview" onclick="go('overview')">Overview</button>
       <button class="nav-pill" data-view="skill" onclick="go('skill')">Skill Games</button>
@@ -838,6 +841,8 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
       <button class="nav-pill" data-view="leaderboard" onclick="go('leaderboard')">Leaderboard</button>
       <button class="nav-pill" data-view="portfolio" onclick="go('portfolio')">Portfolio</button>
     </nav>
+
+    <!-- Right: Block height, badge, connect -->
     <div class="hdr-right">
       <div class="block-height" id="blockHeightDisplay">
         <span class="pulse-dot"></span>
@@ -846,6 +851,8 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
       <span class="net-badge" id="netBadge">TN12</span>
       <button class="connect-btn" id="connectWalletBtn" onclick="showWallet()">Connect</button>
     </div>
+
+    <!-- Hamburger (mobile) -->
     <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
@@ -988,7 +995,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
 <div class="view" id="v-skill">
   <div class="section-hdr">
     <h2>Skill Games</h2>
-    <p>Challenge opponents with KAS escrow - winner takes the pool</p>
+    <p>Challenge opponents with KAS escrow. Winner takes the pool.</p>
   </div>
 
   <!-- Game Selector -->
@@ -1050,11 +1057,14 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
 
     <label class="form-label">Time Control</label>
     <select id="sgTime" style="width:100%;margin-bottom:16px">
-      <option value="3|0">3 min - Blitz</option>
-      <option value="5|0" selected>5 min - Blitz</option>
-      <option value="10|0">10 min - Rapid</option>
-      <option value="15|10">15+10 - Rapid</option>
-      <option value="30|0">30 min - Classical</option>
+      <option value="1|0">Bullet 1 min</option>
+      <option value="3|0">Blitz 3 min</option>
+      <option value="5|0" selected>Blitz 5 min</option>
+      <option value="10|0">Rapid 10 min</option>
+      <option value="5|3">5+3 Increment</option>
+      <option value="10|5">10+5 Increment</option>
+      <option value="30|0">Classical 30 min</option>
+      <option value="0|0">Custom</option>
     </select>
 
     <label class="form-label">Series</label>
@@ -1074,10 +1084,10 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
   <!-- Match Lobby -->
   <div class="section-hdr"><h2 style="font-size:18px">Match Lobby</h2><p>Open matches waiting for opponents</p></div>
   <div class="lobby-grid" id="matchLobby">
-    <div style="text-align:center;padding:40px;color:var(--text-faint)">No open matches - be the first to create one</div>
+    <div style="text-align:center;padding:40px;color:var(--text-faint)">No open matches. Be the first to create one.</div>
   </div>
 
-  <!-- Game Board Container -->
+  <!-- Game Board Container (hidden until game starts) -->
   <div id="gameBoardContainer" style="display:none;margin-top:24px">
     <div id="gameBoard"></div>
   </div>
@@ -1176,6 +1186,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
     <p>Live BlockDAG visualization and network statistics</p>
   </div>
 
+  <!-- Network Stats Bar -->
   <div class="stats-bar" id="kaspaStats">
     <div class="stat-cell"><div class="stat-value" id="kBlockHeight">--</div><div class="stat-label">Block Height</div></div>
     <div class="stat-cell"><div class="stat-value" id="kDaaScore">--</div><div class="stat-label">DAA Score</div></div>
@@ -1186,7 +1197,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
 
   <div class="blockdag-wrap" style="height:320px">
     <div class="blockdag-label">KASPA BLOCKDAG</div>
-    <div id="blockdagContainer" style="width:100%;height:100%"></div>
+    <canvas id="blockdagCanvas" style="width:100%;height:100%"></canvas>
   </div>
 </div>
 
@@ -1524,6 +1535,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
   /* ── WASM Init ── */
   var WASM_URL = window.location.origin + '/kaspa_bg.wasm';
   var WASM_MAX_RETRIES = 3;
+  var WASM_TIMEOUT = 30000;
   var _wasmBooted = false;
 
   async function initWasm(attempt) {
@@ -1532,11 +1544,11 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
     var backoff = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
     try {
       if (typeof __wbg_init === 'function') {
-        await __wbg_init(WASM_URL);
-        _wasmBooted = true;
-        window.kaspaSDK = window;
-        if (typeof window._onWasmReady === 'function') window._onWasmReady();
-        return;
+        wasmPromise = __wbg_init(WASM_URL);
+      } else if (typeof kaspaWasm !== 'undefined' && kaspaWasm.default) {
+        wasmPromise = kaspaWasm.default(WASM_URL);
+      } else {
+        throw new Error('WASM loader not available');
       }
       if (typeof kaspaWasm !== 'undefined' && kaspaWasm.default) {
         await kaspaWasm.default(WASM_URL);
@@ -1547,6 +1559,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
       }
       throw new Error('WASM loader not available');
     } catch (e) {
+      console.warn('[HTP] WASM attempt ' + attempt + ' failed:', e.message);
       if (attempt < WASM_MAX_RETRIES) {
         await new Promise(function(r) { setTimeout(r, backoff); });
         return initWasm(attempt + 1);
@@ -1577,7 +1590,155 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
     setTimeout(function() { toast.remove(); }, 4000);
   };
 
-  /* ── Game Card Selector ── */
+  /* ================================================================
+     Block Height Polling (every 5s)
+     ================================================================ */
+  function fetchBlockHeight() {
+    fetch('https://api-tn12.kaspa.org/info/blockdag')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        var h = d.headerCount || d.blockCount || '--';
+        var hStr = typeof h === 'number' ? h.toLocaleString() : h;
+        var bhEl = document.getElementById('blockHeightValue');
+        if (bhEl) bhEl.textContent = hStr;
+
+        /* Also update Kaspa section stats if visible */
+        var kbh = document.getElementById('kBlockHeight');
+        if (kbh) kbh.textContent = hStr;
+        if (d.virtualDaaScore) {
+          var kd = document.getElementById('kDaaScore');
+          if (kd) kd.textContent = Number(d.virtualDaaScore).toLocaleString();
+        }
+        if (d.difficulty) {
+          var hr = d.difficulty * 2;
+          var units = ['H/s', 'KH/s', 'MH/s', 'GH/s', 'TH/s', 'PH/s', 'EH/s'];
+          var idx = 0;
+          while (hr >= 1000 && idx < units.length - 1) { hr /= 1000; idx++; }
+          var khr = document.getElementById('kHashrate');
+          if (khr) khr.textContent = hr.toFixed(2) + ' ' + units[idx];
+        }
+        var kbr = document.getElementById('kBlockRate');
+        if (kbr) kbr.textContent = '~1 bps';
+      })
+      .catch(function() {});
+  }
+  fetchBlockHeight();
+  setInterval(fetchBlockHeight, 5000);
+
+  /* ================================================================
+     BlockDAG Canvas: Mini (overview) rendering
+     ================================================================ */
+  function drawMiniDAG() {
+    var canvas = document.getElementById('miniDagCanvas');
+    if (!canvas || !canvas.getContext) return;
+    var ctx = canvas.getContext('2d');
+    var w = canvas.parentElement.clientWidth;
+    var h = canvas.parentElement.clientHeight;
+    canvas.width = w * (window.devicePixelRatio || 1);
+    canvas.height = h * (window.devicePixelRatio || 1);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+
+    /* Draw simple DAG nodes */
+    var nodeCount = 24;
+    var nodes = [];
+    var cols = 8;
+    var rows = 3;
+    var xSpacing = w / (cols + 1);
+    var ySpacing = h / (rows + 1);
+    for (var c = 0; c < cols; c++) {
+      for (var r = 0; r < rows; r++) {
+        var jx = (Math.random() - 0.5) * xSpacing * 0.3;
+        var jy = (Math.random() - 0.5) * ySpacing * 0.3;
+        nodes.push({ x: xSpacing * (c + 1) + jx, y: ySpacing * (r + 1) + jy, col: c });
+      }
+    }
+
+    /* Draw edges */
+    ctx.strokeStyle = 'rgba(79,152,163,0.15)';
+    ctx.lineWidth = 1;
+    for (var i = 0; i < nodes.length; i++) {
+      for (var j = 0; j < nodes.length; j++) {
+        if (nodes[j].col === nodes[i].col + 1 && Math.random() > 0.4) {
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    /* Draw nodes */
+    for (var k = 0; k < nodes.length; k++) {
+      var alpha = 0.3 + Math.random() * 0.5;
+      ctx.fillStyle = 'rgba(79,152,163,' + alpha + ')';
+      ctx.beginPath();
+      ctx.arc(nodes[k].x, nodes[k].y, 3 + Math.random() * 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  setTimeout(drawMiniDAG, 300);
+  window.addEventListener('resize', drawMiniDAG);
+
+  /* ================================================================
+     Wallet Connect Modal Logic
+     ================================================================ */
+  var connectWalletBtn = document.getElementById('connectWalletBtn');
+  if (connectWalletBtn) {
+    connectWalletBtn.addEventListener('click', function() {
+      if (window.connectedAddress) {
+        go('portfolio');
+      } else {
+        go('wallet');
+      }
+    });
+  }
+
+  /* Build Wallet Grid */
+  function buildWalletGrid() {
+    var grid = document.getElementById('walletGrid');
+    if (!grid) return;
+    var wallets = [
+      { key: 'kasware', name: 'KasWare', desc: 'Browser extension wallet', detect: function() { return !!window.kasware; } },
+      { key: 'kastle', name: 'Kastle', desc: 'Mobile-first wallet', detect: function() { return !!window.kaspaWallet; } },
+      { key: 'kasanova', name: 'Kasanova', desc: 'Desktop wallet', detect: function() { return false; } },
+      { key: 'kaspium', name: 'Kaspium', desc: 'Full-featured wallet', detect: function() { return false; } },
+      { key: 'kaspacom', name: 'KaspaCom', desc: 'Community wallet', detect: function() { return false; } },
+      { key: 'dexcc', name: 'DEX.cc', desc: 'DEX integrated wallet', detect: function() { return false; } }
+    ];
+
+    grid.innerHTML = wallets.map(function(w) {
+      var logo = (window.getWalletLogo ? window.getWalletLogo(w.key) : '') ||
+                 (window.HTP_WALLET_LOGOS ? window.HTP_WALLET_LOGOS[w.key] : '') ||
+                 '<svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="' + 'var(--surface-3)' + '"/><text x="20" y="24" text-anchor="middle" fill="#4f98a3" font-size="14" font-weight="600">' + w.name.charAt(0) + '</text></svg>';
+      var avail = w.detect();
+      return '<div class="wallet-card" data-wallet="' + w.key + '">' +
+        logo +
+        '<div class="wallet-card-info"><span class="wallet-name">' + w.name + '</span><span class="wallet-desc">' + w.desc + '</span></div>' +
+        '<span class="wallet-status-dot ' + (avail ? 'available' : 'unavailable') + '"></span></div>';
+    }).join('');
+
+    grid.querySelectorAll('.wallet-card').forEach(function(card) {
+      card.addEventListener('click', function() {
+        var key = card.getAttribute('data-wallet');
+        if (window.htpWalletV3 && window.htpWalletV3.connectExtension) {
+          window.htpWalletV3.connectExtension(key);
+        } else if (key === 'kasware' && window.kasware) {
+          window.kasware.requestAccounts().then(function(a) { if (a && a[0]) window.onWalletConnected(a[0]); });
+        } else if (key === 'kastle' && window.kaspaWallet) {
+          window.kaspaWallet.connect().then(function(a) { if (a) window.onWalletConnected(a); });
+        } else {
+          var walletName = card.querySelector('.wallet-name');
+          showToast((walletName ? walletName.textContent : 'Wallet') + ' extension not detected', 'error');
+        }
+      });
+    });
+  }
+
+  /* ================================================================
+     Game Card Selector
+     ================================================================ */
   document.querySelectorAll('.game-card').forEach(function(card) {
     card.addEventListener('click', function() {
       document.querySelectorAll('.game-card').forEach(function(c) { c.classList.remove('selected'); });
@@ -1587,7 +1748,9 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
     });
   });
 
-  /* ── Escrow Pills ── */
+  /* ================================================================
+     Escrow Pills
+     ================================================================ */
   var escrowInput = document.getElementById('sgEsc');
   document.querySelectorAll('.escrow-pill[data-kas]').forEach(function(pill) {
     pill.addEventListener('click', function() {
@@ -1644,16 +1807,19 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
       var row = document.createElement('div');
       row.className = 'outcome-row';
       row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px';
+
       var inp = document.createElement('input');
       inp.type = 'text';
       inp.className = 'outcome-input';
       inp.placeholder = 'Outcome ' + (count + 1);
       inp.style.flex = '1';
+
       var rmBtn = document.createElement('button');
       rmBtn.className = 'btn-secondary';
       rmBtn.style.cssText = 'padding:6px 10px;font-size:12px';
       rmBtn.textContent = 'Remove';
       rmBtn.addEventListener('click', function() { row.remove(); updateSilverScript(); });
+
       row.appendChild(inp);
       row.appendChild(rmBtn);
       container.appendChild(row);
@@ -1662,7 +1828,9 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
     });
   }
 
-  /* ── SilverScript Live Compiler ── */
+  /* ================================================================
+     SilverScript Live Compiler
+     ================================================================ */
   function updateSilverScript() {
     var title = (document.getElementById('htp-ev-title') || {}).value || '';
     var desc = (document.getElementById('htp-ev-desc') || {}).value || '';
@@ -1694,7 +1862,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
       var num = '<span class="ss-line-num">' + (n++) + '</span>';
       lines.push(num + (cls ? '<span class="' + cls + '">' + esc(txt) + '</span>' : esc(txt)));
     }
-    function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
     L('contract', 'ss-keyword');
     L('  title: "' + title + '"', 'ss-value');
@@ -1713,7 +1881,8 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
     output.innerHTML = lines.join('\n');
   }
 
-  ['htp-ev-title','htp-ev-desc','htp-ev-date','htp-ev-source','htp-ev-min','htp-ev-max'].forEach(function(id) {
+  /* Bind SilverScript compiler to form fields */
+  ['htp-ev-title', 'htp-ev-desc', 'htp-ev-date', 'htp-ev-source', 'htp-ev-min', 'htp-ev-max'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) { el.addEventListener('input', updateSilverScript); el.addEventListener('change', updateSilverScript); }
   });
@@ -1803,7 +1972,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
         var game = info.game || info.gameType || 'chess';
         var stake = parseFloat(info.stake || info.escrow || 0);
         if (!winner) return;
-        if (!stats[winner]) stats[winner] = { wins:0, total:0, games:{}, last:0 };
+        if (!stats[winner]) stats[winner] = { wins: 0, total: 0, games: {}, last: 0 };
         stats[winner].wins++;
         stats[winner].total += stake * 2 * 0.98;
         stats[winner].games[game] = (stats[winner].games[game] || 0) + 1;
@@ -1823,15 +1992,23 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-faint);padding:40px">No settled matches yet</td></tr>';
         return;
       }
-      tbody.innerHTML = rows.slice(0,50).map(function(r,i) {
-        var short = r.addr.substring(0,14) + '...' + r.addr.slice(-4);
+      tbody.innerHTML = rows.slice(0, 50).map(function(r, i) {
+        var short = r.addr.substring(0, 14) + '...' + r.addr.slice(-4);
         var date = r.last ? new Date(r.last).toLocaleDateString() : '--';
-        return '<tr><td class="lb-rank">' + (i+1) + '</td><td style="font-family:monospace;font-size:12px">' + short + '</td><td>' + r.game + '</td><td>' + r.wins + '</td><td>' + r.total.toFixed(2) + '</td><td>--</td><td>' + date + '</td></tr>';
+        return '<tr><td class="lb-rank">' + (i + 1) + '</td>' +
+          '<td style="font-family:monospace;font-size:12px">' + short + '</td>' +
+          '<td>' + r.game + '</td>' +
+          '<td>' + r.wins + '</td>' +
+          '<td>' + r.total.toFixed(2) + '</td>' +
+          '<td>--</td>' +
+          '<td>' + date + '</td></tr>';
       }).join('');
     });
   }
 
-  /* ── Match Lobby (Firebase) ── */
+  /* ================================================================
+     Match Lobby: Firebase Listener
+     ================================================================ */
   function loadMatchLobby() {
     if (!window.firebase || !window.firebase.database) return;
     window.firebase.database().ref('matches').orderByChild('status').equalTo('waiting').on('value', function(snap) {
@@ -1840,7 +2017,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
       var matches = [];
       snap.forEach(function(child) { var m = child.val(); m.id = child.key; matches.push(m); });
       if (!matches.length) {
-        lobbyDiv.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-faint)">No open matches - be the first to create one</div>';
+        lobbyDiv.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-faint)">No open matches. Be the first to create one.</div>';
         return;
       }
       lobbyDiv.innerHTML = matches.map(function(m) {
@@ -1848,7 +2025,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
         var game = info.game || info.gameType || 'chess';
         var stake = info.stake || info.escrow || '--';
         var time = info.timeControl || '5|0';
-        var creator = (info.creatorAddr || info.creator || '').substring(0,14) + '...';
+        var creator = (info.creatorAddr || info.creator || '').substring(0, 14) + '...';
         var isOwn = window.connectedAddress && (info.creatorAddr === window.connectedAddress || info.creator === window.connectedAddress);
         return '<div class="lobby-card"><div>' +
           '<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="28" height="28" rx="4" stroke="#4f98a3" stroke-width="1.2"/><text x="18" y="22" text-anchor="middle" fill="#4f98a3" font-size="12" font-weight="600">' + game.charAt(0).toUpperCase() + '</text></svg>' +
@@ -1861,16 +2038,18 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
     });
   }
 
-  /* ── Overview Stats ── */
+  /* ================================================================
+     Overview Stats: Firebase
+     ================================================================ */
   function loadOverviewStats() {
     if (!window.firebase || !window.firebase.database) return;
     var db = window.firebase.database();
     db.ref('matches').on('value', function(snap) {
-      var total = 0, active = 0, players = {};
+      var totalMatches = 0, totalVolume = 0, players = {};
       snap.forEach(function(child) {
         var m = child.val(); var info = m.info || m;
-        total += parseFloat(info.stake || info.escrow || 0);
-        if (info.status === 'waiting' || info.status === 'active') active++;
+        totalMatches++;
+        totalVolume += parseFloat(info.stake || info.escrow || 0);
         if (info.creatorAddr) players[info.creatorAddr] = 1;
         if (info.opponentAddr) players[info.opponentAddr] = 1;
       });
@@ -1888,7 +2067,9 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
     });
   }
 
-  /* ── Portfolio ── */
+  /* ================================================================
+     Portfolio
+     ================================================================ */
   function updatePortfolio() {
     if (!window.connectedAddress) return;
     var pc = document.getElementById('portfolioContent');
@@ -1903,12 +2084,14 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
     }
   }
 
-  /* ── Wallet Events ── */
+  /* ================================================================
+     Wallet Events
+     ================================================================ */
   window.addEventListener('htp:wallet:connected', function(e) {
     var addr = e.detail && e.detail.address;
     if (!addr) return;
     var btn = document.getElementById('connectWalletBtn');
-    if (btn) { btn.textContent = addr.substring(0,10) + '...' + addr.slice(-4); btn.classList.add('connected'); }
+    if (btn) { btn.textContent = addr.substring(0, 10) + '...' + addr.slice(-4); btn.classList.add('connected'); }
     var status = document.getElementById('wallet-connected-status');
     if (status) status.style.display = 'block';
     var addrEl = document.getElementById('connected-address');
@@ -1923,7 +2106,9 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
     updatePortfolio();
   });
 
-  /* ── Disconnect ── */
+  /* ================================================================
+     Disconnect
+     ================================================================ */
   var disconnectBtn = document.getElementById('disconnectWalletBtn');
   if (disconnectBtn) {
     disconnectBtn.addEventListener('click', function() {
@@ -1943,7 +2128,9 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
     });
   }
 
-  /* ── Manual Address ── */
+  /* ================================================================
+     Manual Address
+     ================================================================ */
   var manualBtn = document.getElementById('manualAddrBtn');
   if (manualBtn) {
     manualBtn.addEventListener('click', function() {
@@ -1960,7 +2147,9 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
     });
   }
 
-  /* ── Mnemonic Import ── */
+  /* ================================================================
+     Mnemonic Import
+     ================================================================ */
   var mnemonicBtn = document.getElementById('mnemonicImportBtn');
   if (mnemonicBtn) {
     mnemonicBtn.addEventListener('click', function() {
@@ -1978,20 +2167,28 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
     });
   }
 
-  /* ── Boot ── */
+  /* ================================================================
+     Expandable Sections
+     ================================================================ */
+  document.querySelectorAll('.expand-trigger').forEach(function(trigger) {
+    trigger.addEventListener('click', function() {
+      trigger.classList.toggle('open');
+      var body = document.getElementById(trigger.getAttribute('data-expand'));
+      if (body) body.classList.toggle('open');
+    });
+  });
+
+  /* ================================================================
+     Boot
+     ================================================================ */
   function boot() {
     loadOverviewStats();
     loadMatchLobby();
     loadLeaderboard();
 
-    // Mini DAG on overview
-    if (window.htpBlockDAG) {
-      setTimeout(function() { window.htpBlockDAG.init('#miniDagContainer', true); }, 500);
-    }
-
     if (window.connectedAddress) updatePortfolio();
 
-    // Update network badge
+    /* Network badge */
     var badge = document.getElementById('netBadge');
     if (badge && window.HTP_NETWORK) badge.textContent = window.HTP_NETWORK.toUpperCase();
   }
@@ -2002,7 +2199,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
     boot();
   }
 
-  // Late wallet init
+  /* Late wallet init */
   window.addEventListener('load', function() {
     if (window.htpWalletV3 && window.htpWalletV3.init) window.htpWalletV3.init();
   });
