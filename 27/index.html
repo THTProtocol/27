@@ -19582,7 +19582,7 @@ event MyMarket {
                     style="width:100%;padding:8px 10px;background:rgba(10,15,30,0.6);border:1px solid #333;color:var(--text);border-radius:6px;font-size:12px;font-family:monospace;box-sizing:border-box;margin-bottom:6px;">
                   <button onclick="
                     var v=document.getElementById('htpEscrowInput').value.trim();
-                    if(v.split(' ').length<12){showToast('Enter a valid 12 or 24 word mnemonic','error');return;}
+                    var wc=v.trim().split(/\s+/).length; if(!(wc===12||wc===24)){showToast('Enter exactly 12 or 24 word mnemonic','error');return;}
                     localStorage.setItem('htpEscrowMnemonic',v);
                     document.getElementById('htpEscrowInput').value='';
                     document.getElementById('htpEscrowMnemonicSection').style.display='none';
