@@ -18175,6 +18175,7 @@ body.htp-game-active {
   }
   togConn();
 ">Connect Wallet</button>
+                    <button class="btn-c" id="dcBtn" style="display:none;background:#7f1d1d;border-color:#ef4444;color:#fff" onclick="if(window.disconnectWallet){window.disconnectWallet();}">Disconnect</button>
                     
                 </div>
             </div>
@@ -21192,6 +21193,7 @@ event MyMarket {
 
             statusEl.style.display = 'block';
             $('cBtn').textContent = '\u2713 ' + shortAddr(walletAddress);
+            if ($('dcBtn')) $('dcBtn').style.display = 'inline-block';
             updateBalanceDisplay();
         }
 
@@ -21298,6 +21300,9 @@ event MyMarket {
             }
             conn = false;
             walletAddress = null;
+            window.walletAddress = null;
+            window.htpAddress = null;
+            window.connectedAddress = null;
             walletBalance = { confirmed: 0, unconfirmed: 0, total: 0 };
             walletPubKey = null;
             walletProvider = null;

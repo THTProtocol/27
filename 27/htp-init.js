@@ -75,6 +75,7 @@
 
   var _wasmReadyCallbacks = [];
   var _wasmReadyFired     = false;
+  var _wasmWarnTimer      = null;
 
   function _unlockGates() {
     document.querySelectorAll('.wasm-gate').forEach(function (el) {
@@ -96,6 +97,12 @@
     window.wasmReady     = true;
     window.kaspaWasmReady = function () { return true; };
     _unlockGates();
+    if (_wasmWarnTimer) {
+      clearTimeout(_wasmWarnTimer);
+      _wasmWarnTimer = null;
+    }
+    var oldBanner = document.getElementById('htp-wasm-warning');
+    if (oldBanner) oldBanner.remove();
     console.log('[HTP Init] WASM ready — gates unlocked ✓');
     _wasmReadyCallbacks.forEach(function (cb) {
       try { cb(); } catch (e) { console.warn('[HTP Init] wasmReady callback error', e); }

@@ -290,26 +290,13 @@
   };
 
   function injectBreadcrumb() {
-    if (document.getElementById('htpBreadcrumb')) return;
-    var hdr = document.querySelector('.hdr');
-    if (!hdr) return;
-    var bc = document.createElement('div');
-    bc.id = 'htpBreadcrumb';
-    hdr.insertAdjacentElement('afterend', bc);
+    var existing = document.getElementById('htpBreadcrumb');
+    if (existing) existing.remove();
   }
 
   function updateBreadcrumb(key) {
     var bc = document.getElementById('htpBreadcrumb');
-    if (!bc) return;
-    var meta = SECTION_META[key] || { title: key, desc: '' };
-    var backBtn = _history.length > 1
-      ? '<button class="crumb-back" title="Go back" onclick="window._htpNavBack()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>'
-      : '';
-    bc.innerHTML = backBtn +
-      '<a href="javascript:void(0)" onclick="go(\'overview\')" >HTP</a>' +
-      '<span class="sep"> / </span>' +
-      '<span style="color:#e2e8f0;font-weight:700">' + meta.title + '</span>' +
-      (meta.desc ? '<span class="sep"> — </span><span>' + meta.desc + '</span>' : '');
+    if (bc) bc.remove();
   }
 
   W._htpNavBack = function () {
