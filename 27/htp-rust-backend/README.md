@@ -1,35 +1,40 @@
 # HTP Rust Backend
 
-Rust backend for the **High Table Protocol (HTP)**, replacing the browser-side WASM implementation. The frontend is a vanilla HTML/JS app hosted on Firebase; this server provides wallet, escrow, and block-DAG endpoints over HTTP.
+Rust backend server for the **High Table Protocol (HTP)** — a Kaspa-based escrow and wagering platform. This service replaces the browser-side WASM implementation with a dedicated HTTP server built on [Axum](https://github.com/tokio-rs/axum).
+
+The frontend is a vanilla HTML/JS app hosted on Firebase that communicates with this backend over REST + SSE.
 
 ## Prerequisites
 
-- Rust toolchain (stable) — install via [rustup](https://rustup.rs/)
-- Kaspa dependencies require the [rusty-kaspa](https://github.com/kaspanet/rusty-kaspa) repo cloned locally. See the commented-out dependencies in `Cargo.toml` and update the paths once you have the repo.
+- **Rust 1.75+** (install via [rustup](https://rustup.rs))
+- **Kaspa dependencies** — the `kaspa-*` crates are **not published on crates.io**. You must clone [rusty-kaspa](https://github.com/kaspanet/rusty-kaspa) locally, then uncomment and configure the git dependencies in `Cargo.toml`.
 
 ## Build & Run
 
 ```bash
+# Build
 cargo build
+
+# Run (listens on 0.0.0.0:3000)
 cargo run
 ```
 
-The server listens on `http://0.0.0.0:3000` by default.
-
 ## Endpoints
 
-| Method | Path                      | Description                                  |
-|--------|---------------------------|----------------------------------------------|
-| GET    | `/health`                 | Health check — returns status and version     |
-| POST   | `/wallet/from-mnemonic`   | Derive address from a BIP39 mnemonic          |
-| GET    | `/wallet/balance/:addr`   | Fetch UTXO balance for an address             |
-| POST   | `/escrow/create`          | Construct P2SH escrow address for two pubkeys |
-| POST   | `/escrow/payout`          | Build & sign payout tx to winner address      |
-| POST   | `/escrow/cancel`          | Build & sign refund tx                        |
-| GET    | `/blockdag/live`          | Stream recent block headers (SSE)             |
-| POST   | `/tx/broadcast`           | Broadcast a raw transaction                   |
+All endpoints return JSON unless noted otherwise.
 
-### Request / Response Examples
+### Health
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Returns `{"status":"ok","version":"0.1.0"}` |
+
+### Wallet
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/wallet/from-mnemonic` | Derive a Kaspa address from a BIP39 mnemonic |
+| `GET` | `/wallet/balance/{addr}` | Fetch UTXO balance for a Kaspa address |
 
 **POST /wallet/from-mnemonic**
 
@@ -41,12 +46,20 @@ The server listens on `http://0.0.0.0:3000` by default.
 { "address": "kaspa:...", "public_key": "..." }
 ```
 
-**GET /wallet/balance/:addr**
+**GET /wallet/balance/{addr}**
 
 ```json
 // Response
 { "address": "kaspa:...", "balance_sompi": 100000000, "balance_kas": 1.0 }
 ```
+
+### Escrow
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/escrow/create` | Construct a P2SH escrow address for two pubkeys |
+| `POST` | `/escrow/payout` | Build and sign a payout transaction to the winner |
+| `POST` | `/escrow/cancel` | Build and sign a refund transaction |
 
 **POST /escrow/create**
 
@@ -69,27 +82,43 @@ The server listens on `http://0.0.0.0:3000` by default.
   "fee_address": "kaspa:...",
   "fee_bps": 250
 }
-```
-
-**POST /escrow/cancel**
-
-Same request body as `/escrow/payout`.
-
-**POST /tx/broadcast**
-
-```json
-// Request
-{ "raw_tx": "hex-encoded-transaction" }
 
 // Response
 { "tx_id": "..." }
 ```
 
-**GET /health**
+**POST /escrow/cancel** — same request/response shape as `/escrow/payout`.
+
+### BlockDAG
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/blockdag/live` | Server-Sent Events stream of recent block headers |
+
+### Transaction
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/tx/broadcast` | Broadcast a signed raw transaction |
 
 ```json
-{ "status": "ok", "version": "0.1.0" }
+// Request
+{ "raw_tx": "..." }
+
+// Response
+{ "tx_id": "..." }
 ```
+
+## Architecture
+
+```
+Frontend (Firebase)  ──HTTP/SSE──▶  htp-rust-backend (Axum :3000)
+                                          │
+                                          ▼
+                                    Kaspa Node (wRPC)
+```
+
+All Kaspa interactions (wallet derivation, UTXO queries, transaction signing, broadcasting) will use the `kaspa-*` crates from the [rusty-kaspa](https://github.com/kaspanet/rusty-kaspa) monorepo once the git dependencies are enabled.
 
 ## CORS
 

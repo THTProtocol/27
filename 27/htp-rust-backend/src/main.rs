@@ -1,37 +1,40 @@
 use axum::{
     extract::Path,
     http::StatusCode,
+    response::{sse::Event, Json, Sse},
     routing::{get, post},
-    Json, Router,
+    Router,
 };
 use serde::{Deserialize, Serialize};
+use std::convert::Infallible;
+use tokio_stream::Stream;
 use tower_http::cors::CorsLayer;
 
 // ---------------------------------------------------------------------------
 // Request / Response types
 // ---------------------------------------------------------------------------
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[allow(dead_code)]
 struct MnemonicRequest {
     mnemonic: String,
     network: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 struct MnemonicResponse {
     address: String,
     public_key: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 struct BalanceResponse {
     address: String,
     balance_sompi: u64,
     balance_kas: f64,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[allow(dead_code)]
 struct EscrowCreateRequest {
     pubkey_a: String,
@@ -39,13 +42,13 @@ struct EscrowCreateRequest {
     amount_sompi: u64,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 struct EscrowCreateResponse {
     escrow_address: String,
     script_hash: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[allow(dead_code)]
 struct PayoutRequest {
     escrow_address: String,
@@ -55,18 +58,18 @@ struct PayoutRequest {
     fee_bps: u16,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[allow(dead_code)]
 struct BroadcastRequest {
     raw_tx: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 struct BroadcastResponse {
     tx_id: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 struct HealthResponse {
     status: String,
     version: String,
@@ -105,7 +108,7 @@ async fn wallet_balance(Path(addr): Path<String>) -> Json<BalanceResponse> {
 async fn escrow_create(
     Json(_body): Json<EscrowCreateRequest>,
 ) -> Json<EscrowCreateResponse> {
-    // TODO: construct P2SH escrow address for two pubkeys
+    // TODO: construct P2SH escrow address using kaspa-consensus-core
     Json(EscrowCreateResponse {
         escrow_address: "kaspa:placeholder_escrow".into(),
         script_hash: "placeholder_script_hash".into(),
@@ -114,30 +117,34 @@ async fn escrow_create(
 
 async fn escrow_payout(
     Json(_body): Json<PayoutRequest>,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> (StatusCode, Json<BroadcastResponse>) {
     // TODO: build and sign payout tx to winner address
     (
         StatusCode::OK,
-        Json(serde_json::json!({ "status": "stub", "message": "payout not yet implemented" })),
+        Json(BroadcastResponse {
+            tx_id: "placeholder_tx_id".into(),
+        }),
     )
 }
 
 async fn escrow_cancel(
     Json(_body): Json<PayoutRequest>,
-) -> (StatusCode, Json<serde_json::Value>) {
+) -> (StatusCode, Json<BroadcastResponse>) {
     // TODO: build and sign refund tx
     (
         StatusCode::OK,
-        Json(serde_json::json!({ "status": "stub", "message": "cancel not yet implemented" })),
+        Json(BroadcastResponse {
+            tx_id: "placeholder_tx_id".into(),
+        }),
     )
 }
 
-async fn blockdag_live() -> (StatusCode, String) {
-    // TODO: stream recent block headers via SSE (axum::response::sse)
-    (
-        StatusCode::OK,
-        "data: {\"status\":\"stub\",\"message\":\"SSE stream not yet implemented\"}\n\n".into(),
-    )
+async fn blockdag_live() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+    // TODO: stream recent block headers from kaspa-rpc-client
+    let stream = tokio_stream::once(Ok(Event::default().data(
+        r#"{"message":"blockdag SSE stream placeholder"}"#,
+    )));
+    Sse::new(stream)
 }
 
 async fn tx_broadcast(
@@ -150,7 +157,7 @@ async fn tx_broadcast(
 }
 
 // ---------------------------------------------------------------------------
-// Main
+// Server
 // ---------------------------------------------------------------------------
 
 #[tokio::main]
@@ -172,6 +179,6 @@ async fn main() {
         .await
         .expect("failed to bind to port 3000");
 
-    println!("HTP Rust backend listening on http://0.0.0.0:3000");
+    println!("HTP backend listening on http://0.0.0.0:3000");
     axum::serve(listener, app).await.expect("server error");
 }
