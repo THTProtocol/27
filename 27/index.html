@@ -1666,79 +1666,116 @@ a:hover { color: var(--primary-h); }
           <button class="oracle-tab" onclick="switchOracleTab('miner')">Miner Oracle</button>
         </div>
 
-        <!-- ZK Verification Tab -->
+        <!-- ZK Verification Panel -->
         <div class="oracle-panel active" id="oracle-zk">
           <div class="card mb-16">
             <div class="flex items-center gap-8 mb-12">
               <span class="dot dot-green dot-pulse"></span>
-              <span class="fw-600" style="font-size:16px">ZK Pipeline Status</span>
-              <span class="pill" style="margin-left:auto;background:rgba(79,152,163,0.15);color:var(--primary)">Active</span>
+              <h3 style="font-size:16px">ZK Pipeline Status</h3>
+              <span class="pill" style="background:rgba(79,152,163,0.15);color:var(--primary);margin-left:auto" id="zk-pipeline-status">Active</span>
             </div>
-            <p class="text-muted mb-16" style="line-height:1.7">
-              Every match result is committed using a SHA-256 commit scheme. The current pipeline uses hash-based attestation with a planned upgrade path to KIP-16 Groth16 proofs for full zero-knowledge verification on the Kaspa BlockDAG.
+            <p class="text-muted mb-16" style="font-size:13px">
+              SHA-256 commit scheme secures all match and market attestations. Each result is hashed
+              client-side before broadcast. The current pipeline targets KIP-16 Groth16 upgrade path
+              for full zero-knowledge proof generation on settlement transactions.
             </p>
-            <div class="flex gap-8 flex-wrap mb-16">
-              <span class="pill">SHA-256 Commit</span>
-              <span class="pill">KIP-16 Groth16 Upgrade Path</span>
-              <span class="pill">OP_RETURN Anchoring</span>
+            <div class="kaspa-stats-row">
+              <div class="kaspa-stat">
+                <div class="kaspa-stat-value" id="zk-proofs-generated">--</div>
+                <div class="kaspa-stat-label">Proofs Generated</div>
+              </div>
+              <div class="kaspa-stat">
+                <div class="kaspa-stat-value" id="zk-verifications">--</div>
+                <div class="kaspa-stat-label">Verifications</div>
+              </div>
+              <div class="kaspa-stat">
+                <div class="kaspa-stat-value" id="zk-avg-time">--</div>
+                <div class="kaspa-stat-label">Avg Proof Time</div>
+              </div>
             </div>
           </div>
-          <h4 class="mb-8">Active Attestations</h4>
-          <div id="zk-attestations">
-            <p class="text-faint" style="font-size:13px">No active attestations - matches will appear here when oracle verification begins</p>
+
+          <h3 class="mb-12" style="font-size:16px">Active Attestations</h3>
+          <div class="card mb-8">
+            <div class="flex items-center gap-8 mb-8" style="justify-content:space-between">
+              <span class="fw-600" style="font-size:13px">Match Attestations</span>
+              <span class="pill" style="background:rgba(79,152,163,0.15);color:var(--primary)">Live</span>
+            </div>
+            <div class="text-muted" style="font-size:12px;line-height:1.8">
+              <div style="display:flex;justify-content:space-between"><span>Attestation Status:</span><span style="color:var(--success)">Active</span></div>
+              <div style="display:flex;justify-content:space-between"><span>Proof Hash:</span><span style="font-family:monospace;font-size:11px" id="zk-proof-hash">0x0000...0000</span></div>
+              <div style="display:flex;justify-content:space-between"><span>Block Height:</span><span id="zk-attest-block">--</span></div>
+            </div>
           </div>
+          <div class="card mb-8">
+            <div class="flex items-center gap-8 mb-8" style="justify-content:space-between">
+              <span class="fw-600" style="font-size:13px">Market Attestations</span>
+              <span class="pill">Pending</span>
+            </div>
+            <div class="text-muted" style="font-size:12px;line-height:1.8">
+              <div style="display:flex;justify-content:space-between"><span>Attestation Status:</span><span style="color:var(--warning)">Awaiting events</span></div>
+              <div style="display:flex;justify-content:space-between"><span>Proof Hash:</span><span style="font-family:monospace;font-size:11px">--</span></div>
+              <div style="display:flex;justify-content:space-between"><span>Block Height:</span><span>--</span></div>
+            </div>
+          </div>
+          <div id="zk-attestations" class="mt-16"></div>
         </div>
 
-        <!-- Bonded Oracle Tab -->
+        <!-- Bonded Oracle Panel -->
         <div class="oracle-panel" id="oracle-bonded">
           <div class="card mb-16">
-            <h4 class="mb-8">Register as Oracle</h4>
-            <p class="text-muted mb-16" style="line-height:1.7">
-              Bond KAS to become a bonded oracle. Oracles attest to match outcomes and prediction market resolutions. Dishonest attestations result in bond slashing.
+            <h3 class="mb-12" style="font-size:16px">Register as Oracle</h3>
+            <p class="text-muted mb-16" style="font-size:13px">
+              Bond KAS to become a protocol oracle. Bonded oracles attest match results and market
+              outcomes. Incorrect attestations are subject to slashing. Minimum bond: 1000 KAS for TN12.
             </p>
             <div class="form-group">
               <label class="form-label">Bond Amount (KAS)</label>
-              <input type="number" class="input" id="oracle-bond-amount" placeholder="1000" min="1000" value="1000">
-              <div class="text-faint" style="font-size:11px;margin-top:4px">Minimum bond: 1,000 KAS on TN12</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="number" class="input" id="oracle-bond-amount" value="1000" min="1000" step="100" style="flex:1">
+                <span class="text-muted fw-600" style="font-size:14px">KAS</span>
+              </div>
+              <div class="text-faint" style="font-size:11px;margin-top:4px">Minimum: 1000 KAS (TN12)</div>
             </div>
             <button class="btn btn-primary btn-full" id="register-oracle-btn">Register as Oracle</button>
           </div>
-          <h4 class="mb-8">Active Oracles</h4>
+
+          <h3 class="mb-12" style="font-size:16px">Active Oracles</h3>
           <div id="active-oracles">
             <p class="text-faint" style="font-size:13px">No registered oracles yet</p>
           </div>
         </div>
 
-        <!-- Miner Oracle Tab -->
+        <!-- Miner Oracle Panel -->
         <div class="oracle-panel" id="oracle-miner">
           <div class="card mb-16">
-            <h4 class="mb-8">Miner Attestation</h4>
-            <p class="text-muted mb-16" style="line-height:1.7">
-              Kaspa miners can attest to match outcomes by embedding attestation data in the coinbase payload of mined blocks. This provides a secondary, permissionless oracle path that leverages existing proof-of-work security.
+            <h3 class="mb-12" style="font-size:16px">Miner Attestation</h3>
+            <p class="text-muted mb-16" style="font-size:13px">
+              Kaspa miners can attest match results directly via coinbase payload. The oracle daemon
+              monitors completed matches and injects attestation data into block templates. This creates
+              a trust-minimized attestation path anchored to proof-of-work.
             </p>
-            <div class="flex gap-12 flex-wrap">
+            <div class="flex gap-12 flex-wrap mb-16">
               <a href="htp-oracle-daemon/" class="btn btn-primary" style="text-decoration:none">Download Oracle Daemon</a>
               <button class="btn btn-secondary" id="run-browser-daemon-btn" onclick="runBrowserDaemon()">Run in Browser</button>
             </div>
-          </div>
-
-          <!-- Browser daemon log -->
-          <div id="browser-daemon-log" class="hidden mb-16" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;font-family:monospace;font-size:12px;max-height:300px;overflow-y:auto">
+            <div id="browser-daemon-log" class="hidden mt-16" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;font-family:monospace;font-size:12px;max-height:200px;overflow-y:auto"></div>
           </div>
 
           <div class="card">
-            <h4 class="mb-8" style="font-size:14px">Setup Instructions</h4>
+            <h3 class="mb-12" style="font-size:16px">Setup Instructions</h3>
             <div style="font-size:13px;color:var(--text-muted);line-height:1.8">
-              <p class="mb-8">Requirements: Node 20+</p>
-              <div class="compiler-panel" style="margin-top:8px">
-                <div class="compiler-header"><span style="font-size:12px">Terminal</span></div>
-                <div class="compiler-code" style="max-height:none;font-size:12px">cd htp-oracle-daemon
+              <p class="mb-8">Requirements: Node 20+, npm</p>
+              <div class="card" style="background:var(--surface-3);font-family:monospace;font-size:12px;line-height:2">
+git clone https://github.com/anthropics/htp-oracle-daemon
+cd htp-oracle-daemon
 npm install
-cp .env.example .env
-# Edit .env with your Kaspa address and RPC endpoint
+cp .env.example .env  # configure RPC_URL, ORACLE_KEY
 npm start</div>
-              </div>
-              <p class="mt-12 text-faint" style="font-size:12px">Environment variables: KASPA_RPC_URL, ORACLE_ADDRESS, FIREBASE_URL, BOND_UTXO_TX</p>
+              <p class="text-faint mt-12" style="font-size:12px">
+                Environment variables: RPC_URL (Kaspa node endpoint), ORACLE_KEY (private key for
+                signing attestations), FIREBASE_URL (realtime database URL), POLL_INTERVAL_MS (default: 2000)
+              </p>
             </div>
           </div>
         </div>
