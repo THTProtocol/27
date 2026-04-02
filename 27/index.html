@@ -20435,7 +20435,11 @@ event MyMarket {
 
         const kaspa = {
             async connect() {
-                const cfg = KASPA_NETS[activeNet];
+                const cfg = KASPA_NETS[activeNet] || KASPA_NETS.tn12 || null;
+                if (!cfg) {
+                    updateNodeStatus('error', 'Network config missing for ' + activeNet);
+                    return false;
+                }
                 updateNodeStatus('connecting', 'Connecting to ' + activeNet + '...');
 
                 // Try WASM RPC first (auto-discovery via Resolver)
@@ -20458,7 +20462,7 @@ event MyMarket {
                 }
 
                 // Try REST API (with CORS proxy if configured)
-                if (cfg.rest) {
+                if (cfg && cfg.rest) {
                     try {
                         const dag = await kaspaREST.getBlockDag();
                         if (dag) {
@@ -20477,7 +20481,7 @@ event MyMarket {
 
                 // Try wRPC - custom node first, then public resolvers
                 const endpoints = [];
-                if (cfg.customNode) endpoints.push(typeof cfg.customNode === "string" ? cfg.customNode : cfg.customNode.url || cfg.customNode.address || String(cfg.customNode));
+                if (cfg && cfg.customNode) endpoints.push(typeof cfg.customNode === "string" ? cfg.customNode : cfg.customNode.url || cfg.customNode.address || String(cfg.customNode));
 
                 // Public resolvers serve all networks - they route by networkId
                 // Browser wss:// connects, then the resolver redirects to a node running the requested network
