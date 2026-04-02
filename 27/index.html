@@ -23,7 +23,7 @@
     return _g.call(this, key);
   };
   console.log('%c[HTP Escrow Shim] localStorage patched - both escrow stores merged', 'color:#49e8c2;font-weight:bold');
-})();
+
 </script>
 <meta charset="UTF-8" />
     <title>HIGH TABLE PROTOCOL</title>
@@ -18024,7 +18024,7 @@ body:not(.on-overview) .bg-glow3 { opacity: 0.25 !important; }
 
                 console.error('[HTP Init] WASM load timeout after retries');
                 window.dispatchEvent(new CustomEvent('htp:wasm:hard-failure'));
-            })();
+
 
         </script>
 
@@ -18098,7 +18098,7 @@ body.htp-game-active {
   });
 
   console.log('[HTP Fix3] Mainnet RPC guard active — network:', _htpNetGuard.currentNet());
-})();
+
 </script>
 </head>
 
@@ -20767,7 +20767,7 @@ event MyMarket {
             requestAnimationFrame(draw);
           }
           requestAnimationFrame(draw);
-        })();
+
 
             class Block {
                 constructor() {
@@ -20834,7 +20834,7 @@ event MyMarket {
                 requestAnimationFrame(loop);
             }
             requestAnimationFrame(loop);
-        })();
+
 
         // roundRect polyfill
         if (!CanvasRenderingContext2D.prototype.roundRect) {
@@ -20872,7 +20872,7 @@ event MyMarket {
                     }
                 }
             } catch (e) { }
-        })();
+
 
         const PROTOCOL_ESCROW = "kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m";
 
@@ -21336,7 +21336,7 @@ event MyMarket {
                 localStorage.setItem('htp_mkts_ver', '2');
                 console.log('[HTP] Cleared legacy demo markets');
             }
-        })();
+
         // Extended market metadata
         mkts.forEach(function (m) {
             m.desc = m.desc || 'Binary parimutuel market. Pool splits to winning side minus protocol fee.';
@@ -23758,7 +23758,7 @@ function go(v) {
                 BUILTINS: BUILTINS,
                 KEYWORDS: KEYWORDS
             };
-        })();
+
 
         // ── Compile Button Handler ──
         function compileSS() {
@@ -23926,7 +23926,7 @@ function go(v) {
             function clear() { save([]); }
 
             return { getAll: getAll, add: add, getByMarket: getByMarket, getTotalExposure: getTotalExposure, getUnrealizedPnL: getUnrealizedPnL, exportCSV: exportCSV, clear: clear };
-        })();
+
 
 
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
@@ -26522,7 +26522,7 @@ function handleMatchGameOver(result, winnerColor) {
             }
             recordPendingPayout(walletAddress, payout, match.id);
             showToast("Payout queued for claim", "info");
-        })();
+
     } else {
         showGameOverOverlay("YOU LOSE", "-" + stake.toFixed(2) + " KAS", "#ef4444", match);
     }
@@ -27187,7 +27187,7 @@ function showGameOverOverlay(title, amountText, color, match) {
         if (document.readyState === "complete") setTimeout(tryAutoConnect, AUTO_CONN_DELAY);
         else window.addEventListener("load", function () {setTimeout(tryAutoConnect, AUTO_CONN_DELAY); });
         console.log("HTP PATCH loaded: auto-connect + DAA poller v1.0");
-        })();
+
     </script>
 <script id="htp-covenants-v2">
 /* === htp-covenants-v2 === */
@@ -28305,7 +28305,7 @@ function showGameOverOverlay(title, amountText, color, match) {
   console.log('[HTP Covenants] Consolidated module loaded -- match/market/oracle escrows, maximizer engine ready');
   console.log('[HTP Covenants] Protocol fee addr:', PROTOCOL_FEE_ADDR);
   console.log('[HTP Covenants] MAXIMIZER_INSURANCE:', MAXIMIZER_INSURANCE, 'MAXIMIZER_REBATE:', MAXIMIZER_REBATE);
-})();
+
 
 </script>
 
@@ -28397,7 +28397,7 @@ function quotaSafeSet(key, value) {
       }
     }
   }catch(e){console.warn('HTP Purge error:',e)}
-})();
+
 
 
 // ═══ PERSISTENCE STORE ═══
@@ -28559,7 +28559,7 @@ const HTP_COVENANT={
     }else if(a<60){a++;setTimeout(wrap,500)}
   }
   wrap();
-})();
+
 
 
 // ═══ UI: ODDS + PORTFOLIO ═══
@@ -29005,7 +29005,7 @@ else setTimeout(initV69,300);
       }
       return _origGO.apply(this, arguments);
     };
-  })();
+
 
   // Auto-payout listener upgrade
   (function() {
@@ -29040,12 +29040,12 @@ else setTimeout(initV69,300);
       }, 2000);
       return res;
     };
-  })();
+
 
   console.log('%cHTP Settlement Engine v2 loaded', 'color:#49e8c2;font-weight:bold');
   console.log('  Fee:', (PROTOCOL_FEE_RATE * 100) + '% →', PROTOCOL_FEE_ADDR.substring(0, 40) + '...');
   console.log('  Overrides: settleSkillMatch, sendFromEscrow, cancelMatchEscrow');
-})();
+
 
 </script>
 
@@ -30683,7 +30683,7 @@ else setTimeout(initV69,300);
                   firebase.database().ref('relay/' + match.id + '/result/payoutTxId').set(txId);
                 }
               } catch (e) { console.error('[HTP Skill] Auto-payout failed:', e); }
-            })();
+
           });
         } catch (e) {}
       }, 2000);
@@ -30743,7 +30743,7 @@ else setTimeout(initV69,300);
   window.CK = CK;
 
   console.log('[HTP Skill Games v5] Module loaded');
-})();
+
 function cancelMatch(matchId) {
   var m = matchLobby.matches.find(function (mm) { return mm.id === matchId; });
   if (!m || m.status !== 'waiting') {
@@ -30795,7 +30795,7 @@ function cancelMatch(matchId) {
       showToast('Cancel failed: ' + e.message, 'error');
       console.error('[HTP Skill] cancelMatch error', e);
     }
-  })();
+
 }
 
 // HTP global cleanup: remove any ghost overlays and refresh lobby
@@ -30865,7 +30865,7 @@ cancelMatch = function (matchId) {
       showToast('Cancel failed: ' + e.message, 'error');
       console.error('[HTP Skill] cancelMatch error', e);
     }
-  })();
+
 };
 
 (function () {
@@ -30878,7 +30878,7 @@ cancelMatch = function (matchId) {
       }
     };
   }
-})();
+
 
 // === PREVIEW CARD OVERRIDE: minimal chess-horse icon, no "Waiting..." text ===
 window.previewMatch = function(matchId) {
@@ -30954,7 +30954,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
 (function() {
   var sp = document.getElementById('skill-preview');
   if (sp) sp.remove();
-})();
+
 
 // 4. Wrap renderLobby to remove "No Games" empty state after it renders
 (function() {
@@ -30981,7 +30981,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
       return res;
     };
   }
-})();
+
 
 </script>
 
@@ -31956,7 +31956,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
   }
 
   console.log('[HTP Oracle] Module loaded - 3-tab UI (ZK-Verification, Bond, Hybrid)');
-})();
+
 
 </script>
 
@@ -32427,7 +32427,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
   window.renderSkillPortfolio = renderSkillPortfolio;
 
   console.log('HTP Portfolio module loaded');
-})();
+
 
 </script>
 
@@ -32543,7 +32543,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
   };
 
   console.log('%c[HTP Wallet Scope v2] Per-wallet portfolio active', 'color:#49e8c2;font-weight:bold');
-})();
+
 
 </script>
 
@@ -33020,7 +33020,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
   }
 
   console.log('[HTP Wallet Session] Module loaded -- AES-256-GCM encrypted 24h persistence');
-})();
+
 
 </script>
 
@@ -33264,7 +33264,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
   };
 
   console.log('[HTP Hotfix] Module loaded (once) - protocol constants, ssRef hide, cleanup');
-})();
+
 
 </script>
 
@@ -33601,7 +33601,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
   }, 2000);
 
   console.log('[HTP Megapatch v6] Loaded -- lobby sync, game names, per-wallet portfolio');
-})();
+
 
 </script>
 
@@ -33924,7 +33924,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
   window.HTPCheckersServer = CheckersServer;
 
   console.log('[HTP Game Server v1] Loaded -- Chess, Connect4, Checkers covenant servers active');
-})();
+
 </script>
 
 <script id="htp-runtime-v3">
@@ -34042,7 +34042,7 @@ W.HTP_NODE_WSS =W.HTP_NODE_WSS ||'wss://shaft-prefix-post-millions.trycloudflare
         if(c.nodeRest){W.HTP_NODE_REST=c.nodeRest;if(W.KASPANETS&&W.KASPANETS.tn12)W.KASPANETS.tn12.rest=c.nodeRest;}
         if(c.nodeWss) {W.HTP_NODE_WSS =c.nodeWss; if(W.KASPANETS&&W.KASPANETS.tn12)W.KASPANETS.tn12.wss=c.nodeWss;}
     }catch(e){}
-})();
+
 
 W.applyNodeConfig=function(){
     var r=document.getElementById('cfgNodeRest')?.value?.trim();
@@ -34362,7 +34362,7 @@ W.htpMiner={
     stats:function(){return{running:S.running,hr:S.hr,accepted:S.accepted,threads:CFG.threads,node:S.activeRest||'--'};}
 };
 W.toggleMiner=function(){if(S.running)W.htpMiner.stop();else W.htpMiner.start();};
-})();
+
 
 /* ──────────────────────────────────────────────────────────────────────
    BOOT
@@ -34505,7 +34505,7 @@ W.htpToggleOracleDaemon=function(){
         if(OD.apiUrl)odlog('Auto-attest API: '+OD.apiUrl);
         await pollCycle();
         OD._timer=setInterval(pollCycle,OD.pollMs);
-    })();
+
 };
 W.applyNodeCfg=function(){
     var r=$$('cfgNodeRest');if(r&&r.value.trim())OD.nodeRest=r.value.trim();
@@ -34569,7 +34569,7 @@ W.htpOracleDaemon=OD;
             if (el2) el2.textContent = '0 KAS';
             if (el3) el3.textContent = '0';
             if (el4) el4.textContent = '0 KAS';
-        })();
+
 </script>
 
 <script>
@@ -34620,7 +34620,7 @@ W.htpOracleDaemon=OD;
         pathEl.addEventListener('change', tryFetchEvidence);
         pathEl.addEventListener('blur', tryFetchEvidence);
     }
-})();
+
 </script>
 
 <script>
@@ -34671,7 +34671,7 @@ W.htpOracleDaemon=OD;
         if (dcBtn) dcBtn.style.display = 'inline-block';
         if (typeof showToast === 'function') showToast('Wallet connected (read-only): ' + shortA, 'success');
     };
-})();
+
 </script>
 <script>
 /* ═══ HTP Network + DAA ════════════════════════════════════════════ */
@@ -34751,7 +34751,7 @@ W.htpOracleDaemon=OD;
 
   setInterval(function(){ fetchDaa(_cur); }, 30000);
   console.log('[HTP Network] Loaded');
-})();
+
 /* ═══ HTP Manual Address Connect ════════════════════════════════════ */
 window.htpConnectManual = function(addr) {
   if (!addr || addr.length < 10) { if(typeof showToast==='function') showToast('Enter a valid kaspa address','error'); return; }
@@ -34898,7 +34898,7 @@ window.htpConnectManual = function(addr) {
     };
   });
   console.log('[HTP Oracle Engine v1] Loaded. Threshold:',ATTEST_THRESHOLD);
-})();
+
 </script>
 
 
@@ -34979,7 +34979,7 @@ window.htpConnectManual = function(addr) {
     var lc = document.getElementById('matchLifecycle');
     if (lc) lc.style.setProperty('--progress', ((step - 1) * 25) + '%');
   };
-})();
+
 </script>
 
 <script>
@@ -35153,7 +35153,7 @@ window.htpConnectManual = function(addr) {
     if (status) { status.style.display = 'block'; status.innerHTML = '<span style="color:var(--accent)">Reset to public resolver for ' + net.toUpperCase() + '</span>'; }
     if (typeof showToast === 'function') showToast('Reset to public resolver', 'success');
   };
-})();
+
 
 /* DAA tracking merged into htpSetNetwork */
 </script>
@@ -35198,7 +35198,7 @@ window.htpConnectManual = function(addr) {
                     console.log('[KGI] iframe cross-origin — loaded OK');
                 }
             }, 4000);
-        })();
+
 </script>
 
 <script>
@@ -35490,7 +35490,7 @@ document.querySelectorAll('button').forEach(function(b){
   document.head.appendChild(style);
 
   console.log('%cHTP Board Visuals Patch loaded', 'color:#49e8c2;font-weight:bold');
-})();
+
 
 </script>
 <!-- /HTP-BOARD-VISUALS-PATCH -->
@@ -35534,7 +35534,7 @@ document.querySelectorAll('button').forEach(function(b){
   } else {
     window.addEventListener('load', function() { setTimeout(patchFeeAddr, 100); });
   }
-})();
+
 </script>
 
 <script id="htp-payload-patch">
@@ -35602,7 +35602,7 @@ document.querySelectorAll('button').forEach(function(b){
     console.log('[HTP Payload] createMatchWithLobby patched -- lobby inscription active');
   }
   waitAndPatchCreate();
-})();
+
 </script>
 <!-- htp-ui-v2.js moved to end -->
 
@@ -35679,7 +35679,7 @@ document.querySelectorAll('button').forEach(function(b){
   }
   startDagCanvas('dagPanelCanvas', 260);
   startDagCanvas('dagMini', 330);
-})();
+
 </script>
 <script src="htp-chess-ui.js"></script>
 <script src="htp-utxo-mutex.js"></script>
@@ -35741,7 +35741,7 @@ document.querySelectorAll('button').forEach(function(b){
     }
   }); } catch(e) {}
   console.log('[HTP Pill v3] Wallet display injected');
-})();
+
 </script>
 
 
@@ -35791,7 +35791,7 @@ document.querySelectorAll('button').forEach(function(b){
     } else {
         setTimeout(boot, 800);
     }
-})();
+
 </script>
 
 
@@ -35843,7 +35843,7 @@ document.querySelectorAll('button').forEach(function(b){
 
   document.addEventListener('htpLobbyCancelled', () => setTimeout(injectCancelButtons, 300));
   document.addEventListener('htpMatchOpened', () => setTimeout(injectCancelButtons, 500));
-})();
+
 </script>
 <script src="htp-board-engine.js"></script>
 <script id="htp-settlement-race-guard">
@@ -35909,7 +35909,7 @@ document.querySelectorAll('button').forEach(function(b){
       return orig.call(this, matchId, winnerAddress, isDraw, playerAAddr, playerBAddr);
     };
   }
-})();
+
 </script>
 <script src="htp-oracle-sync.js"></script>
 <script src="htp-rpc-client.js"></script>
