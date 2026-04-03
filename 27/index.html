@@ -25,6 +25,28 @@
   console.log('%c[HTP Escrow Shim] localStorage patched - both escrow stores merged', 'color:#49e8c2;font-weight:bold');
 })();
 </script>
+
+    <!--
+      Remove WASM gate disabling: if the WASM SDK fails to load, the "wasm-gate" class
+      would normally keep the connect buttons disabled. To allow connecting via mnemonic
+      regardless of the WASM status, proactively enable any gate-marked elements once
+      the DOM is ready. This does not impede the automatic unlock that occurs after
+      successful WASM initialisation, but ensures fallback connectivity.
+    -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.wasm-gate').forEach(function(el) {
+          try {
+            el.disabled = false;
+            el.classList.remove('wasm-gate');
+            el.style.opacity = '';
+            el.title = '';
+          } catch (e) {
+            console.warn('WASM gate removal failed', e);
+          }
+        });
+      });
+    </script>
 <meta charset="UTF-8" />
     <title>HIGH TABLE PROTOCOL</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -213,19 +235,27 @@
             margin-right: 16px;
         }
 
+        /*
+         * Logo tweaks: show the Kaspa knight outside of any boxed background and ensure
+         * the image scales to its container. Removing the border radius and box shadow
+         * allows the logo to sit flush against the header background with a transparent
+         * backdrop. Changing the object-fit to contain ensures the full logo is visible
+         * without cropping.
+         */
         .logo {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 0 20px rgba(73, 232, 194, .25), 0 0 60px rgba(73, 232, 194, .08)
+            width: 50px;
+            height: 50px;
+            border-radius: 0;
+            overflow: visible;
+            box-shadow: none;
+            background: transparent;
         }
 
         .logo img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            display: block
+            object-fit: contain;
+            display: block;
         }
 
         .hdr-t {
@@ -4005,32 +4035,6 @@ body:not(.on-overview) .bg-glow3 { opacity: 0.25 !important; }
 }
 .htp-cancel-btn:hover {
   background: rgba(180, 40, 40, 0.35) !important;
-}
-
-
-/* === forced dark portfolio bg === */
-html, body {
-  background: radial-gradient(ellipse at 50% 20%, #021014 0%, #01070a 60%, #000000 100%) !important;
-}
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 20% 30%, rgba(73,232,194,0.08), transparent 40%),
-    radial-gradient(circle at 80% 70%, rgba(73,232,194,0.06), transparent 40%);
-  z-index: 0;
-}
-
-
-/* === hide portfolio top strip === */
-.view-portfolio .topbar,
-.view-portfolio .top-strip,
-.view-portfolio .breadcrumb,
-.view-portfolio .crumbs,
-.view-portfolio .page-crumbs {
-  display: none !important;
 }
 
 </style>
@@ -18019,32 +18023,98 @@ body::before {
             // Auto-initialize (DISABLED -- using external nightly SDK module instead)
             // The inline glue has import mismatches with the nightly WASM binary.
             
-        // Wire inline WASM SDK (already embedded above) to _onWasmReady gate
-        (async function() {
-            try {
-                if (typeof __wbg_init !== 'undefined') {
-                    await __wbg_init({ module_or_path: '/kaspa_bg.wasm' });
-                } else if (typeof initSync !== 'undefined') {
-                    var resp = await fetch('/kaspa_bg.wasm');
-                    var bytes = await resp.arrayBuffer();
-                    initSync({ module: bytes });
+    <!-- Kaspa WASM SDK -- external nightly loader (matches kaspa_bg.wasm binary) -->
+    <script type="module">
+        // Load the Kaspa WASM SDK from the root of the project. In earlier versions the SDK lived
+        // in a /kaspa/ subfolder, but on this deployment the .js and .wasm files live alongside
+        // index.html. Use a relative import so the resources resolve correctly when hosted from
+        // Firebase or any static server.
+        import init, * as kaspa from './kaspa.js';
+        try {
+            window._kaspaExternalLoaded = true;
+            // Initialise the WASM module using a relative path to the .wasm binary.
+            await init('./kaspa_bg.wasm');
+            // Populate window.kaspaSDK with all exports
+            var sdk2 = {};
+            var exportNames = [
+                'PrivateKey', 'PublicKey', 'Transaction', 'TransactionInput', 'TransactionOutput',
+                'ScriptPublicKey', 'UtxoEntryReference', 'UtxoEntry',
+                'createTransactions', 'createTransaction', 'signTransaction',
+                'Address', 'addressFromScriptPublicKey',
+                'Mnemonic', 'XPrv', 'XPub', 'DerivationPath',
+                'kaspaToSompi', 'sompiToKaspaString',
+                'NetworkType', 'NetworkId',
+                'RpcClient', 'Resolver',
+                'initSync'
+            ];
+            exportNames.forEach(function (n) {
+                if (kaspa[n]) { sdk2[n] = kaspa[n]; window[n] = kaspa[n]; }
+            });
+            window.kaspaSDK = sdk2;
+            window.wasmReady = true;
+            window.kaspaWasmReady = function () { return true; };
+            // Unlock all wasm-gated elements (inline init failed, external succeeded)
+            document.querySelectorAll('.wasm-gate').forEach(function(el) {
+                el.disabled = false; el.style.opacity = '1'; el.title = '';
+            });
+            if (window._onWasmReady) window._onWasmReady();
+            console.log('[HTP] External WASM loader: gates unlocked, _onWasmReady fired');
+
+            // kaspaFromMnemonic helper
+            window.kaspaFromMnemonic = async function (mnemonic, prefix) {
+                prefix = prefix || 'kaspa';
+                var k = window.kaspaSDK;
+                var mn = new k.Mnemonic(mnemonic);
+                var seed = mn.toSeed();
+                var xprv = new k.XPrv(seed);
+                var path = "m/44'/111111'/0'/0/0";
+                var derived = xprv.derivePath(path);
+                var privKey = derived.toPrivateKey();
+                var pubKey = privKey.toPublicKey();
+                var address = pubKey.toAddress(prefix === 'kaspatest' ? k.NetworkType.Testnet : k.NetworkType.Mainnet);
+                return {
+                    privateKey: privKey.toString(),
+                    publicKey: pubKey.toString(),
+                    address: address.toString(),
+                    xprv: xprv.intoString('xprv'),
+                    mnemonic: mnemonic
+                };
+            };
+
+            // generateMnemonic helper
+            window.generateMnemonic = function (words) {
+                try {
+                    var mn = kaspa.Mnemonic.random(words);
+                    return mn.phrase;
+                } catch (e) { return null; }
+            };
+
+            console.log('[HTP] Kaspa WASM external loaded OK, keys:', Object.keys(sdk2).filter(function (k) { return sdk2[k]; }).join(', '));
+
+            // Fire onWasmReady
+            if (window._onWasmReady) window._onWasmReady();
+
+            // Auto-reconnect wallet from persistent session
+            setTimeout(function () {
+                if (window.htpKeys && window.htpKeys.address && typeof conn !== 'undefined' && !conn) {
+                    window.walletAddress = window.htpKeys.address;
+                    window.walletProvider = 'mnemonic';
+                    window.conn = true;
+                    window.htpSeedAddress = window.htpKeys.address;
+                    if (typeof startBalancePoller === 'function') startBalancePoller();
+                    console.log('[HTP] Wallet auto-reconnected from WASM module');
                 }
-                window.kaspaSDK = window.kaspaSDK || {};
-                var exports = ['PrivateKey','PublicKey','Transaction','TransactionInput','TransactionOutput',
-                    'ScriptPublicKey','UtxoEntryReference','UtxoEntry','createTransactions','signTransaction',
-                    'Address','addressFromScriptPublicKey','Mnemonic','XPrv','XPub','DerivationPath',
-                    'kaspaToSompi','sompiToKaspaString','NetworkType','NetworkId','RpcClient','Resolver'];
-                exports.forEach(function(n){ if(window[n]) window.kaspaSDK[n] = window[n]; });
-                window.wasmReady = true;
-                document.querySelectorAll('.wasm-gate').forEach(function(el){
-                    el.disabled=false; el.style.opacity='1'; el.title='';
-                });
-                if (window._onWasmReady) window._onWasmReady();
-                console.log('[HTP] WASM inline loader: ready');
-            } catch(e) {
-                console.error('[HTP] WASM load error:', e);
-            }
-        })();
+            }, 500);
+
+            // Enable WASM-gated UI
+            document.querySelectorAll('.wasm-gate').forEach(function (el) {
+                el.disabled = false; el.style.opacity = '1'; el.title = '';
+            });
+        } catch (e) {
+            console.error('[HTP] External WASM init failed:', e);
+            console.log('[HTP] Falling back to inline WASM...');
+            window._kaspaExternalLoaded = false;
+        }
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
@@ -18238,7 +18308,7 @@ body.htp-game-active {
                                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
                                         <h4 class="live-dag-label">
                                           <span class="live-dag-dot"></span>
-                                          KASPA BLOCKDAG
+                                          LIVE KASPA BLOCKDAG
                                         </h4>
                                         <div style="display:flex;gap:20px">
                                             <span style="font-size:11px;color:rgba(255,255,255,0.4)">Block Rate <span style="color:#49e8c2;font-weight:700" id="liveBlockRate">10 BPS</span></span>
@@ -18250,7 +18320,7 @@ body.htp-game-active {
                                     <div style="height: 330px !important; min-height: 330px !important; max-height: 330px !important; width: 100% !important; max-width: 100% !important; border-radius: 12px !important; overflow: hidden !important; background: #060c09 !important; display: block !important; position:relative; border:1px solid rgba(73,232,194,0.12);">
                                         
                                         <div id="kgiFallback" style="position:absolute;inset:0;">
-                                            <iframe id="dagMiniFrame" src="https://kgi.kaspad.net" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;border:0;background:#020b0b;filter:brightness(0.7) contrast(1.05) saturate(0.9);" loading="lazy"></iframe>
+                                            <canvas id="dagMini" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;"></canvas>
                                         </div>
                                     </div>
                                 </div>
@@ -18926,7 +18996,7 @@ event MyMarket {
             <section class="view" id="v-skill">
                 <div class="mx sec-pad">
                     <div class="sh">
-    <h2><span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;background:rgba(8,30,36,.9);border:1px solid rgba(73,232,194,.18);color:#49e8c2;font-size:14px;margin-right:10px;vertical-align:middle">⊞</span>Skill Games</h2>
+    <h2>Skill Games</h2>
     <p>Stakes locked in a Kaspa covenant. Play. The covenant enforces the result.
        No arbiter. No dispute. Winner takes the pool minus 2% protocol fee.</p>
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
@@ -19399,10 +19469,7 @@ event MyMarket {
                     <!-- Event Positions Stats -->
                     <div style="margin-top:20px;margin-bottom:24px">
                         <h3 style="font-size:15px;font-weight:700;color:var(--text);margin:0 0 14px;display:flex;align-items:center;gap:8px">
-                            <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:rgba(73,232,194,.1);border:1px solid rgba(73,232,194,.15)">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#49e8c2" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 6-6"/></svg>
-                            </span>
-                            <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;background:rgba(8,30,36,.9);border:1px solid rgba(73,232,194,.18);color:#49e8c2;font-size:14px;margin-right:10px;vertical-align:middle">↗</span>Event Predictions
+                            Event Predictions
                         </h3>
                         <div class="kaspa-stats" style="margin-bottom:0">
                             <div class="ks">
@@ -19432,9 +19499,6 @@ event MyMarket {
                     <!-- Skill Games Stats -->
                     <div style="margin-top:28px;margin-bottom:24px">
                         <h3 style="font-size:15px;font-weight:700;color:var(--text);margin:0 0 14px;display:flex;align-items:center;gap:8px">
-                            <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:rgba(73,232,194,.1);border:1px solid rgba(73,232,194,.15)">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#49e8c2" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 6v12M6 12h12"/></svg>
-                            </span>
                             Skill Games
                         </h3>
                         <div class="kaspa-stats" style="margin-bottom:0">
@@ -19672,13 +19736,13 @@ event MyMarket {
                             words</button></div>
                     <div class="mn-disp" id="mnD">Click above to generate.</div><button class="chip"
                         style="margin-top:10px" onclick="copyMn()">Copy</button> <button class="chip chip-a"
-                        style="margin-top:10px" onclick="useMn()" class="wasm-gate" class="wasm-gate">Connect with this
+                        style="margin-top:10px" onclick="useMn()">Connect with this
                         phrase</button>
                 </div>
                 <div class="w-sec">
                     <h3>Connect via Mnemonic</h3>
                     <div class="fg"><label>Seed phrase</label><textarea id="recMn"
-                            placeholder="word1 word2 ..."></textarea></div><button class="cta1 wasm-gate"
+                            placeholder="word1 word2 ..."></textarea></div><button class="cta1"
                         onclick="recW()">Connect from Seed</button>
                     <div id="recS" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
                 </div>
@@ -19729,9 +19793,9 @@ event MyMarket {
             <div style="margin-bottom:32px; width: 100%; max-width: 100%; padding: 0;">
                 <h4 class="live-dag-label">
                   <span class="live-dag-dot"></span>
-                  KASPA BLOCKDAG
+                  LIVE KASPA BLOCKDAG
                 </h4>
-                <div style="position:relative;width:100%;height:260px;border-radius:12px;overflow:hidden;border:1px solid rgba(73,232,194,0.18);background:#080d0b;"><iframe id="dagPanelFrame" src="https://kgi.kaspad.net" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;border:0;background:#020b0b;filter:brightness(0.7) contrast(1.05) saturate(0.9);" loading="lazy"></iframe><div style="position:absolute;bottom:8px;right:12px;font-size:10px;color:rgba(73,232,194,0.4);letter-spacing:1px;font-family:monospace;">KASPA BLOCKDAG</div></div>
+<div style="position:relative;width:100%;height:260px;border-radius:12px;overflow:hidden;border:1px solid rgba(73,232,194,0.18);background:#080d0b;"><canvas id="dagPanelCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;"></canvas><div style="position:absolute;bottom:8px;right:12px;font-size:10px;color:rgba(73,232,194,0.4);letter-spacing:1px;font-family:monospace;">LIVE KASPA BLOCKDAG</div></div>
             </div>
 
             <!-- Core advantages -->
@@ -19866,7 +19930,7 @@ event MyMarket {
                         </div>
                         <div style="font-size:13px;font-weight:700;color:#f59e0b">2026 (Current)</div>
                         <div style="font-size:13px;color:rgba(200,210,230,.7);margin-top:4px">Covenants hard fork
-                            targeted Q2 2026. DAGKnight mainnet activation targeted mid-2026. 25-40 BPS on roadmap
+                            targeted May 5, 2026. DAGKnight mainnet activation targeted mid-2026. 25-40 BPS on roadmap
                             for end of Q3.</div>
                     </div>
                     <div style="position:relative">
@@ -20093,7 +20157,7 @@ event MyMarket {
             <div
                 style="margin-top:32px;padding:20px;border-radius:10px;border:1px solid rgba(73,232,194,.15);background:rgba(73,232,194,.03)">
                 <p style="margin:0;font-size:12px;color:rgba(200,210,230,.7);line-height:1.7"><strong
-                        style="color:var(--accent)">Last updated:</strong> April 1, 2026. By connecting a wallet or
+                        style="color:var(--accent)">Last updated:</strong> March 12, 2026. By connecting a wallet or
                     entering a position, you acknowledge acceptance of these terms.</p>
             </div>
         </div>
@@ -27128,6 +27192,21 @@ function showGameOverOverlay(title, amountText, color, match) {
           background: #49e8c2;
           animation: dotPulse 2s ease-in-out infinite;
           flex-shrink: 0;
+        }
+
+        /* === Custom dark theme and UI adjustments === */
+        html, body {
+          /* Darker overall backdrop: choose almost-black hues for a richer, subdued theme. */
+          background-color: #01040a !important;
+          background-image: radial-gradient(ellipse at 50% 20%, #010912 0%, #000509 60%, #000000 100%) !important;
+        }
+
+        /* The header tagline stays visible to clearly brand the site. */
+        /* .hdr-t { display: none !important; } */
+
+        /* Remove any remaining SVG icons inside portfolio section headers */
+        #v-portfolio h3 span svg {
+          display: none !important;
         }
     </style>
 
@@ -35175,6 +35254,8 @@ window.htpConnectManual = function(addr) {
 <!-- HTP companion stack - load in this exact order -->
 <script src="/firebase-config.js"></script>
 <script src="/dag-background.js"></script>
+<script src="/wasm-bridge.js"></script>
+<script src="/multiplayer.js"></script>
 <script src="/htp-events.js"></script>
   <script src="htp-chess-sync.js"></script>
   <script src="htp-games-sync.js"></script>
@@ -35183,6 +35264,10 @@ window.htpConnectManual = function(addr) {
   <script src="htp-zk-pipeline.js"></script>
   <script src="htp-match-deadline.js"></script>
 <script src="htp-covenant-escrow-v2.js"></script>
+  <script src="/htp-maximizer-patch.js"></script>
+<script src="/htp-patches-8.js"></script>
+<script src="/htp-p01-p06.js"></script>
+<script src="/htp-p07-p09.js"></script>
 
 <script>
 
@@ -35691,8 +35776,8 @@ document.querySelectorAll('button').forEach(function(b){
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',tryStart);
     else tryStart();
   }
-  // startDagCanvas('dagPanelCanvas', 260);
-  // startDagCanvas('dagMini', 330);
+  startDagCanvas('dagPanelCanvas', 260);
+  startDagCanvas('dagMini', 330);
 })();
 </script>
 <script src="htp-chess-ui.js"></script>
@@ -35926,48 +36011,6 @@ document.querySelectorAll('button').forEach(function(b){
 })();
 </script>
 <script src="htp-oracle-sync.js"></script>
-<script src="htp-rpc-client.js"></script>
-<script src="htp-wallet-v3.js"></script>
-<script src="htp-settlement-overlay.js"></script>
-<script src="htp-cancel-flow.js"></script>
-<script src="htp-events-v3.js"></script>
-<script src="htp-event-creator.js"></script>
-<script src="htp-autopayout-engine.js"></script>
-<script src="htp-nav-v4.js"></script>
-<script src="htp-wasm-loader.js"></script>
-<script src="htp-wallet-logos.js"></script>
-<script src="htp-chess-dnd.js"></script>
-<script src="htp-checkers-multijump.js"></script>
-<script src="htp-c4-animation.js"></script>
-<script src="htp-silverscript-live.js"></script>
-
-<script id="htp-wallet-v3-init">
-// Initialize wallet-v3 when ready
-window.addEventListener('load', async function() {
-  if (window.htpWalletV3 && window.htpWalletV3.init) {
-    try {
-      await window.htpWalletV3.init();
-      console.log('[HTP Bootstrap] Wallet V3 initialized');
-    } catch(e) {
-      console.warn('[HTP Bootstrap] Wallet V3 init error:', e);
-    }
-  }
-  
-  // Also ensure WASM ready is called if not already fired
-  if (window.whenWasmReady && !window.wasmReady) {
-    window.whenWasmReady(function() {
-      console.log('[HTP Bootstrap] WASM confirmed ready via bootstrap');
-    });
-  }
-});
-
-// Hook balance updates from RPC
-window.addEventListener('htp:balance:updated', function(e) {
-  if (window.htpWalletV3 && window.htpWalletV3.updateUI) {
-    window.htpWalletV3.updateUI();
-  }
-});
-</script>
 </body>
 
 </html>
