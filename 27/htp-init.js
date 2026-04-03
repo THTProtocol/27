@@ -181,7 +181,7 @@
     if (_wasmReadyFired) return; // Already loaded
     console.warn('[HTP Init] Primary WASM timeout at 5min — attempting recovery');
     _retryWasmLoad();
-  }, 300000);
+  }, 3000000);
 
   /* ═══════════════════════════════════════════════════════════════════════════
    * 3.  IDENTITY & SEAT
