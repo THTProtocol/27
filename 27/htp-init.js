@@ -114,7 +114,7 @@
   window.whenWasmReady = whenWasmReady;
 
   /* ═══════════════════════════════════════════════════════════════════════════
-   * WASM TIMEOUT & RETRY LOGIC (30s with optional single retry)
+   * WASM TIMEOUT & RETRY LOGIC (5min with optional single retry)
    * ═══════════════════════════════════════════════════════════════════════════ */
   var _wasmRetried = false;
   
@@ -179,9 +179,9 @@
   // Primary timeout: 30 seconds
   var _wasmTimeoutHandle = setTimeout(function () {
     if (_wasmReadyFired) return; // Already loaded
-    console.warn('[HTP Init] Primary WASM timeout at 30s — attempting recovery');
+    console.warn('[HTP Init] Primary WASM timeout at 5min — attempting recovery');
     _retryWasmLoad();
-  }, 30000);
+  }, 300000);
 
   /* ═══════════════════════════════════════════════════════════════════════════
    * 3.  IDENTITY & SEAT
