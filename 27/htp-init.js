@@ -370,7 +370,7 @@
     detectAndConnectWallet();
 
     // Restore active match deadlines from Firebase Realtime DB
-    if (window.firebase && window.firebase.database) {
+    if (window.firebase && window.firebase.apps && window.firebase.apps.length && window.firebase.database) {
       window.firebase.database().ref('matches')
         .orderByChild('status').equalTo('active')
         .once('value')

@@ -38,11 +38,11 @@
         x: Math.random() * w,
         y: Math.random() * h,
         r: (1 + Math.random() * 2) * depth,
-        vx: (Math.random() - 0.5) * 0.12 * depth,
-        vy: -0.05 - Math.random() * 0.08 * depth, // slow upward drift
-        alpha: (0.08 + Math.random() * 0.25) * depth,
+        vx: (Math.random() - 0.5) * 0.03 * depth,
+        vy: -0.01 - Math.random() * 0.02 * depth, // gentle upward drift
+        alpha: (0.06 + Math.random() * 0.18) * depth,
         pulse: Math.random() * Math.PI * 2,
-        pulseSpeed: 0.003 + Math.random() * 0.008, // very slow breathing
+        pulseSpeed: 0.001 + Math.random() * 0.003, // very slow breathing
         depth: depth,
         hue: Math.random() > 0.85 ? 1 : 0 // occasional warm accent
       });
@@ -71,10 +71,14 @@
         var dist = Math.sqrt(dx * dx + dy * dy);
         var linkDist = _LINK_DISTANCE * Math.min(pi.depth, pj.depth);
         if (dist < linkDist) {
-          var linkAlpha = (1 - dist / linkDist) * 0.08 * Math.min(pi.depth, pj.depth);
+          var linkAlpha = (1 - dist / linkDist) * 0.03 * Math.min(pi.depth, pj.depth);
           ctx.globalAlpha = linkAlpha;
-          ctx.strokeStyle = PRIMARY;
-          ctx.lineWidth = 0.5 * Math.min(pi.depth, pj.depth);
+          var lg = ctx.createLinearGradient(pi.x, pi.y, pj.x, pj.y);
+          lg.addColorStop(0, 'rgba(73,232,194,' + (linkAlpha * 0.6) + ')');
+          lg.addColorStop(0.5, 'rgba(73,232,194,' + (linkAlpha * 0.3) + ')');
+          lg.addColorStop(1, 'rgba(73,232,194,' + (linkAlpha * 0.6) + ')');
+          ctx.strokeStyle = lg;
+          ctx.lineWidth = 0.3 * Math.min(pi.depth, pj.depth);
           ctx.beginPath();
           ctx.moveTo(pi.x, pi.y);
           ctx.lineTo(pj.x, pj.y);
