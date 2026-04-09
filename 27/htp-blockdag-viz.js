@@ -23,6 +23,77 @@
   var LINE_COLOR = 'rgba(73,232,194,0.25)';
   var LABEL_COLOR = 'rgba(73,232,194,0.45)';
 
+  // Ambient particles for full-page background mode
+  var _particles = [];
+  var _PARTICLE_COUNT = 60;
+
+  function initParticles(w, h) {
+    _particles = [];
+    for (var i = 0; i < _PARTICLE_COUNT; i++) {
+      _particles.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: 1 + Math.random() * 2.5,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.2,
+        alpha: 0.15 + Math.random() * 0.45,
+        pulse: Math.random() * Math.PI * 2
+      });
+    }
+  }
+
+  function drawBackgroundMode(ctx, w, h) {
+    // Transparent clear — page shows through
+    ctx.clearRect(0, 0, w, h);
+    var t = Date.now();
+
+    // Draw drifting ambient particles (block nodes)
+    _particles.forEach(function(p) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.pulse += 0.018;
+      if (p.x < -10) p.x = w + 10;
+      if (p.x > w + 10) p.x = -10;
+      if (p.y < -10) p.y = h + 10;
+      if (p.y > h + 10) p.y = -10;
+
+      var alpha = p.alpha * (0.7 + 0.3 * Math.sin(p.pulse));
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = PRIMARY;
+      ctx.shadowColor = PRIMARY;
+      ctx.shadowBlur = 6;
+      roundRect(ctx, p.x - p.r, p.y - p.r, p.r * 2 + 6, p.r * 2 + 4, 1);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // Draw faint connections between nearby particles
+    ctx.save();
+    for (var i = 0; i < _particles.length; i++) {
+      for (var j = i + 1; j < _particles.length; j++) {
+        var dx = _particles[i].x - _particles[j].x;
+        var dy = _particles[i].y - _particles[j].y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 160) {
+          ctx.globalAlpha = (1 - dist / 160) * 0.12;
+          ctx.strokeStyle = PRIMARY;
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(_particles[i].x + 4, _particles[i].y + 2);
+          ctx.lineTo(_particles[j].x + 4, _particles[j].y + 2);
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.restore();
+
+    // Overlay live blocks on top in the lower portion if we have data
+    if (_blocks.length > 0) {
+      drawLiveBlocksOverlay(ctx, w, h);
+    }
+  }
+
   var _blocks = [];
   var _blockMap = {};
   var _latestHash = null;
@@ -122,7 +193,60 @@
 
   // ── Canvas Rendering ───────────────────────────────────────────────────
 
-  function drawDAG(ctx, w, h) {
+  function drawLiveBlocksOverlay(ctx, w, h) {
+    // Show live blocks as a flowing strip near the bottom of the full-page canvas
+    var padding = 20;
+    var stripH = 60;
+    var stripY = h - stripH - padding;
+    var usableW = w - padding * 2;
+    var n = Math.min(_blocks.length, 30);
+    var spacingX = n > 1 ? usableW / (n - 1) : 0;
+
+    ctx.save();
+    ctx.globalAlpha = 0.6;
+    var posMap = {};
+    _blocks.slice(-n).forEach(function(b, i) {
+      var slideOffset = b.slideIn * 40;
+      b.slideIn = Math.max(0, b.slideIn - 0.06);
+      var bx = padding + i * spacingX + slideOffset;
+      var yOff = ((parseInt(b.hash.substring(0, 4), 16) || 0) % 5 - 2) * 6;
+      var by = stripY + 20 + yOff;
+      posMap[b.hash] = { x: bx, y: by };
+
+      // parent lines
+      b.parents.forEach(function(ph) {
+        var pp = posMap[ph];
+        if (!pp) return;
+        ctx.strokeStyle = 'rgba(73,232,194,0.18)';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(pp.x + BLOCK_W, pp.y + BLOCK_H / 2);
+        ctx.lineTo(bx, by + BLOCK_H / 2);
+        ctx.stroke();
+      });
+
+      var isLatest = b.hash === _latestHash;
+      ctx.fillStyle = isLatest ? 'rgba(73,232,194,0.5)' : 'rgba(73,232,194,0.15)';
+      ctx.strokeStyle = PRIMARY;
+      ctx.lineWidth = isLatest ? 1.5 : 0.8;
+      if (isLatest) {
+        ctx.shadowColor = PRIMARY;
+        ctx.shadowBlur = 8;
+      }
+      roundRect(ctx, bx, by, BLOCK_W, BLOCK_H, BLOCK_R);
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    });
+    ctx.restore();
+  }
+
+  function drawDAG(ctx, w, h, isBackground) {
+    if (isBackground) {
+      // Full-page background: transparent, animated particles + live blocks
+      drawBackgroundMode(ctx, w, h);
+      return;
+    }
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = BG;
     ctx.fillRect(0, 0, w, h);
@@ -302,19 +426,27 @@
 
   // ── Animation Loop ─────────────────────────────────────────────────────
 
-  function startLoop(canvas) {
+  function startLoop(canvas, isBackground) {
     var ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Init ambient particles once for background mode
+    if (isBackground) {
+      var r = canvas.getBoundingClientRect();
+      initParticles(r.width || window.innerWidth, r.height || window.innerHeight);
+    }
 
     function tick() {
       var dpr = window.devicePixelRatio || 1;
       var rect = canvas.getBoundingClientRect();
-      if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
+      var needsRescale = canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr;
+      if (needsRescale) {
         canvas.width = rect.width * dpr;
         canvas.height = rect.height * dpr;
         ctx.scale(dpr, dpr);
+        if (isBackground) initParticles(rect.width, rect.height);
       }
-      drawDAG(ctx, rect.width, rect.height);
+      drawDAG(ctx, rect.width, rect.height, isBackground);
       var id = requestAnimationFrame(tick);
       canvas._animId = id;
     }
@@ -343,20 +475,28 @@
   // ── Init ───────────────────────────────────────────────────────────────
 
   function init() {
-    var mainCanvas = document.getElementById('dagCanvasFull') || document.getElementById('dagCanvas') || document.getElementById('blockdag-canvas');
+    // Full-page background canvas — transparent animated particles + live DAG overlay
+    var bgCanvas = document.getElementById('dagCanvas');
+    if (bgCanvas) {
+      bgCanvas.style.display = 'block';
+      startLoop(bgCanvas, true); // background mode: transparent, no solid fill
+    }
+
+    // Panel canvases — solid dark background with DAG detail
+    var mainCanvas = document.getElementById('dagCanvasFull') || document.getElementById('blockdag-canvas');
     var miniCanvas = document.getElementById('dagCanvasMini') || document.getElementById('overview-dag-canvas');
 
     if (mainCanvas) {
       mainCanvas.style.width = '100%';
       mainCanvas.style.display = 'block';
-      startLoop(mainCanvas);
+      startLoop(mainCanvas, false);
       setupTooltip(mainCanvas);
     }
 
     if (miniCanvas) {
       miniCanvas.style.width = '100%';
       miniCanvas.style.display = 'block';
-      startLoop(miniCanvas);
+      startLoop(miniCanvas, false);
       setupTooltip(miniCanvas);
     }
 

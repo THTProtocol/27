@@ -117,6 +117,14 @@
   }
 
   /* ══ Core connect ══════════════════════════════════════════════════════════ */
+
+  // Known stable TN12 wRPC endpoints — tried in order before falling back to Resolver
+  var TN12_ENDPOINTS = [
+    'wss://tn12.kaspa.stream/wrpc/borsh',
+    'wss://tn12-1.kaspa.stream/wrpc/borsh',
+    'wss://tn12-2.kaspa.stream/wrpc/borsh'
+  ];
+
   async function initRpc() {
     var sdk = await waitForWasm();
     if (!sdk || !sdk.RpcClient) {
@@ -125,26 +133,21 @@
     }
 
     var networkId   = window.HTP_NETWORK_ID || 'testnet-12';
-    var useResolver = window.HTP_USE_RESOLVER || true;
-    var resolverAlias = window.HTP_RESOLVER_ALIAS || 'tn12';
+    var rpcEndpoint = window.HTP_RPC_URL || TN12_ENDPOINTS[_retryCount % TN12_ENDPOINTS.length];
+    var resolverAlias = 'tn12';
 
     try {
-      if (useResolver) {
-        // Use Kaspa Resolver for load-balanced RPC (automatic failover)
-        // IMPORTANT: sdk.Resolver() must be an object instance, NOT a string alias
-        console.log('[HTPRpc] Building Resolver object for network:', networkId);
-        var resolverObj = new sdk.Resolver();
-        console.log('[HTPRpc] Resolver created, connecting RpcClient with networkId:', networkId);
-        _rpc = new sdk.RpcClient({ resolver: resolverObj, networkId: networkId });
+      // Use direct known-stable endpoint, rotate on retry, Resolver as last resort
+      if (sdk.RpcClient && rpcEndpoint) {
+        console.log('[HTPRpc] Connecting to', rpcEndpoint, '(', networkId, ')');
+        _rpc = new sdk.RpcClient({ url: rpcEndpoint, networkId: networkId });
+      } else if (sdk.Resolver) {
+        console.log('[HTPRpc] Falling back to Resolver for', networkId);
+        _rpc = new sdk.RpcClient({ resolver: new sdk.Resolver(), networkId: networkId });
       } else {
-        // Fallback: direct wRPC endpoint
-        var rpcEndpoint = window.HTP_RPC_URL || null;
-        if (rpcEndpoint) {
-          _rpc = new sdk.RpcClient({ url: rpcEndpoint, networkId: networkId });
-        } else {
-          // Last resort: resolver object
-          _rpc = new sdk.RpcClient({ resolver: new sdk.Resolver(), networkId: networkId });
-        }
+        console.error('[HTPRpc] No RpcClient or Resolver available');
+        scheduleRetry();
+        return;
       }
     } catch (e) {
       console.error('[HTPRpc] RpcClient construction failed:', e);
@@ -157,7 +160,7 @@
       _connected   = true;
       _retryCount  = 0;
       if (_retryTimer) { clearTimeout(_retryTimer); _retryTimer = null; }
-      console.log('[HTPRpc] Connected →', _rpc.url || resolverAlias, '(', networkId, ')');
+      console.log('[HTPRpc] Connected →', _rpc.url || rpcEndpoint, '(', networkId, ')');
       window.dispatchEvent(new CustomEvent('htp:rpc:connected', { detail: { url: _rpc.url, networkId: networkId } }));
 
       try { await _rpc.subscribeVirtualDaaScoreChanged(); } catch (e) {}
