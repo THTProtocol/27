@@ -38,13 +38,13 @@
         x: Math.random() * w,
         y: Math.random() * h,
         r: (1 + Math.random() * 2) * depth,
-        vx: (Math.random() - 0.5) * 0.03 * depth,
-        vy: -0.01 - Math.random() * 0.02 * depth, // gentle upward drift
-        alpha: (0.06 + Math.random() * 0.18) * depth,
+        vx: (Math.random() - 0.5) * 0.015 * depth,
+        vy: -0.005 - Math.random() * 0.01 * depth, // barely drifting
+        alpha: (0.04 + Math.random() * 0.10) * depth,
         pulse: Math.random() * Math.PI * 2,
-        pulseSpeed: 0.001 + Math.random() * 0.003, // very slow breathing
+        pulseSpeed: 0.0005 + Math.random() * 0.0015, // ultra-slow breathing
         depth: depth,
-        hue: Math.random() > 0.85 ? 1 : 0 // occasional warm accent
+        hue: 0 // no warm accents — dark teal only
       });
     }
   }
@@ -53,13 +53,7 @@
     ctx.clearRect(0, 0, w, h);
     _bgTime += 0.016; // ~60fps dt
 
-    // Subtle radial gradient overlay for depth
-    var grad = ctx.createRadialGradient(w * 0.5, h * 0.45, 0, w * 0.5, h * 0.45, Math.max(w, h) * 0.7);
-    grad.addColorStop(0, 'rgba(73,232,194,0.015)');
-    grad.addColorStop(0.5, 'rgba(73,232,194,0.005)');
-    grad.addColorStop(1, 'transparent');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
+    // Pure transparent — no gradient overlay, no light colors
 
     // Draw faint connections between nearby particles (behind nodes)
     ctx.save();
@@ -71,14 +65,10 @@
         var dist = Math.sqrt(dx * dx + dy * dy);
         var linkDist = _LINK_DISTANCE * Math.min(pi.depth, pj.depth);
         if (dist < linkDist) {
-          var linkAlpha = (1 - dist / linkDist) * 0.03 * Math.min(pi.depth, pj.depth);
+          var linkAlpha = (1 - dist / linkDist) * 0.018 * Math.min(pi.depth, pj.depth);
           ctx.globalAlpha = linkAlpha;
-          var lg = ctx.createLinearGradient(pi.x, pi.y, pj.x, pj.y);
-          lg.addColorStop(0, 'rgba(73,232,194,' + (linkAlpha * 0.6) + ')');
-          lg.addColorStop(0.5, 'rgba(73,232,194,' + (linkAlpha * 0.3) + ')');
-          lg.addColorStop(1, 'rgba(73,232,194,' + (linkAlpha * 0.6) + ')');
-          ctx.strokeStyle = lg;
-          ctx.lineWidth = 0.3 * Math.min(pi.depth, pj.depth);
+          ctx.strokeStyle = 'rgba(73,232,194,' + (linkAlpha * 0.4) + ')';
+          ctx.lineWidth = 0.25 * Math.min(pi.depth, pj.depth);
           ctx.beginPath();
           ctx.moveTo(pi.x, pi.y);
           ctx.lineTo(pj.x, pj.y);
@@ -99,15 +89,15 @@
       if (p.y < -20) p.y = h + 20;
       if (p.y > h + 20) p.y = -20;
 
-      var breathe = 0.6 + 0.4 * Math.sin(p.pulse);
+      var breathe = 0.7 + 0.3 * Math.sin(p.pulse);
       var alpha = p.alpha * breathe;
 
       ctx.save();
       ctx.globalAlpha = alpha;
-      var col = p.hue ? 'rgba(232,194,73,0.9)' : PRIMARY;
+      var col = 'rgba(73,232,194,0.6)';
       ctx.fillStyle = col;
-      ctx.shadowColor = col;
-      ctx.shadowBlur = 4 + 6 * p.depth;
+      ctx.shadowColor = 'rgba(73,232,194,0.3)';
+      ctx.shadowBlur = 2 + 3 * p.depth;
       roundRect(ctx, p.x - p.r, p.y - p.r, p.r * 2 + 4, p.r * 2 + 3, 1.5);
       ctx.fill();
       ctx.restore();
