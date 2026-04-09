@@ -38,11 +38,11 @@
         x: Math.random() * w,
         y: Math.random() * h,
         r: (1 + Math.random() * 2) * depth,
-        vx: (Math.random() - 0.5) * 0.015 * depth,
-        vy: -0.005 - Math.random() * 0.01 * depth, // barely drifting
-        alpha: (0.04 + Math.random() * 0.10) * depth,
+        vx: (Math.random() - 0.5) * 0.04 * depth,
+        vy: -0.008 - Math.random() * 0.015 * depth, // slow drift
+        alpha: (0.12 + Math.random() * 0.20) * depth,
         pulse: Math.random() * Math.PI * 2,
-        pulseSpeed: 0.0005 + Math.random() * 0.0015, // ultra-slow breathing
+        pulseSpeed: 0.001 + Math.random() * 0.003, // slow breathing
         depth: depth,
         hue: 0 // no warm accents — dark teal only
       });
@@ -65,10 +65,10 @@
         var dist = Math.sqrt(dx * dx + dy * dy);
         var linkDist = _LINK_DISTANCE * Math.min(pi.depth, pj.depth);
         if (dist < linkDist) {
-          var linkAlpha = (1 - dist / linkDist) * 0.018 * Math.min(pi.depth, pj.depth);
+          var linkAlpha = (1 - dist / linkDist) * 0.04 * Math.min(pi.depth, pj.depth);
           ctx.globalAlpha = linkAlpha;
-          ctx.strokeStyle = 'rgba(73,232,194,' + (linkAlpha * 0.4) + ')';
-          ctx.lineWidth = 0.25 * Math.min(pi.depth, pj.depth);
+          ctx.strokeStyle = 'rgba(73,232,194,' + (linkAlpha * 0.5) + ')';
+          ctx.lineWidth = 0.4 * Math.min(pi.depth, pj.depth);
           ctx.beginPath();
           ctx.moveTo(pi.x, pi.y);
           ctx.lineTo(pj.x, pj.y);
@@ -94,10 +94,10 @@
 
       ctx.save();
       ctx.globalAlpha = alpha;
-      var col = 'rgba(73,232,194,0.6)';
+      var col = 'rgba(73,232,194,0.7)';
       ctx.fillStyle = col;
-      ctx.shadowColor = 'rgba(73,232,194,0.3)';
-      ctx.shadowBlur = 2 + 3 * p.depth;
+      ctx.shadowColor = 'rgba(73,232,194,0.4)';
+      ctx.shadowBlur = 3 + 5 * p.depth;
       roundRect(ctx, p.x - p.r, p.y - p.r, p.r * 2 + 4, p.r * 2 + 3, 1.5);
       ctx.fill();
       ctx.restore();

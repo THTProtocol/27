@@ -93,7 +93,7 @@
         }
 
         /* ── DAG canvas ── */
-        #dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.30!important;display:block!important}
+        #dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.55!important;display:block!important}
 
         .bg-glow {
             position: fixed;
@@ -101,7 +101,7 @@
             left: 5%;
             width: 800px;
             height: 800px;
-            background: radial-gradient(ellipse at 40% 40%, rgba(73,232,194,.03), rgba(73,232,194,.01) 40%, transparent 70%);
+            background: radial-gradient(ellipse at 40% 40%, rgba(73,232,194,.04), rgba(73,232,194,.015) 40%, transparent 70%);
             z-index: 0;
             pointer-events: none;
             animation: drift 20s ease-in-out infinite alternate;
@@ -2822,8 +2822,8 @@ html { scroll-behavior: auto; }
 .view.show { display: block; }
 
 /* DAG canvas runs on all views with reduced opacity for non-overview */
-body:not(.on-overview) #dagCanvas { opacity: 0.25 !important; }
-body.on-overview #dagCanvas { opacity: 0.30 !important; }
+body:not(.on-overview) #dagCanvas { opacity: 0.45 !important; }
+body.on-overview #dagCanvas { opacity: 0.55 !important; }
 body:not(.on-overview) .bg-glow { opacity: 0.4 !important; }
 body:not(.on-overview) .bg-glow2 { opacity: 0.3 !important; }
 body:not(.on-overview) .bg-glow3 { opacity: 0.25 !important; }
@@ -4023,7 +4023,7 @@ body.htp-game-active {
     <script>function addOut() { console.log('[HTP] addOut called'); }</script>
 <!-- duplicated chess.js removed -->
 <style id="htp-bg-fix">
-#dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.30!important;display:block!important}
+#dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.55!important;display:block!important}
 .dag-mini,#dagMiniWrap,#liveDagContainer,#dagMiniContainer{height:370px!important;min-height:370px!important;max-height:370px!important}
 </style>
 </head>
@@ -7424,6 +7424,7 @@ function go(v) {
             if (v === 'oracle') {
                 if (typeof renderOracleEventsPanel === 'function') setTimeout(renderOracleEventsPanel, 80);
                 if (typeof htpOracleDaemonSyncInputs === 'function') htpOracleDaemonSyncInputs();
+                if (typeof refreshOracleStats === 'function') setTimeout(refreshOracleStats, 100);
             }
             if (v === 'markets') {
                 if (typeof loadMarkets === 'function') setTimeout(loadMarkets, 80);

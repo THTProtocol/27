@@ -15003,6 +15003,33 @@ async function __wbg_init(module_or_path) {
         document.querySelectorAll('.wasm-gate').forEach(function(el){
             el.disabled=false; el.style.opacity='1'; el.title='';
         });
+
+        // === kaspaFromMnemonic: derive address + keys from BIP39 mnemonic ===
+        // This is the function wallet UI (recW, useMn, etc.) calls.
+        // Flow: Mnemonic → seed → XPrv → PrivateKeyGenerator → receiveKey(0) → address
+        window.kaspaFromMnemonic = async function(phrase, prefix) {
+            var sdk = window.kaspaSDK;
+            if (!sdk || !sdk.Mnemonic || !sdk.XPrv || !sdk.PrivateKeyGenerator) {
+                throw new Error('WASM SDK not ready');
+            }
+            var networkId = (prefix === 'kaspatest') ? 'testnet-12' : 'mainnet';
+            var mnemonic = new sdk.Mnemonic(phrase);
+            var seed = mnemonic.toSeed();
+            var xprv = new sdk.XPrv(seed);
+            var keyGen = new sdk.PrivateKeyGenerator(xprv, false, 0n);
+            var privKey = keyGen.receiveKey(0);
+            var address = privKey.toAddress(networkId);
+            var pubKey = privKey.toPublicKey();
+            return {
+                address: address.toString(),
+                privateKey: privKey.toString(),
+                publicKey: pubKey.toString(),
+                _privKey: privKey,
+                _pubKey: pubKey
+            };
+        };
+        console.log('[HTP] kaspaFromMnemonic registered');
+
         if (window._onWasmReady) window._onWasmReady();
         window.dispatchEvent(new Event('htpWasmReady'));
         console.log('[HTP] WASM SDK v1.2.3 ready — RpcClient:', !!window.kaspaSDK.RpcClient, 'Resolver:', !!window.kaspaSDK.Resolver);
