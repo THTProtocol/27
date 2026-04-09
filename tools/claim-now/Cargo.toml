@@ -1,0 +1,19 @@
+[package]
+name = "htp-claim-now"
+version = "1.0.0"
+edition = "2021"
+description = "High Table Protocol – Permissionless claim tool for HTP markets"
+
+[[bin]]
+name = "claim-now"
+path = "main.rs"
+
+[dependencies]
+clap = { version = "4.4", features = ["derive"] }
+tokio = { version = "1.35", features = ["full"] }
+anyhow = "1.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
