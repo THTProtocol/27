@@ -37,6 +37,8 @@
   --pad-x: 24px;
   --radius: 8px;
   --radius-sm: 6px;
+  --glow: 0 0 24px rgba(73,232,194,0.18);
+  --glow-sm: 0 0 10px rgba(73,232,194,0.12);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -45,6 +47,7 @@ html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
 
 body {
   background: var(--bg);
+  background: radial-gradient(ellipse at 50% 20%, #021014 0%, #01070a 60%, #000000 100%);
   color: var(--text);
   font-family: var(--font-body);
   font-size: 16px;
@@ -77,7 +80,7 @@ a:hover { color: var(--primary-h); }
 }
 .card:hover {
   border-color: var(--border-hover);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  box-shadow: var(--glow);
 }
 
 /* Buttons */
@@ -105,7 +108,7 @@ a:hover { color: var(--primary-h); }
   color: #030816;
   box-shadow: 0 0 20px rgba(73,232,194,0.15);
 }
-.btn-primary:hover { background: var(--primary-h); }
+.btn-primary:hover { background: var(--primary-h); box-shadow: 0 0 30px rgba(73,232,194,0.25); }
 
 .btn-secondary {
   background: transparent;
@@ -265,7 +268,7 @@ a:hover { color: var(--primary-h); }
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: heroShimmer 6s ease infinite;
-  filter: drop-shadow(0 0 30px rgba(73,232,194,0.25));
+  filter: drop-shadow(0 0 30px rgba(73,232,194,0.25)) drop-shadow(0 0 60px rgba(73,232,194,0.1));
 }
 @keyframes heroShimmer {
   0% { background-position: 0% center; }
@@ -502,6 +505,11 @@ a:hover { color: var(--primary-h); }
   border-radius: var(--radius);
   padding: 20px;
   text-align: center;
+  transition: border-color 0.2s, box-shadow 0.3s;
+}
+.stat-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--glow-sm);
 }
 .stat-value {
   font-family: var(--font-display);
@@ -1234,56 +1242,60 @@ a:hover { color: var(--primary-h); }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  width: 560px;
+  width: 600px;
   max-width: 90vw;
   max-height: 85vh;
   overflow-y: auto;
   padding: 32px;
 }
 .wallet-modal h2 { margin-bottom: 24px; }
-.wallet-grid {
+
+/* Old-style wallet grid with real logos */
+.w-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
 }
-@media (max-width: 480px) {
-  .wallet-grid { grid-template-columns: 1fr; }
-}
-.wallet-option {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+.w-card {
   padding: 20px;
+  text-align: center;
   cursor: pointer;
   transition: all 0.2s;
-  text-align: center;
 }
-.wallet-option:hover {
+.w-card:hover {
   border-color: var(--border-hover);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  box-shadow: 0 0 25px rgba(73,232,194,0.06);
 }
-.wallet-option.connected {
+.w-card.connected {
   border-color: var(--primary);
+  box-shadow: 0 0 20px rgba(73,232,194,0.15);
 }
-.wallet-option svg {
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 8px;
-  display: block;
-}
-.wallet-option-name {
-  font-family: var(--font-display);
+.w-card h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
   font-weight: 600;
-  font-size: 14px;
 }
-.wallet-option-desc {
-  font-size: 12px;
+.w-card p {
+  margin: 0;
+  font-size: 11px;
   color: var(--text-muted);
-  margin-top: 4px;
 }
-.wallet-option-status {
-  margin-top: 8px;
+.w-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  margin: 0 auto 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+@media (max-width: 480px) {
+  .w-grid { grid-template-columns: 1fr; gap: 12px; }
+  .w-card { padding: 16px; }
+  .w-card h3 { font-size: 14px; }
+  .w-icon { width: 44px; height: 44px; }
 }
 .expandable-section {
   border: 1px solid var(--border);
@@ -1439,6 +1451,10 @@ a:hover { color: var(--primary-h); }
     <section id="tab-overview" class="tab-section active">
       <div class="container">
         <div class="overview-hero">
+          <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:999px;border:1px solid rgba(73,232,194,0.2);background:rgba(73,232,194,0.04);font-size:11px;color:var(--primary);font-weight:600;margin-bottom:20px;backdrop-filter:blur(8px);letter-spacing:0.03em">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--primary);animation:pulse-dot 2s ease-in-out infinite;box-shadow:0 0 10px var(--primary)"></span>
+            LIVE ON KASPA TN12
+          </div>
           <h1>Create events.<br>Challenge lies.<br>Settle on the DAG.</h1>
           <p>Non-custodial prediction and skill markets enforced by covenants on Kaspa. Full exposure or built-in downside protection. Resolved by ZK proofs and bonded oracles directly on the BlockDAG.</p>
           <div class="hero-pills">
@@ -2106,68 +2122,44 @@ npm start</div>
         <h2>Connect Wallet</h2>
         <button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px" onclick="closeWalletModal()">&times;</button>
       </div>
-      <div class="wallet-grid">
-        <!-- KasWare -->
-        <div class="wallet-option" onclick="connectWallet('kasware')">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#49e8c2" font-family="Space Grotesk" font-weight="700" font-size="16">KW</text></svg>
-          <div class="wallet-option-name">KasWare</div>
-          <div class="wallet-option-desc">Browser extension</div>
-          <div class="wallet-option-status"><span class="dot dot-grey" id="status-kasware"></span></div>
+      <div id="walletStatus" style="display:none;margin-bottom:16px;padding:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px"></div>
+      <div class="w-grid">
+        <div class="card w-card" onclick="selWallet('KasWare')">
+          <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=kasware.io&sz=64" alt="KasWare" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'"></div>
+          <h3>KasWare</h3>
+          <p>Browser extension</p>
         </div>
-        <!-- Kastle -->
-        <div class="wallet-option" onclick="connectWallet('kastle')">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#49e8c2" font-family="Space Grotesk" font-weight="700" font-size="16">KT</text></svg>
-          <div class="wallet-option-name">Kastle</div>
-          <div class="wallet-option-desc">Mobile + extension</div>
-          <div class="wallet-option-status"><span class="dot dot-grey" id="status-kastle"></span></div>
+        <div class="card w-card" onclick="selWallet('Kastle')">
+          <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=kastle.cc&sz=64" alt="Kastle" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'"></div>
+          <h3>Kastle</h3>
+          <p>Mobile + extension</p>
         </div>
-        <!-- Kasanova -->
-        <div class="wallet-option" onclick="connectWallet('kasanova')">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#49e8c2" font-family="Space Grotesk" font-weight="700" font-size="16">KA</text></svg>
-          <div class="wallet-option-name">Kasanova</div>
-          <div class="wallet-option-desc">Browser extension</div>
-          <div class="wallet-option-status"><span class="dot dot-grey" id="status-kasanova"></span></div>
+        <div class="card w-card" onclick="selWallet('Kasanova')">
+          <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=kasanova.app&sz=64" alt="Kasanova" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'"></div>
+          <h3>Kasanova</h3>
+          <p>Browser extension</p>
         </div>
-        <!-- Kaspium -->
-        <div class="wallet-option" onclick="connectWallet('kaspium')">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#49e8c2" font-family="Space Grotesk" font-weight="700" font-size="16">KP</text></svg>
-          <div class="wallet-option-name">Kaspium</div>
-          <div class="wallet-option-desc">Mobile wallet</div>
-          <div class="wallet-option-status"><span class="dot dot-grey" id="status-kaspium"></span></div>
+        <div class="card w-card" onclick="selWallet('Kaspium')">
+          <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=kaspium.io&sz=64" alt="Kaspium" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'"></div>
+          <h3>Kaspium</h3>
+          <p>Mobile wallet</p>
         </div>
-        <!-- KaspaCom -->
-        <div class="wallet-option" onclick="connectWallet('kaspacom')">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#49e8c2" font-family="Space Grotesk" font-weight="700" font-size="16">KC</text></svg>
-          <div class="wallet-option-name">KaspaCom</div>
-          <div class="wallet-option-desc">Web wallet</div>
-          <div class="wallet-option-status"><span class="dot dot-grey" id="status-kaspacom"></span></div>
+        <div class="card w-card" onclick="selWallet('KaspaCom')">
+          <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=wallet.kaspa.com&sz=64" alt="KaspaCom" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'"></div>
+          <h3>KaspaCom</h3>
+          <p>Web wallet</p>
         </div>
-        <!-- DEX.cc -->
-        <div class="wallet-option" onclick="connectWallet('dexcc')">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#49e8c2" font-family="Space Grotesk" font-weight="700" font-size="16">DX</text></svg>
-          <div class="wallet-option-name">DEX.cc</div>
-          <div class="wallet-option-desc">Exchange wallet</div>
-          <div class="wallet-option-status"><span class="dot dot-grey" id="status-dexcc"></span></div>
+        <div class="card w-card" onclick="selWallet('DEX.cc')">
+          <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=dex.cc&sz=64" alt="DEX.cc" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'"></div>
+          <h3>DEX.cc</h3>
+          <p>Exchange wallet</p>
         </div>
       </div>
 
-      <!-- Manual Address -->
-      <div class="expandable-section" id="manual-address-section">
-        <div class="expandable-header" onclick="toggleExpandable('manual-address-section')">
-          Enter address manually
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 12,15 18,9"/></svg>
-        </div>
-        <div class="expandable-body">
-          <p class="text-muted mb-8" style="font-size:13px">Read-only portfolio view. No signing ability.</p>
-          <input type="text" class="input" id="manual-address-input" placeholder="kaspatest:qr...">
-          <button class="btn btn-primary mt-8" onclick="connectManualAddress()">View Portfolio</button>
-        </div>
-      </div>
-
-      <!-- Mnemonic Import -->
-      <div class="expandable-section" id="mnemonic-section">
+      <!-- Mnemonic Import (testing only) -->
+      <div class="expandable-section" id="mnemonic-section" style="margin-top:16px">
         <div class="expandable-header" onclick="toggleExpandable('mnemonic-section')">
-          Import from mnemonic
+          Import from mnemonic (testing only)
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 12,15 18,9"/></svg>
         </div>
         <div class="expandable-body">
@@ -2213,6 +2205,9 @@ npm start</div>
 
   <!-- Chess engine -->
   <script src="chess.min.js"></script>
+
+  <!-- Kaspa WASM SDK (must load BEFORE wasm-loader) -->
+  <script src="kaspa-wasm-sdk-inline.js"></script>
 
   <!-- HTP Core -->
   <script src="htp-init.js"></script>
@@ -2372,7 +2367,6 @@ npm start</div>
   /* --- Wallet Modal --- */
   window.openWalletModal = function() {
     document.getElementById('wallet-modal-overlay').classList.add('open');
-    detectInstalledWallets();
   };
   window.closeWalletModal = function(e) {
     if (e && e.target !== e.currentTarget) return;
@@ -2383,61 +2377,177 @@ npm start</div>
     document.getElementById(id).classList.toggle('open');
   };
 
-  function detectInstalledWallets() {
-    var wallets = {
-      kasware: typeof window.kasware !== 'undefined',
-      kastle: typeof window.kastle !== 'undefined',
-      kasanova: typeof window.kasanova !== 'undefined',
-      kaspium: false,
-      kaspacom: false,
-      dexcc: false
-    };
-    Object.keys(wallets).forEach(function(w) {
-      var dot = document.getElementById('status-' + w);
-      if (dot) {
-        dot.className = wallets[w] ? 'dot dot-green' : 'dot dot-grey';
-      }
+  /* --- Wallet State --- */
+  var walletProvider = null;
+  var walletAddress = null;
+  var walletBalance = { confirmed: 0, unconfirmed: 0, total: 0 };
+  var walletPubKey = null;
+  var conn = false;
+
+  function sompiToKAS(s) { return (s / 100000000).toFixed(2); }
+  function kasToSompi(k) { return Math.round(k * 100000000); }
+  function shortAddr(a) { if (!a) return ''; return a.substring(0, 14) + '...' + a.substring(a.length - 6); }
+
+  function getProvider(name) {
+    var w = window;
+    switch (name) {
+      case 'KasWare':  return w.kasware  || w.kasWare  || null;
+      case 'Kastle':   return w.kastle   || null;
+      case 'Kasanova': return w.kasanova || null;
+      case 'Kaspium':  return w.kaspium  || null;
+      case 'KaspaCom': return w.kaspacom || null;
+      case 'DEX.cc':   return w.dexcc    || w.dex      || null;
+      default: return w.kasware || w.kastle || w.kasanova || w.kaspium || null;
+    }
+  }
+
+  function waitForProvider(name) {
+    return new Promise(function(resolve) {
+      var attempts = 0;
+      var iv = setInterval(function() {
+        var p = getProvider(name);
+        if (p) { clearInterval(iv); resolve(p); return; }
+        attempts++;
+        if (attempts >= 20) { clearInterval(iv); resolve(null); }
+      }, 150);
     });
   }
 
-  var connectedWallet = null;
-  var connectedAddress = null;
+  window.selWallet = async function(name) {
+    var statusEl = document.getElementById('walletStatus');
+    statusEl.style.display = 'block';
+    statusEl.innerHTML = '<span style="color:var(--text-muted)">Detecting ' + name + '...</span>';
 
-  window.connectWallet = function(walletId) {
-    // Attempt to connect via wallet provider
-    var provider = null;
-    if (walletId === 'kasware' && window.kasware) provider = window.kasware;
-    else if (walletId === 'kastle' && window.kastle) provider = window.kastle;
-    else if (walletId === 'kasanova' && window.kasanova) provider = window.kasanova;
-
+    var provider = await waitForProvider(name);
     if (!provider) {
-      alert(walletId + ' wallet not detected. Please install the extension.');
+      statusEl.innerHTML = '<span style="color:#ef4444">' + name + ' not found. Install it, unlock it, then retry.</span>';
       return;
     }
 
-    provider.requestAccounts().then(function(accounts) {
-      if (accounts && accounts.length > 0) {
-        connectedAddress = accounts[0];
-        connectedWallet = walletId;
-        onWalletConnected(connectedAddress, walletId);
-        closeWalletModal();
+    try {
+      statusEl.innerHTML = '<span style="color:var(--text-muted)">Connecting to ' + name + '...</span>';
+      var accounts = await provider.requestAccounts();
+      if (!accounts || accounts.length === 0) {
+        statusEl.innerHTML = '<span style="color:#ef4444">Connection rejected or no accounts found.</span>';
+        return;
       }
-    }).catch(function(err) {
-      console.error('Wallet connect error:', err);
-    });
+
+      walletAddress = accounts[0];
+      window.htpAddress = accounts[0];
+      window.connectedAddress = accounts[0];
+      walletProvider = name;
+      conn = true;
+
+      // Get network
+      var network = 'unknown';
+      try {
+        network = await provider.getNetwork();
+        if (typeof network === 'number') {
+          network = network === 0 ? 'mainnet' : 'testnet-' + network;
+        }
+      } catch (e) { network = 'unknown'; }
+
+      // Get balance
+      try {
+        var bal = await provider.getBalance();
+        walletBalance = {
+          confirmed: bal.confirmed || bal.mature || 0,
+          unconfirmed: bal.unconfirmed || bal.pending || 0,
+          total: bal.total || ((bal.confirmed || bal.mature || 0) + (bal.unconfirmed || bal.pending || 0))
+        };
+      } catch (e) {
+        walletBalance = { confirmed: 0, unconfirmed: 0, total: 0 };
+      }
+
+      // Get public key
+      try { walletPubKey = await provider.getPublicKey(); } catch (e) { walletPubKey = null; }
+
+      // Update UI
+      updateWalletUI(name, network);
+
+      // Listen for events
+      if (provider.on) {
+        try {
+          provider.on('accountsChanged', function(accs) {
+            if (accs && accs.length > 0) {
+              walletAddress = accs[0];
+              window.connectedAddress = accs[0];
+              updateWalletUI(name, network);
+            }
+          });
+          provider.on('balanceChanged', function(bal) {
+            walletBalance = {
+              confirmed: bal.balance ? bal.balance.mature || 0 : bal.confirmed || 0,
+              unconfirmed: bal.balance ? bal.balance.pending || 0 : bal.unconfirmed || 0,
+              total: bal.balance ? (bal.balance.mature || 0) + (bal.balance.pending || 0) : bal.total || 0
+            };
+            updateBalanceDisplay();
+          });
+          provider.on('networkChanged', function(n) {
+            network = n;
+            updateWalletUI(name, network);
+          });
+        } catch (e) { /* events not supported */ }
+      }
+
+      // Dispatch event for htp-rpc-client.js UTXO tracking
+      window.dispatchEvent(new CustomEvent('htp:wallet:connected', {
+        detail: { address: walletAddress, provider: name, pubKey: walletPubKey }
+      }));
+
+    } catch (e) {
+      statusEl.innerHTML = '<span style="color:#ef4444">Connection failed: ' + (e.message || e) + '</span>';
+      conn = false;
+    }
   };
 
-  window.connectManualAddress = function() {
-    var addr = document.getElementById('manual-address-input').value.trim();
-    if (!addr || !addr.startsWith('kaspa')) {
-      alert('Enter a valid Kaspa address');
-      return;
+  function updateWalletUI(name, network) {
+    var short = shortAddr(walletAddress);
+    document.getElementById('wallet-connect-btn').textContent = short;
+    document.getElementById('wallet-connect-btn').classList.add('connected');
+
+    // Mark connected card
+    document.querySelectorAll('.w-card').forEach(function(c) { c.classList.remove('connected'); });
+    document.querySelectorAll('.w-card').forEach(function(c) {
+      if (c.querySelector('h3') && c.querySelector('h3').textContent === name) {
+        c.classList.add('connected');
+      }
+    });
+
+    // Close modal
+    document.getElementById('wallet-modal-overlay').classList.remove('open');
+
+    // Update status
+    var statusEl = document.getElementById('walletStatus');
+    if (statusEl) {
+      statusEl.innerHTML = '<span style="color:var(--success)">Connected: ' + short + ' (' + network + ')</span>';
     }
-    connectedAddress = addr;
-    connectedWallet = 'manual';
-    onWalletConnected(addr, 'manual');
-    closeWalletModal();
-  };
+
+    // Portfolio
+    var promptEl = document.getElementById('portfolio-connect-prompt');
+    var contentEl = document.getElementById('portfolio-content');
+    if (promptEl) promptEl.classList.add('hidden');
+    if (contentEl) contentEl.classList.remove('hidden');
+    var portAddr = document.getElementById('portfolio-address');
+    if (portAddr) portAddr.textContent = short;
+
+    updateBalanceDisplay();
+    console.log('[HTP Wallet] Connected:', name, walletAddress, 'Network:', network);
+  }
+
+  function updateBalanceDisplay() {
+    var balKas = sompiToKAS(walletBalance.confirmed || walletBalance.total || 0);
+    var portBal = document.getElementById('portfolio-balance');
+    if (portBal) portBal.textContent = balKas + ' KAS';
+  }
+
+  // Keep backwards compat for createMatch
+  var connectedWallet = null;
+  Object.defineProperty(window, 'connectedAddress', {
+    get: function() { return walletAddress; },
+    set: function(v) { walletAddress = v; },
+    configurable: true
+  });
 
   window.connectMnemonic = function() {
     var words = document.getElementById('mnemonic-input').value.trim();
@@ -2446,49 +2556,41 @@ npm start</div>
       alert('Enter 12 or 24 BIP39 words');
       return;
     }
-    // WASM derivation would happen here
-    if (!window.wasmReady) {
+    if (!window.wasmReady || !window.kaspaSDK || !window.kaspaSDK.Mnemonic) {
       alert('Kaspa SDK not loaded. Cannot derive wallet from mnemonic.');
       return;
     }
-    // Placeholder for actual derivation
-    console.log('[HTP Wallet] Mnemonic derivation initiated');
-    // In real impl: use kaspa-wallet-core XPrv m/44'/111111'/0'/0/0
+    try {
+      var sdk = window.kaspaSDK;
+      var mnemonic = new sdk.Mnemonic(words);
+      var seed = mnemonic.toSeed();
+      var xprv = new sdk.XPrv(seed);
+      var derived = xprv.derivePath("m/44'/111111'/0'/0/0");
+      var privKey = derived.toPrivateKey();
+      var pubKey = privKey.toPublicKey();
+      var prefix = window.HTP_PREFIX || 'kaspatest';
+      var addr = pubKey.toAddress(prefix).toString();
+
+      walletAddress = addr;
+      window.htpAddress = addr;
+      window.connectedAddress = addr;
+      walletProvider = 'mnemonic';
+      walletPubKey = pubKey.toString();
+      conn = true;
+
+      updateWalletUI('Mnemonic', window.HTP_NETWORK || 'tn12');
+      window.dispatchEvent(new CustomEvent('htp:wallet:connected', {
+        detail: { address: addr, provider: 'mnemonic', pubKey: walletPubKey }
+      }));
+      console.log('[HTP Wallet] Mnemonic derived:', addr);
+    } catch (e) {
+      alert('Mnemonic derivation failed: ' + (e.message || e));
+    }
   };
-
-  function onWalletConnected(address, walletId) {
-    var short = address.substring(0, 12) + '...' + address.substring(address.length - 6);
-    document.getElementById('wallet-connect-btn').textContent = short;
-    document.getElementById('wallet-connect-btn').classList.add('connected');
-
-    // Update wallet modal status
-    var statusDot = document.getElementById('status-' + walletId);
-    if (statusDot) statusDot.className = 'dot dot-green';
-
-    // Portfolio
-    document.getElementById('portfolio-connect-prompt').classList.add('hidden');
-    document.getElementById('portfolio-content').classList.remove('hidden');
-    document.getElementById('portfolio-address').textContent = short;
-
-    // Fetch balance
-    fetchBalance(address);
-
-    console.log('[HTP Wallet] Connected:', walletId, address);
-  }
-
-  function fetchBalance(address) {
-    fetch('https://api-tn12.kaspa.org/addresses/' + address + '/balance')
-      .then(function(r) { return r.json(); })
-      .then(function(d) {
-        var bal = (d.balance || 0) / 100000000;
-        document.getElementById('portfolio-balance').textContent = bal.toFixed(4) + ' KAS';
-      })
-      .catch(function() {});
-  }
 
   /* --- Match Creation --- */
   window.createMatch = function() {
-    if (!connectedAddress) {
+    if (!walletAddress) {
       openWalletModal();
       return;
     }
@@ -2514,7 +2616,7 @@ npm start</div>
       escrowKAS: escrow,
       timeControl: { minutes: minutes, increment: increment },
       bestOf: selectedSeries,
-      playerA: connectedAddress,
+      playerA: walletAddress,
       opponent: document.getElementById('opponent-address').value.trim() || null,
       status: 'waiting',
       createdAt: Date.now()
@@ -2992,6 +3094,17 @@ npm start</div>
   /* --- Portfolio --- */
   var portfolioInterval = null;
 
+  function fetchBalance(address) {
+    fetch('https://api-tn12.kaspa.org/addresses/' + address + '/balance')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        var bal = (d.balance || 0) / 100000000;
+        var portBal = document.getElementById('portfolio-balance');
+        if (portBal) portBal.textContent = bal.toFixed(4) + ' KAS';
+      })
+      .catch(function() {});
+  }
+
   function initPortfolio() {
     if (!connectedAddress) return;
 
@@ -3335,37 +3448,6 @@ npm start</div>
   </script>
 
   <!-- Logo loader -->
-  <script>
-  (function() {
-    // Load the HTP logo from the old base64 asset
-    var logoEl = document.getElementById('htp-logo-img');
-    if (logoEl) {
-      // Use a small inline HTP logo (fallback hexagon if base64 not available)
-      var c = document.createElement('canvas');
-      c.width = 72; c.height = 72;
-      var ctx = c.getContext('2d');
-      // Dark background
-      ctx.fillStyle = '#030816';
-      ctx.beginPath();
-      ctx.moveTo(36, 2); ctx.lineTo(66, 19); ctx.lineTo(66, 53);
-      ctx.lineTo(36, 70); ctx.lineTo(6, 53); ctx.lineTo(6, 19); ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = '#49e8c2'; ctx.lineWidth = 2; ctx.stroke();
-      // H letter
-      ctx.strokeStyle = '#49e8c2'; ctx.lineWidth = 4; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(24, 22); ctx.lineTo(24, 50); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(48, 22); ctx.lineTo(48, 50); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(24, 36); ctx.lineTo(48, 36); ctx.stroke();
-      // Glow
-      ctx.shadowColor = 'rgba(73,232,194,0.6)'; ctx.shadowBlur = 8;
-      ctx.strokeStyle = 'rgba(73,232,194,0.3)'; ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(36, 2); ctx.lineTo(66, 19); ctx.lineTo(66, 53);
-      ctx.lineTo(36, 70); ctx.lineTo(6, 53); ctx.lineTo(6, 19); ctx.closePath();
-      ctx.stroke();
-      logoEl.src = c.toDataURL();
-    }
-  })();
-  </script>
+  <script src="htp-logo-data.js"></script>
 </body>
 </html>
