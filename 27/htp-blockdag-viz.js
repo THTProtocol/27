@@ -24,33 +24,33 @@
   var LABEL_COLOR = 'rgba(73,232,194,0.45)';
 
   // ── Synthetic DAG: a proper flowing BlockDAG background ──────────────
-  var _dagCols = [];       // array of { x, blocks: [{ y, alpha, parentIds }] }
-  var _dagScrollX = 0;     // accumulated scroll offset
-  var _dagColWidth = 0;    // horizontal spacing between columns
-  var _dagW = 0;           // canvas width at last init
-  var _dagH = 0;           // canvas height at last init
+  var _dagCols = [];
+  var _dagScrollX = 0;
+  var _dagColWidth = 0;
+  var _dagW = 0;
+  var _dagH = 0;
   var _bgTime = 0;
-  var _BG_BLOCK_W = 22;    // block rectangle size — compact
-  var _BG_BLOCK_H = 14;
+  var _BG_BLOCK_W = 20;
+  var _BG_BLOCK_H = 12;
   var _BG_BLOCK_R = 3;
-  var _VISIBLE_COLS = 24;  // more columns for dense DAG
-  var _SCROLL_SPEED = 0.18; // px per frame — very slow drift
+  var _VISIBLE_COLS = 30;  // dense — fills entire width
+  var _SCROLL_SPEED = 0.08; // very slow cinematic drift
 
   function _randBetween(a, b) { return a + Math.random() * (b - a); }
 
   function _generateCol(colIndex, h) {
-    // 2-4 blocks per column, spread across 15%-85% band
-    var numBlocks = 2 + Math.floor(Math.random() * 3);
-    var bandTop = h * 0.12;
-    var bandBot = h * 0.88;
+    // 3-5 blocks per column — true DAG width, full screen coverage
+    var numBlocks = 3 + Math.floor(Math.random() * 3);
+    var bandTop = h * 0.05;
+    var bandBot = h * 0.95;
     var bandH = bandBot - bandTop;
     var spacing = bandH / (numBlocks + 1);
     var blocks = [];
     for (var i = 0; i < numBlocks; i++) {
       var baseY = bandTop + spacing * (i + 1);
       blocks.push({
-        y: baseY + (Math.random() - 0.5) * spacing * 0.4,
-        alpha: _randBetween(0.35, 0.7), // much more visible
+        y: baseY + (Math.random() - 0.5) * spacing * 0.35,
+        alpha: _randBetween(0.25, 0.55),
         parentIds: [],
         pulse: Math.random() * Math.PI * 2,
         colIdx: colIndex,
@@ -63,12 +63,13 @@
   function _wireParents(col, prevCol) {
     if (!prevCol) return;
     col.blocks.forEach(function(b) {
-      // Each block connects to 1-2 parents in previous column (DAG-like)
+      // 1-2 parents — realistic BlockDAG connectivity
       var nParents = 1 + Math.floor(Math.random() * Math.min(2, prevCol.blocks.length));
       var indices = [];
       for (var p = 0; p < nParents; p++) {
-        var idx = Math.floor(Math.random() * prevCol.blocks.length);
-        if (indices.indexOf(idx) === -1) indices.push(idx);
+        // Prefer closest vertical neighbor for organic look
+        var best = Math.floor(Math.random() * prevCol.blocks.length);
+        if (indices.indexOf(best) === -1) indices.push(best);
       }
       b.parentIds = indices;
     });
@@ -80,7 +81,7 @@
     _dagScrollX = 0;
     _dagCols = [];
     _dagColWidth = w / (_VISIBLE_COLS - 1);
-    var totalCols = _VISIBLE_COLS + 6;
+    var totalCols = _VISIBLE_COLS + 8;
     for (var c = 0; c < totalCols; c++) {
       var col = _generateCol(c, h);
       _wireParents(col, c > 0 ? _dagCols[c - 1] : null);
@@ -93,7 +94,7 @@
     _bgTime += 0.016;
     _dagScrollX += _SCROLL_SPEED;
 
-    // Recycle columns that scroll off left
+    // Recycle columns
     var firstColX = -_dagScrollX + _dagCols[0].colIndex * _dagColWidth;
     while (firstColX < -_dagColWidth * 2) {
       _dagCols.shift();
@@ -106,7 +107,8 @@
 
     ctx.save();
 
-    // ── Connection lines (bezier curves between parent→child) ────
+    // ── Connection lines — smooth bezier curves ──────────────────
+    ctx.lineCap = 'round';
     _dagCols.forEach(function(col, ci) {
       var cx = -_dagScrollX + col.colIndex * _dagColWidth;
       if (cx < -_dagColWidth || cx > w + _dagColWidth) return;
@@ -122,11 +124,18 @@
           var y1 = parent.y + _BG_BLOCK_H / 2;
           var x2 = cx;
           var y2 = b.y + _BG_BLOCK_H / 2;
-          var cpOff = (x2 - x1) * 0.4;
+          var cpOff = (x2 - x1) * 0.45;
 
-          ctx.globalAlpha = 1;
-          ctx.strokeStyle = 'rgba(73,232,194,0.12)';
-          ctx.lineWidth = 1;
+          // Fade edges near screen borders
+          var edgeFade = 1;
+          if (cx < 80) edgeFade = cx / 80;
+          if (cx > w - 80) edgeFade = (w - cx) / 80;
+          if (pcx < 80) edgeFade = Math.min(edgeFade, pcx / 80);
+          edgeFade = Math.max(0, Math.min(1, edgeFade));
+
+          ctx.globalAlpha = 0.14 * edgeFade;
+          ctx.strokeStyle = '#49e8c2';
+          ctx.lineWidth = 0.8;
           ctx.beginPath();
           ctx.moveTo(x1, y1);
           ctx.bezierCurveTo(x1 + cpOff, y1, x2 - cpOff, y2, x2, y2);
@@ -140,18 +149,28 @@
       var cx = -_dagScrollX + col.colIndex * _dagColWidth;
       if (cx < -_BG_BLOCK_W - 10 || cx > w + 10) return;
 
-      col.blocks.forEach(function(b) {
-        b.pulse += 0.008;
-        var breathe = 0.85 + 0.15 * Math.sin(b.pulse);
-        var alpha = b.alpha * breathe;
+      // Edge fade for blocks too
+      var edgeFade = 1;
+      if (cx < 60) edgeFade = cx / 60;
+      if (cx > w - 60) edgeFade = (w - cx) / 60;
+      edgeFade = Math.max(0, Math.min(1, edgeFade));
 
-        // Block fill — dark interior with teal border
+      col.blocks.forEach(function(b) {
+        b.pulse += 0.006;
+        var breathe = 0.88 + 0.12 * Math.sin(b.pulse);
+        var alpha = b.alpha * breathe * edgeFade;
+        if (alpha < 0.02) return;
+
+        // Dark filled block with teal border
         ctx.globalAlpha = alpha;
-        ctx.fillStyle = 'rgba(6,24,18,0.8)';
-        ctx.strokeStyle = 'rgba(73,232,194,' + (alpha * 0.55).toFixed(3) + ')';
-        ctx.lineWidth = 1;
+        ctx.fillStyle = 'rgba(4,18,14,0.85)';
         roundRect(ctx, cx, b.y, _BG_BLOCK_W, _BG_BLOCK_H, _BG_BLOCK_R);
         ctx.fill();
+
+        ctx.globalAlpha = alpha * 0.6;
+        ctx.strokeStyle = '#49e8c2';
+        ctx.lineWidth = 0.8;
+        roundRect(ctx, cx, b.y, _BG_BLOCK_W, _BG_BLOCK_H, _BG_BLOCK_R);
         ctx.stroke();
       });
     });
@@ -164,7 +183,7 @@
     ctx.restore();
   }
 
-  // Highlight real live blocks — brighter with glow + hash label
+  // Real live blocks — brighter with glow + hash label on latest
   function _drawRealBlockHighlights(ctx, w, h) {
     var n = Math.min(_blocks.length, 10);
     var blocks = _blocks.slice(-n);
