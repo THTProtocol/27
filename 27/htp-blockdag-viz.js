@@ -36,7 +36,7 @@
   var _bgSpawnNext = 0;
   var _bgStars    = [];   // parallax starfield
   var _bgStarsOk  = false;
-  var _BG_R        = 2.5; // base node radius
+  var _BG_R        = 4.5; // base node radius
   var _SCROLL_SPEED = 0.008; // DAG scroll speed — barely perceptible
   var _STAR_SPEED   = 0.0016; // stars scroll at 20% of DAG (parallax depth)
   var _SPAWN_GAP    = 72;    // px between clusters → ~22 nodes on 1440px screen
@@ -52,9 +52,9 @@
     var t = Math.max(0, Math.min(1, (x - lo) / (hi - lo)));
     return t * t * (3 - 2 * t);
   }
-  // Edge fade: 22% fade zone on each side
+  // Edge fade: 5% hair-thin zone at each edge — eliminates visible density gradient
   function _bgFade(bx, w) {
-    var z = w * 0.22;
+    var z = w * 0.05;
     return _bgSmooth(bx, 0, z) * _bgSmooth(w - bx, 0, z);
   }
 
@@ -115,7 +115,8 @@
     _bgH = h;
     _bgW = w;
     if (!_bgStarsOk) { _bgInitStars(w, h); _bgStarsOk = true; }
-    var x = 40;
+    // Spawn from off-screen left so the canvas is fully populated at load time
+    var x = -_SPAWN_GAP * 3;
     while (x < w + _SPAWN_GAP * 7) {
       _bgSpawnCluster(x);
       x += _SPAWN_GAP * _bgRand(0.65, 1.38);
