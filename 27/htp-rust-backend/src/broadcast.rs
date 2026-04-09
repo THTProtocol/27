@@ -1,20 +1,27 @@
 use anyhow::Result;
+use serde_json::json;
 use crate::types::*;
 
 /// Broadcast a raw transaction to the Kaspa network via REST API.
 ///
-/// TODO: Use the Kaspa RPC client for direct broadcast instead of REST.
-/// The REST API may not support raw transaction submission directly.
+/// Uses POST /transactions with the transaction wrapped in the
+/// standard Kaspa RPC format: { "transaction": <tx>, "allowOrphan": false }
 pub async fn broadcast_tx(req: &BroadcastRequest, api_base: &str) -> Result<BroadcastResponse> {
     let client = reqwest::Client::new();
 
-    // TODO: The actual broadcast endpoint may differ.
-    // Kaspa REST API uses POST /transactions with the raw tx payload.
-    let url = format!("{}/transactions", api_base);
+    // Parse the raw_tx JSON and wrap it in the Kaspa REST submission format
+    let tx_value: serde_json::Value = serde_json::from_str(&req.raw_tx)
+        .map_err(|e| anyhow::anyhow!("Invalid raw_tx JSON: {}", e))?;
 
+    let body = json!({
+        "transaction": tx_value,
+        "allowOrphan": false
+    });
+
+    let url = format!("{}/transactions", api_base);
     let resp = client.post(&url)
         .header("Content-Type", "application/json")
-        .body(req.raw_tx.clone())
+        .json(&body)
         .send()
         .await?;
 
@@ -24,9 +31,9 @@ pub async fn broadcast_tx(req: &BroadcastRequest, api_base: &str) -> Result<Broa
         anyhow::bail!("Broadcast failed ({}): {}", status, body);
     }
 
-    let body: serde_json::Value = resp.json().await?;
-    let tx_id = body.get("transactionId")
-        .or_else(|| body.get("txId"))
+    let result: serde_json::Value = resp.json().await?;
+    let tx_id = result.get("transactionId")
+        .or_else(|| result.get("txId"))
         .and_then(|v| v.as_str())
         .unwrap_or("unknown")
         .to_string();

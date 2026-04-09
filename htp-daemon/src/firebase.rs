@@ -76,7 +76,7 @@ impl FirebaseClient {
         let exp  = now + 3600;
         let header  = URL_SAFE_NO_PAD.encode(r#"{"alg":"RS256","typ":"JWT"}"#);
         let claims  = URL_SAFE_NO_PAD.encode(format!(
-            r#"{{"iss":"{email}","scope":"https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email","aud":"{aud}","iat":{iat},"exp":{exp}}}",
+            r##"{{"iss":"{email}","scope":"https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email","aud":"{aud}","iat":{iat},"exp":{exp}}}"##,
             email = self.service_key.client_email,
             aud   = self.service_key.token_uri,
             iat   = now,
