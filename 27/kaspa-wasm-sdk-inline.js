@@ -13979,26 +13979,49 @@
         // Wire inline WASM SDK (already embedded above) to _onWasmReady gate
         (async function() {
             try {
-                if (typeof __wbg_init !== 'undefined') {
-                    await __wbg_init({ module_or_path: '/kaspa_bg.wasm' });
-                } else if (typeof initSync !== 'undefined') {
-                    var resp = await fetch('/kaspa_bg.wasm');
-                    var bytes = await resp.arrayBuffer();
-                    initSync({ module: bytes });
-                }
+                await __wbg_init({ module_or_path: '/kaspa_bg.wasm' });
+                // Export IIFE-scoped classes to window so they're globally accessible
+                var _exports = {
+                    PrivateKey: typeof PrivateKey !== 'undefined' ? PrivateKey : undefined,
+                    PublicKey: typeof PublicKey !== 'undefined' ? PublicKey : undefined,
+                    Transaction: typeof Transaction !== 'undefined' ? Transaction : undefined,
+                    TransactionInput: typeof TransactionInput !== 'undefined' ? TransactionInput : undefined,
+                    TransactionOutput: typeof TransactionOutput !== 'undefined' ? TransactionOutput : undefined,
+                    ScriptPublicKey: typeof ScriptPublicKey !== 'undefined' ? ScriptPublicKey : undefined,
+                    UtxoEntryReference: typeof UtxoEntryReference !== 'undefined' ? UtxoEntryReference : undefined,
+                    UtxoEntry: typeof UtxoEntry !== 'undefined' ? UtxoEntry : undefined,
+                    createTransactions: typeof createTransactions !== 'undefined' ? createTransactions : undefined,
+                    signTransaction: typeof signTransaction !== 'undefined' ? signTransaction : undefined,
+                    Address: typeof Address !== 'undefined' ? Address : undefined,
+                    addressFromScriptPublicKey: typeof addressFromScriptPublicKey !== 'undefined' ? addressFromScriptPublicKey : undefined,
+                    Mnemonic: typeof Mnemonic !== 'undefined' ? Mnemonic : undefined,
+                    XPrv: typeof XPrv !== 'undefined' ? XPrv : undefined,
+                    XPub: typeof XPub !== 'undefined' ? XPub : undefined,
+                    DerivationPath: typeof DerivationPath !== 'undefined' ? DerivationPath : undefined,
+                    kaspaToSompi: typeof kaspaToSompi !== 'undefined' ? kaspaToSompi : undefined,
+                    sompiToKaspaString: typeof sompiToKaspaString !== 'undefined' ? sompiToKaspaString : undefined,
+                    NetworkType: typeof NetworkType !== 'undefined' ? NetworkType : undefined,
+                    NetworkId: typeof NetworkId !== 'undefined' ? NetworkId : undefined,
+                    RpcClient: typeof RpcClient !== 'undefined' ? RpcClient : undefined,
+                    Resolver: typeof Resolver !== 'undefined' ? Resolver : undefined
+                };
                 window.kaspaSDK = window.kaspaSDK || {};
-                var exports = ['PrivateKey','PublicKey','Transaction','TransactionInput','TransactionOutput',
-                    'ScriptPublicKey','UtxoEntryReference','UtxoEntry','createTransactions','signTransaction',
-                    'Address','addressFromScriptPublicKey','Mnemonic','XPrv','XPub','DerivationPath',
-                    'kaspaToSompi','sompiToKaspaString','NetworkType','NetworkId','RpcClient','Resolver'];
-                exports.forEach(function(n){ if(window[n]) window.kaspaSDK[n] = window[n]; });
+                Object.keys(_exports).forEach(function(n) {
+                    if (_exports[n] !== undefined) {
+                        window[n] = _exports[n];
+                        window.kaspaSDK[n] = _exports[n];
+                    }
+                });
                 window.wasmReady = true;
                 document.querySelectorAll('.wasm-gate').forEach(function(el){
                     el.disabled=false; el.style.opacity='1'; el.title='';
                 });
                 if (window._onWasmReady) window._onWasmReady();
-                console.log('[HTP] WASM inline loader: ready');
+                window.dispatchEvent(new Event('htpWasmReady'));
+                console.log('[HTP] WASM ready — RpcClient:', !!window.kaspaSDK.RpcClient, 'Resolver:', !!window.kaspaSDK.Resolver);
             } catch(e) {
                 console.error('[HTP] WASM load error:', e);
+                window.wasmLoadError = e;
             }
         })();
+})();
