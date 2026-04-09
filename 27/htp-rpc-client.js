@@ -131,15 +131,19 @@
     try {
       if (useResolver) {
         // Use Kaspa Resolver for load-balanced RPC (automatic failover)
-        console.log('[HTPRpc] Using Kaspa Resolver:', resolverAlias);
-        _rpc = new sdk.RpcClient({ resolver: resolverAlias, networkId: networkId });
+        // IMPORTANT: sdk.Resolver() must be an object instance, NOT a string alias
+        console.log('[HTPRpc] Building Resolver object for network:', networkId);
+        var resolverObj = new sdk.Resolver();
+        console.log('[HTPRpc] Resolver created, connecting RpcClient with networkId:', networkId);
+        _rpc = new sdk.RpcClient({ resolver: resolverObj, networkId: networkId });
       } else {
-        // Fallback: old style with direct endpoint (not recommended)
+        // Fallback: direct wRPC endpoint
         var rpcEndpoint = window.HTP_RPC_URL || null;
         if (rpcEndpoint) {
           _rpc = new sdk.RpcClient({ url: rpcEndpoint, networkId: networkId });
         } else {
-          _rpc = new sdk.RpcClient({ resolver: resolverAlias, networkId: networkId });
+          // Last resort: resolver object
+          _rpc = new sdk.RpcClient({ resolver: new sdk.Resolver(), networkId: networkId });
         }
       }
     } catch (e) {

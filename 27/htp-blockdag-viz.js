@@ -17,10 +17,10 @@
   var BLOCK_R = 3;
   var PRIMARY = '#49e8c2';
   var PRIMARY_GLOW = 'rgba(73,232,194,0.6)';
-  var BLOCK_FILL = '#0a1628';
-  var BG = '#030816';
-  var LINE_COLOR = 'rgba(73,232,194,0.3)';
-  var LABEL_COLOR = '#475569';
+  var BLOCK_FILL = '#0a1a14';
+  var BG = '#010806';
+  var LINE_COLOR = 'rgba(73,232,194,0.25)';
+  var LABEL_COLOR = 'rgba(73,232,194,0.45)';
 
   var _blocks = [];
   var _blockMap = {};
@@ -129,7 +129,7 @@
     ctx.font = 'bold 10px Inter, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText('KASPA BLOCKDAG', 10, 8);
+    ctx.fillText('LIVE KASPA BLOCKDAG', 10, 8);
     ctx.restore();
 
     var padding = 30;
