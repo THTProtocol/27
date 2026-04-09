@@ -5572,8 +5572,8 @@ event MyMarket {
                             onclick="genMn(12)">12 words</button><button class="chip" id="w24" onclick="genMn(24)">24
                             words</button></div>
                     <div class="mn-disp" id="mnD">Click above to generate.</div><button class="chip"
-                        style="margin-top:10px" onclick="copyMn()">Copy</button> <button class="chip chip-a"
-                        style="margin-top:10px" onclick="useMn()" class="wasm-gate" class="wasm-gate">Connect with this
+                        style="margin-top:10px" onclick="copyMn()">Copy</button> <button class="chip chip-a wasm-gate"
+                        style="margin-top:10px" onclick="useMn()">Connect with this
                         phrase</button>
                 </div>
                 <div class="w-sec">
@@ -20707,7 +20707,9 @@ W.htpOracleDaemon=OD;
     try { activeNet = net; } catch(e) { W.activeNet = net; }
     if (W.htpRpcApi) { W.htpRpcApi._base = cfg.rest; W.htpRpcApi._wrpc = cfg.wrpc; }
     if (W.kaspaSDK && W.kaspaSDK.setNetworkId) { try { W.kaspaSDK.setNetworkId(net==='tn12'?'testnet-12':'mainnet'); } catch(e){} }
-    if (W.wasmReady && W.kaspaSDK && W.kaspaSDK.RpcClient) { try { var rpc=new W.kaspaSDK.RpcClient({url:cfg.wrpc}); W._htpRpc=rpc; rpc.connect().catch(function(){}); } catch(e){} }
+    // Delegate RPC reconnection to htp-rpc-client (single source of truth)
+    if (W.htpRpc && W.htpRpc.reconnectTo) { try { W.htpRpc.reconnectTo(cfg.wrpc, net==='tn12'?'testnet-12':'mainnet'); } catch(e){} }
+    else if (W.wasmReady && W.kaspaSDK && W.kaspaSDK.RpcClient) { try { var rpc=new W.kaspaSDK.RpcClient({url:cfg.wrpc}); W._htpRpc=rpc; rpc.connect().catch(function(){}); } catch(e){} }
     setButtonActive(net);
     var daaEl = document.getElementById('daaScore');
     if (daaEl) {

@@ -289,6 +289,23 @@
     },
 
     sompiToKas: sompiToKas,
+
+    /**
+     * Reconnect to a different endpoint/network (called by htpSetNetwork).
+     * Tears down existing connection and reinits with new params.
+     */
+    async reconnectTo(url, networkId) {
+      if (_rpc) {
+        try { await _rpc.disconnect(); } catch (e) {}
+        _rpc = null;
+      }
+      _connected = false;
+      if (_retryTimer) { clearTimeout(_retryTimer); _retryTimer = null; }
+      _retryCount = 0;
+      window.HTP_RPC_URL = url;
+      window.HTP_NETWORK_ID = networkId;
+      await initRpc();
+    },
   };
 
   // Backwards compat alias used by older modules
