@@ -25,68 +25,89 @@
 
   // Ambient particles for full-page background mode
   var _particles = [];
-  var _PARTICLE_COUNT = 60;
+  var _PARTICLE_COUNT = 80;
+  var _LINK_DISTANCE = 200;
+  var _bgTime = 0;
 
   function initParticles(w, h) {
     _particles = [];
     for (var i = 0; i < _PARTICLE_COUNT; i++) {
+      // Distribute in layers for depth effect
+      var depth = 0.3 + Math.random() * 0.7; // 0.3 = far, 1.0 = near
       _particles.push({
         x: Math.random() * w,
         y: Math.random() * h,
-        r: 1 + Math.random() * 2.5,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.2,
-        alpha: 0.15 + Math.random() * 0.45,
-        pulse: Math.random() * Math.PI * 2
+        r: (1 + Math.random() * 2) * depth,
+        vx: (Math.random() - 0.5) * 0.12 * depth,
+        vy: -0.05 - Math.random() * 0.08 * depth, // slow upward drift
+        alpha: (0.08 + Math.random() * 0.25) * depth,
+        pulse: Math.random() * Math.PI * 2,
+        pulseSpeed: 0.003 + Math.random() * 0.008, // very slow breathing
+        depth: depth,
+        hue: Math.random() > 0.85 ? 1 : 0 // occasional warm accent
       });
     }
   }
 
   function drawBackgroundMode(ctx, w, h) {
-    // Transparent clear — page shows through
     ctx.clearRect(0, 0, w, h);
-    var t = Date.now();
+    _bgTime += 0.016; // ~60fps dt
 
-    // Draw drifting ambient particles (block nodes)
-    _particles.forEach(function(p) {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.pulse += 0.018;
-      if (p.x < -10) p.x = w + 10;
-      if (p.x > w + 10) p.x = -10;
-      if (p.y < -10) p.y = h + 10;
-      if (p.y > h + 10) p.y = -10;
+    // Subtle radial gradient overlay for depth
+    var grad = ctx.createRadialGradient(w * 0.5, h * 0.45, 0, w * 0.5, h * 0.45, Math.max(w, h) * 0.7);
+    grad.addColorStop(0, 'rgba(73,232,194,0.015)');
+    grad.addColorStop(0.5, 'rgba(73,232,194,0.005)');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
 
-      var alpha = p.alpha * (0.7 + 0.3 * Math.sin(p.pulse));
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = PRIMARY;
-      ctx.shadowColor = PRIMARY;
-      ctx.shadowBlur = 6;
-      roundRect(ctx, p.x - p.r, p.y - p.r, p.r * 2 + 6, p.r * 2 + 4, 1);
-      ctx.fill();
-      ctx.restore();
-    });
-
-    // Draw faint connections between nearby particles
+    // Draw faint connections between nearby particles (behind nodes)
     ctx.save();
     for (var i = 0; i < _particles.length; i++) {
       for (var j = i + 1; j < _particles.length; j++) {
-        var dx = _particles[i].x - _particles[j].x;
-        var dy = _particles[i].y - _particles[j].y;
+        var pi = _particles[i], pj = _particles[j];
+        var dx = pi.x - pj.x;
+        var dy = pi.y - pj.y;
         var dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 160) {
-          ctx.globalAlpha = (1 - dist / 160) * 0.12;
+        var linkDist = _LINK_DISTANCE * Math.min(pi.depth, pj.depth);
+        if (dist < linkDist) {
+          var linkAlpha = (1 - dist / linkDist) * 0.08 * Math.min(pi.depth, pj.depth);
+          ctx.globalAlpha = linkAlpha;
           ctx.strokeStyle = PRIMARY;
-          ctx.lineWidth = 0.8;
+          ctx.lineWidth = 0.5 * Math.min(pi.depth, pj.depth);
           ctx.beginPath();
-          ctx.moveTo(_particles[i].x + 4, _particles[i].y + 2);
-          ctx.lineTo(_particles[j].x + 4, _particles[j].y + 2);
+          ctx.moveTo(pi.x, pi.y);
+          ctx.lineTo(pj.x, pj.y);
           ctx.stroke();
         }
       }
     }
     ctx.restore();
+
+    // Draw drifting ambient particles (block nodes) with depth
+    _particles.forEach(function(p) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.pulse += p.pulseSpeed;
+      // Wrap around
+      if (p.x < -20) p.x = w + 20;
+      if (p.x > w + 20) p.x = -20;
+      if (p.y < -20) p.y = h + 20;
+      if (p.y > h + 20) p.y = -20;
+
+      var breathe = 0.6 + 0.4 * Math.sin(p.pulse);
+      var alpha = p.alpha * breathe;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      var col = p.hue ? 'rgba(232,194,73,0.9)' : PRIMARY;
+      ctx.fillStyle = col;
+      ctx.shadowColor = col;
+      ctx.shadowBlur = 4 + 6 * p.depth;
+      roundRect(ctx, p.x - p.r, p.y - p.r, p.r * 2 + 4, p.r * 2 + 3, 1.5);
+      ctx.fill();
+      ctx.restore();
+    });
 
     // Overlay live blocks on top in the lower portion if we have data
     if (_blocks.length > 0) {
