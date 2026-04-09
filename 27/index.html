@@ -93,7 +93,7 @@
         }
 
         /* ── DAG canvas ── */
-        #dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.55!important;display:block!important}
+        #dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.8!important;display:block!important}
 
         .bg-glow {
             position: fixed;
@@ -101,7 +101,7 @@
             left: 5%;
             width: 800px;
             height: 800px;
-            background: radial-gradient(ellipse at 40% 40%, rgba(73,232,194,.04), rgba(73,232,194,.015) 40%, transparent 70%);
+            background: radial-gradient(ellipse at 40% 40%, rgba(73,232,194,.02), rgba(73,232,194,.008) 40%, transparent 70%);
             z-index: 0;
             pointer-events: none;
             animation: drift 20s ease-in-out infinite alternate;
@@ -113,7 +113,7 @@
             right: 2%;
             width: 700px;
             height: 700px;
-            background: radial-gradient(ellipse at 60% 60%, rgba(73, 232, 194, .025), rgba(73,232,194,.008) 45%, transparent 75%);
+            background: radial-gradient(ellipse at 60% 60%, rgba(73, 232, 194, .015), rgba(73,232,194,.005) 45%, transparent 75%);
             z-index: 0;
             pointer-events: none;
             animation: drift 25s ease-in-out infinite alternate-reverse;
@@ -127,7 +127,7 @@
             transform: translate(-50%, -50%);
             width: 900px;
             height: 600px;
-            background: radial-gradient(ellipse, rgba(73,232,194,.02), transparent 70%);
+            background: radial-gradient(ellipse, rgba(73,232,194,.01), transparent 70%);
             z-index: 0;
             pointer-events: none;
             animation: drift 30s ease-in-out infinite alternate;
@@ -2822,11 +2822,11 @@ html { scroll-behavior: auto; }
 .view.show { display: block; }
 
 /* DAG canvas runs on all views with reduced opacity for non-overview */
-body:not(.on-overview) #dagCanvas { opacity: 0.45 !important; }
-body.on-overview #dagCanvas { opacity: 0.55 !important; }
-body:not(.on-overview) .bg-glow { opacity: 0.4 !important; }
-body:not(.on-overview) .bg-glow2 { opacity: 0.3 !important; }
-body:not(.on-overview) .bg-glow3 { opacity: 0.25 !important; }
+body:not(.on-overview) #dagCanvas { opacity: 0.65 !important; }
+body.on-overview #dagCanvas { opacity: 0.8 !important; }
+body:not(.on-overview) .bg-glow { opacity: 0.3 !important; }
+body:not(.on-overview) .bg-glow2 { opacity: 0.2 !important; }
+body:not(.on-overview) .bg-glow3 { opacity: 0.15 !important; }
 
         /* Ensure content fills viewport without blank space */
         body {
@@ -4023,7 +4023,7 @@ body.htp-game-active {
     <script>function addOut() { console.log('[HTP] addOut called'); }</script>
 <!-- duplicated chess.js removed -->
 <style id="htp-bg-fix">
-#dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.55!important;display:block!important}
+#dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.8!important;display:block!important}
 .dag-mini,#dagMiniWrap,#liveDagContainer,#dagMiniContainer{height:370px!important;min-height:370px!important;max-height:370px!important}
 </style>
 </head>
