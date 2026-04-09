@@ -4924,7 +4924,7 @@ event MyMarket {
                             </button>
                             <button type="button" class="sg-gbtn" data-game="tictactoe"
                                 style="background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .18s">
-                                <span style="font-size:26px;line-height:1">✕</span>
+                                <span style="font-size:26px;line-height:1;color:#49e8c2">✕</span>
                                 <span style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:.06em">TIC-TAC-TOE</span>
                             </button>
                         </div>
@@ -4993,8 +4993,8 @@ event MyMarket {
                             <label style="color:#b0b0b0;font-size:13px;white-space:nowrap">Oracle Mode:</label>
                             <select id="oracleModeSelect" onchange="setOracleMode(this.value)" style="flex:1;min-width:180px">
                                 <option value="hybrid" selected>Hybrid ZK+Bond Fallback</option>
-                                <option value="miner">ZK Verified</option>
-                                <option value="bonded">Bonded</option>
+                                <option value="zk">ZK Verified</option>
+                                <option value="bond">Bonded</option>
                             </select>
                             <span id="oracleModeDisplay" style="font-size:12px;color:var(--accent)">Hybrid ZK+Bond Fallback</span>
                         </div>
@@ -17446,6 +17446,11 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
         btn.addEventListener('click', function() {
           _currentTab = tab.key;
           localStorage.setItem('htp_oracle_tab', tab.key);
+          // Sync dropdown + display
+          var sel = document.getElementById('oracleModeSelect');
+          if (sel) sel.value = tab.key;
+          var disp = document.getElementById('oracleModeDisplay');
+          if (disp && ORACLE_MODES[tab.key]) disp.textContent = ORACLE_MODES[tab.key].label;
           renderOracleTabs(containerId);
         });
         tabBar.appendChild(btn);
@@ -17832,6 +17837,11 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
     _currentTab = mode;
     localStorage.setItem('htp_oracle_tab', mode);
     console.log('[HTP Oracle] Mode set to:', ORACLE_MODES[mode].label);
+    // Sync the dropdown and display span
+    var sel = document.getElementById('oracleModeSelect');
+    if (sel) sel.value = mode;
+    var disp = document.getElementById('oracleModeDisplay');
+    if (disp) disp.textContent = ORACLE_MODES[mode].label;
     var container = document.getElementById('oracleContainer');
     if (container) renderOracleTabs('oracleContainer');
   };

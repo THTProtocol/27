@@ -15004,6 +15004,18 @@ async function __wbg_init(module_or_path) {
             el.disabled=false; el.style.opacity='1'; el.title='';
         });
 
+        // === generateMnemonic: create a BIP39 mnemonic phrase ===
+        window.generateMnemonic = function(wordCount) {
+            try {
+                var m = Mnemonic.random(wordCount || 12);
+                return m.phrase;
+            } catch(e) {
+                console.warn('[HTP] generateMnemonic error:', e);
+                return null;
+            }
+        };
+        console.log('[HTP] generateMnemonic registered');
+
         // === kaspaFromMnemonic: derive address + keys from BIP39 mnemonic ===
         // This is the function wallet UI (recW, useMn, etc.) calls.
         // Flow: Mnemonic → seed → XPrv → PrivateKeyGenerator → receiveKey(0) → address
