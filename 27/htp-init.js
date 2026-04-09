@@ -27,14 +27,16 @@
     mainnet: {
       prefix:      'kaspa',
       networkId:   'mainnet',
-      rpcEndpoint: 'wss://rpc.kaspa.org',
+      resolverAlias: 'mainnet',  // Use Kaspa Resolver for load-balancing
+      useResolver: true,
       explorerTx:  'https://explorer.kaspa.org/txs/',
     },
     tn12: {
       prefix:      'kaspatest',
       networkId:   'testnet-12',
-      rpcEndpoint: 'wss://rpc-tn12.kaspa.org',
-      explorerTx:  'https://explorer-tn12.kaspa.org/txs/',
+      resolverAlias: 'tn12',  // Use Kaspa Resolver for TN12 load-balancing
+      useResolver: true,
+      explorerTx:  'https://tn12.kaspa.stream/txs/',
     },
   };
 
@@ -47,14 +49,15 @@
     if (!NETWORK_MAP[key]) key = 'tn12';
     var net = NETWORK_MAP[key];
     // Expose globally — every other module reads these
-    window.HTP_NETWORK    = key;                  // 'tn12' | 'mainnet'
-    window.activeNet      = net;                  // full config object
-    window.HTP_RPC_URL    = net.rpcEndpoint;
-    window.HTP_PREFIX     = net.prefix;
-    window.HTP_NETWORK_ID = net.networkId;
-    window.HTP_EXPLORER   = net.explorerTx;
+    window.HTP_NETWORK       = key;                   // 'tn12' | 'mainnet'
+    window.activeNet         = net;                   // full config object
+    window.HTP_RESOLVER_ALIAS= net.resolverAlias;     // 'tn12' or 'mainnet' for Kaspa Resolver
+    window.HTP_USE_RESOLVER  = net.useResolver;       // true = use Resolver, false = direct endpoint
+    window.HTP_PREFIX        = net.prefix;
+    window.HTP_NETWORK_ID    = net.networkId;
+    window.HTP_EXPLORER      = net.explorerTx;
     try { localStorage.setItem('htp_network', key); } catch (e) {}
-    console.log('[HTP Init] Network:', key, '|', net.rpcEndpoint);
+    console.log('[HTP Init] Network:', key, '| Resolver:', net.resolverAlias, '| Using Resolver:', net.useResolver);
     return net;
   }
 

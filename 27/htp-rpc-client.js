@@ -125,15 +125,22 @@
     }
 
     var networkId   = window.HTP_NETWORK_ID || 'testnet-12';
-    var rpcEndpoint = window.HTP_RPC_URL    || null;  // null = use Resolver
+    var useResolver = window.HTP_USE_RESOLVER || true;
+    var resolverAlias = window.HTP_RESOLVER_ALIAS || 'tn12';
 
     try {
-      if (rpcEndpoint) {
-        // Direct endpoint (set by htp-init.js)
-        _rpc = new sdk.RpcClient({ url: rpcEndpoint, networkId: networkId });
+      if (useResolver) {
+        // Use Kaspa Resolver for load-balanced RPC (automatic failover)
+        console.log('[HTPRpc] Using Kaspa Resolver:', resolverAlias);
+        _rpc = new sdk.RpcClient({ resolver: resolverAlias, networkId: networkId });
       } else {
-        // Fallback: let Resolver pick the best public node
-        _rpc = new sdk.RpcClient({ resolver: new sdk.Resolver(), networkId: networkId });
+        // Fallback: old style with direct endpoint (not recommended)
+        var rpcEndpoint = window.HTP_RPC_URL || null;
+        if (rpcEndpoint) {
+          _rpc = new sdk.RpcClient({ url: rpcEndpoint, networkId: networkId });
+        } else {
+          _rpc = new sdk.RpcClient({ resolver: resolverAlias, networkId: networkId });
+        }
       }
     } catch (e) {
       console.error('[HTPRpc] RpcClient construction failed:', e);
@@ -146,7 +153,7 @@
       _connected   = true;
       _retryCount  = 0;
       if (_retryTimer) { clearTimeout(_retryTimer); _retryTimer = null; }
-      console.log('[HTPRpc] Connected →', _rpc.url || networkId);
+      console.log('[HTPRpc] Connected →', _rpc.url || resolverAlias, '(', networkId, ')');
       window.dispatchEvent(new CustomEvent('htp:rpc:connected', { detail: { url: _rpc.url, networkId: networkId } }));
 
       try { await _rpc.subscribeVirtualDaaScoreChanged(); } catch (e) {}
