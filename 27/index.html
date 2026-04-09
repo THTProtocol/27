@@ -100,50 +100,64 @@
 
         .bg-glow {
             position: fixed;
-            top: -15%;
-            left: 5%;
-            width: 800px;
-            height: 800px;
-            background: radial-gradient(ellipse at 40% 40%, rgba(73,232,194,.02), rgba(73,232,194,.008) 40%, transparent 70%);
+            top: -20%;
+            left: -5%;
+            width: 900px;
+            height: 900px;
+            background: radial-gradient(ellipse at 40% 40%,
+              rgba(73,232,194,.11) 0%,
+              rgba(73,232,194,.055) 30%,
+              rgba(73,232,194,.015) 60%,
+              transparent 75%);
             z-index: 0;
             pointer-events: none;
-            animation: drift 20s ease-in-out infinite alternate;
+            animation: glowDrift 22s ease-in-out infinite alternate, glowPulse 9s ease-in-out infinite alternate;
         }
 
         .bg-glow2 {
             position: fixed;
-            bottom: -10%;
-            right: 2%;
-            width: 700px;
-            height: 700px;
-            background: radial-gradient(ellipse at 60% 60%, rgba(73, 232, 194, .015), rgba(73,232,194,.005) 45%, transparent 75%);
+            bottom: -15%;
+            right: -5%;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(ellipse at 58% 58%,
+              rgba(73,232,194,.08) 0%,
+              rgba(73,232,194,.04) 35%,
+              rgba(73,232,194,.01) 65%,
+              transparent 80%);
             z-index: 0;
             pointer-events: none;
-            animation: drift 25s ease-in-out infinite alternate-reverse;
+            animation: glowDrift2 28s ease-in-out infinite alternate-reverse, glowPulse 12s ease-in-out infinite alternate-reverse;
         }
-        
-        /* Third glow for coverage */
+
+        /* Third glow — center accent */
         .bg-glow3 {
             position: fixed;
-            top: 40%;
+            top: 35%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 900px;
-            height: 600px;
-            background: radial-gradient(ellipse, rgba(73,232,194,.01), transparent 70%);
+            width: 1000px;
+            height: 700px;
+            background: radial-gradient(ellipse,
+              rgba(73,232,194,.04) 0%,
+              rgba(73,232,194,.015) 45%,
+              transparent 70%);
             z-index: 0;
             pointer-events: none;
-            animation: drift 30s ease-in-out infinite alternate;
+            animation: glowPulse 15s ease-in-out infinite alternate;
         }
 
-        @keyframes drift {
-            0% {
-                transform: translate(0, 0)
-            }
-
-            100% {
-                transform: translate(80px, 60px)
-            }
+        @keyframes glowDrift {
+            0%   { transform: translate(0px, 0px); }
+            100% { transform: translate(70px, 50px); }
+        }
+        @keyframes glowDrift2 {
+            0%   { transform: translate(0px, 0px); }
+            100% { transform: translate(-60px, -45px); }
+        }
+        @keyframes glowPulse {
+            0%   { opacity: 0.7; }
+            100% { opacity: 1; }
         }
 
         /* ── header ── */
@@ -2827,9 +2841,9 @@ html { scroll-behavior: auto; }
 /* DAG canvas runs on all views with reduced opacity for non-overview */
 body:not(.on-overview) #dagCanvas { opacity: 0.65 !important; }
 body.on-overview #dagCanvas { opacity: 0.8 !important; }
-body:not(.on-overview) .bg-glow { opacity: 0.3 !important; }
-body:not(.on-overview) .bg-glow2 { opacity: 0.2 !important; }
-body:not(.on-overview) .bg-glow3 { opacity: 0.15 !important; }
+body:not(.on-overview) .bg-glow  { opacity: 0.55 !important; }
+body:not(.on-overview) .bg-glow2 { opacity: 0.45 !important; }
+body:not(.on-overview) .bg-glow3 { opacity: 0.3  !important; }
 
         /* Ensure content fills viewport without blank space */
         body {

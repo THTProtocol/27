@@ -37,6 +37,7 @@
   var _SPAWN_GAP = 110;   // wide spacing → ~18 nodes visible on 1400px screen
   var _bgTime = 0;
   var _bgH = 600;
+  var _bgRealByHash = {};   // hash → bgNode for injected real blocks
 
   function _bgRand(a, b) { return a + Math.random() * (b - a); }
 
@@ -81,6 +82,7 @@
     _bgScrollX = 0;
     _bgNodes = [];
     _bgNodeById = {};
+    _bgRealByHash = {};
     _bgNextId = 0;
     _bgH = h;
     var x = 40;
@@ -89,6 +91,90 @@
       x += _SPAWN_GAP * _bgRand(0.7, 1.35);
     }
     _bgSpawnNext = x;
+  }
+
+  // Inject real API blocks into background visualization as prominent teal nodes
+  function _injectRealBlocks(blocks) {
+    if (!blocks || !blocks.length) return;
+    var h = _bgH;
+    var newBlocks = blocks.filter(function(b) { return b.hash && !_bgRealByHash[b.hash]; });
+    if (!newBlocks.length) return;
+
+    // Sort by blueScore ascending (oldest → newest)
+    newBlocks.sort(function(a, b) { return (a.blueScore||0) - (b.blueScore||0); });
+
+    var minScore = newBlocks[0].blueScore || 0;
+    var maxScore = newBlocks[newBlocks.length - 1].blueScore || minScore;
+    var scoreRange = maxScore - minScore || 1;
+    // Map score range to a pixel span that ends at _bgSpawnNext
+    var span = Math.min(scoreRange * 3, window.innerWidth * 0.8);
+    // purge stale real-node tracking for old hash refs
+    Object.keys(_bgRealByHash).forEach(function(hash) {
+      var node = _bgRealByHash[hash];
+      if (!node || node.absX < _bgScrollX - _SPAWN_GAP * 12) { delete _bgRealByHash[hash]; }
+    });
+
+    newBlocks.forEach(function(b) {
+      var scoreFrac = (b.blueScore - minScore) / scoreRange;
+      var absX = _bgSpawnNext - span + scoreFrac * span;
+      // Y from hash bits — stable and organic
+      var hashBits = parseInt(b.hash.substring(0, 6), 16) || 0;
+      var y = h * 0.08 + (hashBits % 1000) / 1000 * h * 0.84;
+
+      var node = {
+        id: _bgNextId++,
+        absX: absX,
+        y: y,
+        alpha: 0.62,
+        isChain: true,
+        isReal: true,
+        hash: b.hash,
+        realParents: b.parents || [],
+        parentIds: []
+      };
+      _bgNodes.push(node);
+      _bgNodeById[node.id] = node;
+      _bgRealByHash[b.hash] = node;
+    });
+
+    // Wire real parent edges using actual parent hashes
+    _bgNodes.filter(function(n) { return n.isReal && n.realParents && n.realParents.length; }).forEach(function(n) {
+      n.realParents.forEach(function(ph) {
+        var pNode = _bgRealByHash[ph];
+        if (pNode && n.parentIds.indexOf(pNode.id) === -1) {
+          n.parentIds.push(pNode.id);
+          // also remove any synthetic parentIds that conflict
+        }
+      });
+    });
+
+    // Advance spawn cursor past the new real blocks
+    _bgSpawnNext = Math.max(_bgSpawnNext, _bgSpawnNext + _SPAWN_GAP);
+  }
+
+  // Write live Kaspa data to Firebase Realtime DB
+  function _syncFirebase(stats, blocks) {
+    try {
+      var fb = window.firebase;
+      if (!fb || !fb.apps || !fb.apps.length) return;
+      var db = fb.database();
+      if (stats) {
+        db.ref('kaspa/stats').set({
+          blockCount:  stats.blockCount  || 0,
+          daaScore:    stats.virtualDaaScore || 0,
+          difficulty:  stats.difficulty  || 0,
+          bps:         10,
+          ts:          Date.now()
+        });
+      }
+      if (blocks && blocks.length) {
+        var recent = blocks.slice(-15).map(function(b) {
+          return { hash: b.hash, blueScore: b.blueScore || 0, parents: (b.parents||[]).slice(0,3), ts: b.timestamp || 0 };
+        });
+        db.ref('kaspa/latestBlocks').set(recent);
+        db.ref('kaspa/latestHash').set(blocks[blocks.length - 1].hash);
+      }
+    } catch(e) { /* firebase not ready yet */ }
   }
 
   function drawBackgroundMode(ctx, w, h) {
@@ -141,22 +227,56 @@
       if (bx < -10 || bx > w + 10) return;
 
       var a = b.alpha;
-      var r = b.isChain ? _BG_R + 0.5 : _BG_R;
+      var isLatestReal = b.isReal && b.hash === _latestHash;
 
-      // Dot fill
-      ctx.globalAlpha = a * (b.isChain ? 0.55 : 0.28);
-      ctx.fillStyle = b.isChain ? 'rgba(73,232,194,0.9)' : 'rgba(73,232,194,0.6)';
-      ctx.beginPath();
-      ctx.arc(bx, b.y, r, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Outer ring
-      ctx.globalAlpha = a * (b.isChain ? 0.4 : 0.2);
-      ctx.strokeStyle = '#49e8c2';
-      ctx.lineWidth = 0.7;
-      ctx.beginPath();
-      ctx.arc(bx, b.y, r + 1.5, 0, Math.PI * 2);
-      ctx.stroke();
+      if (b.isReal) {
+        // ── Real API block — solid teal dot with glow ring ──────
+        var rr = isLatestReal ? _BG_R + 2 : _BG_R + 0.8;
+        // Glow halo for latest
+        if (isLatestReal) {
+          ctx.globalAlpha = 0.18 + 0.1 * Math.sin(_bgTime * 1.8);
+          ctx.fillStyle = 'rgba(73,232,194,0.4)';
+          ctx.beginPath();
+          ctx.arc(bx, b.y, rr + 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Filled dot
+        ctx.globalAlpha = a;
+        ctx.fillStyle = isLatestReal ? '#49e8c2' : 'rgba(73,232,194,0.85)';
+        ctx.beginPath();
+        ctx.arc(bx, b.y, rr, 0, Math.PI * 2);
+        ctx.fill();
+        // Outer ring
+        ctx.globalAlpha = a * 0.55;
+        ctx.strokeStyle = '#49e8c2';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(bx, b.y, rr + 2.5, 0, Math.PI * 2);
+        ctx.stroke();
+        // Hash label on latest real block
+        if (isLatestReal) {
+          ctx.globalAlpha = 0.45;
+          ctx.fillStyle = '#49e8c2';
+          ctx.font = '7px JetBrains Mono, monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(b.hash.substring(0,6)+'..'+b.hash.slice(-4), bx, b.y - rr - 3);
+        }
+      } else {
+        // ── Synthetic ambient node ──────────────────────────────
+        var r = b.isChain ? _BG_R + 0.5 : _BG_R;
+        ctx.globalAlpha = a * (b.isChain ? 0.5 : 0.25);
+        ctx.fillStyle = b.isChain ? 'rgba(73,232,194,0.85)' : 'rgba(73,232,194,0.55)';
+        ctx.beginPath();
+        ctx.arc(bx, b.y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = a * (b.isChain ? 0.32 : 0.14);
+        ctx.strokeStyle = '#49e8c2';
+        ctx.lineWidth = 0.6;
+        ctx.beginPath();
+        ctx.arc(bx, b.y, r + 1.5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     });
 
     ctx.restore();
@@ -194,6 +314,7 @@
 
       el = document.getElementById('statFee') || document.getElementById('kaspaFee') || document.getElementById('ks-fee');
       if (el) el.textContent = '~0.0001 KAS';
+      _syncFirebase(data, null);
     }).catch(function() {
       _connected = false;
     });
@@ -254,6 +375,8 @@
       if (_blocks.length > 0) {
         _latestHash = _blocks[_blocks.length - 1].hash;
       }
+      _injectRealBlocks(_blocks);
+      _syncFirebase(null, _blocks);
     }).catch(function() {
       _connected = false;
     });
