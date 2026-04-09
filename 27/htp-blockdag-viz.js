@@ -23,87 +23,226 @@
   var LINE_COLOR = 'rgba(73,232,194,0.25)';
   var LABEL_COLOR = 'rgba(73,232,194,0.45)';
 
-  // Ambient particles for full-page background mode
-  var _particles = [];
-  var _PARTICLE_COUNT = 140; // dense field of block nodes
-  var _LINK_DISTANCE = 160;  // tighter connections
+  // ── Synthetic DAG: a proper flowing BlockDAG background ──────────────
+  var _dagCols = [];       // array of { x, blocks: [{ y, alpha, parentIds }] }
+  var _dagScrollX = 0;     // accumulated scroll offset
+  var _dagColWidth = 0;    // horizontal spacing between columns
+  var _dagW = 0;           // canvas width at last init
+  var _dagH = 0;           // canvas height at last init
   var _bgTime = 0;
+  var _BG_BLOCK_W = 30;    // block rectangle size
+  var _BG_BLOCK_H = 16;
+  var _BG_BLOCK_R = 4;
+  var _VISIBLE_COLS = 18;  // columns on screen at once
+  var _SCROLL_SPEED = 0.25; // px per frame — slow drift
 
-  function initParticles(w, h) {
-    _particles = [];
-    for (var i = 0; i < _PARTICLE_COUNT; i++) {
-      // Distribute in layers for depth effect
-      var depth = 0.2 + Math.random() * 0.8; // 0.2 = far, 1.0 = near
-      _particles.push({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        r: (0.8 + Math.random() * 1.5) * depth,
-        vx: (Math.random() - 0.5) * 0.018 * depth,
-        vy: -0.004 - Math.random() * 0.008 * depth, // very slow upward drift
-        alpha: (0.06 + Math.random() * 0.14) * depth,
+  function _randBetween(a, b) { return a + Math.random() * (b - a); }
+
+  function _generateCol(colIndex, h) {
+    // 2-5 blocks per column, spread vertically in 20%-80% band
+    var numBlocks = 2 + Math.floor(Math.random() * 4);
+    var bandTop = h * 0.18;
+    var bandBot = h * 0.82;
+    var bandH = bandBot - bandTop;
+    var spacing = bandH / (numBlocks + 1);
+    var blocks = [];
+    for (var i = 0; i < numBlocks; i++) {
+      var baseY = bandTop + spacing * (i + 1);
+      blocks.push({
+        y: baseY + (Math.random() - 0.5) * spacing * 0.5,
+        alpha: _randBetween(0.06, 0.22),
+        parentIds: [], // indices into prev column
         pulse: Math.random() * Math.PI * 2,
-        pulseSpeed: 0.0008 + Math.random() * 0.002, // slow breathing
-        depth: depth
+        colIdx: colIndex,
+        blockIdx: i
       });
+    }
+    return { colIndex: colIndex, blocks: blocks };
+  }
+
+  function _wireParents(col, prevCol) {
+    if (!prevCol) return;
+    col.blocks.forEach(function(b) {
+      // Each block connects to 1-3 parents in previous column
+      var nParents = 1 + Math.floor(Math.random() * Math.min(3, prevCol.blocks.length));
+      var indices = [];
+      for (var p = 0; p < nParents; p++) {
+        var idx = Math.floor(Math.random() * prevCol.blocks.length);
+        if (indices.indexOf(idx) === -1) indices.push(idx);
+      }
+      b.parentIds = indices;
+    });
+  }
+
+  function initSyntheticDAG(w, h) {
+    _dagW = w;
+    _dagH = h;
+    _dagScrollX = 0;
+    _dagCols = [];
+    // Generate enough columns to fill screen + 4 buffer on right
+    _dagColWidth = w / (_VISIBLE_COLS - 1);
+    var totalCols = _VISIBLE_COLS + 6;
+    for (var c = 0; c < totalCols; c++) {
+      var col = _generateCol(c, h);
+      _wireParents(col, c > 0 ? _dagCols[c - 1] : null);
+      _dagCols.push(col);
     }
   }
 
   function drawBackgroundMode(ctx, w, h) {
     ctx.clearRect(0, 0, w, h);
-    _bgTime += 0.016; // ~60fps dt
+    _bgTime += 0.016;
+    _dagScrollX += _SCROLL_SPEED;
 
-    // Draw soft connections between nearby particles — faded gradient edges
-    ctx.save();
-    for (var i = 0; i < _particles.length; i++) {
-      for (var j = i + 1; j < _particles.length; j++) {
-        var pi = _particles[i], pj = _particles[j];
-        var dx = pi.x - pj.x;
-        var dy = pi.y - pj.y;
-        var dist = Math.sqrt(dx * dx + dy * dy);
-        var linkDist = _LINK_DISTANCE * Math.min(pi.depth, pj.depth);
-        if (dist < linkDist) {
-          var fade = (1 - dist / linkDist);
-          var linkAlpha = fade * fade * 0.022 * Math.min(pi.depth, pj.depth);
-          ctx.globalAlpha = linkAlpha;
-          ctx.strokeStyle = 'rgba(73,232,194,' + (linkAlpha * 0.35) + ')';
-          ctx.lineWidth = 0.2 + 0.15 * Math.min(pi.depth, pj.depth);
-          ctx.beginPath();
-          ctx.moveTo(pi.x, pi.y);
-          ctx.lineTo(pj.x, pj.y);
-          ctx.stroke();
-        }
-      }
+    // When leftmost column scrolls fully off-screen, recycle it
+    var firstColX = -_dagScrollX + _dagCols[0].colIndex * _dagColWidth;
+    while (firstColX < -_dagColWidth * 2) {
+      _dagCols.shift();
+      // Add new column on the right
+      var lastCol = _dagCols[_dagCols.length - 1];
+      var newCol = _generateCol(lastCol.colIndex + 1, h);
+      _wireParents(newCol, lastCol);
+      _dagCols.push(newCol);
+      firstColX = -_dagScrollX + _dagCols[0].colIndex * _dagColWidth;
     }
-    ctx.restore();
 
-    // Draw drifting ambient particles (block nodes) with depth
-    _particles.forEach(function(p) {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.pulse += p.pulseSpeed;
-      // Wrap around
-      if (p.x < -20) p.x = w + 20;
-      if (p.x > w + 20) p.x = -20;
-      if (p.y < -20) p.y = h + 20;
-      if (p.y > h + 20) p.y = -20;
+    ctx.save();
 
-      var breathe = 0.7 + 0.3 * Math.sin(p.pulse);
-      var alpha = p.alpha * breathe;
+    // ── Draw connection lines first (behind blocks) ──────────────
+    _dagCols.forEach(function(col, ci) {
+      var cx = -_dagScrollX + col.colIndex * _dagColWidth;
+      if (cx < -_dagColWidth || cx > w + _dagColWidth) return;
+      var prevCol = ci > 0 ? _dagCols[ci - 1] : null;
+      if (!prevCol) return;
+      var pcx = -_dagScrollX + prevCol.colIndex * _dagColWidth;
 
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = 'rgba(73,232,194,0.55)';
-      ctx.shadowColor = 'rgba(73,232,194,0.25)';
-      ctx.shadowBlur = 2 + 4 * p.depth;
-      roundRect(ctx, p.x - p.r, p.y - p.r, p.r * 2 + 3, p.r * 2 + 2, 1.2);
-      ctx.fill();
-      ctx.restore();
+      col.blocks.forEach(function(b) {
+        b.parentIds.forEach(function(pid) {
+          if (pid >= prevCol.blocks.length) return;
+          var parent = prevCol.blocks[pid];
+          // Curved bezier connection
+          var x1 = pcx + _BG_BLOCK_W;
+          var y1 = parent.y + _BG_BLOCK_H / 2;
+          var x2 = cx;
+          var y2 = b.y + _BG_BLOCK_H / 2;
+          var cpOff = (x2 - x1) * 0.4;
+
+          var avgAlpha = (b.alpha + parent.alpha) * 0.5;
+          ctx.globalAlpha = avgAlpha * 0.6;
+          ctx.strokeStyle = 'rgba(73,232,194,' + (avgAlpha * 0.45).toFixed(3) + ')';
+          ctx.lineWidth = 0.7;
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.bezierCurveTo(x1 + cpOff, y1, x2 - cpOff, y2, x2, y2);
+          ctx.stroke();
+        });
+      });
     });
 
-    // Live BlockDAG: the showcase — spread across full width, mid-to-lower canvas
+    // ── Draw block rectangles ────────────────────────────────────
+    _dagCols.forEach(function(col) {
+      var cx = -_dagScrollX + col.colIndex * _dagColWidth;
+      if (cx < -_BG_BLOCK_W - 10 || cx > w + 10) return;
+
+      col.blocks.forEach(function(b) {
+        b.pulse += 0.012;
+        var breathe = 0.75 + 0.25 * Math.sin(b.pulse);
+        var alpha = b.alpha * breathe;
+
+        // Block body
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = 'rgba(73,232,194,0.15)';
+        ctx.strokeStyle = 'rgba(73,232,194,' + (alpha * 0.7).toFixed(3) + ')';
+        ctx.lineWidth = 0.6;
+        roundRect(ctx, cx, b.y, _BG_BLOCK_W, _BG_BLOCK_H, _BG_BLOCK_R);
+        ctx.fill();
+        ctx.stroke();
+
+        // Subtle inner glow on brighter blocks
+        if (alpha > 0.12) {
+          ctx.globalAlpha = alpha * 0.3;
+          ctx.shadowColor = 'rgba(73,232,194,0.4)';
+          ctx.shadowBlur = 6;
+          roundRect(ctx, cx + 2, b.y + 2, _BG_BLOCK_W - 4, _BG_BLOCK_H - 4, 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+      });
+    });
+
+    // ── Overlay real blocks if available ──────────────────────────
     if (_blocks.length > 0) {
-      drawLiveBlocksOverlay(ctx, w, h);
+      _drawRealBlockHighlights(ctx, w, h);
     }
+
+    ctx.restore();
+  }
+
+  // Highlight real live blocks — latest blocks glow brighter with hash labels
+  function _drawRealBlockHighlights(ctx, w, h) {
+    var n = Math.min(_blocks.length, 8); // show last 8 real blocks
+    var blocks = _blocks.slice(-n);
+    var startX = w * 0.55; // right half of screen
+    var spacingX = (w * 0.38) / Math.max(n - 1, 1);
+
+    blocks.forEach(function(b, i) {
+      var bx = startX + i * spacingX;
+      // Stagger Y by hash
+      var hashBits = (parseInt(b.hash.substring(0, 6), 16) || 0);
+      var lane = ((hashBits % 5) - 2) / 2;
+      var by = h * 0.5 + lane * h * 0.2;
+      var isLatest = b.hash === _latestHash;
+
+      // Parent connections to previous real blocks
+      if (i > 0) {
+        var prevB = blocks[i - 1];
+        var px = startX + (i - 1) * spacingX + _BG_BLOCK_W;
+        var phBits = (parseInt(prevB.hash.substring(0, 6), 16) || 0);
+        var pLane = ((phBits % 5) - 2) / 2;
+        var py = h * 0.5 + pLane * h * 0.2 + _BG_BLOCK_H / 2;
+
+        ctx.globalAlpha = isLatest ? 0.35 : 0.18;
+        ctx.strokeStyle = 'rgba(73,232,194,0.4)';
+        ctx.lineWidth = isLatest ? 1.2 : 0.8;
+        var cpOff = spacingX * 0.4;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.bezierCurveTo(px + cpOff, py, bx - cpOff, by + _BG_BLOCK_H / 2, bx, by + _BG_BLOCK_H / 2);
+        ctx.stroke();
+      }
+
+      // Glow for latest
+      if (isLatest) {
+        var pulse = 0.3 + 0.15 * Math.sin(_bgTime * 2.5);
+        ctx.globalAlpha = pulse;
+        ctx.shadowColor = PRIMARY;
+        ctx.shadowBlur = 14;
+        ctx.fillStyle = 'rgba(73,232,194,0.2)';
+        roundRect(ctx, bx - 4, by - 4, _BG_BLOCK_W + 8, _BG_BLOCK_H + 8, _BG_BLOCK_R + 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      // Block body — brighter than synthetic blocks
+      ctx.globalAlpha = isLatest ? 0.55 : 0.3;
+      ctx.fillStyle = isLatest ? 'rgba(73,232,194,0.35)' : 'rgba(73,232,194,0.18)';
+      ctx.strokeStyle = 'rgba(73,232,194,' + (isLatest ? 0.5 : 0.25) + ')';
+      ctx.lineWidth = isLatest ? 1.0 : 0.7;
+      roundRect(ctx, bx, by, _BG_BLOCK_W, _BG_BLOCK_H, _BG_BLOCK_R);
+      ctx.fill();
+      ctx.stroke();
+
+      // Hash label on latest
+      if (isLatest) {
+        ctx.globalAlpha = 0.4;
+        ctx.fillStyle = '#49e8c2';
+        ctx.font = '7px JetBrains Mono, Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(b.hash.substring(0, 8) + '...' + b.hash.slice(-4),
+                      bx + _BG_BLOCK_W / 2, by + _BG_BLOCK_H + 4);
+      }
+    });
   }
 
   var _blocks = [];
@@ -204,103 +343,6 @@
   }
 
   // ── Canvas Rendering ───────────────────────────────────────────────────
-
-  function drawLiveBlocksOverlay(ctx, w, h) {
-    // Full-screen flowing BlockDAG — shows real Kaspa blocks with parent connections
-    // Spread across center band (30%-85% of height) for maximum visual impact
-    var padX = 40;
-    var topY = h * 0.32;
-    var botY = h * 0.82;
-    var dagH = botY - topY;
-    var usableW = w - padX * 2;
-    var n = Math.min(_blocks.length, 40);
-    if (!n) return;
-    var spacingX = n > 1 ? usableW / (n - 1) : 0;
-
-    ctx.save();
-
-    // Build position map — stagger vertically by hash to show DAG width
-    var posMap = {};
-    var blocks = _blocks.slice(-n);
-    blocks.forEach(function(b, i) {
-      var slideOffset = b.slideIn * 60;
-      b.slideIn = Math.max(0, b.slideIn - 0.04); // slower slide-in
-      var bx = padX + i * spacingX + slideOffset;
-      // Use hash bits for vertical spread across full DAG band
-      var hashBits = (parseInt(b.hash.substring(0, 6), 16) || 0);
-      var lane = ((hashBits % 7) - 3) / 3; // -1 to +1
-      var by = topY + dagH * 0.5 + lane * dagH * 0.35;
-      posMap[b.hash] = { x: bx, y: by };
-    });
-
-    // Parent connection lines — soft curved edges
-    blocks.forEach(function(b) {
-      var pos = posMap[b.hash];
-      if (!pos) return;
-      b.parents.forEach(function(ph) {
-        var pp = posMap[ph];
-        if (!pp) return;
-        var isRecent = b.hash === _latestHash;
-        // Gradient line from parent to child
-        var grad = ctx.createLinearGradient(pp.x, pp.y, pos.x, pos.y);
-        grad.addColorStop(0, 'rgba(73,232,194,' + (isRecent ? 0.18 : 0.06) + ')');
-        grad.addColorStop(0.5, 'rgba(73,232,194,' + (isRecent ? 0.12 : 0.04) + ')');
-        grad.addColorStop(1, 'rgba(73,232,194,' + (isRecent ? 0.18 : 0.06) + ')');
-        ctx.globalAlpha = 0.7;
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = isRecent ? 1.0 : 0.5;
-        ctx.beginPath();
-        // Slight curve for organic DAG feel
-        var cpX = (pp.x + pos.x) / 2;
-        var cpY = (pp.y + pos.y) / 2 - 8;
-        ctx.moveTo(pp.x + BLOCK_W, pp.y + BLOCK_H / 2);
-        ctx.quadraticCurveTo(cpX + BLOCK_W / 2, cpY, pos.x, pos.y + BLOCK_H / 2);
-        ctx.stroke();
-      });
-    });
-
-    // Draw block nodes
-    blocks.forEach(function(b, i) {
-      var pos = posMap[b.hash];
-      if (!pos) return;
-      var isLatest = b.hash === _latestHash;
-      var isTip = i >= n - 3; // last 3 blocks are "tips"
-
-      // Block glow
-      if (isLatest) {
-        var pulse = 0.4 + 0.15 * Math.sin(_bgTime * 2.5);
-        ctx.globalAlpha = pulse;
-        ctx.shadowColor = PRIMARY;
-        ctx.shadowBlur = 12;
-        ctx.fillStyle = 'rgba(73,232,194,0.25)';
-        roundRect(ctx, pos.x - 3, pos.y - 3, BLOCK_W + 6, BLOCK_H + 6, BLOCK_R + 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      }
-
-      // Block body
-      ctx.globalAlpha = isLatest ? 0.65 : isTip ? 0.45 : 0.25;
-      ctx.fillStyle = isLatest ? 'rgba(73,232,194,0.5)' : 'rgba(73,232,194,0.12)';
-      ctx.strokeStyle = 'rgba(73,232,194,' + (isLatest ? 0.6 : isTip ? 0.3 : 0.12) + ')';
-      ctx.lineWidth = isLatest ? 1.2 : 0.6;
-      roundRect(ctx, pos.x, pos.y, BLOCK_W, BLOCK_H, BLOCK_R);
-      ctx.fill();
-      ctx.stroke();
-
-      // Hash label on latest block
-      if (isLatest) {
-        ctx.globalAlpha = 0.5;
-        ctx.fillStyle = '#49e8c2';
-        ctx.font = '7px JetBrains Mono, Consolas, monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        var label = b.hash.substring(0, 8) + '...' + b.hash.slice(-4);
-        ctx.fillText(label, pos.x + BLOCK_W / 2, pos.y + BLOCK_H + 5);
-      }
-    });
-
-    ctx.restore();
-  }
 
   function drawDAG(ctx, w, h, isBackground) {
     if (isBackground) {
@@ -491,10 +533,10 @@
     var ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Init ambient particles once for background mode
+    // Init synthetic DAG once for background mode
     if (isBackground) {
       var r = canvas.getBoundingClientRect();
-      initParticles(r.width || window.innerWidth, r.height || window.innerHeight);
+      initSyntheticDAG(r.width || window.innerWidth, r.height || window.innerHeight);
     }
 
     function tick() {
@@ -505,7 +547,7 @@
         canvas.width = rect.width * dpr;
         canvas.height = rect.height * dpr;
         ctx.scale(dpr, dpr);
-        if (isBackground) initParticles(rect.width, rect.height);
+        if (isBackground) initSyntheticDAG(rect.width, rect.height);
       }
       drawDAG(ctx, rect.width, rect.height, isBackground);
       var id = requestAnimationFrame(tick);
