@@ -24,53 +24,81 @@
   var LABEL_COLOR = 'rgba(73,232,194,0.45)';
 
   // ── KASPA BLOCKDAG BACKGROUND ─────────────────────────────────────────
-  // Calm constellation DAG — nodes as small circles drifting almost imperceptibly
-  // left. Faint bezier edges connect nearby nodes. CSS mask handles edge fade.
-  // Design: ~20 nodes on screen, widely-spaced, no pulsing, near-static feel.
-  var _bgScrollX = 0;
-  var _bgNodes = [];      // { id, absX, y, alpha, isChain, parentIds[] }
+  // Three-layer deep-space DAG:
+  //   Layer 1 — Starfield  : tiny pale dots moving at 20% of DAG speed (parallax)
+  //   Layer 2 — DAG network: organic circles + bezier edges, slow scroll
+  //   Layer 3 — Real blocks: brighter nodes from live TN12 API with real edges
+  // Edge fade done per-node with smoothstep() — no CSS mask needed, zero hard lines.
+  var _bgScrollX  = 0;
+  var _bgNodes    = [];   // { id, absX, y, alpha, isChain, isReal, parentIds[] }
   var _bgNodeById = {};
-  var _bgNextId = 0;
+  var _bgNextId   = 0;
   var _bgSpawnNext = 0;
-  var _BG_R = 3;           // node radius
-  var _SCROLL_SPEED = 0.008;  // ~0.5 px/sec — barely perceptible drift
-  var _SPAWN_GAP = 110;   // wide spacing → ~18 nodes visible on 1400px screen
+  var _bgStars    = [];   // parallax starfield
+  var _bgStarsOk  = false;
+  var _BG_R        = 2.5; // base node radius
+  var _SCROLL_SPEED = 0.008; // DAG scroll speed — barely perceptible
+  var _STAR_SPEED   = 0.0016; // stars scroll at 20% of DAG (parallax depth)
+  var _SPAWN_GAP    = 72;    // px between clusters → ~22 nodes on 1440px screen
   var _bgTime = 0;
   var _bgH = 600;
-  var _bgRealByHash = {};   // hash → bgNode for injected real blocks
+  var _bgW = 1400;
+  var _bgRealByHash = {};
 
   function _bgRand(a, b) { return a + Math.random() * (b - a); }
 
+  // Cubic smoothstep — produces a perfectly seamless S-curve fade, no hard line
+  function _bgSmooth(x, lo, hi) {
+    var t = Math.max(0, Math.min(1, (x - lo) / (hi - lo)));
+    return t * t * (3 - 2 * t);
+  }
+  // Edge fade: 22% fade zone on each side
+  function _bgFade(bx, w) {
+    var z = w * 0.22;
+    return _bgSmooth(bx, 0, z) * _bgSmooth(w - bx, 0, z);
+  }
+
+  function _bgInitStars(w, h) {
+    _bgStars = [];
+    for (var i = 0; i < 85; i++) {
+      _bgStars.push({
+        absX: _bgRand(0, w * 1.6),
+        y:    _bgRand(0, h),
+        r:    Math.random() < 0.72 ? 0.55 : 1.0,
+        a:    _bgRand(0.04, 0.18)
+      });
+    }
+  }
+
   function _bgSpawnCluster(absX) {
-    // 1-2 nodes per time step — sparse, calm
-    var count = Math.random() > 0.42 ? 2 : 1;
+    var count = Math.random() > 0.35 ? (Math.random() > 0.68 ? 3 : 2) : 1;
     var h = _bgH;
     var usedY = [];
     for (var n = 0; n < count; n++) {
       var y, tries = 0;
       do {
-        y = _bgRand(h * 0.08, h * 0.92);
+        y = _bgRand(h * 0.06, h * 0.94);
         tries++;
-      } while (usedY.some(function(uy) { return Math.abs(uy - y) < h * 0.18; }) && tries < 20);
+      } while (usedY.some(function(uy) { return Math.abs(uy - y) < h * 0.12; }) && tries < 20);
       usedY.push(y);
 
       var node = {
         id: _bgNextId++,
-        absX: absX + _bgRand(-8, 8),
+        absX: absX + _bgRand(-10, 10),
         y: y,
-        alpha: _bgRand(0.18, 0.38),
-        isChain: Math.random() > 0.72,
+        alpha: _bgRand(0.20, 0.46),
+        isChain: Math.random() > 0.68,
+        isReal: false,
         parentIds: []
       };
 
-      // Connect to 1-2 nearby nodes in the preceding ~3 gaps
       var searchMin = absX - _SPAWN_GAP * 3.5;
       var cands = _bgNodes.filter(function(b) {
-        return b.absX < absX - 10 && b.absX > searchMin;
+        return b.absX < absX - 8 && b.absX > searchMin;
       }).sort(function(a, b) {
         return Math.abs(a.y - y) - Math.abs(b.y - y);
       });
-      var nP = Math.min(1 + (Math.random() > 0.55 ? 1 : 0), cands.length);
+      var nP = Math.min(1 + (Math.random() > 0.48 ? 1 : 0), cands.length);
       for (var p = 0; p < nP; p++) node.parentIds.push(cands[p].id);
 
       _bgNodes.push(node);
@@ -80,15 +108,17 @@
 
   function initLaneDAG(w, h) {
     _bgScrollX = 0;
-    _bgNodes = [];
+    _bgNodes   = [];
     _bgNodeById = {};
     _bgRealByHash = {};
-    _bgNextId = 0;
+    _bgNextId  = 0;
     _bgH = h;
+    _bgW = w;
+    if (!_bgStarsOk) { _bgInitStars(w, h); _bgStarsOk = true; }
     var x = 40;
-    while (x < w + _SPAWN_GAP * 5) {
+    while (x < w + _SPAWN_GAP * 7) {
       _bgSpawnCluster(x);
-      x += _SPAWN_GAP * _bgRand(0.7, 1.35);
+      x += _SPAWN_GAP * _bgRand(0.65, 1.38);
     }
     _bgSpawnNext = x;
   }
@@ -182,99 +212,136 @@
     _bgTime += 0.016;
     _bgScrollX += _SCROLL_SPEED;
     _bgH = h;
+    _bgW = w;
 
     // Spawn ahead
-    while (_bgSpawnNext - _bgScrollX < w + _SPAWN_GAP * 5) {
+    while (_bgSpawnNext - _bgScrollX < w + _SPAWN_GAP * 7) {
       _bgSpawnCluster(_bgSpawnNext);
-      _bgSpawnNext += _SPAWN_GAP * _bgRand(0.7, 1.35);
+      _bgSpawnNext += _SPAWN_GAP * _bgRand(0.65, 1.38);
     }
 
     // Prune off-screen left
-    var cutoff = _bgScrollX - _SPAWN_GAP * 6;
+    var cutoff = _bgScrollX - _SPAWN_GAP * 9;
     _bgNodes = _bgNodes.filter(function(b) {
-      if (b.absX < cutoff) { delete _bgNodeById[b.id]; return false; }
+      if (b.absX < cutoff) {
+        delete _bgNodeById[b.id];
+        if (b.isReal && b.hash) delete _bgRealByHash[b.hash];
+        return false;
+      }
       return true;
     });
 
     ctx.save();
     ctx.lineCap = 'round';
 
-    // ── Edges ────────────────────────────────────────────────────
+    // ── Layer 1: Parallax starfield ──────────────────────────────
+    // Stars scroll at 20% of DAG speed → creates depth illusion
+    var starScroll = _bgScrollX * 0.20;
+    var starWrap = w * 1.6;
+    _bgStars.forEach(function(s) {
+      var sx = ((s.absX - starScroll) % starWrap + starWrap) % starWrap;
+      if (sx > w) return;
+      var ef = _bgFade(sx, w);
+      if (ef < 0.005) return;
+      ctx.globalAlpha = s.a * ef;
+      ctx.fillStyle = 'rgba(210,255,240,1)';
+      ctx.beginPath();
+      ctx.arc(sx, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // ── Layer 2: DAG edges ───────────────────────────────────────
     _bgNodes.forEach(function(b) {
       var bx = b.absX - _bgScrollX;
-      var by = b.y;
+      var bef = _bgFade(bx, w);
+      if (bef < 0.005) return;
+
       b.parentIds.forEach(function(pid) {
         var p = _bgNodeById[pid];
         if (!p) return;
         var px = p.absX - _bgScrollX;
-        var py = p.y;
-        var isChain = b.isChain && p.isChain;
+        var pef = _bgFade(px, w);
+        var ef = Math.min(bef, pef);
+        if (ef < 0.005) return;
+
+        var isHot = (b.isChain || b.isReal) && (p.isChain || p.isReal);
         var dx = bx - px;
         var cp = dx * 0.42;
-        ctx.globalAlpha = isChain ? 0.16 : 0.07;
+        ctx.globalAlpha = ef * (isHot ? 0.22 : 0.08);
         ctx.strokeStyle = '#49e8c2';
-        ctx.lineWidth = isChain ? 0.8 : 0.5;
+        ctx.lineWidth = isHot ? 0.9 : 0.5;
         ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.bezierCurveTo(px + cp, py, bx - cp, by, bx, by);
+        ctx.moveTo(px, b.y > p.y ? p.y : p.y);
+        ctx.moveTo(px, p.y);
+        ctx.bezierCurveTo(px + cp, p.y, bx - cp, b.y, bx, b.y);
         ctx.stroke();
       });
     });
 
-    // ── Nodes ────────────────────────────────────────────────────
+    // ── Layer 3: Nodes ───────────────────────────────────────────
     _bgNodes.forEach(function(b) {
       var bx = b.absX - _bgScrollX;
-      if (bx < -10 || bx > w + 10) return;
+      if (bx < -12 || bx > w + 12) return;
+      var ef = _bgFade(bx, w);
+      if (ef < 0.005) return;
 
-      var a = b.alpha;
-      var isLatestReal = b.isReal && b.hash === _latestHash;
+      var a = b.alpha * ef;
+      var isLatest = b.isReal && b.hash === _latestHash;
 
       if (b.isReal) {
-        // ── Real API block — solid teal dot with glow ring ──────
-        var rr = isLatestReal ? _BG_R + 2 : _BG_R + 0.8;
-        // Glow halo for latest
-        if (isLatestReal) {
-          ctx.globalAlpha = 0.18 + 0.1 * Math.sin(_bgTime * 1.8);
-          ctx.fillStyle = 'rgba(73,232,194,0.4)';
+        // ── Real API block: larger, fully opaque teal dot ────────
+        var rr = isLatest ? _BG_R + 2.8 : _BG_R + 1.2;
+
+        // Outer glow halo for latest
+        if (isLatest) {
+          var pulse = 0.12 + 0.08 * Math.sin(_bgTime * 1.7);
+          ctx.globalAlpha = pulse * ef;
+          ctx.fillStyle = 'rgba(73,232,194,0.35)';
           ctx.beginPath();
-          ctx.arc(bx, b.y, rr + 5, 0, Math.PI * 2);
+          ctx.arc(bx, b.y, rr + 8, 0, Math.PI * 2);
           ctx.fill();
         }
+
         // Filled dot
-        ctx.globalAlpha = a;
-        ctx.fillStyle = isLatestReal ? '#49e8c2' : 'rgba(73,232,194,0.85)';
+        ctx.globalAlpha = a * 0.92;
+        ctx.fillStyle = isLatest ? '#49e8c2' : 'rgba(73,232,194,0.82)';
         ctx.beginPath();
         ctx.arc(bx, b.y, rr, 0, Math.PI * 2);
         ctx.fill();
-        // Outer ring
-        ctx.globalAlpha = a * 0.55;
+
+        // Ring
+        ctx.globalAlpha = a * 0.48;
         ctx.strokeStyle = '#49e8c2';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(bx, b.y, rr + 2.5, 0, Math.PI * 2);
+        ctx.arc(bx, b.y, rr + 2.8, 0, Math.PI * 2);
         ctx.stroke();
+
         // Hash label on latest real block
-        if (isLatestReal) {
-          ctx.globalAlpha = 0.45;
+        if (isLatest) {
+          ctx.globalAlpha = ef * 0.50;
           ctx.fillStyle = '#49e8c2';
           ctx.font = '7px JetBrains Mono, monospace';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'bottom';
-          ctx.fillText(b.hash.substring(0,6)+'..'+b.hash.slice(-4), bx, b.y - rr - 3);
+          ctx.fillText(b.hash.substring(0, 6) + '..' + b.hash.slice(-4), bx, b.y - rr - 4);
         }
+
       } else {
-        // ── Synthetic ambient node ──────────────────────────────
-        var r = b.isChain ? _BG_R + 0.5 : _BG_R;
-        ctx.globalAlpha = a * (b.isChain ? 0.5 : 0.25);
-        ctx.fillStyle = b.isChain ? 'rgba(73,232,194,0.85)' : 'rgba(73,232,194,0.55)';
+        // ── Synthetic ambient node ───────────────────────────────
+        var r = b.isChain ? _BG_R + 0.6 : _BG_R;
+
+        ctx.globalAlpha = a * (b.isChain ? 0.58 : 0.26);
+        ctx.fillStyle = 'rgba(73,232,194,0.9)';
         ctx.beginPath();
         ctx.arc(bx, b.y, r, 0, Math.PI * 2);
         ctx.fill();
-        ctx.globalAlpha = a * (b.isChain ? 0.32 : 0.14);
+
+        ctx.globalAlpha = a * (b.isChain ? 0.26 : 0.11);
         ctx.strokeStyle = '#49e8c2';
-        ctx.lineWidth = 0.6;
+        ctx.lineWidth = 0.65;
         ctx.beginPath();
-        ctx.arc(bx, b.y, r + 1.5, 0, Math.PI * 2);
+        ctx.arc(bx, b.y, r + 2, 0, Math.PI * 2);
         ctx.stroke();
       }
     });
