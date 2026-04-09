@@ -36,8 +36,8 @@
   var _BG_BLOCK_W = 22;
   var _BG_BLOCK_H = 13;
   var _BG_BLOCK_R = 3;
-  var _SCROLL_SPEED = 0.12; // px/frame — cinematic crawl
-  var _SPAWN_STEP = 52;     // px between block clusters (time spacing)
+  var _SCROLL_SPEED = 0.05; // px/frame — ~3px/sec, one block ≈ every 100ms visually
+  var _SPAWN_STEP = 48;     // px between clusters → at 0.05px/frame ≈ 16s per cluster onscreen
   var _bgTime = 0;
 
   function _bgLaneY(lane, h) {
