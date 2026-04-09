@@ -23,71 +23,65 @@
   var LINE_COLOR = 'rgba(73,232,194,0.25)';
   var LABEL_COLOR = 'rgba(73,232,194,0.45)';
 
-  // ── Synthetic DAG: a proper flowing BlockDAG background ──────────────
-  // ── LANE-BASED BLOCKDAG BACKGROUND ────────────────────────────────────
-  // Blocks flow LEFT along horizontal lanes — exactly how a real BlockDAG looks:
-  // X axis = time, Y axis = parallel miners/validators, edges cross lanes (DAG merges)
-  var _bgLaneCount = 7;
-  var _bgScrollX = 0;       // how far left we've scrolled (absolute px)
-  var _bgBlocks = [];       // { id, absX, lane, alpha, pulse, parentIds:[] }
+  // ── KASPA BLOCKDAG BACKGROUND ─────────────────────────────────────────
+  // Organic node-graph style inspired by kaspa-ng:
+  // - Blocks scattered naturally across full height (not rigid lanes)
+  // - Horizontal S-curve bezier edges (no vertical loops)
+  // - Time flows left→right, old blocks scroll off left
+  // - CSS mask-image handles edge fade — no per-pixel alpha hacks
+  var _bgScrollX = 0;
+  var _bgBlocks = [];
   var _bgBlockById = {};
   var _bgNextId = 0;
-  var _bgSpawnNext = 0;     // absX for next spawn cluster
-  var _BG_BLOCK_W = 22;
-  var _BG_BLOCK_H = 13;
+  var _bgSpawnNext = 0;
+  var _BG_BLOCK_W = 20;
+  var _BG_BLOCK_H = 12;
   var _BG_BLOCK_R = 3;
-  var _SCROLL_SPEED = 0.05; // px/frame — ~3px/sec, one block ≈ every 100ms visually
-  var _SPAWN_STEP = 48;     // px between clusters → at 0.05px/frame ≈ 16s per cluster onscreen
+  var _SCROLL_SPEED = 0.05;
+  var _SPAWN_GAP  = 44;      // px between time steps
   var _bgTime = 0;
+  var _bgH = 600;            // cached canvas height
 
-  function _bgLaneY(lane, h) {
-    // Distribute 7 lanes from 6% to 94% of screen height
-    return h * 0.06 + lane * (h * 0.88) / (_bgLaneCount - 1);
-  }
+  function _bgRand(a, b) { return a + Math.random() * (b - a); }
 
-  function _bgSpawnCluster(absX, h) {
-    // 2-3 blocks per "time step" simulating parallel miners
-    var count = 2 + (Math.random() > 0.42 ? 1 : 0);
-    var usedLanes = [];
+  // Each block has an organic Y — distributed across full height with slight
+  // clustering tendency (simulates real miner diversity)
+  function _bgSpawnCluster(absX) {
+    var count = 2 + (Math.random() > 0.38 ? 1 : 0) + (Math.random() > 0.75 ? 1 : 0);
+    var h = _bgH;
+    var usedY = [];
     for (var n = 0; n < count; n++) {
-      // Pick an unused lane, weight toward middle lanes
-      var lane;
-      var tries = 0;
+      // Pick Y that isn't too close to an existing block in this cluster
+      var y, tries = 0;
       do {
-        var r = Math.random();
-        // Gaussian-ish: favor middle
-        lane = Math.floor(_bgLaneCount * (0.15 + r * 0.7));
-        lane = Math.max(0, Math.min(_bgLaneCount - 1, lane));
+        y = _bgRand(h * 0.06, h * 0.94 - _BG_BLOCK_H);
         tries++;
-      } while (usedLanes.indexOf(lane) !== -1 && tries < 20);
-      if (usedLanes.indexOf(lane) !== -1) continue;
-      usedLanes.push(lane);
+      } while (usedY.some(function(uy) { return Math.abs(uy - y) < h * 0.12; }) && tries < 30);
+      usedY.push(y);
 
-      var xJitter = (Math.random() - 0.5) * 10;
       var block = {
         id: _bgNextId++,
-        absX: absX + xJitter,
-        lane: lane,
-        alpha: 0.28 + Math.random() * 0.32,
+        absX: absX + _bgRand(-6, 6),
+        y: y,
+        alpha: _bgRand(0.22, 0.48),
         pulse: Math.random() * Math.PI * 2,
-        parentIds: []
+        parentIds: [],
+        // Occasional "blue chain" highlight (1 in 4 blocks)
+        isChain: Math.random() > 0.75
       };
 
-      // Find 1-2 parents: recent blocks to the left in same or adjacent lanes
-      var searchMin = absX - _SPAWN_STEP * 3.5;
+      // Find 1-2 parents in the preceding 2-3 time steps
+      var searchMin = absX - _SPAWN_GAP * 3;
       var candidates = _bgBlocks.filter(function(b) {
-        return b.absX < absX - 8 && b.absX > searchMin;
+        return b.absX < absX - 6 && b.absX > searchMin;
       });
-      // Sort by closeness in lane first, then by recency
+      // Weight by vertical proximity
       candidates.sort(function(a, b) {
-        var da = Math.abs(a.lane - lane);
-        var db = Math.abs(b.lane - lane);
-        if (da !== db) return da - db;
-        return b.absX - a.absX;
+        return Math.abs(a.y - y) - Math.abs(b.y - y);
       });
-      var nParents = Math.min(1 + (Math.random() > 0.45 ? 1 : 0), candidates.length);
+      var nParents = Math.min(1 + (Math.random() > 0.5 ? 1 : 0), candidates.length);
       for (var p = 0; p < nParents; p++) {
-        if (candidates[p]) block.parentIds.push(candidates[p].id);
+        block.parentIds.push(candidates[p].id);
       }
 
       _bgBlocks.push(block);
@@ -100,11 +94,11 @@
     _bgBlocks = [];
     _bgBlockById = {};
     _bgNextId = 0;
-    // Pre-fill entire visible screen plus buffer
+    _bgH = h;
     var x = 30;
-    while (x < w + _SPAWN_STEP * 3) {
-      _bgSpawnCluster(x, h);
-      x += _SPAWN_STEP * (0.7 + Math.random() * 0.6);
+    while (x < w + _SPAWN_GAP * 4) {
+      _bgSpawnCluster(x);
+      x += _SPAWN_GAP * _bgRand(0.65, 1.3);
     }
     _bgSpawnNext = x;
   }
@@ -113,15 +107,16 @@
     ctx.clearRect(0, 0, w, h);
     _bgTime += 0.016;
     _bgScrollX += _SCROLL_SPEED;
+    _bgH = h;
 
-    // Spawn new clusters as the view moves right
-    while (_bgSpawnNext - _bgScrollX < w + _SPAWN_STEP * 3) {
-      _bgSpawnCluster(_bgSpawnNext, h);
-      _bgSpawnNext += _SPAWN_STEP * (0.7 + Math.random() * 0.6);
+    // Spawn ahead
+    while (_bgSpawnNext - _bgScrollX < w + _SPAWN_GAP * 4) {
+      _bgSpawnCluster(_bgSpawnNext);
+      _bgSpawnNext += _SPAWN_GAP * _bgRand(0.65, 1.3);
     }
 
-    // Prune blocks far off left
-    var cutoff = _bgScrollX - _SPAWN_STEP * 6;
+    // Prune old blocks
+    var cutoff = _bgScrollX - _SPAWN_GAP * 7;
     _bgBlocks = _bgBlocks.filter(function(b) {
       if (b.absX < cutoff) { delete _bgBlockById[b.id]; return false; }
       return true;
@@ -130,142 +125,60 @@
     ctx.save();
     ctx.lineCap = 'round';
 
-    // ── Parent→child edges ───────────────────────────────────────
+    // ── Parent → child edges ─────────────────────────────────────
     _bgBlocks.forEach(function(b) {
       var bx = b.absX - _bgScrollX;
-      var by = _bgLaneY(b.lane, h) + _BG_BLOCK_H / 2;
+      var by = b.y + _BG_BLOCK_H / 2;
 
       b.parentIds.forEach(function(pid) {
-        var parent = _bgBlockById[pid];
-        if (!parent) return;
-        var px = parent.absX - _bgScrollX + _BG_BLOCK_W;
-        var py = _bgLaneY(parent.lane, h) + _BG_BLOCK_H / 2;
+        var p = _bgBlockById[pid];
+        if (!p) return;
+        var px = p.absX - _bgScrollX + _BG_BLOCK_W;
+        var py = p.y + _BG_BLOCK_H / 2;
 
-        // Edge-screen fade so lines dissolve at left/right edges
-        var fade = 1;
-        if (bx < 80) fade *= bx / 80;
-        if (bx > w - 80) fade *= (w - bx) / 80;
-        if (px < 0) fade = 0;
-        fade = Math.max(0, Math.min(1, fade));
-        if (fade < 0.01) return;
-
-        // Horizontal bezier — control points hug source/dest (no vertical loops)
-        var cpOff = (bx - px) * 0.48;
-        ctx.globalAlpha = Math.min(b.alpha, parent.alpha) * 0.45 * fade;
-        ctx.strokeStyle = '#49e8c2';
-        ctx.lineWidth = 0.75;
+        var isChainEdge = b.isChain && p.isChain;
+        // Horizontal S-curve: control pts locked to start/end X, keeps edges tidy
+        var dx = bx - px;
+        var cpA = dx * 0.46;
+        ctx.globalAlpha = isChainEdge ? 0.22 : 0.11;
+        ctx.strokeStyle = isChainEdge ? '#49e8c2' : 'rgba(73,232,194,0.8)';
+        ctx.lineWidth  = isChainEdge ? 1 : 0.65;
         ctx.beginPath();
         ctx.moveTo(px, py);
-        ctx.bezierCurveTo(px + cpOff, py, bx - cpOff, by, bx, by);
+        ctx.bezierCurveTo(px + cpA, py, bx - cpA, by, bx, by);
         ctx.stroke();
       });
     });
 
-    // ── Block rectangles ─────────────────────────────────────────
+    // ── Block nodes ──────────────────────────────────────────────
     _bgBlocks.forEach(function(b) {
       var bx = b.absX - _bgScrollX;
-      if (bx < -_BG_BLOCK_W - 5 || bx > w + 5) return;
+      if (bx < -_BG_BLOCK_W - 2 || bx > w + 2) return;
 
-      b.pulse += 0.005;
+      b.pulse += 0.004;
       var breathe = 0.9 + 0.1 * Math.sin(b.pulse);
       var alpha = b.alpha * breathe;
+      if (alpha < 0.01) return;
 
-      // Edge fade
-      var fade = 1;
-      if (bx < 60) fade *= bx / 60;
-      if (bx > w - 60) fade *= (w - bx) / 60;
-      fade = Math.max(0, Math.min(1, fade));
-      alpha *= fade;
-      if (alpha < 0.015) return;
+      // Chain blocks slightly brighter/teal-tinted fill
+      var fillA  = b.isChain ? alpha * 0.5 : alpha * 0.2;
+      var borderA = b.isChain ? alpha * 0.65 : alpha * 0.45;
 
-      var by = _bgLaneY(b.lane, h);
-
-      // Dark fill
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = 'rgba(3,14,10,0.88)';
-      roundRect(ctx, bx, by, _BG_BLOCK_W, _BG_BLOCK_H, _BG_BLOCK_R);
+      // Fill
+      ctx.globalAlpha = fillA;
+      ctx.fillStyle = b.isChain ? 'rgba(15,48,36,0.9)' : 'rgba(3,12,9,0.9)';
+      roundRect(ctx, bx, b.y, _BG_BLOCK_W, _BG_BLOCK_H, _BG_BLOCK_R);
       ctx.fill();
 
-      // Teal border
-      ctx.globalAlpha = alpha * 0.6;
+      // Border
+      ctx.globalAlpha = borderA;
       ctx.strokeStyle = '#49e8c2';
-      ctx.lineWidth = 0.8;
-      roundRect(ctx, bx, by, _BG_BLOCK_W, _BG_BLOCK_H, _BG_BLOCK_R);
+      ctx.lineWidth = b.isChain ? 0.9 : 0.65;
+      roundRect(ctx, bx, b.y, _BG_BLOCK_W, _BG_BLOCK_H, _BG_BLOCK_R);
       ctx.stroke();
     });
-
-    // ── Real API blocks layered on top ───────────────────────────
-    if (_blocks.length > 0) {
-      _drawRealBlockHighlights(ctx, w, h);
-    }
 
     ctx.restore();
-  }
-
-  // Real live blocks — brighter with glow + hash label on latest
-  function _drawRealBlockHighlights(ctx, w, h) {
-    var n = Math.min(_blocks.length, 10);
-    var blocks = _blocks.slice(-n);
-    var startX = w * 0.45;
-    var spacingX = (w * 0.48) / Math.max(n - 1, 1);
-
-    blocks.forEach(function(b, i) {
-      var bx = startX + i * spacingX;
-      var hashBits = (parseInt(b.hash.substring(0, 6), 16) || 0);
-      var lane = ((hashBits % 5) - 2) / 2;
-      var by = h * 0.5 + lane * h * 0.18;
-      var isLatest = b.hash === _latestHash;
-
-      // Connection to previous
-      if (i > 0) {
-        var prevB = blocks[i - 1];
-        var px = startX + (i - 1) * spacingX + _BG_BLOCK_W;
-        var phBits = (parseInt(prevB.hash.substring(0, 6), 16) || 0);
-        var pLane = ((phBits % 5) - 2) / 2;
-        var py = h * 0.5 + pLane * h * 0.18 + _BG_BLOCK_H / 2;
-
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = isLatest ? 'rgba(73,232,194,0.35)' : 'rgba(73,232,194,0.18)';
-        ctx.lineWidth = 1;
-        var cpOff = spacingX * 0.4;
-        ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.bezierCurveTo(px + cpOff, py, bx - cpOff, by + _BG_BLOCK_H / 2, bx, by + _BG_BLOCK_H / 2);
-        ctx.stroke();
-      }
-
-      // Glow halo on latest
-      if (isLatest) {
-        var pulse = 0.5 + 0.2 * Math.sin(_bgTime * 2);
-        ctx.globalAlpha = pulse;
-        ctx.shadowColor = PRIMARY;
-        ctx.shadowBlur = 16;
-        ctx.fillStyle = 'rgba(73,232,194,0.15)';
-        roundRect(ctx, bx - 5, by - 5, _BG_BLOCK_W + 10, _BG_BLOCK_H + 10, _BG_BLOCK_R + 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      }
-
-      // Block body — brighter than synthetic
-      ctx.globalAlpha = isLatest ? 0.85 : 0.5;
-      ctx.fillStyle = isLatest ? 'rgba(10,40,30,0.9)' : 'rgba(6,24,18,0.85)';
-      ctx.strokeStyle = isLatest ? 'rgba(73,232,194,0.7)' : 'rgba(73,232,194,0.35)';
-      ctx.lineWidth = isLatest ? 1.5 : 1;
-      roundRect(ctx, bx, by, _BG_BLOCK_W, _BG_BLOCK_H, _BG_BLOCK_R);
-      ctx.fill();
-      ctx.stroke();
-
-      // Hash label on latest
-      if (isLatest) {
-        ctx.globalAlpha = 0.55;
-        ctx.fillStyle = '#49e8c2';
-        ctx.font = '8px JetBrains Mono, Consolas, monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.fillText(b.hash.substring(0, 8) + '...' + b.hash.slice(-4),
-                      bx + _BG_BLOCK_W / 2, by + _BG_BLOCK_H + 4);
-      }
-    });
   }
 
   var _blocks = [];

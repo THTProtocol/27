@@ -93,7 +93,10 @@
         }
 
         /* ── DAG canvas ── */
-        #dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.8!important;display:block!important}
+        #dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.75!important;display:block!important;
+          -webkit-mask-image:linear-gradient(to right,transparent 0%,black 18%,black 82%,transparent 100%);
+          mask-image:linear-gradient(to right,transparent 0%,black 18%,black 82%,transparent 100%);
+        }
 
         .bg-glow {
             position: fixed;
@@ -4023,7 +4026,7 @@ body.htp-game-active {
     <script>function addOut() { console.log('[HTP] addOut called'); }</script>
 <!-- duplicated chess.js removed -->
 <style id="htp-bg-fix">
-#dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.8!important;display:block!important}
+#dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.75!important;display:block!important;-webkit-mask-image:linear-gradient(to right,transparent 0%,black 18%,black 82%,transparent 100%);mask-image:linear-gradient(to right,transparent 0%,black 18%,black 82%,transparent 100%)}
 .dag-mini,#dagMiniWrap,#liveDagContainer,#dagMiniContainer{height:370px!important;min-height:370px!important;max-height:370px!important}
 </style>
 </head>
