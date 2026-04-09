@@ -695,7 +695,12 @@
     if (game.turn() !== ui.playerColor) return;
 
     if (ui.selectedSq) {
-      const move = game.move({ from: ui.selectedSq, to: sq, promotion: 'q' });
+      let move = null;
+      try {
+        move = game.move({ from: ui.selectedSq, to: sq, promotion: 'q' });
+      } catch (_) {
+        move = null;
+      }
       if (move) {
         ui.lastMove   = { from: move.from, to: move.to };
         ui.selectedSq = null;

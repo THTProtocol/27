@@ -209,7 +209,12 @@
     const ui = ensureUI();
     if (!game) return null;
 
-    const move = game.move({ from, to, promotion: promotion || 'q' });
+    let move;
+    try {
+      move = game.move({ from, to, promotion: promotion || 'q' });
+    } catch (_) {
+      return null;
+    }
     if (!move) return null;
 
     ui.lastMove   = { from, to };

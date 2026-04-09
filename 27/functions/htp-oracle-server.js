@@ -31,7 +31,12 @@ exports.validateChessMove = functions.https.onCall(async (data, context) => {
     try { game.loadPgn(pgn); } catch(e) { return { valid: false, error: 'Invalid PGN' }; }
   }
 
-  const result = game.move(move);
+  let result;
+  try {
+    result = game.move(move);
+  } catch (e) {
+    return { valid: false, error: 'Illegal move: ' + move, detail: e.message };
+  }
   if (!result) return { valid: false, error: 'Illegal move: ' + move };
 
   const response = {

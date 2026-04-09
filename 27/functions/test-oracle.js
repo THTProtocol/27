@@ -50,8 +50,14 @@ test('Stalemate is a draw', () => {
 
 test('Illegal move rejected', () => {
   const g = new Chess();
-  const result = g.move('e5'); // Black's pawn move on white's turn
-  assert(result === null, 'Illegal move should return null');
+  let rejected = false;
+  try {
+    const result = g.move('e5'); // Black's pawn move on white's turn
+    rejected = result === null;
+  } catch (e) {
+    rejected = /Invalid move/i.test(e.message);
+  }
+  assert(rejected, 'Illegal move should be rejected');
 });
 
 test('Legal moves not null', () => {
