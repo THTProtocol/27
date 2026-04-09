@@ -25,26 +25,25 @@
 
   // Ambient particles for full-page background mode
   var _particles = [];
-  var _PARTICLE_COUNT = 80;
-  var _LINK_DISTANCE = 200;
+  var _PARTICLE_COUNT = 140; // dense field of block nodes
+  var _LINK_DISTANCE = 160;  // tighter connections
   var _bgTime = 0;
 
   function initParticles(w, h) {
     _particles = [];
     for (var i = 0; i < _PARTICLE_COUNT; i++) {
       // Distribute in layers for depth effect
-      var depth = 0.3 + Math.random() * 0.7; // 0.3 = far, 1.0 = near
+      var depth = 0.2 + Math.random() * 0.8; // 0.2 = far, 1.0 = near
       _particles.push({
         x: Math.random() * w,
         y: Math.random() * h,
-        r: (1 + Math.random() * 2) * depth,
-        vx: (Math.random() - 0.5) * 0.04 * depth,
-        vy: -0.008 - Math.random() * 0.015 * depth, // slow drift
-        alpha: (0.12 + Math.random() * 0.20) * depth,
+        r: (0.8 + Math.random() * 1.5) * depth,
+        vx: (Math.random() - 0.5) * 0.018 * depth,
+        vy: -0.004 - Math.random() * 0.008 * depth, // very slow upward drift
+        alpha: (0.06 + Math.random() * 0.14) * depth,
         pulse: Math.random() * Math.PI * 2,
-        pulseSpeed: 0.001 + Math.random() * 0.003, // slow breathing
-        depth: depth,
-        hue: 0 // no warm accents — dark teal only
+        pulseSpeed: 0.0008 + Math.random() * 0.002, // slow breathing
+        depth: depth
       });
     }
   }
@@ -53,9 +52,7 @@
     ctx.clearRect(0, 0, w, h);
     _bgTime += 0.016; // ~60fps dt
 
-    // Pure transparent — no gradient overlay, no light colors
-
-    // Draw faint connections between nearby particles (behind nodes)
+    // Draw soft connections between nearby particles — faded gradient edges
     ctx.save();
     for (var i = 0; i < _particles.length; i++) {
       for (var j = i + 1; j < _particles.length; j++) {
@@ -65,10 +62,11 @@
         var dist = Math.sqrt(dx * dx + dy * dy);
         var linkDist = _LINK_DISTANCE * Math.min(pi.depth, pj.depth);
         if (dist < linkDist) {
-          var linkAlpha = (1 - dist / linkDist) * 0.04 * Math.min(pi.depth, pj.depth);
+          var fade = (1 - dist / linkDist);
+          var linkAlpha = fade * fade * 0.022 * Math.min(pi.depth, pj.depth);
           ctx.globalAlpha = linkAlpha;
-          ctx.strokeStyle = 'rgba(73,232,194,' + (linkAlpha * 0.5) + ')';
-          ctx.lineWidth = 0.4 * Math.min(pi.depth, pj.depth);
+          ctx.strokeStyle = 'rgba(73,232,194,' + (linkAlpha * 0.35) + ')';
+          ctx.lineWidth = 0.2 + 0.15 * Math.min(pi.depth, pj.depth);
           ctx.beginPath();
           ctx.moveTo(pi.x, pi.y);
           ctx.lineTo(pj.x, pj.y);
@@ -94,16 +92,15 @@
 
       ctx.save();
       ctx.globalAlpha = alpha;
-      var col = 'rgba(73,232,194,0.7)';
-      ctx.fillStyle = col;
-      ctx.shadowColor = 'rgba(73,232,194,0.4)';
-      ctx.shadowBlur = 3 + 5 * p.depth;
-      roundRect(ctx, p.x - p.r, p.y - p.r, p.r * 2 + 4, p.r * 2 + 3, 1.5);
+      ctx.fillStyle = 'rgba(73,232,194,0.55)';
+      ctx.shadowColor = 'rgba(73,232,194,0.25)';
+      ctx.shadowBlur = 2 + 4 * p.depth;
+      roundRect(ctx, p.x - p.r, p.y - p.r, p.r * 2 + 3, p.r * 2 + 2, 1.2);
       ctx.fill();
       ctx.restore();
     });
 
-    // Overlay live blocks on top in the lower portion if we have data
+    // Live BlockDAG: the showcase — spread across full width, mid-to-lower canvas
     if (_blocks.length > 0) {
       drawLiveBlocksOverlay(ctx, w, h);
     }
@@ -166,7 +163,7 @@
       if (!tipHash && info && info.sink) tipHash = info.sink;
       if (!tipHash) return;
       // Step 2: use tip as lowHash to get blocks
-      var url = BLOCKS_BASE + '?lowHash=' + tipHash + '&includeBlocks=true&limit=20';
+      var url = BLOCKS_BASE + '?lowHash=' + tipHash + '&includeBlocks=true&limit=40';
       return fetch(url).then(function(r) { return r.json(); });
     }).then(function(data) {
       if (!data || !data.blocks || !Array.isArray(data.blocks)) return;
@@ -209,50 +206,99 @@
   // ── Canvas Rendering ───────────────────────────────────────────────────
 
   function drawLiveBlocksOverlay(ctx, w, h) {
-    // Show live blocks as a flowing strip near the bottom of the full-page canvas
-    var padding = 20;
-    var stripH = 60;
-    var stripY = h - stripH - padding;
-    var usableW = w - padding * 2;
-    var n = Math.min(_blocks.length, 30);
+    // Full-screen flowing BlockDAG — shows real Kaspa blocks with parent connections
+    // Spread across center band (30%-85% of height) for maximum visual impact
+    var padX = 40;
+    var topY = h * 0.32;
+    var botY = h * 0.82;
+    var dagH = botY - topY;
+    var usableW = w - padX * 2;
+    var n = Math.min(_blocks.length, 40);
+    if (!n) return;
     var spacingX = n > 1 ? usableW / (n - 1) : 0;
 
     ctx.save();
-    ctx.globalAlpha = 0.6;
-    var posMap = {};
-    _blocks.slice(-n).forEach(function(b, i) {
-      var slideOffset = b.slideIn * 40;
-      b.slideIn = Math.max(0, b.slideIn - 0.06);
-      var bx = padding + i * spacingX + slideOffset;
-      var yOff = ((parseInt(b.hash.substring(0, 4), 16) || 0) % 5 - 2) * 6;
-      var by = stripY + 20 + yOff;
-      posMap[b.hash] = { x: bx, y: by };
 
-      // parent lines
+    // Build position map — stagger vertically by hash to show DAG width
+    var posMap = {};
+    var blocks = _blocks.slice(-n);
+    blocks.forEach(function(b, i) {
+      var slideOffset = b.slideIn * 60;
+      b.slideIn = Math.max(0, b.slideIn - 0.04); // slower slide-in
+      var bx = padX + i * spacingX + slideOffset;
+      // Use hash bits for vertical spread across full DAG band
+      var hashBits = (parseInt(b.hash.substring(0, 6), 16) || 0);
+      var lane = ((hashBits % 7) - 3) / 3; // -1 to +1
+      var by = topY + dagH * 0.5 + lane * dagH * 0.35;
+      posMap[b.hash] = { x: bx, y: by };
+    });
+
+    // Parent connection lines — soft curved edges
+    blocks.forEach(function(b) {
+      var pos = posMap[b.hash];
+      if (!pos) return;
       b.parents.forEach(function(ph) {
         var pp = posMap[ph];
         if (!pp) return;
-        ctx.strokeStyle = 'rgba(73,232,194,0.18)';
-        ctx.lineWidth = 0.8;
+        var isRecent = b.hash === _latestHash;
+        // Gradient line from parent to child
+        var grad = ctx.createLinearGradient(pp.x, pp.y, pos.x, pos.y);
+        grad.addColorStop(0, 'rgba(73,232,194,' + (isRecent ? 0.18 : 0.06) + ')');
+        grad.addColorStop(0.5, 'rgba(73,232,194,' + (isRecent ? 0.12 : 0.04) + ')');
+        grad.addColorStop(1, 'rgba(73,232,194,' + (isRecent ? 0.18 : 0.06) + ')');
+        ctx.globalAlpha = 0.7;
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = isRecent ? 1.0 : 0.5;
         ctx.beginPath();
+        // Slight curve for organic DAG feel
+        var cpX = (pp.x + pos.x) / 2;
+        var cpY = (pp.y + pos.y) / 2 - 8;
         ctx.moveTo(pp.x + BLOCK_W, pp.y + BLOCK_H / 2);
-        ctx.lineTo(bx, by + BLOCK_H / 2);
+        ctx.quadraticCurveTo(cpX + BLOCK_W / 2, cpY, pos.x, pos.y + BLOCK_H / 2);
         ctx.stroke();
       });
+    });
 
+    // Draw block nodes
+    blocks.forEach(function(b, i) {
+      var pos = posMap[b.hash];
+      if (!pos) return;
       var isLatest = b.hash === _latestHash;
-      ctx.fillStyle = isLatest ? 'rgba(73,232,194,0.5)' : 'rgba(73,232,194,0.15)';
-      ctx.strokeStyle = PRIMARY;
-      ctx.lineWidth = isLatest ? 1.5 : 0.8;
+      var isTip = i >= n - 3; // last 3 blocks are "tips"
+
+      // Block glow
       if (isLatest) {
+        var pulse = 0.4 + 0.15 * Math.sin(_bgTime * 2.5);
+        ctx.globalAlpha = pulse;
         ctx.shadowColor = PRIMARY;
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = 'rgba(73,232,194,0.25)';
+        roundRect(ctx, pos.x - 3, pos.y - 3, BLOCK_W + 6, BLOCK_H + 6, BLOCK_R + 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
       }
-      roundRect(ctx, bx, by, BLOCK_W, BLOCK_H, BLOCK_R);
+
+      // Block body
+      ctx.globalAlpha = isLatest ? 0.65 : isTip ? 0.45 : 0.25;
+      ctx.fillStyle = isLatest ? 'rgba(73,232,194,0.5)' : 'rgba(73,232,194,0.12)';
+      ctx.strokeStyle = 'rgba(73,232,194,' + (isLatest ? 0.6 : isTip ? 0.3 : 0.12) + ')';
+      ctx.lineWidth = isLatest ? 1.2 : 0.6;
+      roundRect(ctx, pos.x, pos.y, BLOCK_W, BLOCK_H, BLOCK_R);
       ctx.fill();
       ctx.stroke();
-      ctx.shadowBlur = 0;
+
+      // Hash label on latest block
+      if (isLatest) {
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = '#49e8c2';
+        ctx.font = '7px JetBrains Mono, Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        var label = b.hash.substring(0, 8) + '...' + b.hash.slice(-4);
+        ctx.fillText(label, pos.x + BLOCK_W / 2, pos.y + BLOCK_H + 5);
+      }
     });
+
     ctx.restore();
   }
 
