@@ -13,16 +13,17 @@
    HTP DESIGN SYSTEM - Dark Mode Only
    ============================================================ */
 :root {
-  --bg: #080c17;
-  --surface: #0f1623;
-  --surface-2: #161e2e;
-  --surface-3: #1d2840;
-  --border: rgba(79,152,163,0.18);
-  --border-hover: rgba(79,152,163,0.45);
-  --primary: #4f98a3;
-  --primary-h: #5fb3c0;
-  --primary-glow: rgba(79,152,163,0.25);
-  --text: #e2e8f0;
+  --bg: #030816;
+  --surface: #0a1628;
+  --surface-2: #0f1e33;
+  --surface-3: #162440;
+  --border: rgba(73,232,194,0.10);
+  --border-hover: rgba(73,232,194,0.35);
+  --primary: #49e8c2;
+  --primary-h: #5fffd4;
+  --primary-glow: rgba(73,232,194,0.25);
+  --accent2: #7c6ff7;
+  --text: #f1f5f9;
   --text-muted: #94a3b8;
   --text-faint: #475569;
   --success: #22c55e;
@@ -100,8 +101,9 @@ a:hover { color: var(--primary-h); }
 .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 
 .btn-primary {
-  background: var(--primary);
-  color: #080c17;
+  background: linear-gradient(135deg, #49e8c2, #22c55e);
+  color: #030816;
+  box-shadow: 0 0 20px rgba(73,232,194,0.15);
 }
 .btn-primary:hover { background: var(--primary-h); }
 
@@ -152,7 +154,7 @@ a:hover { color: var(--primary-h); }
 .pill.active, .pill:hover {
   border-color: var(--primary);
   color: var(--primary);
-  background: rgba(79,152,163,0.08);
+  background: rgba(73,232,194,0.08);
 }
 
 /* Status dots */
@@ -198,6 +200,110 @@ a:hover { color: var(--primary-h); }
 .grid { display: grid; }
 .hidden { display: none !important; }
 
+/* ============================================================
+   FULLSCREEN BLOCKDAG CANVAS & BACKGROUND GLOWS
+   ============================================================ */
+#dagCanvas {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  opacity: 0.35 !important;
+  display: block !important;
+}
+.bg-glow {
+  position: fixed;
+  top: -15%;
+  left: 5%;
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(ellipse at 40% 40%, rgba(73,232,194,0.04), rgba(73,232,194,0.01) 50%, transparent 75%);
+  z-index: 0;
+  pointer-events: none;
+  animation: drift 20s ease-in-out infinite alternate;
+}
+.bg-glow2 {
+  position: fixed;
+  bottom: -10%;
+  right: 2%;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(ellipse at 60% 60%, rgba(73,232,194,0.03), rgba(73,232,194,0.01) 45%, transparent 75%);
+  z-index: 0;
+  pointer-events: none;
+  animation: drift 25s ease-in-out infinite alternate-reverse;
+}
+.bg-glow3 {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 900px;
+  height: 600px;
+  background: radial-gradient(ellipse, rgba(73,232,194,0.03), transparent 70%);
+  z-index: 0;
+  pointer-events: none;
+  animation: drift 30s ease-in-out infinite alternate;
+}
+@keyframes drift {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(80px, 60px); }
+}
+
+/* Hero shimmer animation */
+.overview-hero h1 {
+  font-size: clamp(32px, 5vw, 56px) !important;
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #e2faf3 0%, #49e8c2 40%, #7c6ff7 80%, #49e8c2 100%);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: heroShimmer 6s ease infinite;
+  filter: drop-shadow(0 0 30px rgba(73,232,194,0.25));
+}
+@keyframes heroShimmer {
+  0% { background-position: 0% center; }
+  50% { background-position: 100% center; }
+  100% { background-position: 0% center; }
+}
+
+/* Hero pills row */
+.hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+  margin-bottom: 24px;
+  justify-content: center;
+}
+.pill-glow {
+  background: rgba(73,232,194,0.04);
+  border: 1px solid rgba(73,232,194,0.15);
+  color: var(--text-muted);
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: 0.3s;
+}
+.pill-glow:hover {
+  border-color: rgba(73,232,194,0.4);
+  color: var(--primary);
+  background: rgba(73,232,194,0.08);
+}
+
+/* Ensure all content sits above the fullscreen DAG */
+#htp-header { z-index: 1000; position: relative; }
+#main-content { position: relative; z-index: 1; }
+.wallet-modal-overlay { z-index: 2000; }
+.confirm-modal-overlay { z-index: 3000; }
+
 /* Fade-in animation for values */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(4px); }
@@ -226,10 +332,12 @@ a:hover { color: var(--primary-h); }
   left: 0;
   right: 0;
   z-index: 1000;
-  background: rgba(8,12,23,0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
+  background: rgba(3,8,22,0.82);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border-bottom: 1px solid rgba(73,232,194,0.12);
   height: 60px;
+  box-shadow: 0 1px 0 rgba(73,232,194,0.04);
 }
 .header-inner {
   max-width: var(--max-w);
@@ -304,7 +412,7 @@ a:hover { color: var(--primary-h); }
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  background: rgba(79,152,163,0.12);
+  background: rgba(73,232,194,0.12);
   color: var(--primary);
   border: 1px solid var(--border);
 }
@@ -575,14 +683,14 @@ a:hover { color: var(--primary-h); }
   z-index: 1;
 }
 .step.completed .step-icon {
-  background: rgba(79,152,163,0.15);
+  background: rgba(73,232,194,0.15);
   border-color: var(--primary);
   color: var(--primary);
 }
 .step.active .step-icon {
   background: var(--primary);
   border-color: var(--primary);
-  color: #080c17;
+  color: #030816;
 }
 .step.active { border-left: 2px solid var(--primary); padding-left: 14px; }
 .step-content { flex: 1; }
@@ -642,14 +750,14 @@ a:hover { color: var(--primary-h); }
   width: 30%;
   height: 30%;
   border-radius: 50%;
-  background: rgba(79,152,163,0.4);
+  background: rgba(73,232,194,0.4);
 }
 .chess-square .legal-capture {
   position: absolute;
   width: 90%;
   height: 90%;
   border-radius: 50%;
-  border: 3px solid rgba(79,152,163,0.5);
+  border: 3px solid rgba(73,232,194,0.5);
 }
 
 .game-clocks {
@@ -1013,7 +1121,7 @@ a:hover { color: var(--primary-h); }
 .leaderboard-table td {
   padding: 12px 16px;
   font-size: 14px;
-  border-bottom: 1px solid rgba(79,152,163,0.08);
+  border-bottom: 1px solid rgba(73,232,194,0.08);
 }
 .leaderboard-table tr {
   cursor: pointer;
@@ -1101,7 +1209,7 @@ a:hover { color: var(--primary-h); }
   grid-template-columns: 80px 1fr 80px 100px 120px;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(79,152,163,0.08);
+  border-bottom: 1px solid rgba(73,232,194,0.08);
   font-size: 14px;
   align-items: center;
 }
@@ -1272,6 +1380,12 @@ a:hover { color: var(--primary-h); }
   </style>
 </head>
 <body>
+  <!-- Fullscreen animated BlockDAG background -->
+  <canvas id="dagCanvas"></canvas>
+  <div class="bg-glow"></div>
+  <div class="bg-glow2"></div>
+  <div class="bg-glow3"></div>
+
   <!-- ========================================================
        HEADER
        ======================================================== -->
@@ -1279,12 +1393,9 @@ a:hover { color: var(--primary-h); }
     <div class="header-inner">
       <div class="header-left">
         <a href="#" class="htp-logo" onclick="switchTab('overview');return false">
-          <!-- HTP Logo: H inside hexagon -->
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M16 1L29.5 8.5V23.5L16 31L2.5 23.5V8.5L16 1Z" stroke="#4f98a3" stroke-width="1.5" fill="none"/>
-            <path d="M10 10V22M22 10V22M10 16H22" stroke="#4f98a3" stroke-width="2.5" stroke-linecap="round"/>
-          </svg>
-          <span class="htp-logo-text">HTP</span>
+          <!-- HTP Logo -->
+          <img id="htp-logo-img" alt="HTP" width="36" height="36" style="border-radius:6px;filter:drop-shadow(0 0 8px rgba(73,232,194,0.4))">
+          <span class="htp-logo-text">HIGH TABLE</span>
         </a>
       </div>
       <nav class="header-nav" id="desktop-nav">
@@ -1328,8 +1439,15 @@ a:hover { color: var(--primary-h); }
     <section id="tab-overview" class="tab-section active">
       <div class="container">
         <div class="overview-hero">
-          <h1>The <span>High Table</span> Protocol</h1>
-          <p>Fully trustless, non-custodial prediction markets and skill gaming on Kaspa. No intermediary holds your funds. Escrow is enforced on-chain. Winners receive KAS directly.</p>
+          <h1>Create events.<br>Challenge lies.<br>Settle on the DAG.</h1>
+          <p>Non-custodial prediction and skill markets enforced by covenants on Kaspa. Full exposure or built-in downside protection. Resolved by ZK proofs and bonded oracles directly on the BlockDAG.</p>
+          <div class="hero-pills">
+            <div class="pill-glow">Non-custodial</div>
+            <div class="pill-glow">2% on winnings only</div>
+            <div class="pill-glow">50% loss cushion</div>
+            <div class="pill-glow">1,000 KAS bond</div>
+            <div class="pill-glow">ZK oracles</div>
+          </div>
           <div class="overview-actions">
             <button class="btn btn-primary" onclick="switchTab('skill-games')">Create Match</button>
             <button class="btn btn-secondary" onclick="switchTab('predictions')">Create Prediction</button>
@@ -1374,37 +1492,37 @@ a:hover { color: var(--primary-h); }
             <div class="game-selector">
               <div class="game-card selected" data-game="chess" onclick="selectGame('chess')">
                 <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="8" y="8" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
-                  <rect x="20" y="8" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
-                  <rect x="32" y="8" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
-                  <rect x="44" y="8" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
-                  <rect x="8" y="20" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
-                  <rect x="20" y="20" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
-                  <rect x="32" y="20" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
-                  <rect x="44" y="20" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
-                  <rect x="8" y="32" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
-                  <rect x="20" y="32" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
-                  <rect x="32" y="32" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
-                  <rect x="44" y="32" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
-                  <rect x="8" y="44" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
-                  <rect x="20" y="44" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
-                  <rect x="32" y="44" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#243050"/>
-                  <rect x="44" y="44" width="12" height="12" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
+                  <rect x="8" y="8" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#1a2235"/>
+                  <rect x="20" y="8" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#243050"/>
+                  <rect x="32" y="8" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#1a2235"/>
+                  <rect x="44" y="8" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#243050"/>
+                  <rect x="8" y="20" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#243050"/>
+                  <rect x="20" y="20" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#1a2235"/>
+                  <rect x="32" y="20" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#243050"/>
+                  <rect x="44" y="20" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#1a2235"/>
+                  <rect x="8" y="32" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#1a2235"/>
+                  <rect x="20" y="32" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#243050"/>
+                  <rect x="32" y="32" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#1a2235"/>
+                  <rect x="44" y="32" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#243050"/>
+                  <rect x="8" y="44" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#243050"/>
+                  <rect x="20" y="44" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#1a2235"/>
+                  <rect x="32" y="44" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#243050"/>
+                  <rect x="44" y="44" width="12" height="12" stroke="#49e8c2" stroke-width="1.5" fill="#1a2235"/>
                   <!-- Knight shape -->
-                  <path d="M24 44V36L20 32L24 28V24H28L32 20V24L36 28V32L32 36V40H28V44H24Z" fill="#4f98a3" opacity="0.6"/>
+                  <path d="M24 44V36L20 32L24 28V24H28L32 20V24L36 28V32L32 36V40H28V44H24Z" fill="#49e8c2" opacity="0.6"/>
                 </svg>
                 <div class="game-card-title">Chess</div>
                 <div class="game-card-desc">Classic strategy game</div>
               </div>
               <div class="game-card" data-game="connect4" onclick="selectGame('connect4')">
                 <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="8" y="16" width="48" height="40" rx="4" stroke="#4f98a3" stroke-width="1.5" fill="#1a2235"/>
-                  <circle cx="20" cy="28" r="5" fill="var(--surface-3)" stroke="#4f98a3" stroke-width="1"/>
-                  <circle cx="32" cy="28" r="5" fill="var(--surface-3)" stroke="#4f98a3" stroke-width="1"/>
-                  <circle cx="44" cy="28" r="5" fill="var(--surface-3)" stroke="#4f98a3" stroke-width="1"/>
-                  <circle cx="20" cy="40" r="5" fill="#4f98a3"/>
+                  <rect x="8" y="16" width="48" height="40" rx="4" stroke="#49e8c2" stroke-width="1.5" fill="#1a2235"/>
+                  <circle cx="20" cy="28" r="5" fill="var(--surface-3)" stroke="#49e8c2" stroke-width="1"/>
+                  <circle cx="32" cy="28" r="5" fill="var(--surface-3)" stroke="#49e8c2" stroke-width="1"/>
+                  <circle cx="44" cy="28" r="5" fill="var(--surface-3)" stroke="#49e8c2" stroke-width="1"/>
+                  <circle cx="20" cy="40" r="5" fill="#49e8c2"/>
                   <circle cx="32" cy="40" r="5" fill="#e84040"/>
-                  <circle cx="44" cy="40" r="5" fill="#4f98a3"/>
+                  <circle cx="44" cy="40" r="5" fill="#49e8c2"/>
                   <circle cx="32" cy="28" r="5" fill="#e84040"/>
                   <!-- Diagonal win line -->
                   <line x1="18" y1="44" x2="46" y2="24" stroke="#fff" stroke-width="1" opacity="0.3"/>
@@ -1431,8 +1549,8 @@ a:hover { color: var(--primary-h); }
                   <rect x="32" y="44" width="12" height="12" fill="#1a2235"/>
                   <rect x="44" y="44" width="12" height="12" fill="#243050"/>
                   <!-- Pieces -->
-                  <circle cx="26" cy="14" r="4" fill="#4f98a3" stroke="#5fb3c0" stroke-width="1"/>
-                  <circle cx="50" cy="14" r="4" fill="#4f98a3" stroke="#5fb3c0" stroke-width="1"/>
+                  <circle cx="26" cy="14" r="4" fill="#49e8c2" stroke="#5fb3c0" stroke-width="1"/>
+                  <circle cx="50" cy="14" r="4" fill="#49e8c2" stroke="#5fb3c0" stroke-width="1"/>
                   <circle cx="14" cy="50" r="4" fill="#e84040" stroke="#ff6666" stroke-width="1"/>
                   <circle cx="38" cy="50" r="4" fill="#e84040" stroke="#ff6666" stroke-width="1"/>
                 </svg>
@@ -1767,7 +1885,7 @@ a:hover { color: var(--primary-h); }
             <div class="flex items-center gap-8 mb-12">
               <span class="dot dot-green dot-pulse"></span>
               <h3 style="font-size:16px">ZK Pipeline Status</h3>
-              <span class="pill" style="background:rgba(79,152,163,0.15);color:var(--primary);margin-left:auto" id="zk-pipeline-status">Active</span>
+              <span class="pill" style="background:rgba(73,232,194,0.15);color:var(--primary);margin-left:auto" id="zk-pipeline-status">Active</span>
             </div>
             <p class="text-muted mb-16" style="font-size:13px">
               SHA-256 commit scheme secures all match and market attestations. Each result is hashed
@@ -1794,7 +1912,7 @@ a:hover { color: var(--primary-h); }
           <div class="card mb-8">
             <div class="flex items-center gap-8 mb-8" style="justify-content:space-between">
               <span class="fw-600" style="font-size:13px">Match Attestations</span>
-              <span class="pill" style="background:rgba(79,152,163,0.15);color:var(--primary)">Live</span>
+              <span class="pill" style="background:rgba(73,232,194,0.15);color:var(--primary)">Live</span>
             </div>
             <div class="text-muted" style="font-size:12px;line-height:1.8">
               <div style="display:flex;justify-content:space-between"><span>Attestation Status:</span><span style="color:var(--success)">Active</span></div>
@@ -1991,42 +2109,42 @@ npm start</div>
       <div class="wallet-grid">
         <!-- KasWare -->
         <div class="wallet-option" onclick="connectWallet('kasware')">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#4f98a3" font-family="Space Grotesk" font-weight="700" font-size="16">KW</text></svg>
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#49e8c2" font-family="Space Grotesk" font-weight="700" font-size="16">KW</text></svg>
           <div class="wallet-option-name">KasWare</div>
           <div class="wallet-option-desc">Browser extension</div>
           <div class="wallet-option-status"><span class="dot dot-grey" id="status-kasware"></span></div>
         </div>
         <!-- Kastle -->
         <div class="wallet-option" onclick="connectWallet('kastle')">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#4f98a3" font-family="Space Grotesk" font-weight="700" font-size="16">KT</text></svg>
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#49e8c2" font-family="Space Grotesk" font-weight="700" font-size="16">KT</text></svg>
           <div class="wallet-option-name">Kastle</div>
           <div class="wallet-option-desc">Mobile + extension</div>
           <div class="wallet-option-status"><span class="dot dot-grey" id="status-kastle"></span></div>
         </div>
         <!-- Kasanova -->
         <div class="wallet-option" onclick="connectWallet('kasanova')">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#4f98a3" font-family="Space Grotesk" font-weight="700" font-size="16">KA</text></svg>
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#49e8c2" font-family="Space Grotesk" font-weight="700" font-size="16">KA</text></svg>
           <div class="wallet-option-name">Kasanova</div>
           <div class="wallet-option-desc">Browser extension</div>
           <div class="wallet-option-status"><span class="dot dot-grey" id="status-kasanova"></span></div>
         </div>
         <!-- Kaspium -->
         <div class="wallet-option" onclick="connectWallet('kaspium')">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#4f98a3" font-family="Space Grotesk" font-weight="700" font-size="16">KP</text></svg>
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#49e8c2" font-family="Space Grotesk" font-weight="700" font-size="16">KP</text></svg>
           <div class="wallet-option-name">Kaspium</div>
           <div class="wallet-option-desc">Mobile wallet</div>
           <div class="wallet-option-status"><span class="dot dot-grey" id="status-kaspium"></span></div>
         </div>
         <!-- KaspaCom -->
         <div class="wallet-option" onclick="connectWallet('kaspacom')">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#4f98a3" font-family="Space Grotesk" font-weight="700" font-size="16">KC</text></svg>
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#49e8c2" font-family="Space Grotesk" font-weight="700" font-size="16">KC</text></svg>
           <div class="wallet-option-name">KaspaCom</div>
           <div class="wallet-option-desc">Web wallet</div>
           <div class="wallet-option-status"><span class="dot dot-grey" id="status-kaspacom"></span></div>
         </div>
         <!-- DEX.cc -->
         <div class="wallet-option" onclick="connectWallet('dexcc')">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#4f98a3" font-family="Space Grotesk" font-weight="700" font-size="16">DX</text></svg>
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#1a2235"/><text x="24" y="30" text-anchor="middle" fill="#49e8c2" font-family="Space Grotesk" font-weight="700" font-size="16">DX</text></svg>
           <div class="wallet-option-name">DEX.cc</div>
           <div class="wallet-option-desc">Exchange wallet</div>
           <div class="wallet-option-status"><span class="dot dot-grey" id="status-dexcc"></span></div>
@@ -2566,7 +2684,7 @@ npm start</div>
     dagCtx.clearRect(0, 0, w, h);
 
     // Background
-    dagCtx.fillStyle = '#080c17';
+    dagCtx.fillStyle = '#030816';
     dagCtx.fillRect(0, 0, w, h);
 
     // Label
@@ -2590,7 +2708,7 @@ npm start</div>
     });
 
     // Draw parent lines
-    dagCtx.strokeStyle = 'rgba(79,152,163,0.3)';
+    dagCtx.strokeStyle = 'rgba(73,232,194,0.3)';
     dagCtx.lineWidth = 1;
     dagBlocks.forEach(function(block) {
       var hash = block.header ? block.header.hash : block.blockHash || block.hash;
@@ -2623,8 +2741,8 @@ npm start</div>
 
       var isLatest = i === dagBlocks.length - 1;
 
-      dagCtx.fillStyle = isLatest ? 'rgba(79,152,163,0.25)' : '#0f1623';
-      dagCtx.strokeStyle = isLatest ? '#4f98a3' : 'rgba(79,152,163,0.6)';
+      dagCtx.fillStyle = isLatest ? 'rgba(73,232,194,0.25)' : '#0f1623';
+      dagCtx.strokeStyle = isLatest ? '#49e8c2' : 'rgba(73,232,194,0.6)';
       dagCtx.lineWidth = isLatest ? 2 : 1;
 
       // Rounded rect
@@ -2645,7 +2763,7 @@ npm start</div>
 
       if (isLatest && hash) {
         dagCtx.font = '9px Inter';
-        dagCtx.fillStyle = '#4f98a3';
+        dagCtx.fillStyle = '#49e8c2';
         dagCtx.fillText(hash.substring(0, 8) + '...', pos.x, pos.y - 6);
       }
     });
@@ -2680,18 +2798,8 @@ npm start</div>
 
   // Also init a mini DAG for overview
   setTimeout(function() {
-    var miniCanvas = document.getElementById('overview-dag-canvas');
-    if (miniCanvas) {
-      var ctx = miniCanvas.getContext('2d');
-      miniCanvas.width = miniCanvas.offsetWidth * 2;
-      miniCanvas.height = 400;
-      ctx.scale(2, 2);
-      ctx.fillStyle = '#080c17';
-      ctx.fillRect(0, 0, miniCanvas.offsetWidth, 200);
-      ctx.font = '10px Inter';
-      ctx.fillStyle = '#475569';
-      ctx.fillText('LIVE NETWORK PULSE', 16, 24);
-      // Will be populated by the same fetchDAGBlocks data
+    if (typeof startDagCanvas === 'function') {
+      startDagCanvas('overview-dag-canvas', 200);
     }
   }, 500);
 
@@ -3117,7 +3225,7 @@ npm start</div>
     }
   });
 
-  console.log('%c[HTP] App controller loaded', 'color:#4f98a3;font-weight:bold');
+  console.log('%c[HTP] App controller loaded', 'color:#49e8c2;font-weight:bold');
 })();
   </script>
 
@@ -3148,6 +3256,116 @@ npm start</div>
       });
     }
   });
+  </script>
+
+  <!-- Fullscreen BlockDAG Animation -->
+  <script>
+  function startDagCanvas(id, h) {
+    function tryStart() {
+      var pc = document.getElementById(id);
+      if (!pc) { setTimeout(tryStart, 300); return; }
+      var cx = pc.getContext('2d');
+      var W = 0, H = 0, blocks = [], lastSpawn = 0;
+      var T = [73,232,194];
+      function teal(a){ return 'rgba('+T[0]+','+T[1]+','+T[2]+','+a+')'; }
+      function resize(){
+        var p = pc.parentElement;
+        W = pc.width  = (p ? p.offsetWidth  : 0) || 900;
+        H = pc.height = (p ? p.offsetHeight : 0) || h || 300;
+      }
+      function spawn(ts){
+        if(!W||!H) return;
+        var lanes=Math.floor(H/36), lane=Math.floor(Math.random()*lanes)*36+18;
+        var sz=13+Math.random()*9;
+        var b={x:W+20,y:lane,sz:sz,vx:-(1.4+Math.random()*0.8),
+               alpha:0.7+Math.random()*0.3,glow:Math.random()>0.6,
+               born:performance.now(),pulse:Math.random()*6.28,parents:[]};
+        var near=blocks.filter(function(n){return Math.abs(n.y-lane)<90&&n.x<W-20;}).slice(-4);
+        var pc2=Math.min(near.length,1+Math.floor(Math.random()*2));
+        for(var i=0;i<pc2;i++){
+          var p2=near[Math.floor(Math.random()*near.length)];
+          if(p2&&b.parents.indexOf(p2)===-1) b.parents.push(p2);
+        }
+        blocks.push(b);
+        lastSpawn=ts;
+      }
+      function draw(ts){
+        if(!W||!H){resize();}
+        cx.clearRect(0,0,W,H);
+        cx.strokeStyle='rgba(73,232,194,0.03)';cx.lineWidth=0.5;
+        for(var l=0;l*36+18<H;l++){var ly=l*36+18;cx.beginPath();cx.moveTo(0,ly);cx.lineTo(W,ly);cx.stroke();}
+        if(ts-lastSpawn>90) spawn(ts);
+        blocks=blocks.filter(function(b){return b.x>-60;});
+        blocks.forEach(function(b){
+          b.x+=b.vx; b.pulse+=0.02;
+          var age=(performance.now()-b.born)/3500;
+          var a=Math.max(0,b.alpha*(1-age*0.1));
+          b.parents.forEach(function(p){
+            cx.beginPath();cx.moveTo(b.x+b.sz/2,b.y);cx.lineTo(p.x+p.sz/2,p.y);
+            cx.strokeStyle=teal(a*0.28);cx.lineWidth=0.9;cx.stroke();
+          });
+          var glow=0.4+0.25*Math.sin(b.pulse);
+          cx.shadowColor=b.glow?teal(glow*a):'transparent';
+          cx.shadowBlur=b.glow?12:0;
+          var x=b.x,y=b.y-b.sz/2,s=b.sz,r=3;
+          cx.beginPath();
+          cx.moveTo(x+r,y);cx.lineTo(x+s-r,y);cx.arcTo(x+s,y,x+s,y+r,r);
+          cx.lineTo(x+s,y+s-r);cx.arcTo(x+s,y+s,x+s-r,y+s,r);
+          cx.lineTo(x+r,y+s);cx.arcTo(x,y+s,x,y+s-r,r);cx.lineTo(x,y+r);
+          cx.arcTo(x,y,x+r,y,r);cx.closePath();
+          cx.fillStyle=teal(0.11*a);cx.fill();
+          cx.strokeStyle=teal(0.80*a*glow);cx.lineWidth=1.2;cx.stroke();
+          cx.shadowBlur=0;
+        });
+        requestAnimationFrame(draw);
+      }
+      resize();
+      window.addEventListener('resize',resize);
+      if(typeof ResizeObserver!=='undefined'){
+        new ResizeObserver(function(){resize();}).observe(pc.parentElement||pc);
+      }
+      requestAnimationFrame(draw);
+    }
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',tryStart);
+    else tryStart();
+  }
+
+  // Start the fullscreen background DAG
+  startDagCanvas('dagCanvas', window.innerHeight);
+  </script>
+
+  <!-- Logo loader -->
+  <script>
+  (function() {
+    // Load the HTP logo from the old base64 asset
+    var logoEl = document.getElementById('htp-logo-img');
+    if (logoEl) {
+      // Use a small inline HTP logo (fallback hexagon if base64 not available)
+      var c = document.createElement('canvas');
+      c.width = 72; c.height = 72;
+      var ctx = c.getContext('2d');
+      // Dark background
+      ctx.fillStyle = '#030816';
+      ctx.beginPath();
+      ctx.moveTo(36, 2); ctx.lineTo(66, 19); ctx.lineTo(66, 53);
+      ctx.lineTo(36, 70); ctx.lineTo(6, 53); ctx.lineTo(6, 19); ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#49e8c2'; ctx.lineWidth = 2; ctx.stroke();
+      // H letter
+      ctx.strokeStyle = '#49e8c2'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(24, 22); ctx.lineTo(24, 50); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(48, 22); ctx.lineTo(48, 50); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(24, 36); ctx.lineTo(48, 36); ctx.stroke();
+      // Glow
+      ctx.shadowColor = 'rgba(73,232,194,0.6)'; ctx.shadowBlur = 8;
+      ctx.strokeStyle = 'rgba(73,232,194,0.3)'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(36, 2); ctx.lineTo(66, 19); ctx.lineTo(66, 53);
+      ctx.lineTo(36, 70); ctx.lineTo(6, 53); ctx.lineTo(6, 19); ctx.closePath();
+      ctx.stroke();
+      logoEl.src = c.toDataURL();
+    }
+  })();
   </script>
 </body>
 </html>

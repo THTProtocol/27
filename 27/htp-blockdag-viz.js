@@ -15,11 +15,11 @@
   var BLOCK_W = 18;
   var BLOCK_H = 12;
   var BLOCK_R = 3;
-  var PRIMARY = '#4f98a3';
-  var PRIMARY_GLOW = 'rgba(79,152,163,0.6)';
-  var BLOCK_FILL = '#0f1623';
-  var BG = '#0a0e1a';
-  var LINE_COLOR = 'rgba(79,152,163,0.3)';
+  var PRIMARY = '#49e8c2';
+  var PRIMARY_GLOW = 'rgba(73,232,194,0.6)';
+  var BLOCK_FILL = '#0a1628';
+  var BG = '#030816';
+  var LINE_COLOR = 'rgba(73,232,194,0.3)';
   var LABEL_COLOR = '#475569';
 
   var _blocks = [];
