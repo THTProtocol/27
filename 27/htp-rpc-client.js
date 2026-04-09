@@ -308,7 +308,7 @@
   // Auto-track wallet when connected
   window.addEventListener('htp:wallet:connected', function (e) {
     var address = e.detail && e.detail.address;
-    if (address) {
+    if (address && window.htpRpc && window.htpRpc.trackAddress) {
       window.htpRpc.trackAddress(address);
     }
   });

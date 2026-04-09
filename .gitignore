@@ -72,3 +72,5 @@ node_modules/
 .dataconnect
 27/serviceAccountKey.json
 serviceAccountKey.json
+27/kaspa-wasm-sdk-inline.js.bak
+27/kaspa_bg.wasm.bak

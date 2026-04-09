@@ -10,7 +10,8 @@
   var STATS_INTERVAL = 5000;
   var BLOCKS_INTERVAL = 3000;
   var STATS_URL = 'https://api-tn12.kaspa.org/info/blockdag';
-  var BLOCKS_URL = 'https://api-tn12.kaspa.org/blocks?limit=20&includeBlocks=true';
+  // blocks endpoint requires lowHash; we fetch tip first, then use it
+  var BLOCKS_BASE = 'https://api-tn12.kaspa.org/blocks';
 
   var BLOCK_W = 18;
   var BLOCK_H = 12;
@@ -73,7 +74,15 @@
   // ── Block Polling ──────────────────────────────────────────────────────
 
   function fetchBlocks() {
-    fetch(BLOCKS_URL).then(function(r) { return r.json(); }).then(function(data) {
+    // Step 1: get tip hash from blockdag info
+    fetch(STATS_URL).then(function(r) { return r.json(); }).then(function(info) {
+      var tipHash = info && info.tipHashes && info.tipHashes[0];
+      if (!tipHash && info && info.sink) tipHash = info.sink;
+      if (!tipHash) return;
+      // Step 2: use tip as lowHash to get blocks
+      var url = BLOCKS_BASE + '?lowHash=' + tipHash + '&includeBlocks=true&limit=20';
+      return fetch(url).then(function(r) { return r.json(); });
+    }).then(function(data) {
       if (!data || !data.blocks || !Array.isArray(data.blocks)) return;
       _connected = true;
       var incoming = data.blocks.map(function(b) {

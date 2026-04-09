@@ -193,6 +193,11 @@
     _retryWasmLoad();
   }, 30000);
 
+  // Also listen for the inline SDK's htpWasmReady event (belt-and-suspenders)
+  window.addEventListener('htpWasmReady', function () {
+    if (!_wasmReadyFired) _onWasmReady();
+  });
+
   /* ═══════════════════════════════════════════════════════════════════════════
    * 3.  IDENTITY & SEAT
    * ═══════════════════════════════════════════════════════════════════════════ */
