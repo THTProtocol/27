@@ -24,158 +24,177 @@
   var LABEL_COLOR = 'rgba(73,232,194,0.45)';
 
   // ── Synthetic DAG: a proper flowing BlockDAG background ──────────────
-  var _dagCols = [];
-  var _dagScrollX = 0;
-  var _dagColWidth = 0;
-  var _dagW = 0;
-  var _dagH = 0;
-  var _bgTime = 0;
-  var _BG_BLOCK_W = 20;
-  var _BG_BLOCK_H = 12;
+  // ── LANE-BASED BLOCKDAG BACKGROUND ────────────────────────────────────
+  // Blocks flow LEFT along horizontal lanes — exactly how a real BlockDAG looks:
+  // X axis = time, Y axis = parallel miners/validators, edges cross lanes (DAG merges)
+  var _bgLaneCount = 7;
+  var _bgScrollX = 0;       // how far left we've scrolled (absolute px)
+  var _bgBlocks = [];       // { id, absX, lane, alpha, pulse, parentIds:[] }
+  var _bgBlockById = {};
+  var _bgNextId = 0;
+  var _bgSpawnNext = 0;     // absX for next spawn cluster
+  var _BG_BLOCK_W = 22;
+  var _BG_BLOCK_H = 13;
   var _BG_BLOCK_R = 3;
-  var _VISIBLE_COLS = 30;  // dense — fills entire width
-  var _SCROLL_SPEED = 0.08; // very slow cinematic drift
+  var _SCROLL_SPEED = 0.12; // px/frame — cinematic crawl
+  var _SPAWN_STEP = 52;     // px between block clusters (time spacing)
+  var _bgTime = 0;
 
-  function _randBetween(a, b) { return a + Math.random() * (b - a); }
+  function _bgLaneY(lane, h) {
+    // Distribute 7 lanes from 6% to 94% of screen height
+    return h * 0.06 + lane * (h * 0.88) / (_bgLaneCount - 1);
+  }
 
-  function _generateCol(colIndex, h) {
-    // 3-5 blocks per column — true DAG width, full screen coverage
-    var numBlocks = 3 + Math.floor(Math.random() * 3);
-    var bandTop = h * 0.05;
-    var bandBot = h * 0.95;
-    var bandH = bandBot - bandTop;
-    var spacing = bandH / (numBlocks + 1);
-    var blocks = [];
-    for (var i = 0; i < numBlocks; i++) {
-      var baseY = bandTop + spacing * (i + 1);
-      blocks.push({
-        y: baseY + (Math.random() - 0.5) * spacing * 0.35,
-        alpha: _randBetween(0.25, 0.55),
-        parentIds: [],
+  function _bgSpawnCluster(absX, h) {
+    // 2-3 blocks per "time step" simulating parallel miners
+    var count = 2 + (Math.random() > 0.42 ? 1 : 0);
+    var usedLanes = [];
+    for (var n = 0; n < count; n++) {
+      // Pick an unused lane, weight toward middle lanes
+      var lane;
+      var tries = 0;
+      do {
+        var r = Math.random();
+        // Gaussian-ish: favor middle
+        lane = Math.floor(_bgLaneCount * (0.15 + r * 0.7));
+        lane = Math.max(0, Math.min(_bgLaneCount - 1, lane));
+        tries++;
+      } while (usedLanes.indexOf(lane) !== -1 && tries < 20);
+      if (usedLanes.indexOf(lane) !== -1) continue;
+      usedLanes.push(lane);
+
+      var xJitter = (Math.random() - 0.5) * 10;
+      var block = {
+        id: _bgNextId++,
+        absX: absX + xJitter,
+        lane: lane,
+        alpha: 0.28 + Math.random() * 0.32,
         pulse: Math.random() * Math.PI * 2,
-        colIdx: colIndex,
-        blockIdx: i
+        parentIds: []
+      };
+
+      // Find 1-2 parents: recent blocks to the left in same or adjacent lanes
+      var searchMin = absX - _SPAWN_STEP * 3.5;
+      var candidates = _bgBlocks.filter(function(b) {
+        return b.absX < absX - 8 && b.absX > searchMin;
       });
-    }
-    return { colIndex: colIndex, blocks: blocks };
-  }
-
-  function _wireParents(col, prevCol) {
-    if (!prevCol) return;
-    col.blocks.forEach(function(b) {
-      // 1-2 parents — realistic BlockDAG connectivity
-      var nParents = 1 + Math.floor(Math.random() * Math.min(2, prevCol.blocks.length));
-      var indices = [];
+      // Sort by closeness in lane first, then by recency
+      candidates.sort(function(a, b) {
+        var da = Math.abs(a.lane - lane);
+        var db = Math.abs(b.lane - lane);
+        if (da !== db) return da - db;
+        return b.absX - a.absX;
+      });
+      var nParents = Math.min(1 + (Math.random() > 0.45 ? 1 : 0), candidates.length);
       for (var p = 0; p < nParents; p++) {
-        // Prefer closest vertical neighbor for organic look
-        var best = Math.floor(Math.random() * prevCol.blocks.length);
-        if (indices.indexOf(best) === -1) indices.push(best);
+        if (candidates[p]) block.parentIds.push(candidates[p].id);
       }
-      b.parentIds = indices;
-    });
+
+      _bgBlocks.push(block);
+      _bgBlockById[block.id] = block;
+    }
   }
 
-  function initSyntheticDAG(w, h) {
-    _dagW = w;
-    _dagH = h;
-    _dagScrollX = 0;
-    _dagCols = [];
-    _dagColWidth = w / (_VISIBLE_COLS - 1);
-    var totalCols = _VISIBLE_COLS + 8;
-    for (var c = 0; c < totalCols; c++) {
-      var col = _generateCol(c, h);
-      _wireParents(col, c > 0 ? _dagCols[c - 1] : null);
-      _dagCols.push(col);
+  function initLaneDAG(w, h) {
+    _bgScrollX = 0;
+    _bgBlocks = [];
+    _bgBlockById = {};
+    _bgNextId = 0;
+    // Pre-fill entire visible screen plus buffer
+    var x = 30;
+    while (x < w + _SPAWN_STEP * 3) {
+      _bgSpawnCluster(x, h);
+      x += _SPAWN_STEP * (0.7 + Math.random() * 0.6);
     }
+    _bgSpawnNext = x;
   }
 
   function drawBackgroundMode(ctx, w, h) {
     ctx.clearRect(0, 0, w, h);
     _bgTime += 0.016;
-    _dagScrollX += _SCROLL_SPEED;
+    _bgScrollX += _SCROLL_SPEED;
 
-    // Recycle columns
-    var firstColX = -_dagScrollX + _dagCols[0].colIndex * _dagColWidth;
-    while (firstColX < -_dagColWidth * 2) {
-      _dagCols.shift();
-      var lastCol = _dagCols[_dagCols.length - 1];
-      var newCol = _generateCol(lastCol.colIndex + 1, h);
-      _wireParents(newCol, lastCol);
-      _dagCols.push(newCol);
-      firstColX = -_dagScrollX + _dagCols[0].colIndex * _dagColWidth;
+    // Spawn new clusters as the view moves right
+    while (_bgSpawnNext - _bgScrollX < w + _SPAWN_STEP * 3) {
+      _bgSpawnCluster(_bgSpawnNext, h);
+      _bgSpawnNext += _SPAWN_STEP * (0.7 + Math.random() * 0.6);
     }
 
-    ctx.save();
-
-    // ── Connection lines — smooth bezier curves ──────────────────
-    ctx.lineCap = 'round';
-    _dagCols.forEach(function(col, ci) {
-      var cx = -_dagScrollX + col.colIndex * _dagColWidth;
-      if (cx < -_dagColWidth || cx > w + _dagColWidth) return;
-      var prevCol = ci > 0 ? _dagCols[ci - 1] : null;
-      if (!prevCol) return;
-      var pcx = -_dagScrollX + prevCol.colIndex * _dagColWidth;
-
-      col.blocks.forEach(function(b) {
-        b.parentIds.forEach(function(pid) {
-          if (pid >= prevCol.blocks.length) return;
-          var parent = prevCol.blocks[pid];
-          var x1 = pcx + _BG_BLOCK_W;
-          var y1 = parent.y + _BG_BLOCK_H / 2;
-          var x2 = cx;
-          var y2 = b.y + _BG_BLOCK_H / 2;
-          var cpOff = (x2 - x1) * 0.45;
-
-          // Fade edges near screen borders
-          var edgeFade = 1;
-          if (cx < 80) edgeFade = cx / 80;
-          if (cx > w - 80) edgeFade = (w - cx) / 80;
-          if (pcx < 80) edgeFade = Math.min(edgeFade, pcx / 80);
-          edgeFade = Math.max(0, Math.min(1, edgeFade));
-
-          ctx.globalAlpha = 0.14 * edgeFade;
-          ctx.strokeStyle = '#49e8c2';
-          ctx.lineWidth = 0.8;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.bezierCurveTo(x1 + cpOff, y1, x2 - cpOff, y2, x2, y2);
-          ctx.stroke();
-        });
-      });
+    // Prune blocks far off left
+    var cutoff = _bgScrollX - _SPAWN_STEP * 6;
+    _bgBlocks = _bgBlocks.filter(function(b) {
+      if (b.absX < cutoff) { delete _bgBlockById[b.id]; return false; }
+      return true;
     });
 
-    // ── Block rectangles ─────────────────────────────────────────
-    _dagCols.forEach(function(col) {
-      var cx = -_dagScrollX + col.colIndex * _dagColWidth;
-      if (cx < -_BG_BLOCK_W - 10 || cx > w + 10) return;
+    ctx.save();
+    ctx.lineCap = 'round';
 
-      // Edge fade for blocks too
-      var edgeFade = 1;
-      if (cx < 60) edgeFade = cx / 60;
-      if (cx > w - 60) edgeFade = (w - cx) / 60;
-      edgeFade = Math.max(0, Math.min(1, edgeFade));
+    // ── Parent→child edges ───────────────────────────────────────
+    _bgBlocks.forEach(function(b) {
+      var bx = b.absX - _bgScrollX;
+      var by = _bgLaneY(b.lane, h) + _BG_BLOCK_H / 2;
 
-      col.blocks.forEach(function(b) {
-        b.pulse += 0.006;
-        var breathe = 0.88 + 0.12 * Math.sin(b.pulse);
-        var alpha = b.alpha * breathe * edgeFade;
-        if (alpha < 0.02) return;
+      b.parentIds.forEach(function(pid) {
+        var parent = _bgBlockById[pid];
+        if (!parent) return;
+        var px = parent.absX - _bgScrollX + _BG_BLOCK_W;
+        var py = _bgLaneY(parent.lane, h) + _BG_BLOCK_H / 2;
 
-        // Dark filled block with teal border
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = 'rgba(4,18,14,0.85)';
-        roundRect(ctx, cx, b.y, _BG_BLOCK_W, _BG_BLOCK_H, _BG_BLOCK_R);
-        ctx.fill();
+        // Edge-screen fade so lines dissolve at left/right edges
+        var fade = 1;
+        if (bx < 80) fade *= bx / 80;
+        if (bx > w - 80) fade *= (w - bx) / 80;
+        if (px < 0) fade = 0;
+        fade = Math.max(0, Math.min(1, fade));
+        if (fade < 0.01) return;
 
-        ctx.globalAlpha = alpha * 0.6;
+        // Horizontal bezier — control points hug source/dest (no vertical loops)
+        var cpOff = (bx - px) * 0.48;
+        ctx.globalAlpha = Math.min(b.alpha, parent.alpha) * 0.45 * fade;
         ctx.strokeStyle = '#49e8c2';
-        ctx.lineWidth = 0.8;
-        roundRect(ctx, cx, b.y, _BG_BLOCK_W, _BG_BLOCK_H, _BG_BLOCK_R);
+        ctx.lineWidth = 0.75;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.bezierCurveTo(px + cpOff, py, bx - cpOff, by, bx, by);
         ctx.stroke();
       });
     });
 
-    // ── Overlay real blocks from API ─────────────────────────────
+    // ── Block rectangles ─────────────────────────────────────────
+    _bgBlocks.forEach(function(b) {
+      var bx = b.absX - _bgScrollX;
+      if (bx < -_BG_BLOCK_W - 5 || bx > w + 5) return;
+
+      b.pulse += 0.005;
+      var breathe = 0.9 + 0.1 * Math.sin(b.pulse);
+      var alpha = b.alpha * breathe;
+
+      // Edge fade
+      var fade = 1;
+      if (bx < 60) fade *= bx / 60;
+      if (bx > w - 60) fade *= (w - bx) / 60;
+      fade = Math.max(0, Math.min(1, fade));
+      alpha *= fade;
+      if (alpha < 0.015) return;
+
+      var by = _bgLaneY(b.lane, h);
+
+      // Dark fill
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = 'rgba(3,14,10,0.88)';
+      roundRect(ctx, bx, by, _BG_BLOCK_W, _BG_BLOCK_H, _BG_BLOCK_R);
+      ctx.fill();
+
+      // Teal border
+      ctx.globalAlpha = alpha * 0.6;
+      ctx.strokeStyle = '#49e8c2';
+      ctx.lineWidth = 0.8;
+      roundRect(ctx, bx, by, _BG_BLOCK_W, _BG_BLOCK_H, _BG_BLOCK_R);
+      ctx.stroke();
+    });
+
+    // ── Real API blocks layered on top ───────────────────────────
     if (_blocks.length > 0) {
       _drawRealBlockHighlights(ctx, w, h);
     }
@@ -537,10 +556,10 @@
     var ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Init synthetic DAG once for background mode
+    // Init lane-based DAG once for background mode
     if (isBackground) {
       var r = canvas.getBoundingClientRect();
-      initSyntheticDAG(r.width || window.innerWidth, r.height || window.innerHeight);
+      initLaneDAG(r.width || window.innerWidth, r.height || window.innerHeight);
     }
 
     function tick() {
@@ -551,7 +570,7 @@
         canvas.width = rect.width * dpr;
         canvas.height = rect.height * dpr;
         ctx.scale(dpr, dpr);
-        if (isBackground) initSyntheticDAG(rect.width, rect.height);
+        if (isBackground) initLaneDAG(rect.width, rect.height);
       }
       drawDAG(ctx, rect.width, rect.height, isBackground);
       var id = requestAnimationFrame(tick);
