@@ -24,81 +24,69 @@
   var LABEL_COLOR = 'rgba(73,232,194,0.45)';
 
   // ── KASPA BLOCKDAG BACKGROUND ─────────────────────────────────────────
-  // Organic node-graph style inspired by kaspa-ng:
-  // - Blocks scattered naturally across full height (not rigid lanes)
-  // - Horizontal S-curve bezier edges (no vertical loops)
-  // - Time flows left→right, old blocks scroll off left
-  // - CSS mask-image handles edge fade — no per-pixel alpha hacks
+  // Calm constellation DAG — nodes as small circles drifting almost imperceptibly
+  // left. Faint bezier edges connect nearby nodes. CSS mask handles edge fade.
+  // Design: ~20 nodes on screen, widely-spaced, no pulsing, near-static feel.
   var _bgScrollX = 0;
-  var _bgBlocks = [];
-  var _bgBlockById = {};
+  var _bgNodes = [];      // { id, absX, y, alpha, isChain, parentIds[] }
+  var _bgNodeById = {};
   var _bgNextId = 0;
   var _bgSpawnNext = 0;
-  var _BG_BLOCK_W = 20;
-  var _BG_BLOCK_H = 12;
-  var _BG_BLOCK_R = 3;
-  var _SCROLL_SPEED = 0.05;
-  var _SPAWN_GAP  = 44;      // px between time steps
+  var _BG_R = 3;           // node radius
+  var _SCROLL_SPEED = 0.008;  // ~0.5 px/sec — barely perceptible drift
+  var _SPAWN_GAP = 110;   // wide spacing → ~18 nodes visible on 1400px screen
   var _bgTime = 0;
-  var _bgH = 600;            // cached canvas height
+  var _bgH = 600;
 
   function _bgRand(a, b) { return a + Math.random() * (b - a); }
 
-  // Each block has an organic Y — distributed across full height with slight
-  // clustering tendency (simulates real miner diversity)
   function _bgSpawnCluster(absX) {
-    var count = 2 + (Math.random() > 0.38 ? 1 : 0) + (Math.random() > 0.75 ? 1 : 0);
+    // 1-2 nodes per time step — sparse, calm
+    var count = Math.random() > 0.42 ? 2 : 1;
     var h = _bgH;
     var usedY = [];
     for (var n = 0; n < count; n++) {
-      // Pick Y that isn't too close to an existing block in this cluster
       var y, tries = 0;
       do {
-        y = _bgRand(h * 0.06, h * 0.94 - _BG_BLOCK_H);
+        y = _bgRand(h * 0.08, h * 0.92);
         tries++;
-      } while (usedY.some(function(uy) { return Math.abs(uy - y) < h * 0.12; }) && tries < 30);
+      } while (usedY.some(function(uy) { return Math.abs(uy - y) < h * 0.18; }) && tries < 20);
       usedY.push(y);
 
-      var block = {
+      var node = {
         id: _bgNextId++,
-        absX: absX + _bgRand(-6, 6),
+        absX: absX + _bgRand(-8, 8),
         y: y,
-        alpha: _bgRand(0.22, 0.48),
-        pulse: Math.random() * Math.PI * 2,
-        parentIds: [],
-        // Occasional "blue chain" highlight (1 in 4 blocks)
-        isChain: Math.random() > 0.75
+        alpha: _bgRand(0.18, 0.38),
+        isChain: Math.random() > 0.72,
+        parentIds: []
       };
 
-      // Find 1-2 parents in the preceding 2-3 time steps
-      var searchMin = absX - _SPAWN_GAP * 3;
-      var candidates = _bgBlocks.filter(function(b) {
-        return b.absX < absX - 6 && b.absX > searchMin;
-      });
-      // Weight by vertical proximity
-      candidates.sort(function(a, b) {
+      // Connect to 1-2 nearby nodes in the preceding ~3 gaps
+      var searchMin = absX - _SPAWN_GAP * 3.5;
+      var cands = _bgNodes.filter(function(b) {
+        return b.absX < absX - 10 && b.absX > searchMin;
+      }).sort(function(a, b) {
         return Math.abs(a.y - y) - Math.abs(b.y - y);
       });
-      var nParents = Math.min(1 + (Math.random() > 0.5 ? 1 : 0), candidates.length);
-      for (var p = 0; p < nParents; p++) {
-        block.parentIds.push(candidates[p].id);
-      }
+      var nP = Math.min(1 + (Math.random() > 0.55 ? 1 : 0), cands.length);
+      for (var p = 0; p < nP; p++) node.parentIds.push(cands[p].id);
 
-      _bgBlocks.push(block);
-      _bgBlockById[block.id] = block;
+      _bgNodes.push(node);
+      _bgNodeById[node.id] = node;
     }
   }
 
   function initLaneDAG(w, h) {
     _bgScrollX = 0;
-    _bgBlocks = [];
-    _bgBlockById = {};
+    _bgNodes = [];
+    _bgNodeById = {};
     _bgNextId = 0;
     _bgH = h;
-    var x = 30;
-    while (x < w + _SPAWN_GAP * 4) {
+    var x = 40;
+    while (x < w + _SPAWN_GAP * 5) {
       _bgSpawnCluster(x);
-      x += _SPAWN_GAP * _bgRand(0.65, 1.3);
+      x += _SPAWN_GAP * _bgRand(0.7, 1.35);
     }
     _bgSpawnNext = x;
   }
@@ -110,71 +98,64 @@
     _bgH = h;
 
     // Spawn ahead
-    while (_bgSpawnNext - _bgScrollX < w + _SPAWN_GAP * 4) {
+    while (_bgSpawnNext - _bgScrollX < w + _SPAWN_GAP * 5) {
       _bgSpawnCluster(_bgSpawnNext);
-      _bgSpawnNext += _SPAWN_GAP * _bgRand(0.65, 1.3);
+      _bgSpawnNext += _SPAWN_GAP * _bgRand(0.7, 1.35);
     }
 
-    // Prune old blocks
-    var cutoff = _bgScrollX - _SPAWN_GAP * 7;
-    _bgBlocks = _bgBlocks.filter(function(b) {
-      if (b.absX < cutoff) { delete _bgBlockById[b.id]; return false; }
+    // Prune off-screen left
+    var cutoff = _bgScrollX - _SPAWN_GAP * 6;
+    _bgNodes = _bgNodes.filter(function(b) {
+      if (b.absX < cutoff) { delete _bgNodeById[b.id]; return false; }
       return true;
     });
 
     ctx.save();
     ctx.lineCap = 'round';
 
-    // ── Parent → child edges ─────────────────────────────────────
-    _bgBlocks.forEach(function(b) {
+    // ── Edges ────────────────────────────────────────────────────
+    _bgNodes.forEach(function(b) {
       var bx = b.absX - _bgScrollX;
-      var by = b.y + _BG_BLOCK_H / 2;
-
+      var by = b.y;
       b.parentIds.forEach(function(pid) {
-        var p = _bgBlockById[pid];
+        var p = _bgNodeById[pid];
         if (!p) return;
-        var px = p.absX - _bgScrollX + _BG_BLOCK_W;
-        var py = p.y + _BG_BLOCK_H / 2;
-
-        var isChainEdge = b.isChain && p.isChain;
-        // Horizontal S-curve: control pts locked to start/end X, keeps edges tidy
+        var px = p.absX - _bgScrollX;
+        var py = p.y;
+        var isChain = b.isChain && p.isChain;
         var dx = bx - px;
-        var cpA = dx * 0.46;
-        ctx.globalAlpha = isChainEdge ? 0.22 : 0.11;
-        ctx.strokeStyle = isChainEdge ? '#49e8c2' : 'rgba(73,232,194,0.8)';
-        ctx.lineWidth  = isChainEdge ? 1 : 0.65;
+        var cp = dx * 0.42;
+        ctx.globalAlpha = isChain ? 0.16 : 0.07;
+        ctx.strokeStyle = '#49e8c2';
+        ctx.lineWidth = isChain ? 0.8 : 0.5;
         ctx.beginPath();
         ctx.moveTo(px, py);
-        ctx.bezierCurveTo(px + cpA, py, bx - cpA, by, bx, by);
+        ctx.bezierCurveTo(px + cp, py, bx - cp, by, bx, by);
         ctx.stroke();
       });
     });
 
-    // ── Block nodes ──────────────────────────────────────────────
-    _bgBlocks.forEach(function(b) {
+    // ── Nodes ────────────────────────────────────────────────────
+    _bgNodes.forEach(function(b) {
       var bx = b.absX - _bgScrollX;
-      if (bx < -_BG_BLOCK_W - 2 || bx > w + 2) return;
+      if (bx < -10 || bx > w + 10) return;
 
-      b.pulse += 0.004;
-      var breathe = 0.9 + 0.1 * Math.sin(b.pulse);
-      var alpha = b.alpha * breathe;
-      if (alpha < 0.01) return;
+      var a = b.alpha;
+      var r = b.isChain ? _BG_R + 0.5 : _BG_R;
 
-      // Chain blocks slightly brighter/teal-tinted fill
-      var fillA  = b.isChain ? alpha * 0.5 : alpha * 0.2;
-      var borderA = b.isChain ? alpha * 0.65 : alpha * 0.45;
-
-      // Fill
-      ctx.globalAlpha = fillA;
-      ctx.fillStyle = b.isChain ? 'rgba(15,48,36,0.9)' : 'rgba(3,12,9,0.9)';
-      roundRect(ctx, bx, b.y, _BG_BLOCK_W, _BG_BLOCK_H, _BG_BLOCK_R);
+      // Dot fill
+      ctx.globalAlpha = a * (b.isChain ? 0.55 : 0.28);
+      ctx.fillStyle = b.isChain ? 'rgba(73,232,194,0.9)' : 'rgba(73,232,194,0.6)';
+      ctx.beginPath();
+      ctx.arc(bx, b.y, r, 0, Math.PI * 2);
       ctx.fill();
 
-      // Border
-      ctx.globalAlpha = borderA;
+      // Outer ring
+      ctx.globalAlpha = a * (b.isChain ? 0.4 : 0.2);
       ctx.strokeStyle = '#49e8c2';
-      ctx.lineWidth = b.isChain ? 0.9 : 0.65;
-      roundRect(ctx, bx, b.y, _BG_BLOCK_W, _BG_BLOCK_H, _BG_BLOCK_R);
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.arc(bx, b.y, r + 1.5, 0, Math.PI * 2);
       ctx.stroke();
     });
 
