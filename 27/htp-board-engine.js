@@ -260,7 +260,7 @@
     if (boardArea) boardArea.classList.remove('hidden');
 
     // Hide all sub-boards, then show the correct one
-    ['chess-board', 'c4-board', 'checkers-board'].forEach(id => {
+    ['chess-board', 'c4-board', 'checkers-board', 'ttt-board'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.add('hidden');
     });
@@ -277,6 +277,11 @@
       const el = document.getElementById('checkers-board');
       if (el) el.classList.remove('hidden');
       launchCheckersBoard(opts);
+    } else if (game === 'ttt' || game === 'tictactoe') {
+      const el = document.getElementById('ttt-board');
+      if (el) el.classList.remove('hidden');
+      if (typeof window.openTTTBoard === 'function') window.openTTTBoard(opts);
+      else ERR('openTTTBoard not found');
     } else {
       ERR('Unknown game type:', game);
     }

@@ -1108,6 +1108,153 @@
   W.openCheckersBoard=openCheckersBoard;
 
   /* ═══════════════════════════════════════════════════════════════════════
+   * 7b. TIC-TAC-TOE ENGINE
+   * ═══════════════════════════════════════════════════════════════════════ */
+  var WIN_LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+  function openTTTBoard(opts){
+    var old=document.getElementById('htpTTTOverlay');if(old)old.remove();
+    var mySide=opts.mySide||opts.side==='x'?1:opts.side==='o'?2:1;
+    W.TTT={board:Array(9).fill(0),turn:1,mySide:mySide,matchId:opts.matchId||opts.id,gameOver:false};
+    W.TTT.timeSec=opts.timeSec||180;
+    W.TTT.stakeKas=opts.stakeKas||opts.stake||5;
+    W.TTT._clk={ms:[W.TTT.timeSec*1000,W.TTT.timeSec*1000],active:1,_iv:null,_localTick:function(){
+      clearInterval(W.TTT._clk._iv);
+      W.TTT._clk._iv=setInterval(function(){
+        var s=W.TTT._clk.active;if(!s||W.TTT.gameOver)return;
+        W.TTT._clk.ms[s-1]-=100;
+        if(W.TTT._clk.ms[s-1]<=0){W.TTT._clk.ms[s-1]=0;clearInterval(W.TTT._clk._iv);
+          var winner=s===1?2:1;
+          W.TTT.gameOver=true;
+          if(typeof W.relaySend==='function')W.relaySend({type:'gameOver',game:'tictactoe',reason:'timeout',winner:winner});
+          if(typeof W.handleMatchGameOver==='function')W.handleMatchGameOver('timeout',winner===W.TTT.mySide?'me':'opponent');
+        }
+        updateTTTClockDisplay();
+      },100);
+    }};
+    var wrap=document.createElement('div');
+    wrap.id='htpTTTOverlay';
+    wrap.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(1,8,6,0.95);display:flex;align-items:center;justify-content:center;';
+    wrap.innerHTML='<div style="max-width:400px;width:100%;padding:24px;text-align:center;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
+      +'<span style="font-size:18px;font-weight:800;color:#fff;">Tic-Tac-Toe</span>'
+      +'<button onclick="document.getElementById(\'htpTTTOverlay\').remove()" style="background:none;border:none;color:#64748b;font-size:20px;cursor:pointer;">✕</button>'
+      +'</div>'
+      +'<div id="tttStatusBar" style="font-size:13px;color:#94a3b8;margin-bottom:8px;">'+(mySide===1?'Your turn':'Opponent\'s turn')+'</div>'
+      +'<div style="display:flex;justify-content:center;gap:24px;margin-bottom:12px;">'
+      +'<span style="font-family:monospace;font-size:14px;font-weight:700;color:#49e8c2;background:#1e293b;padding:4px 12px;border-radius:6px;" id="tttClk1">'+fmtSec(W.TTT.timeSec)+'</span>'
+      +'<span style="color:#475569;font-weight:900;">vs</span>'
+      +'<span style="font-family:monospace;font-size:14px;font-weight:700;color:#f59e0b;background:#1e293b;padding:4px 12px;border-radius:6px;" id="tttClk2">'+fmtSec(W.TTT.timeSec)+'</span>'
+      +'</div>'
+      +'<div id="tttGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:300px;margin:0 auto;"></div>'
+      +'<button onclick="window.resignMatch&&window.resignMatch()" style="margin-top:16px;background:#1e293b;border:1px solid #374151;color:#94a3b8;border-radius:8px;padding:8px 20px;font-weight:700;cursor:pointer;">Resign</button>'
+      +'</div>';
+    document.body.appendChild(wrap);
+    renderTTTBoard();
+    W.TTT._clk._localTick();
+    var matchId=W.TTT.matchId;
+    if(fdb()&&matchId){
+      fdb().ref('relay/'+matchId+'/moves').on('child_added',function(snap){
+        var msg=snap.val();if(!msg||msg.side===W.TTT.mySide)return;
+        applyTTTCell(msg.cell,msg.side,false);
+      });
+      fdb().ref('relay/'+matchId+'/clock').on('value',function(snap){
+        var c=snap.val();if(!c)return;
+        if(c.ms1!=null)W.TTT._clk.ms[0]=c.ms1;
+        if(c.ms2!=null)W.TTT._clk.ms[1]=c.ms2;
+        if(c.activeSide)W.TTT._clk.active=c.activeSide;
+        updateTTTClockDisplay();W.TTT._clk._localTick();
+      });
+    }
+    LOG('TicTacToe board opened — side',mySide===1?'X':'O');
+  }
+
+  function renderTTTBoard(){
+    var el=document.getElementById('tttGrid');if(!el)return;
+    var b=W.TTT.board;var mySide=W.TTT.mySide;var turn=W.TTT.turn;
+    var h='';
+    for(var i=0;i<9;i++){
+      var bg='#0f172a';var col='#334155';var txt='';var cursor='default';
+      if(b[i]===1){txt='X';col='#49e8c2';bg='rgba(73,232,194,0.08)';}
+      else if(b[i]===2){txt='O';col='rgba(255,255,255,0.85)';bg='rgba(255,255,255,0.04)';}
+      else if(!W.TTT.gameOver&&turn===mySide){cursor='pointer';bg='rgba(73,232,194,0.03)';}
+      h+='<div onclick="window.tttCellClick('+i+')" style="width:90px;height:90px;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:'+col+';background:'+bg+';border:1px solid rgba(73,232,194,0.12);border-radius:8px;cursor:'+cursor+';">'+txt+'</div>';
+    }
+    el.innerHTML=h;
+    var sb=document.getElementById('tttStatusBar');
+    if(sb)sb.textContent=W.TTT.gameOver?'Game Over':(turn===mySide?'Your turn':'Opponent\'s turn');
+  }
+
+  function updateTTTClockDisplay(){
+    var e1=document.getElementById('tttClk1'),e2=document.getElementById('tttClk2');
+    if(e1)e1.textContent=fmtSec(Math.ceil(W.TTT._clk.ms[0]/1000));
+    if(e2)e2.textContent=fmtSec(Math.ceil(W.TTT._clk.ms[1]/1000));
+  }
+
+  function applyTTTCell(cell,side,relay){
+    if(W.TTT.gameOver)return;
+    if(W.TTT.board[cell]!==0)return;
+    W.TTT.board[cell]=side;
+    W.TTT.turn=side===1?2:1;
+    W.TTT._clk.active=W.TTT.turn;
+    if(relay!==false&&fdb()&&W.TTT.matchId){
+      fdb().ref('relay/'+W.TTT.matchId+'/moves').push({type:'move',game:'tictactoe',cell:cell,side:side,ts:Date.now()}).catch(function(){});
+      fdb().ref('relay/'+W.TTT.matchId+'/clock').set({ms1:W.TTT._clk.ms[0],ms2:W.TTT._clk.ms[1],activeSide:W.TTT._clk.active}).catch(function(){});
+    }
+    W.TTT._clk._localTick();
+    var win=checkTTTWin(W.TTT.board);
+    if(win){
+      W.TTT.gameOver=true;clearInterval(W.TTT._clk._iv);
+      renderTTTBoard();
+      if(typeof W.handleMatchGameOver==='function')W.handleMatchGameOver(win.type==='draw'?'draw':'ttt-win',win.winner===W.TTT.mySide?'me':'opponent');
+      if(typeof W.settleMatchPayout==='function'){
+        var match=W.matchLobby&&W.matchLobby.activeMatch;
+        if(match){
+          var wAddr=win.type==='draw'?null:(win.winner===1?match.creator:match.opponent);
+          W.settleMatchPayout(W.TTT.matchId,wAddr,win.type==='draw',match.creator,match.opponent);
+        }
+      }
+      return;
+    }
+    // Check draw (all cells filled)
+    if(W.TTT.board.every(function(c){return c!==0;})){
+      W.TTT.gameOver=true;clearInterval(W.TTT._clk._iv);
+      renderTTTBoard();
+      if(typeof W.handleMatchGameOver==='function')W.handleMatchGameOver('draw','draw');
+      if(typeof W.settleMatchPayout==='function'){
+        var match=W.matchLobby&&W.matchLobby.activeMatch;
+        if(match)W.settleMatchPayout(W.TTT.matchId,null,true,match.creator,match.opponent);
+      }
+      return;
+    }
+    renderTTTBoard();
+  }
+
+  function checkTTTWin(board){
+    for(var i=0;i<WIN_LINES.length;i++){
+      var l=WIN_LINES[i];
+      if(board[l[0]]&&board[l[0]]===board[l[1]]&&board[l[1]]===board[l[2]]){
+        return{winner:board[l[0]],type:'win',line:l};
+      }
+    }
+    return null;
+  }
+
+  W.tttCellClick=function(cell){
+    if(!W.TTT||W.TTT.gameOver)return;
+    if(W.TTT.turn!==W.TTT.mySide)return;
+    if(W.TTT.board[cell]!==0)return;
+    applyTTTCell(cell,W.TTT.mySide,true);
+  };
+
+  W.applyTTTMove=function(cell,side){
+    if(!W.TTT)return;
+    applyTTTCell(cell,side,false);
+  };
+
+  W.openTTTBoard=openTTTBoard;
+
+  /* ═══════════════════════════════════════════════════════════════════════
    * 8. RELAY + LAUNCHER PATCHES
    * ═══════════════════════════════════════════════════════════════════════ */
   function patchRelayHandler(){
@@ -1121,6 +1268,7 @@
           if(game==='chess'||game==='chess960') applyIncomingChessMove(msg);
           else if(game==='c4'||game==='connect4') W.applyC4Move&&W.applyC4Move(msg.col,msg.side);
           else if(game==='checkers'||game==='ck') W.applyCkMove&&W.applyCkMove(msg.from,msg.to,msg.side);
+          else if(game==='tictactoe'||game==='ttt') W.applyTTTMove&&W.applyTTTMove(msg.cell,msg.side);
         }else if(msg.type==='gameOver'||msg.type==='resign'){
           if(typeof W.handleMatchGameOver==='function') W.handleMatchGameOver(msg.reason||'resign',msg.winner);
         }else if(msg.type==='clockSync'&&W.chessUI){
@@ -1145,6 +1293,11 @@
     if(origCk&&!origCk._v4Patched){
       W.startCheckersGame=function(opts){const match=activeMatch();openCheckersBoard({matchId:opts.id||(match&&match.id),mySide:opts.side||W._htpMySide||1,timeSec:parseInt(opts.time)||300,stakeKas:parseFloat(opts.stake)||5,creatorName:match?(match.creatorName||(match.creator||'').slice(0,8)):'Red',joinerName:match?(match.joinerName||(match.opponent||'').slice(0,8)):'Black'});};
       W.startCheckersGame._v4Patched=true;
+    }
+    const origTTT=W.startTicTacToeGame;
+    if(!origTTT||!origTTT._v4Patched){
+      W.startTicTacToeGame=function(opts){const match=activeMatch();openTTTBoard({matchId:opts.id||(match&&match.id),mySide:opts.side||W._htpMySide||1,timeSec:parseInt(opts.time)||180,stakeKas:parseFloat(opts.stake)||5});};
+      W.startTicTacToeGame._v4Patched=true;
     }
     const origPlay=W.playMatch;
     if(origPlay&&!origPlay._v4Patched){
