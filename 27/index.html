@@ -4973,114 +4973,309 @@ event MyMarket {
 
             <!-- ••• SKILL ••• -->
             <section class="view" id="v-skill">
+                <style>
+                .sgv2-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:28px}
+                @media(max-width:900px){.sgv2-grid{grid-template-columns:1fr}}
+                .sgv2-card{background:rgba(6,12,22,0.78);border:1px solid rgba(73,232,194,0.1);border-radius:16px;overflow:hidden;cursor:pointer;transition:all .25s ease;position:relative;display:flex;flex-direction:column;backdrop-filter:blur(8px)}
+                .sgv2-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 10%,rgba(73,232,194,0.25) 50%,transparent 90%)}
+                .sgv2-card:hover{border-color:rgba(73,232,194,0.45);transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,0.5),0 0 30px rgba(73,232,194,0.1)}
+                .sgv2-card.coming{opacity:0.55;pointer-events:none}
+                .sgv2-card.coming .sgv2-soon{display:flex}
+                .sgv2-board{height:220px;display:flex;align-items:center;justify-content:center;background:rgba(1,8,6,0.7);position:relative;overflow:hidden;border-bottom:1px solid rgba(73,232,194,0.08)}
+                .sgv2-board::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(73,232,194,0.015) 2px,rgba(73,232,194,0.015) 4px);pointer-events:none;z-index:1}
+                .sgv2-board svg{width:auto;height:180px;filter:drop-shadow(0 4px 20px rgba(73,232,194,0.15));position:relative;z-index:0}
+                .sgv2-info{padding:18px 20px 20px;flex:1;display:flex;flex-direction:column;gap:8px}
+                .sgv2-name{font-size:18px;font-weight:800;color:#e8f0f0;letter-spacing:-0.02em;display:flex;align-items:center;gap:8px}
+                .sgv2-name .sgv2-live{width:7px;height:7px;border-radius:50%;background:#49e8c2;box-shadow:0 0 8px #49e8c2;flex-shrink:0;animation:sgvPulse 2s ease-in-out infinite}
+                @keyframes sgvPulse{0%,100%{opacity:1;box-shadow:0 0 8px #49e8c2}50%{opacity:0.6;box-shadow:0 0 4px #49e8c2}}
+                .sgv2-desc{font-size:12px;color:var(--muted);line-height:1.55;margin:0}
+                .sgv2-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:8px}
+                .sgv2-tag{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.04em;border:1px solid rgba(73,232,194,0.18);color:rgba(73,232,194,0.8);background:rgba(73,232,194,0.05)}
+                .sgv2-soon{display:none;position:absolute;inset:0;background:rgba(2,6,18,0.7);backdrop-filter:blur(4px);align-items:center;justify-content:center;z-index:3;border-radius:16px}
+                .sgv2-soon span{font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.1em;border:1px solid rgba(255,255,255,0.12);padding:6px 16px;border-radius:20px}
+                .sgv2-mform{padding:28px;border-radius:16px;border:1px solid rgba(73,232,194,0.12);background:rgba(6,12,22,0.75);backdrop-filter:blur(12px);margin-bottom:28px;position:relative;overflow:hidden}
+                .sgv2-mform::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(73,232,194,0.3),transparent)}
+                .sgv2-mform::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(73,232,194,0.008) 2px,rgba(73,232,194,0.008) 4px);pointer-events:none}
+                .sgv2-mform h3{margin:0 0 4px;font-size:20px;font-weight:800;letter-spacing:-0.02em;color:#e8f0f0;position:relative;z-index:1}
+                .sgv2-mform .sgv2-sub{font-size:12px;color:var(--dim);margin:0 0 22px;position:relative;z-index:1;line-height:1.6}
+                .sgv2-gpick{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;position:relative;z-index:1}
+                @media(max-width:600px){.sgv2-gpick{grid-template-columns:repeat(2,1fr)}}
+                .sgv2-gpick button{background:rgba(1,8,6,0.5);border:1.5px solid rgba(73,232,194,0.08);border-radius:12px;padding:18px 10px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .2s;position:relative;z-index:1}
+                .sgv2-gpick button:hover{border-color:rgba(73,232,194,0.3);background:rgba(73,232,194,0.06);box-shadow:0 0 16px rgba(73,232,194,0.06)}
+                .sgv2-gpick button.act{border-color:#49e8c2;background:rgba(73,232,194,0.12);box-shadow:0 0 20px rgba(73,232,194,0.18),inset 0 0 20px rgba(73,232,194,0.04)}
+                .sgv2-gpick button .sg-ico{font-size:36px;line-height:1;transition:transform .2s}
+                .sgv2-gpick button.act .sg-ico{transform:scale(1.1)}
+                .sgv2-gpick button .sg-lbl{font-size:10px;font-weight:700;color:#6b7280;letter-spacing:.06em;text-transform:uppercase;transition:color .18s}
+                .sgv2-gpick button.act .sg-lbl{color:#49e8c2}
+                .sgv2-settings{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px;position:relative;z-index:1}
+                @media(max-width:700px){.sgv2-settings{grid-template-columns:1fr}}
+                .sgv2-lobby{margin-bottom:28px;padding:16px 20px;border-radius:14px;background:rgba(6,12,22,0.5);border:1px solid rgba(73,232,194,0.06);backdrop-filter:blur(6px)}
+                .sgv2-lobby-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+                .sgv2-lobby-hdr span:first-child{font-size:14px;font-weight:700;color:#e8e8e8;text-transform:uppercase;letter-spacing:.05em}
+                .sgv2-lobby-badge{font-size:11px;color:#49e8c2;background:rgba(73,232,194,.1);padding:3px 10px;border-radius:10px;font-weight:600}
+                </style>
+
                 <div class="mx sec-pad">
                     <div class="sh">
-    <h2>Skill Games</h2>
-    <p>Stakes locked in a Kaspa covenant. Play. The covenant enforces the result.
-       No arbiter. No dispute. Winner takes the pool minus 2% protocol fee.</p>
-    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-        <span class="chip act">Chess</span>
-        <span class="chip act">Connect 4</span>
-        <span class="chip act">Checkers</span>
-        <span class="chip act">Tic-Tac-Toe</span>
-        <span class="chip">Poker (soon)</span>
-        <span class="chip">Blackjack (soon)</span>
-    </div>
-</div>
-                    <div style="margin-top:20px;margin-bottom:20px">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                            <span
-                                style="font-size:14px;font-weight:700;color:#e8e8e8;text-transform:uppercase;letter-spacing:.05em">Open
-                                Matches</span><span
-                                style="font-size:11px;color:#49e8c2;background:rgba(73,232,194,.1);padding:2px 8px;border-radius:10px"
-                                id="lobbyCount">0 open</span>
+                        <h2>Skill Games</h2>
+                        <p>Stakes locked in a Kaspa covenant. Play. The covenant enforces the result.
+                           No arbiter. No dispute. Winner takes the pool minus 2% protocol fee.</p>
+                    </div>
+
+                    <!-- Open Matches Lobby -->
+                    <div class="sgv2-lobby">
+                        <div class="sgv2-lobby-hdr">
+                            <span>Open Matches</span>
+                            <span class="sgv2-lobby-badge" id="lobbyCount">0 open</span>
                         </div>
                         <div id="matchLobby" style="max-height:400px;overflow-y:auto"></div>
                     </div>
-                    <div class="sg-grid" style="display:flex;flex-wrap:nowrap;gap:12px;align-items:stretch">
-                        <div class="card sg-card" onclick="go('skill')" style="flex:1 1 0;min-width:0;height:200px;overflow:hidden;align-self:stretch;margin-top:0">
-                            <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;background:rgba(73,232,194,0.07);border:1px solid rgba(73,232,194,0.2);border-radius:20px;font-size:9px;font-weight:700;color:#49e8c2;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;flex-shrink:0"><span style="width:5px;height:5px;border-radius:50%;background:#49e8c2;display:inline-block"></span> Covenant Enforced</span>
-                            <h3 style="margin:0 0 6px;font-size:15px;font-weight:700;line-height:1.3">Chess</h3>
-                            <p style="margin:0;font-size:12px;color:var(--muted);line-height:1.5;overflow:hidden;display:-webkit-box;line-clamp: var(--lc, 3); -webkit-line-clamp:3;-webkit-box-orient:vertical">Every move validated on-chain. Covenant enforces the result. No trust required.</p>
+
+                    <!-- Game Preview Cards -->
+                    <div class="sgv2-grid">
+
+                        <!-- CHESS -->
+                        <div class="sgv2-card" onclick="document.querySelector('.sgv2-gpick button[data-game=chess]').click()">
+                            <div class="sgv2-board">
+                                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                  <defs><linearGradient id="cg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#49e8c2" stop-opacity="0.15"/><stop offset="100%" stop-color="#49e8c2" stop-opacity="0.03"/></linearGradient></defs>
+                                  <!-- 8x8 board -->
+                                  <g fill="none">
+                                    <rect width="200" height="200" rx="6" fill="url(#cg1)"/>
+                                    <g fill="rgba(73,232,194,0.08)">
+                                      <rect x="25" y="0" width="25" height="25"/><rect x="75" y="0" width="25" height="25"/><rect x="125" y="0" width="25" height="25"/><rect x="175" y="0" width="25" height="25"/>
+                                      <rect x="0" y="25" width="25" height="25"/><rect x="50" y="25" width="25" height="25"/><rect x="100" y="25" width="25" height="25"/><rect x="150" y="25" width="25" height="25"/>
+                                      <rect x="25" y="50" width="25" height="25"/><rect x="75" y="50" width="25" height="25"/><rect x="125" y="50" width="25" height="25"/><rect x="175" y="50" width="25" height="25"/>
+                                      <rect x="0" y="75" width="25" height="25"/><rect x="50" y="75" width="25" height="25"/><rect x="100" y="75" width="25" height="25"/><rect x="150" y="75" width="25" height="25"/>
+                                      <rect x="25" y="100" width="25" height="25"/><rect x="75" y="100" width="25" height="25"/><rect x="125" y="100" width="25" height="25"/><rect x="175" y="100" width="25" height="25"/>
+                                      <rect x="0" y="125" width="25" height="25"/><rect x="50" y="125" width="25" height="25"/><rect x="100" y="125" width="25" height="25"/><rect x="150" y="125" width="25" height="25"/>
+                                      <rect x="25" y="150" width="25" height="25"/><rect x="75" y="150" width="25" height="25"/><rect x="125" y="150" width="25" height="25"/><rect x="175" y="150" width="25" height="25"/>
+                                      <rect x="0" y="175" width="25" height="25"/><rect x="50" y="175" width="25" height="25"/><rect x="100" y="175" width="25" height="25"/><rect x="150" y="175" width="25" height="25"/>
+                                    </g>
+                                    <rect width="200" height="200" rx="6" stroke="rgba(73,232,194,0.2)" stroke-width="1"/>
+                                  </g>
+                                  <!-- Pieces (Unicode chess on board) -->
+                                  <g font-size="20" text-anchor="middle" dominant-baseline="central">
+                                    <text x="12" y="188" fill="rgba(255,255,255,0.85)">&#9814;</text><text x="37" y="188" fill="rgba(255,255,255,0.85)">&#9816;</text><text x="62" y="188" fill="rgba(255,255,255,0.85)">&#9815;</text><text x="87" y="188" fill="rgba(255,255,255,0.85)">&#9813;</text><text x="112" y="188" fill="rgba(255,255,255,0.85)">&#9812;</text><text x="137" y="188" fill="rgba(255,255,255,0.85)">&#9815;</text><text x="162" y="188" fill="rgba(255,255,255,0.85)">&#9816;</text><text x="187" y="188" fill="rgba(255,255,255,0.85)">&#9814;</text>
+                                    <text x="12" y="163" fill="rgba(255,255,255,0.65)">&#9817;</text><text x="37" y="163" fill="rgba(255,255,255,0.65)">&#9817;</text><text x="62" y="163" fill="rgba(255,255,255,0.65)">&#9817;</text><text x="87" y="163" fill="rgba(255,255,255,0.65)">&#9817;</text><text x="112" y="163" fill="rgba(255,255,255,0.65)">&#9817;</text><text x="137" y="163" fill="rgba(255,255,255,0.65)">&#9817;</text><text x="162" y="163" fill="rgba(255,255,255,0.65)">&#9817;</text><text x="187" y="163" fill="rgba(255,255,255,0.65)">&#9817;</text>
+                                    <text x="12" y="13" fill="rgba(73,232,194,0.85)">&#9820;</text><text x="37" y="13" fill="rgba(73,232,194,0.85)">&#9822;</text><text x="62" y="13" fill="rgba(73,232,194,0.85)">&#9821;</text><text x="87" y="13" fill="rgba(73,232,194,0.85)">&#9819;</text><text x="112" y="13" fill="rgba(73,232,194,0.85)">&#9818;</text><text x="137" y="13" fill="rgba(73,232,194,0.85)">&#9821;</text><text x="162" y="13" fill="rgba(73,232,194,0.85)">&#9822;</text><text x="187" y="13" fill="rgba(73,232,194,0.85)">&#9820;</text>
+                                    <text x="12" y="38" fill="rgba(73,232,194,0.65)">&#9823;</text><text x="37" y="38" fill="rgba(73,232,194,0.65)">&#9823;</text><text x="62" y="38" fill="rgba(73,232,194,0.65)">&#9823;</text><text x="87" y="38" fill="rgba(73,232,194,0.65)">&#9823;</text><text x="112" y="38" fill="rgba(73,232,194,0.65)">&#9823;</text><text x="137" y="38" fill="rgba(73,232,194,0.65)">&#9823;</text><text x="162" y="38" fill="rgba(73,232,194,0.65)">&#9823;</text><text x="187" y="38" fill="rgba(73,232,194,0.65)">&#9823;</text>
+                                  </g>
+                                </svg>
+                            </div>
+                            <div class="sgv2-info">
+                                <div class="sgv2-name"><span class="sgv2-live"></span> Chess</div>
+                                <p class="sgv2-desc">Every move validated on-chain. Full FIDE rules. Covenant enforces checkmate, stalemate, and time control. No trust required.</p>
+                                <div class="sgv2-tags"><span class="sgv2-tag">Covenant Enforced</span><span class="sgv2-tag">Time Controls</span><span class="sgv2-tag">Series Play</span></div>
+                            </div>
                         </div>
-                        <div class="card sg-card" onclick="go('skill')" style="flex:1 1 0;min-width:0;height:200px;overflow:hidden;align-self:stretch;margin-top:0">
-                            <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;background:rgba(73,232,194,0.07);border:1px solid rgba(73,232,194,0.2);border-radius:20px;font-size:9px;font-weight:700;color:#49e8c2;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;flex-shrink:0"><span style="width:5px;height:5px;border-radius:50%;background:#49e8c2;display:inline-block"></span> Covenant Enforced</span>
-                            <h3 style="margin:0 0 6px;font-size:15px;font-weight:700;line-height:1.3">Connect 4</h3>
-                            <p style="margin:0;font-size:12px;color:var(--muted);line-height:1.5;overflow:hidden;display:-webkit-box;line-clamp: var(--lc, 3); -webkit-line-clamp:3;-webkit-box-orient:vertical">Classic Connect 4 with on-chain stakes. Every drop verified by the covenant. No cheating possible.</p>
+
+                        <!-- CONNECT 4 -->
+                        <div class="sgv2-card" onclick="document.querySelector('.sgv2-gpick button[data-game=connect4]').click()">
+                            <div class="sgv2-board">
+                                <svg viewBox="0 0 210 180" xmlns="http://www.w3.org/2000/svg">
+                                  <rect x="0" y="0" width="210" height="180" rx="10" fill="rgba(73,232,194,0.06)" stroke="rgba(73,232,194,0.15)" stroke-width="1"/>
+                                  <!-- 7x6 grid of circles -->
+                                  <g>
+                                    <circle cx="15" cy="15" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="45" cy="15" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="75" cy="15" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="105" cy="15" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="135" cy="15" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="165" cy="15" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="195" cy="15" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/>
+                                    <circle cx="15" cy="45" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="45" cy="45" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="75" cy="45" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="105" cy="45" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="135" cy="45" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="165" cy="45" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="195" cy="45" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/>
+                                    <circle cx="15" cy="75" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="45" cy="75" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="75" cy="75" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="105" cy="75" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="135" cy="75" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="165" cy="75" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="195" cy="75" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/>
+                                    <circle cx="15" cy="105" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="45" cy="105" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="75" cy="105" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="105" cy="105" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="135" cy="105" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="165" cy="105" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="195" cy="105" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/>
+                                    <circle cx="15" cy="135" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="45" cy="135" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="75" cy="135" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="105" cy="135" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="135" cy="135" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="165" cy="135" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="195" cy="135" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/>
+                                    <circle cx="15" cy="165" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="45" cy="165" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="75" cy="165" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="105" cy="165" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="135" cy="165" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="165" cy="165" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="195" cy="165" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/>
+                                  </g>
+                                  <!-- Placed pieces (mid-game) -->
+                                  <circle cx="75" cy="165" r="10" fill="#ef4444" opacity="0.8"/><circle cx="105" cy="165" r="10" fill="#49e8c2" opacity="0.8"/>
+                                  <circle cx="75" cy="135" r="10" fill="#49e8c2" opacity="0.8"/><circle cx="105" cy="135" r="10" fill="#ef4444" opacity="0.8"/>
+                                  <circle cx="135" cy="165" r="10" fill="#ef4444" opacity="0.8"/><circle cx="135" cy="135" r="10" fill="#49e8c2" opacity="0.8"/>
+                                  <circle cx="75" cy="105" r="10" fill="#ef4444" opacity="0.8"/><circle cx="165" cy="165" r="10" fill="#49e8c2" opacity="0.8"/>
+                                  <circle cx="45" cy="165" r="10" fill="#49e8c2" opacity="0.65"/><circle cx="105" cy="105" r="10" fill="#ef4444" opacity="0.65"/>
+                                </svg>
+                            </div>
+                            <div class="sgv2-info">
+                                <div class="sgv2-name"><span class="sgv2-live"></span> Connect 4</div>
+                                <p class="sgv2-desc">Classic vertical drop game with on-chain stakes. Every disc verified by the covenant. Four in a row wins the escrow.</p>
+                                <div class="sgv2-tags"><span class="sgv2-tag">Covenant Enforced</span><span class="sgv2-tag">Fast Games</span></div>
+                            </div>
                         </div>
-                        <div class="card sg-card" onclick="go('skill')" style="flex:1 1 0;min-width:0;height:200px;overflow:hidden;align-self:stretch;margin-top:0">
-                            <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;background:rgba(73,232,194,0.07);border:1px solid rgba(73,232,194,0.2);border-radius:20px;font-size:9px;font-weight:700;color:#49e8c2;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;flex-shrink:0"><span style="width:5px;height:5px;border-radius:50%;background:#49e8c2;display:inline-block"></span> Covenant Enforced</span>
-                            <h3 style="margin:0 0 6px;font-size:15px;font-weight:700;line-height:1.3">Checkers</h3>
-                            <p style="margin:0;font-size:12px;color:var(--muted);line-height:1.5;overflow:hidden;display:-webkit-box;line-clamp: var(--lc, 3); -webkit-line-clamp:3;-webkit-box-orient:vertical">On-chain checkers with full replay proof. Every capture and king verified by Kaspa covenants.</p>
+
+                        <!-- CHECKERS -->
+                        <div class="sgv2-card" onclick="document.querySelector('.sgv2-gpick button[data-game=checkers]').click()">
+                            <div class="sgv2-board">
+                                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                  <rect width="200" height="200" rx="6" fill="rgba(73,232,194,0.03)"/>
+                                  <!-- 8x8 dark squares -->
+                                  <g fill="rgba(73,232,194,0.08)">
+                                    <rect x="25" y="0" width="25" height="25"/><rect x="75" y="0" width="25" height="25"/><rect x="125" y="0" width="25" height="25"/><rect x="175" y="0" width="25" height="25"/>
+                                    <rect x="0" y="25" width="25" height="25"/><rect x="50" y="25" width="25" height="25"/><rect x="100" y="25" width="25" height="25"/><rect x="150" y="25" width="25" height="25"/>
+                                    <rect x="25" y="50" width="25" height="25"/><rect x="75" y="50" width="25" height="25"/><rect x="125" y="50" width="25" height="25"/><rect x="175" y="50" width="25" height="25"/>
+                                    <rect x="0" y="75" width="25" height="25"/><rect x="50" y="75" width="25" height="25"/><rect x="100" y="75" width="25" height="25"/><rect x="150" y="75" width="25" height="25"/>
+                                    <rect x="25" y="100" width="25" height="25"/><rect x="75" y="100" width="25" height="25"/><rect x="125" y="100" width="25" height="25"/><rect x="175" y="100" width="25" height="25"/>
+                                    <rect x="0" y="125" width="25" height="25"/><rect x="50" y="125" width="25" height="25"/><rect x="100" y="125" width="25" height="25"/><rect x="150" y="125" width="25" height="25"/>
+                                    <rect x="25" y="150" width="25" height="25"/><rect x="75" y="150" width="25" height="25"/><rect x="125" y="150" width="25" height="25"/><rect x="175" y="150" width="25" height="25"/>
+                                    <rect x="0" y="175" width="25" height="25"/><rect x="50" y="175" width="25" height="25"/><rect x="100" y="175" width="25" height="25"/><rect x="150" y="175" width="25" height="25"/>
+                                  </g>
+                                  <rect width="200" height="200" rx="6" stroke="rgba(73,232,194,0.15)" stroke-width="1" fill="none"/>
+                                  <!-- White pieces (bottom) -->
+                                  <circle cx="12" cy="188" r="9" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/><circle cx="62" cy="188" r="9" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/><circle cx="112" cy="188" r="9" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/><circle cx="162" cy="188" r="9" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
+                                  <circle cx="37" cy="163" r="9" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/><circle cx="87" cy="163" r="9" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/><circle cx="137" cy="163" r="9" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/><circle cx="187" cy="163" r="9" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+                                  <circle cx="12" cy="138" r="9" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"/><circle cx="62" cy="138" r="9" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"/><circle cx="112" cy="138" r="9" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"/><circle cx="162" cy="138" r="9" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+                                  <!-- Teal pieces (top) -->
+                                  <circle cx="37" cy="13" r="9" fill="rgba(73,232,194,0.7)" stroke="rgba(73,232,194,0.9)" stroke-width="1.5"/><circle cx="87" cy="13" r="9" fill="rgba(73,232,194,0.7)" stroke="rgba(73,232,194,0.9)" stroke-width="1.5"/><circle cx="137" cy="13" r="9" fill="rgba(73,232,194,0.7)" stroke="rgba(73,232,194,0.9)" stroke-width="1.5"/><circle cx="187" cy="13" r="9" fill="rgba(73,232,194,0.7)" stroke="rgba(73,232,194,0.9)" stroke-width="1.5"/>
+                                  <circle cx="12" cy="38" r="9" fill="rgba(73,232,194,0.55)" stroke="rgba(73,232,194,0.75)" stroke-width="1.5"/><circle cx="62" cy="38" r="9" fill="rgba(73,232,194,0.55)" stroke="rgba(73,232,194,0.75)" stroke-width="1.5"/><circle cx="112" cy="38" r="9" fill="rgba(73,232,194,0.55)" stroke="rgba(73,232,194,0.75)" stroke-width="1.5"/><circle cx="162" cy="38" r="9" fill="rgba(73,232,194,0.55)" stroke="rgba(73,232,194,0.75)" stroke-width="1.5"/>
+                                  <circle cx="37" cy="63" r="9" fill="rgba(73,232,194,0.4)" stroke="rgba(73,232,194,0.6)" stroke-width="1.5"/><circle cx="87" cy="63" r="9" fill="rgba(73,232,194,0.4)" stroke="rgba(73,232,194,0.6)" stroke-width="1.5"/><circle cx="137" cy="63" r="9" fill="rgba(73,232,194,0.4)" stroke="rgba(73,232,194,0.6)" stroke-width="1.5"/><circle cx="187" cy="63" r="9" fill="rgba(73,232,194,0.4)" stroke="rgba(73,232,194,0.6)" stroke-width="1.5"/>
+                                  <!-- King marker (mid-game piece) -->
+                                  <circle cx="62" cy="113" r="9" fill="rgba(73,232,194,0.6)" stroke="#49e8c2" stroke-width="2"/><text x="62" y="117" text-anchor="middle" font-size="10" fill="#010806" font-weight="bold">K</text>
+                                </svg>
+                            </div>
+                            <div class="sgv2-info">
+                                <div class="sgv2-name"><span class="sgv2-live"></span> Checkers</div>
+                                <p class="sgv2-desc">On-chain checkers with full replay proof. Multi-jump captures and king promotions verified by Kaspa covenants.</p>
+                                <div class="sgv2-tags"><span class="sgv2-tag">Covenant Enforced</span><span class="sgv2-tag">Multi-Jump</span></div>
+                            </div>
                         </div>
-                        <div class="card sg-card" onclick="go('skill')" style="flex:1 1 0;min-width:0;height:200px;overflow:hidden;align-self:stretch;margin-top:0">
-                            <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;background:rgba(73,232,194,0.07);border:1px solid rgba(73,232,194,0.2);border-radius:20px;font-size:9px;font-weight:700;color:#49e8c2;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;flex-shrink:0"><span style="width:5px;height:5px;border-radius:50%;background:#49e8c2;display:inline-block"></span> Covenant Enforced</span>
-                            <h3 style="margin:0 0 6px;font-size:15px;font-weight:700;line-height:1.3">Tic-Tac-Toe</h3>
-                            <p style="margin:0;font-size:12px;color:var(--muted);line-height:1.5;overflow:hidden;display:-webkit-box;line-clamp: var(--lc, 3); -webkit-line-clamp:3;-webkit-box-orient:vertical">Simple, fast, provably fair. Every X and O recorded on-chain. Instant covenant settlement.</p>
+
+                        <!-- TIC-TAC-TOE -->
+                        <div class="sgv2-card" onclick="document.querySelector('.sgv2-gpick button[data-game=tictactoe]').click()">
+                            <div class="sgv2-board">
+                                <svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+                                  <!-- Grid lines -->
+                                  <line x1="60" y1="10" x2="60" y2="170" stroke="rgba(73,232,194,0.25)" stroke-width="2" stroke-linecap="round"/>
+                                  <line x1="120" y1="10" x2="120" y2="170" stroke="rgba(73,232,194,0.25)" stroke-width="2" stroke-linecap="round"/>
+                                  <line x1="10" y1="60" x2="170" y2="60" stroke="rgba(73,232,194,0.25)" stroke-width="2" stroke-linecap="round"/>
+                                  <line x1="10" y1="120" x2="170" y2="120" stroke="rgba(73,232,194,0.25)" stroke-width="2" stroke-linecap="round"/>
+                                  <!-- X pieces (teal) -->
+                                  <g stroke="#49e8c2" stroke-width="3.5" stroke-linecap="round" opacity="0.85">
+                                    <line x1="18" y1="18" x2="48" y2="48"/><line x1="48" y1="18" x2="18" y2="48"/><!-- top-left -->
+                                    <line x1="78" y1="78" x2="108" y2="108"/><line x1="108" y1="78" x2="78" y2="108"/><!-- center -->
+                                    <line x1="138" y1="18" x2="168" y2="48"/><line x1="168" y1="18" x2="138" y2="48"/><!-- top-right -->
+                                    <line x1="18" y1="138" x2="48" y2="168"/><line x1="48" y1="138" x2="18" y2="168"/><!-- bottom-left -->
+                                  </g>
+                                  <!-- O pieces (white) -->
+                                  <circle cx="90" cy="33" r="16" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="3.5"/><!-- top-center -->
+                                  <circle cx="33" cy="90" r="16" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="3.5"/><!-- mid-left -->
+                                  <circle cx="150" cy="90" r="16" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="3.5"/><!-- mid-right -->
+                                  <circle cx="90" cy="150" r="16" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="3.5"/><!-- bottom-center -->
+                                  <!-- Winning line hint -->
+                                  <line x1="30" y1="30" x2="153" y2="153" stroke="rgba(73,232,194,0.4)" stroke-width="2" stroke-dasharray="6,4"/>
+                                </svg>
+                            </div>
+                            <div class="sgv2-info">
+                                <div class="sgv2-name"><span class="sgv2-live"></span> Tic-Tac-Toe</div>
+                                <p class="sgv2-desc">Simple, fast, provably fair. Every X and O recorded on-chain. Instant covenant settlement on three in a row.</p>
+                                <div class="sgv2-tags"><span class="sgv2-tag">Covenant Enforced</span><span class="sgv2-tag">Instant</span></div>
+                            </div>
                         </div>
-                        <div class="card sg-card" style="position:relative;flex:1 1 0;min-width:0;height:200px;overflow:hidden;align-self:stretch;margin-top:0" onclick="showToast('Poker coming soon post-HF','info')">
-                            <div style="position:absolute;inset:0;background:rgba(2,6,23,0.65);backdrop-filter:blur(3px);border-radius:14px;display:flex;align-items:center;justify-content:center;z-index:2"><span style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.1em;border:1px solid rgba(255,255,255,0.1);padding:5px 14px;border-radius:20px">Coming Soon</span></div><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;background:rgba(73,232,194,0.07);border:1px solid rgba(73,232,194,0.2);border-radius:20px;font-size:9px;font-weight:700;color:#49e8c2;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;flex-shrink:0"><span style="width:5px;height:5px;border-radius:50%;background:#49e8c2;display:inline-block"></span> Covenant Enforced</span>
-                            <h3 style="margin:0 0 6px;font-size:15px;font-weight:700;line-height:1.3">Poker</h3>
-                            <p style="margin:0;font-size:12px;color:var(--muted);line-height:1.5;overflow:hidden;display:-webkit-box;line-clamp: var(--lc, 3); -webkit-line-clamp:3;-webkit-box-orient:vertical">Texas Hold'em heads-up. Cryptographic dealing ensures fairness. Pot locked in escrow, winner takes all.</p>
+
+                        <!-- POKER (coming soon) -->
+                        <div class="sgv2-card coming" onclick="showToast('Poker coming soon post-HF','info')">
+                            <div class="sgv2-soon"><span>Coming Soon</span></div>
+                            <div class="sgv2-board">
+                                <svg viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg">
+                                  <rect x="20" y="10" width="50" height="70" rx="6" fill="none" stroke="rgba(73,232,194,0.2)" stroke-width="1.5"/>
+                                  <text x="45" y="52" text-anchor="middle" font-size="28" fill="rgba(73,232,194,0.35)">A</text>
+                                  <text x="30" y="25" font-size="11" fill="rgba(239,68,68,0.4)">&#9829;</text>
+                                  <rect x="80" y="10" width="50" height="70" rx="6" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+                                  <text x="105" y="52" text-anchor="middle" font-size="28" fill="rgba(255,255,255,0.25)">K</text>
+                                  <text x="90" y="25" font-size="11" fill="rgba(255,255,255,0.2)">&#9824;</text>
+                                  <rect x="140" y="10" width="50" height="70" rx="6" fill="none" stroke="rgba(73,232,194,0.15)" stroke-width="1.5" stroke-dasharray="4,3"/>
+                                  <text x="165" y="52" text-anchor="middle" font-size="22" fill="rgba(255,255,255,0.12)">?</text>
+                                  <!-- Chips -->
+                                  <circle cx="60" cy="110" r="14" fill="none" stroke="rgba(73,232,194,0.25)" stroke-width="1.5"/><text x="60" y="114" text-anchor="middle" font-size="9" fill="rgba(73,232,194,0.4)">100</text>
+                                  <circle cx="100" cy="115" r="12" fill="none" stroke="rgba(239,68,68,0.2)" stroke-width="1.5"/><text x="100" y="119" text-anchor="middle" font-size="8" fill="rgba(239,68,68,0.3)">50</text>
+                                  <circle cx="138" cy="112" r="10" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/><text x="138" y="116" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.2)">25</text>
+                                </svg>
+                            </div>
+                            <div class="sgv2-info">
+                                <div class="sgv2-name">Poker</div>
+                                <p class="sgv2-desc">Texas Hold'em heads-up. Cryptographic dealing ensures fairness. Pot locked in escrow, winner takes all.</p>
+                                <div class="sgv2-tags"><span class="sgv2-tag">Post-Hardfork</span></div>
+                            </div>
                         </div>
-                        <div class="card sg-card" style="position:relative;flex:1 1 0;min-width:0;height:200px;overflow:hidden;align-self:stretch;margin-top:0" onclick="showToast('Blackjack coming soon post-HF','info')">
-                            <div style="position:absolute;inset:0;background:rgba(2,6,23,0.65);backdrop-filter:blur(3px);border-radius:14px;display:flex;align-items:center;justify-content:center;z-index:2"><span style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.1em;border:1px solid rgba(255,255,255,0.1);padding:5px 14px;border-radius:20px">Coming Soon</span></div><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;background:rgba(73,232,194,0.07);border:1px solid rgba(73,232,194,0.2);border-radius:20px;font-size:9px;font-weight:700;color:#49e8c2;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;flex-shrink:0"><span style="width:5px;height:5px;border-radius:50%;background:#49e8c2;display:inline-block"></span> Covenant Enforced</span>
-                            <h3 style="margin:0 0 6px;font-size:15px;font-weight:700;line-height:1.3">Blackjack</h3>
-                            <p style="margin:0;font-size:12px;color:var(--muted);line-height:1.5;overflow:hidden;display:-webkit-box;line-clamp: var(--lc, 3); -webkit-line-clamp:3;-webkit-box-orient:vertical">Beat the dealer with a provably fair deck. Hit, stand, double down. Instant settlement.</p>
+
+                        <!-- BLACKJACK (coming soon) -->
+                        <div class="sgv2-card coming" onclick="showToast('Blackjack coming soon post-HF','info')">
+                            <div class="sgv2-soon"><span>Coming Soon</span></div>
+                            <div class="sgv2-board">
+                                <svg viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg">
+                                  <!-- Dealer cards -->
+                                  <text x="100" y="16" text-anchor="middle" font-size="9" fill="rgba(73,232,194,0.35)" letter-spacing="0.1em">DEALER</text>
+                                  <rect x="55" y="22" width="38" height="52" rx="5" fill="none" stroke="rgba(73,232,194,0.2)" stroke-width="1.5"/>
+                                  <text x="74" y="54" text-anchor="middle" font-size="20" fill="rgba(73,232,194,0.4)">J</text>
+                                  <text x="63" y="34" font-size="10" fill="rgba(255,255,255,0.2)">&#9827;</text>
+                                  <rect x="105" y="22" width="38" height="52" rx="5" fill="rgba(73,232,194,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1.5" stroke-dasharray="3,3"/>
+                                  <text x="124" y="54" text-anchor="middle" font-size="18" fill="rgba(255,255,255,0.1)">?</text>
+                                  <!-- Player cards -->
+                                  <text x="100" y="90" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.3)" letter-spacing="0.1em">YOU</text>
+                                  <rect x="45" y="96" width="38" height="52" rx="5" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+                                  <text x="64" y="128" text-anchor="middle" font-size="20" fill="rgba(255,255,255,0.5)">10</text>
+                                  <text x="53" y="108" font-size="10" fill="rgba(239,68,68,0.3)">&#9830;</text>
+                                  <rect x="90" y="96" width="38" height="52" rx="5" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+                                  <text x="109" y="128" text-anchor="middle" font-size="20" fill="rgba(255,255,255,0.5)">A</text>
+                                  <text x="98" y="108" font-size="10" fill="rgba(255,255,255,0.25)">&#9824;</text>
+                                  <!-- 21! badge -->
+                                  <rect x="135" y="105" width="36" height="22" rx="6" fill="rgba(73,232,194,0.1)" stroke="rgba(73,232,194,0.3)" stroke-width="1"/>
+                                  <text x="153" y="120" text-anchor="middle" font-size="11" font-weight="bold" fill="rgba(73,232,194,0.6)">21!</text>
+                                </svg>
+                            </div>
+                            <div class="sgv2-info">
+                                <div class="sgv2-name">Blackjack</div>
+                                <p class="sgv2-desc">Beat the dealer with a provably fair deck. Hit, stand, double down. Instant on-chain settlement.</p>
+                                <div class="sgv2-tags"><span class="sgv2-tag">Post-Hardfork</span></div>
+                            </div>
                         </div>
-                    </div>
+
+                    </div><!-- /sgv2-grid -->
                 </div>
-                <div class="match-form">
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
-    <h3 style="margin:0;font-size:16px;font-weight:800;letter-spacing:-0.01em">
-        Create a Challenge Match
-    </h3>
-    <div style="font-size:10px;color:var(--accent);background:rgba(73,232,194,.06);border:1px solid rgba(73,232,194,.2);border-radius:6px;padding:3px 8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">
-        Escrow Locked On-Chain
-    </div>
-</div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-                        <div class="fg"><label>Game</label>
-                        <select id="sgGame" onchange="updGameOpts()" style="display:none">
-                            <option value="" disabled selected style="color:#6b7280">Select a game…</option>
-                            <option value="chess" data-times="1|0,1|1,2|1,3|0,3|2,5|0,5|3,5|5,10|0,10|5,15|10,20|0,30|0,45|45,60|0,60|30,90|30" data-series="1,3,5,7,9,11">♘ Chess</option>
-                            <option value="connect4" data-times="1|0,2|0,3|0,5|0,10|0" data-series="1,3,5,7">🔴 Connect 4</option>
-                            <option value="checkers" data-times="3|0,5|0,5|3,10|0,10|5,15|0" data-series="1,3,5,7">⚪ Checkers</option>
-                            <option value="tictactoe" data-times="1|0,2|0,3|0" data-series="1,3,5">✕ Tic-Tac-Toe</option>
-                        </select>
-                        <div id="sgGamePicker" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:4px">
-                            <button type="button" class="sg-gbtn" data-game="chess"
-                                style="background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .18s">
-                                <span style="font-size:26px;line-height:1;color:#fff">♘</span>
-                                <span style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:.06em">CHESS</span>
-                            </button>
-                            <button type="button" class="sg-gbtn" data-game="connect4"
-                                style="background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .18s">
-                                <span style="font-size:26px;line-height:1">🔴</span>
-                                <span style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:.06em">CONNECT&nbsp;4</span>
-                            </button>
-                            <button type="button" class="sg-gbtn" data-game="checkers"
-                                style="background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .18s">
-                                <span style="font-size:26px;line-height:1">⚪</span>
-                                <span style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:.06em">CHECKERS</span>
-                            </button>
-                            <button type="button" class="sg-gbtn" data-game="tictactoe"
-                                style="background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .18s">
-                                <span style="font-size:26px;line-height:1;color:#49e8c2">✕</span>
-                                <span style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:.06em">TIC-TAC-TOE</span>
-                            </button>
+
+                <!-- Create Match Form -->
+                <div class="sgv2-mform" style="margin:0 auto;max-width:1200px;padding-left:24px;padding-right:24px">
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative;z-index:1">
+                        <h3>Create a Challenge Match</h3>
+                        <div style="font-size:10px;color:var(--accent);background:rgba(73,232,194,.06);border:1px solid rgba(73,232,194,.2);border-radius:6px;padding:3px 8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">
+                            Escrow Locked On-Chain
                         </div>
-                        <script>(function(){var btns=document.querySelectorAll('#sgGamePicker .sg-gbtn'),sel=document.getElementById('sgGame');function act(g){btns.forEach(function(b){var on=b.getAttribute('data-game')===g;b.style.background=on?'rgba(73,232,194,.13)':'rgba(255,255,255,.04)';b.style.border=on?'1.5px solid #49e8c2':'1.5px solid rgba(255,255,255,.1)';b.style.transform=on?'scale(1.04)':'scale(1)';var s=b.querySelector('span:last-child');if(s)s.style.color=on?'#49e8c2':'#6b7280';});}btns.forEach(function(b){b.addEventListener('click',function(){sel.value=b.getAttribute('data-game');sel.dispatchEvent(new Event('change'));act(sel.value);});});})();</script>
-                        </div>                        <div class="fg"><label>Escrow (KAS)</label><input type="number" id="sgEsc" value="5" min="1" max="10000" step="1" /></div>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px">
+                    <p class="sgv2-sub">Select a game, set your stake and time controls. Your KAS is locked in a covenant until the match resolves.</p>
+
+                    <!-- Game Picker -->
+                    <select id="sgGame" onchange="updGameOpts()" style="display:none">
+                        <option value="" disabled selected>Select a game…</option>
+                        <option value="chess" data-times="1|0,1|1,2|1,3|0,3|2,5|0,5|3,5|5,10|0,10|5,15|10,20|0,30|0,45|45,60|0,60|30,90|30" data-series="1,3,5,7,9,11">♘ Chess</option>
+                        <option value="connect4" data-times="1|0,2|0,3|0,5|0,10|0" data-series="1,3,5,7">🔴 Connect 4</option>
+                        <option value="checkers" data-times="3|0,5|0,5|3,10|0,10|5,15|0" data-series="1,3,5,7">⚪ Checkers</option>
+                        <option value="tictactoe" data-times="1|0,2|0,3|0" data-series="1,3,5">✕ Tic-Tac-Toe</option>
+                    </select>
+                    <div class="sgv2-gpick" id="sgGamePicker">
+                        <button type="button" class="sg-gbtn" data-game="chess">
+                            <span class="sg-ico" style="color:#fff">&#9816;</span>
+                            <span class="sg-lbl">Chess</span>
+                        </button>
+                        <button type="button" class="sg-gbtn" data-game="connect4">
+                            <span class="sg-ico">&#128308;</span>
+                            <span class="sg-lbl">Connect 4</span>
+                        </button>
+                        <button type="button" class="sg-gbtn" data-game="checkers">
+                            <span class="sg-ico">&#9898;</span>
+                            <span class="sg-lbl">Checkers</span>
+                        </button>
+                        <button type="button" class="sg-gbtn" data-game="tictactoe">
+                            <span class="sg-ico" style="color:#49e8c2">&#10005;</span>
+                            <span class="sg-lbl">Tic-Tac-Toe</span>
+                        </button>
+                    </div>
+                    <script>(function(){var btns=document.querySelectorAll('#sgGamePicker .sg-gbtn'),sel=document.getElementById('sgGame');function act(g){btns.forEach(function(b){var on=b.getAttribute('data-game')===g;b.classList.toggle('act',on);});}btns.forEach(function(b){b.addEventListener('click',function(){sel.value=b.getAttribute('data-game');sel.dispatchEvent(new Event('change'));act(sel.value);});});})();</script>
+
+                    <!-- Settings Row -->
+                    <div class="sgv2-settings">
+                        <div class="fg"><label>Escrow (KAS)</label><input type="number" id="sgEsc" value="5" min="1" max="10000" step="1" /></div>
                         <div class="fg"><label>Time Control</label><select id="sgTime"></select>
-                            <div style="margin-top:4px;font-size:10px;color:var(--dim)" id="sgTimeHint">Minutes +
-                                increment per move</div>
+                            <div style="margin-top:4px;font-size:10px;color:var(--dim)" id="sgTimeHint">Minutes + increment per move</div>
                         </div>
                         <div class="fg"><label>Series (Best of)</label><select id="sgSeries"></select></div>
                     </div>
-                    <button class="cta1" style="width:100%;justify-content:center;margin-top:10px"
+
+                    <button class="cta1" style="width:100%;justify-content:center;margin-top:20px;padding:14px 24px;font-size:15px;position:relative;z-index:1;letter-spacing:.03em"
                         onclick="(function(){var g=document.getElementById('sgGame');if(!g||!g.value){if(typeof showToast==='function')showToast('Please select a game first','warn');return;}createMatchWithLobby();})()">Create Match &middot; Lock Escrow</button>
                 </div>
                 <div style="margin-top:24px">
