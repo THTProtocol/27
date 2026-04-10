@@ -4034,8 +4034,26 @@ body.htp-game-active {
     <!-- External stylesheets -->
 <!-- Firebase SDK -->
     <!-- Firebase SDK loaded via local copies below -->
-    <!-- SilverScript addOut helper -->
-    <script>function addOut() { console.log('[HTP] addOut called'); }</script>
+    <!-- Outcome list helpers for #oList -->
+    <script>
+      function addOut() {
+        var list = document.getElementById('oList');
+        if (!list) return;
+        if (list.children.length >= 10) { alert('Maximum 10 outcomes.'); return; }
+        var row = document.createElement('div');
+        row.className = 'or';
+        row.innerHTML = '<input placeholder="Outcome ' + (list.children.length + 1) + '" oninput="updPrev()" /><button onclick="remOut(this)">&#x2715;</button>';
+        list.appendChild(row);
+        row.querySelector('input').focus();
+        if (typeof updPrev === 'function') updPrev();
+      }
+      function remOut(el) {
+        var list = document.getElementById('oList');
+        if (!list || list.children.length <= 2) return;
+        el.closest('.or').remove();
+        if (typeof updPrev === 'function') updPrev();
+      }
+    </script>
 <!-- duplicated chess.js removed -->
 <style id="htp-bg-fix">
 #dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.82!important;display:block!important;}
@@ -4170,9 +4188,9 @@ body.htp-game-active {
                                     </div>
                                     <div style="height: 480px !important; min-height: 480px !important; max-height: 480px !important; width: 100% !important; max-width: 100% !important; border-radius: 14px !important; overflow: hidden !important; background: #010806 !important; display: block !important; position:relative; border:1px solid rgba(73,232,194,0.18); box-shadow: 0 0 40px rgba(73,232,194,0.06), 0 8px 32px rgba(0,0,0,0.6);">
                                         
-                                        <div id="kgiFallback" style="position:absolute;inset:0;">
-                                            <iframe id="dagMiniFrame" src="https://kgi.kaspad.net" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;border:0;background:#010806;filter:invert(1) hue-rotate(150deg) brightness(0.68) contrast(1.1) saturate(1.15);" loading="lazy"></iframe>
-                                            <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,rgba(1,8,6,0.35) 0%,transparent 15%,transparent 82%,rgba(1,8,6,0.5) 100%)"></div>
+                                        <div style="position:absolute;inset:0;">
+                                            <canvas id="dagMini" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;"></canvas>
+                                            <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,rgba(1,8,6,0.3) 0%,transparent 12%,transparent 85%,rgba(1,8,6,0.45) 100%)"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -4408,30 +4426,6 @@ body.htp-game-active {
                                 </select><input id="cCatCustom"
                                     style="display:none;margin-top:6px;width:100%;min-height:36px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:6px 10px;font:inherit"
                                     placeholder="Type your custom category..." oninput="updPrev()" />
-                                <div id="outcomesBuilder" style="margin:10px 0">
-                                    <label style="color:#b0b0b0;font-size:13px">Outcomes</label>
-                                    <div id="outcomesList">
-                                        <div class="outcome-row" style="display:flex;gap:6px;margin:4px 0">
-                                            <input type="text" class="outcome-input" value="Yes"
-                                                oninput="updPrev();syncFormToSS()"
-                                                style="flex:1;background:rgba(10,15,30,0.6);border:1px solid #333;color:var(--text);padding:6px 10px;border-radius:6px;font-size:14px"
-                                                oninput="syncFormToSS()">
-                                            <span style="color:#555;padding:6px;cursor:pointer"
-                                                onclick="removeOutcome(this)" title="Remove">&times;</span>
-                                        </div>
-                                        <div class="outcome-row" style="display:flex;gap:6px;margin:4px 0">
-                                            <input type="text" class="outcome-input" value="No"
-                                                oninput="updPrev();syncFormToSS()"
-                                                style="flex:1;background:rgba(10,15,30,0.6);border:1px solid #333;color:var(--text);padding:6px 10px;border-radius:6px;font-size:14px"
-                                                oninput="syncFormToSS()">
-                                            <span style="color:#555;padding:6px;cursor:pointer"
-                                                onclick="removeOutcome(this)" title="Remove">&times;</span>
-                                        </div>
-                                    </div>
-                                    <button type="button" onclick="addOutcome()"
-                                        style="margin-top:4px;background:#2a2a4a;color:#7c6ff7;border:1px solid #444;padding:4px 14px;border-radius:6px;cursor:pointer;font-size:13px">+
-                                        Add Outcome</button>
-                                </div>
                             </div>
                             <div class="fg"><label>Outcomes (2-10)</label>
                                 <div class="ol" id="oList">
@@ -5648,8 +5642,8 @@ event MyMarket {
                   LIVE KASPA BLOCKDAG
                 </h4>
                 <div style="position:relative;width:100%;height:420px;border-radius:14px;overflow:hidden;border:1px solid rgba(73,232,194,0.18);background:#010806;box-shadow:0 0 40px rgba(73,232,194,0.06),0 8px 32px rgba(0,0,0,0.6);">
-                  <iframe id="dagPanelFrame" src="https://kgi.kaspad.net" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;border:0;background:#010806;filter:invert(1) hue-rotate(150deg) brightness(0.68) contrast(1.1) saturate(1.15);" loading="lazy"></iframe>
-                  <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,rgba(1,8,6,0.35) 0%,transparent 15%,transparent 82%,rgba(1,8,6,0.5) 100%)"></div>
+                  <canvas id="dagPanelCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;"></canvas>
+                  <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,rgba(1,8,6,0.3) 0%,transparent 12%,transparent 85%,rgba(1,8,6,0.45) 100%)"></div>
                   <div style="position:absolute;bottom:10px;right:14px;display:flex;align-items:center;gap:6px;pointer-events:none">
                     <span style="width:6px;height:6px;border-radius:50%;background:#49e8c2;display:inline-block;animation:dotPulse 2s ease-in-out infinite"></span>
                     <span style="font-size:10px;color:rgba(73,232,194,0.55);letter-spacing:1.5px;font-family:monospace;font-weight:600">LIVE</span>
@@ -21673,8 +21667,8 @@ document.querySelectorAll('button').forEach(function(b){
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',tryStart);
     else tryStart();
   }
-  // startDagCanvas('dagPanelCanvas', 260);
-  // startDagCanvas('dagMini', 330);
+  startDagCanvas('dagPanelCanvas', 420);
+  startDagCanvas('dagMini', 480);
 })();
 </script>
 
