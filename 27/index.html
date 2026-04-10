@@ -4072,6 +4072,78 @@ body,html{background:#010806!important;}
 
         <!-- animated BlockDAG background -->
         <canvas id="dagCanvas"></canvas>
+        <script>
+(function(){
+  var pc=document.getElementById('dagCanvas');
+  if(!pc)return;
+  pc._startDagManaged=true;
+  var cx=pc.getContext('2d');
+  var W=0,H=0,blocks=[],lastSpawn=0;
+  var T=[73,232,194];
+  function teal(a){return 'rgba('+T[0]+','+T[1]+','+T[2]+','+a+')';}
+  function resize(){
+    W=window.innerWidth;H=window.innerHeight;
+    var dpr=window.devicePixelRatio||1;
+    pc.width=W*dpr;pc.height=H*dpr;
+    cx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  function spawn(){
+    var lH=28+Math.random()*24,nL=Math.floor(H/lH),li=Math.floor(Math.random()*nL);
+    var y=li*lH+lH/2+(Math.random()-0.5)*lH*0.7;
+    var sz=11+Math.random()*10,spd=0.5+Math.random()*0.4;
+    var b={x:W+20,y:y,sz:sz,vx:-spd,alpha:0.55+Math.random()*0.45,
+           glow:Math.random()>0.45,born:performance.now(),pulse:Math.random()*6.28,parents:[]};
+    var near=blocks.filter(function(n){return Math.abs(n.y-y)<150&&n.x<W-20&&n.x>b.x-280;}).slice(-5);
+    var nP=Math.min(near.length,1+Math.floor(Math.random()*3));
+    for(var i=0;i<nP;i++){var p=near[Math.floor(Math.random()*near.length)];if(p&&b.parents.indexOf(p)===-1)b.parents.push(p);}
+    blocks.push(b);lastSpawn=performance.now();
+  }
+  function draw(ts){
+    cx.clearRect(0,0,W,H);
+    cx.strokeStyle='rgba(73,232,194,0.022)';cx.lineWidth=0.5;
+    for(var l=0;l*36+18<H;l++){cx.beginPath();cx.moveTo(0,l*36+18);cx.lineTo(W,l*36+18);cx.stroke();}
+    if(performance.now()-lastSpawn>55)spawn();
+    blocks=blocks.filter(function(b){return b.x>-80;});
+    blocks.forEach(function(b){
+      b.x+=b.vx;b.pulse+=0.018;
+      var age=(performance.now()-b.born)/18000;
+      var a=Math.max(0,b.alpha*(1-age*0.12));
+      b.parents.forEach(function(p){
+        cx.beginPath();cx.moveTo(b.x+b.sz/2,b.y);cx.lineTo(p.x+p.sz/2,p.y);
+        cx.strokeStyle=teal(a*0.32);cx.lineWidth=0.85;cx.stroke();
+      });
+      var glow=0.38+0.28*Math.sin(b.pulse);
+      cx.shadowColor=b.glow?teal(glow*a):'transparent';cx.shadowBlur=b.glow?14:0;
+      var x=b.x,y=b.y-b.sz/2,s=b.sz,r=3;
+      cx.beginPath();cx.moveTo(x+r,y);cx.lineTo(x+s-r,y);cx.arcTo(x+s,y,x+s,y+r,r);
+      cx.lineTo(x+s,y+s-r);cx.arcTo(x+s,y+s,x+s-r,y+s,r);
+      cx.lineTo(x+r,y+s);cx.arcTo(x,y+s,x,y+s-r,r);cx.lineTo(x,y+r);
+      cx.arcTo(x,y,x+r,y,r);cx.closePath();
+      cx.fillStyle=teal(0.07*a);cx.fill();
+      cx.strokeStyle=teal(0.82*a*glow);cx.lineWidth=1.1;cx.stroke();
+      cx.shadowBlur=0;
+    });
+    requestAnimationFrame(draw);
+  }
+  resize();
+  window.addEventListener('resize',resize);
+  // Pre-populate the whole screen immediately
+  W=window.innerWidth;H=window.innerHeight;
+  for(var i=0;i<90;i++){
+    var lH=28+Math.random()*24,nL=Math.floor(H/lH),li=Math.floor(Math.random()*nL);
+    var y=li*lH+lH/2+(Math.random()-0.5)*lH*0.7;
+    blocks.push({x:Math.random()*W,y:y,sz:11+Math.random()*10,vx:-(0.5+Math.random()*0.4),
+      alpha:0.4+Math.random()*0.4,glow:Math.random()>0.5,
+      born:performance.now()-Math.random()*14000,pulse:Math.random()*6.28,parents:[]});
+  }
+  for(var pi=6;pi<blocks.length;pi++){
+    var b=blocks[pi],near=blocks.slice(Math.max(0,pi-14),pi).filter(function(n){return Math.abs(n.y-b.y)<130&&n.x<b.x;});
+    var nP=Math.min(near.length,1+Math.floor(Math.random()*2));
+    for(var j=0;j<nP;j++){var p=near[Math.floor(Math.random()*near.length)];if(p&&b.parents.indexOf(p)===-1)b.parents.push(p);}
+  }
+  requestAnimationFrame(draw);
+})();
+        </script>
         <div class="bg-glow"></div>
         <div class="bg-glow2"></div>
         <div class="bg-glow3"></div>
@@ -21603,141 +21675,6 @@ document.querySelectorAll('button').forEach(function(b){
 })();
 </script>
 
-<script>
-(function() {
-  function startDagCanvas(id, h) {
-    function tryStart() {
-      var pc = document.getElementById(id);
-      if (!pc) { setTimeout(tryStart, 300); return; }
-      var cx = pc.getContext('2d');
-      var W = 0, H = 0, blocks = [], lastSpawn = 0;
-      var isBg = id === 'dagCanvas';
-      var T = [73,232,194];
-      function teal(a){ return 'rgba('+T[0]+','+T[1]+','+T[2]+','+a+')'; }
-      function resize(){
-        if (isBg) {
-          W = window.innerWidth;
-          H = window.innerHeight;
-          pc.width  = W * (window.devicePixelRatio || 1);
-          pc.height = H * (window.devicePixelRatio || 1);
-          cx.setTransform(window.devicePixelRatio||1, 0, 0, window.devicePixelRatio||1, 0, 0);
-        } else {
-          var p = pc.parentElement;
-          W = pc.width  = (p ? p.offsetWidth  : 0) || 900;
-          H = pc.height = (p ? p.offsetHeight : 0) || h || 300;
-        }
-      }
-      function spawn(ts){
-        if(!W||!H) return;
-        // For background: use organic lane placement, not fixed grid
-        var laneH = isBg ? 28 + Math.random()*24 : 36;
-        var numLanes = Math.floor(H / laneH);
-        var laneIdx = Math.floor(Math.random() * numLanes);
-        var lane = laneIdx * laneH + laneH/2;
-        // Slightly drift from lane center
-        if (isBg) lane += (Math.random()-0.5) * laneH * 0.7;
-        var sz = isBg ? (11 + Math.random()*10) : (13+Math.random()*9);
-        var spd = isBg ? (0.55 + Math.random()*0.45) : (1.4+Math.random()*0.8);
-        var b={x:W+20,y:lane,sz:sz,vx:-spd,
-               alpha:0.55+Math.random()*0.45,glow:Math.random()>0.45,
-               born:performance.now(),pulse:Math.random()*6.28,parents:[]};
-        var searchR = isBg ? 260 : 180;
-        var near=blocks.filter(function(n){
-          return Math.abs(n.y-lane)<(isBg?140:90) && n.x < W-20 && n.x > b.x - searchR;
-        }).slice(-5);
-        var nParents = isBg ? Math.min(near.length, 1+Math.floor(Math.random()*3)) : Math.min(near.length,1+Math.floor(Math.random()*2));
-        for(var i=0;i<nParents;i++){
-          var p2=near[Math.floor(Math.random()*near.length)];
-          if(p2&&b.parents.indexOf(p2)===-1) b.parents.push(p2);
-        }
-        blocks.push(b);
-        lastSpawn=ts;
-      }
-      function draw(ts){
-        if(!W||!H){resize();}
-        cx.clearRect(0,0,W,H);
-        // Faint lane guidelines
-        var laneH = isBg ? 36 : 36;
-        cx.strokeStyle='rgba(73,232,194,0.025)';cx.lineWidth=0.5;
-        for(var l=0;l*laneH+laneH/2<H;l++){
-          var ly=l*laneH+laneH/2;
-          cx.beginPath();cx.moveTo(0,ly);cx.lineTo(W,ly);cx.stroke();
-        }
-        var spawnInterval = isBg ? 55 : 90;
-        if(ts-lastSpawn>spawnInterval) spawn(ts);
-        blocks=blocks.filter(function(b){return b.x>-80;});
-        blocks.forEach(function(b){
-          b.x+=b.vx; b.pulse+=0.018;
-          var lifespan = isBg ? 18000 : 3500;
-          var age=(performance.now()-b.born)/lifespan;
-          var a=Math.max(0,b.alpha*(1-age*0.12));
-          // Draw parent connection lines
-          b.parents.forEach(function(p){
-            cx.beginPath();cx.moveTo(b.x+b.sz/2,b.y);cx.lineTo(p.x+p.sz/2,p.y);
-            cx.strokeStyle=teal(a*0.32);cx.lineWidth=0.85;cx.stroke();
-          });
-          var glow=0.38+0.28*Math.sin(b.pulse);
-          cx.shadowColor=b.glow?teal(glow*a):'transparent';
-          cx.shadowBlur=b.glow?(isBg?14:12):0;
-          var x=b.x,y=b.y-b.sz/2,s=b.sz,r=3;
-          cx.beginPath();
-          cx.moveTo(x+r,y);cx.lineTo(x+s-r,y);cx.arcTo(x+s,y,x+s,y+r,r);
-          cx.lineTo(x+s,y+s-r);cx.arcTo(x+s,y+s,x+s-r,y+s,r);
-          cx.lineTo(x+r,y+s);cx.arcTo(x,y+s,x,y+s-r,r);cx.lineTo(x,y+r);
-          cx.arcTo(x,y,x+r,y,r);cx.closePath();
-          cx.fillStyle=teal(isBg?0.08*a:0.11*a);cx.fill();
-          cx.strokeStyle=teal(0.82*a*glow);cx.lineWidth=isBg?1.1:1.2;cx.stroke();
-          cx.shadowBlur=0;
-        });
-        requestAnimationFrame(draw);
-      }
-      resize();
-      window.addEventListener('resize',resize);
-      if(!isBg && typeof ResizeObserver!=='undefined'){
-        new ResizeObserver(function(){resize();}).observe(pc.parentElement||pc);
-      }
-      // Pre-populate background with blocks spread across the viewport
-      if (isBg) {
-        W = window.innerWidth; H = window.innerHeight;
-        for (var pre=0; pre<80; pre++) {
-          var lH2 = 28+Math.random()*24;
-          var nL2 = Math.floor(H/lH2);
-          var li2 = Math.floor(Math.random()*nL2);
-          var ly2 = li2*lH2+lH2/2 + (Math.random()-0.5)*lH2*0.7;
-          var sz2 = 11+Math.random()*10;
-          var spd2 = 0.55+Math.random()*0.45;
-          var born2 = performance.now() - Math.random()*12000;
-          blocks.push({x:Math.random()*W,y:ly2,sz:sz2,vx:-spd2,
-            alpha:0.4+Math.random()*0.4,glow:Math.random()>0.5,
-            born:born2,pulse:Math.random()*6.28,parents:[]});
-        }
-        // Wire some cross-connections to pre-existing blocks
-        for (var pi=8; pi<blocks.length; pi++) {
-          var b2 = blocks[pi];
-          var near2 = blocks.slice(Math.max(0,pi-12),pi).filter(function(n){
-            return Math.abs(n.y-b2.y)<120 && n.x<b2.x;
-          });
-          var nP2 = Math.min(near2.length, 1+Math.floor(Math.random()*2));
-          for(var j=0;j<nP2;j++){
-            var p3=near2[Math.floor(Math.random()*near2.length)];
-            if(p3&&b2.parents.indexOf(p3)===-1) b2.parents.push(p3);
-          }
-        }
-        // Mark dagCanvas as managed so htp-blockdag-viz.js skips its bg init
-        pc._startDagManaged = true;
-      }
-      requestAnimationFrame(draw);
-    }
-    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',tryStart);
-    else tryStart();
-  }
-  // Full-page background DAG canvas
-  startDagCanvas('dagCanvas');
-  // dagPanelCanvas and dagMini use kgi.kaspad.net iframes now
-  // startDagCanvas('dagPanelCanvas', 420);
-  // startDagCanvas('dagMini', 480);
-})();
-</script>
 
 <script>
 (function(){

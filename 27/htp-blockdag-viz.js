@@ -687,12 +687,8 @@
   // ── Init ───────────────────────────────────────────────────────────────
 
   function init() {
-    // Full-page background canvas — only init if not already managed by startDagCanvas
-    var bgCanvas = document.getElementById('dagCanvas');
-    if (bgCanvas && !bgCanvas._startDagManaged) {
-      bgCanvas.style.display = 'block';
-      startLoop(bgCanvas, true);
-    }
+    // dagCanvas background is fully managed by inline script in index.html
+    // This module only handles stats/block polling and optional panel canvases
 
     // Panel canvases — solid dark background with DAG detail
     var mainCanvas = document.getElementById('dagCanvasFull') || document.getElementById('blockdag-canvas');
