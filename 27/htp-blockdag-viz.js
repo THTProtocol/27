@@ -687,11 +687,11 @@
   // ── Init ───────────────────────────────────────────────────────────────
 
   function init() {
-    // Full-page background canvas — transparent animated particles + live DAG overlay
+    // Full-page background canvas — only init if not already managed by startDagCanvas
     var bgCanvas = document.getElementById('dagCanvas');
-    if (bgCanvas) {
+    if (bgCanvas && !bgCanvas._startDagManaged) {
       bgCanvas.style.display = 'block';
-      startLoop(bgCanvas, true); // background mode: transparent, no solid fill
+      startLoop(bgCanvas, true);
     }
 
     // Panel canvases — solid dark background with DAG detail
