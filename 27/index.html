@@ -43,7 +43,8 @@
         body {
             margin: 0;
             font-family: 'Inter', system-ui, sans-serif;
-            background: var(--bg);
+            background: radial-gradient(ellipse at 20% 0%, #04102a 0%, #030816 45%, #020610 100%);
+            background-attachment: fixed;
             color: var(--text);
             line-height: 1.6;
             overflow-x: hidden
@@ -98,15 +99,15 @@
 
         .bg-glow {
             position: fixed;
-            top: -20%;
-            left: -5%;
-            width: 900px;
-            height: 900px;
+            top: -10%;
+            left: -8%;
+            width: 860px;
+            height: 860px;
             background: radial-gradient(ellipse at 40% 40%,
-              rgba(73,232,194,.11) 0%,
-              rgba(73,232,194,.055) 30%,
-              rgba(73,232,194,.015) 60%,
-              transparent 75%);
+              rgba(73,232,194,.07) 0%,
+              rgba(73,232,194,.03) 35%,
+              rgba(73,232,194,.008) 65%,
+              transparent 80%);
             z-index: 0;
             pointer-events: none;
             animation: glowDrift 22s ease-in-out infinite alternate, glowPulse 9s ease-in-out infinite alternate;
@@ -114,15 +115,15 @@
 
         .bg-glow2 {
             position: fixed;
-            bottom: -15%;
-            right: -5%;
-            width: 800px;
-            height: 800px;
+            bottom: -18%;
+            right: -8%;
+            width: 760px;
+            height: 760px;
             background: radial-gradient(ellipse at 58% 58%,
-              rgba(73,232,194,.08) 0%,
-              rgba(73,232,194,.04) 35%,
-              rgba(73,232,194,.01) 65%,
-              transparent 80%);
+              rgba(124,111,247,.06) 0%,
+              rgba(73,232,194,.025) 40%,
+              rgba(73,232,194,.006) 70%,
+              transparent 85%);
             z-index: 0;
             pointer-events: none;
             animation: glowDrift2 28s ease-in-out infinite alternate-reverse, glowPulse 12s ease-in-out infinite alternate-reverse;
@@ -131,15 +132,15 @@
         /* Third glow — center accent */
         .bg-glow3 {
             position: fixed;
-            top: 35%;
+            top: 40%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 1000px;
-            height: 700px;
+            width: 1100px;
+            height: 600px;
             background: radial-gradient(ellipse,
-              rgba(73,232,194,.04) 0%,
-              rgba(73,232,194,.015) 45%,
-              transparent 70%);
+              rgba(73,232,194,.025) 0%,
+              rgba(73,232,194,.008) 50%,
+              transparent 72%);
             z-index: 0;
             pointer-events: none;
             animation: glowPulse 15s ease-in-out infinite alternate;
@@ -562,7 +563,6 @@
             -webkit-text-fill-color: transparent;
             animation: heroShimmer 6s ease infinite;
             text-shadow: none;
-            filter: drop-shadow(0 0 30px rgba(73,232,194,0.25)) drop-shadow(0 0 60px rgba(73,232,194,0.1));
         }
         @keyframes heroShimmer {
             0% { background-position: 0% center; }
@@ -6165,7 +6165,7 @@ event MyMarket {
   <script src="htp-logo-data.js"></script>
 
     <script>
-        // === HTP v69.4: localStorage quota protection ===
+        // === HTP v70.0: localStorage quota protection ===
         function quotaSafeSet(key, value) {
             try {
                 localStorage.setItem(key, value);
@@ -14311,8 +14311,8 @@ function showGameOverOverlay(title, amountText, color, match) {
 
 <script id="htp-persistence-v2">
 /* === htp-persistence-v2 === */
-// === HTP v69.3 -- FIXES: localStorage quota + WASM timing + covenant routing ===
-// v69.9: localStorage quota-safe wrapper
+// === HTP v70.0 -- FIXES: localStorage quota + WASM timing + covenant routing ===
+// v70.0: localStorage quota-safe wrapper
 
 function quotaSafeSet(key, value) {
 
@@ -14694,7 +14694,7 @@ function killSSButton(){
 
 // ═══ FIX 2: POLL FOR WASM INSTEAD OF FIXED DELAY ═══
 function initV69(){
-  console.log('HTP v69.3 init...');
+  console.log('HTP v70.0 init...');
   killSSButton();
 
   let wasmChecks=0;
@@ -14705,7 +14705,7 @@ function initV69(){
       updateOddsDisplay();
       const addr=sessionStorage.getItem('htp_address')||localStorage.getItem('htp_address');
       if(addr)HTP_STORE.indexFromChain(addr).then(()=>updateOddsDisplay());
-      console.log('HTP v69.3 ready  (covenants enabled)');
+      console.log('HTP v70.0 ready  (covenants enabled)');
     }else if(wasmChecks<40){
       wasmChecks++;
       if(wasmChecks===1)console.log('HTP Waiting for WASM...');
@@ -14714,7 +14714,7 @@ function initV69(){
       console.log('HTP WASM not available after 20s -- seeding without covenants');
       // seedEvents();
       updateOddsDisplay();
-      console.log('HTP v69.3 ready (legacy mode)');
+      console.log('HTP v70.0 ready (legacy mode)');
     }
   }
   waitForWasm();
