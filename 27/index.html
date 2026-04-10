@@ -43,7 +43,7 @@
         body {
             margin: 0;
             font-family: 'Inter', system-ui, sans-serif;
-            background: radial-gradient(ellipse at 20% 0%, #04102a 0%, #030816 45%, #020610 100%);
+            background: #010806;
             background-attachment: fixed;
             color: var(--text);
             line-height: 1.6;
@@ -2836,24 +2836,27 @@ html { scroll-behavior: auto; }
 .view { display: none; background: transparent; min-height: auto; position: relative; z-index: 1; }
 .view.show { display: block; }
 
-/* DAG canvas runs on all views with reduced opacity for non-overview */
-body:not(.on-overview) #dagCanvas { opacity: 0.65 !important; }
-body.on-overview #dagCanvas { opacity: 0.8 !important; }
-body:not(.on-overview) .bg-glow  { opacity: 0.55 !important; }
-body:not(.on-overview) .bg-glow2 { opacity: 0.45 !important; }
-body:not(.on-overview) .bg-glow3 { opacity: 0.3  !important; }
+/* DAG canvas runs everywhere at full strength */
+body #dagCanvas { opacity: 0.92 !important; }
+body.on-overview #dagCanvas { opacity: 0.95 !important; }
+body:not(.on-overview) .bg-glow  { opacity: 0.65 !important; }
+body:not(.on-overview) .bg-glow2 { opacity: 0.55 !important; }
+body:not(.on-overview) .bg-glow3 { opacity: 0.40  !important; }
 
         /* Ensure content fills viewport without blank space */
         body {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            background: #010806;
         }
         .shell {
             flex: 1;
+            background: transparent;
         }
         .shell-main {
             flex: 1;
+            background: transparent;
         }
         
         /* All views: no gap after header + net-tabs */
@@ -3029,11 +3032,12 @@ body:not(.on-overview) .bg-glow3 { opacity: 0.3  !important; }
         .sec-pad { padding: 8px 20px 24px; }
         @media(min-width:768px) { .sec-pad { padding: 10px 32px 28px; } }
         
-        /* Cards get subtle glass morphism */
+        /* Cards get glass morphism so DAG shows through */
         .card {
-            background: rgba(10,15,30,0.7) !important;
-            backdrop-filter: blur(8px);
-            border-color: rgba(73,232,194,0.1) !important;
+            background: rgba(3,8,22,0.72) !important;
+            backdrop-filter: blur(14px) saturate(1.2);
+            -webkit-backdrop-filter: blur(14px) saturate(1.2);
+            border-color: rgba(73,232,194,0.13) !important;
         }
         
         /* Section headers */
@@ -4189,8 +4193,8 @@ body.htp-game-active {
                                     <div style="height: 480px !important; min-height: 480px !important; max-height: 480px !important; width: 100% !important; max-width: 100% !important; border-radius: 14px !important; overflow: hidden !important; background: #010806 !important; display: block !important; position:relative; border:1px solid rgba(73,232,194,0.18); box-shadow: 0 0 40px rgba(73,232,194,0.06), 0 8px 32px rgba(0,0,0,0.6);">
                                         
                                         <div style="position:absolute;inset:0;">
-                                            <canvas id="dagMini" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;"></canvas>
-                                            <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,rgba(1,8,6,0.3) 0%,transparent 12%,transparent 85%,rgba(1,8,6,0.45) 100%)"></div>
+                                            <iframe src="https://kgi.kaspad.net/" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;border:0;filter:invert(1) hue-rotate(155deg) brightness(0.75) contrast(1.05) saturate(1.2);" loading="lazy" sandbox="allow-scripts allow-same-origin"></iframe>
+                                            <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,rgba(1,8,6,0.28) 0%,transparent 10%,transparent 88%,rgba(1,8,6,0.42) 100%)"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -5642,8 +5646,8 @@ event MyMarket {
                   LIVE KASPA BLOCKDAG
                 </h4>
                 <div style="position:relative;width:100%;height:420px;border-radius:14px;overflow:hidden;border:1px solid rgba(73,232,194,0.18);background:#010806;box-shadow:0 0 40px rgba(73,232,194,0.06),0 8px 32px rgba(0,0,0,0.6);">
-                  <canvas id="dagPanelCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;"></canvas>
-                  <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,rgba(1,8,6,0.3) 0%,transparent 12%,transparent 85%,rgba(1,8,6,0.45) 100%)"></div>
+                  <iframe src="https://kgi.kaspad.net/" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;border:0;filter:invert(1) hue-rotate(155deg) brightness(0.75) contrast(1.05) saturate(1.2);" loading="lazy" sandbox="allow-scripts allow-same-origin"></iframe>
+                  <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,rgba(1,8,6,0.28) 0%,transparent 10%,transparent 88%,rgba(1,8,6,0.42) 100%)"></div>
                   <div style="position:absolute;bottom:10px;right:14px;display:flex;align-items:center;gap:6px;pointer-events:none">
                     <span style="width:6px;height:6px;border-radius:50%;background:#49e8c2;display:inline-block;animation:dotPulse 2s ease-in-out infinite"></span>
                     <span style="font-size:10px;color:rgba(73,232,194,0.55);letter-spacing:1.5px;font-family:monospace;font-weight:600">LIVE</span>
@@ -21667,8 +21671,9 @@ document.querySelectorAll('button').forEach(function(b){
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',tryStart);
     else tryStart();
   }
-  startDagCanvas('dagPanelCanvas', 420);
-  startDagCanvas('dagMini', 480);
+  // dagPanelCanvas and dagMini now use kgi.kaspad.net iframes
+  // startDagCanvas('dagPanelCanvas', 420);
+  // startDagCanvas('dagMini', 480);
 })();
 </script>
 

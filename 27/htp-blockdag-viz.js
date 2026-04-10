@@ -36,10 +36,10 @@
   var _bgSpawnNext = 0;
   var _bgStars    = [];   // parallax starfield
   var _bgStarsOk  = false;
-  var _BG_R        = 4.5; // base node radius
-  var _SCROLL_SPEED = 0.008; // DAG scroll speed — barely perceptible
-  var _STAR_SPEED   = 0.0016; // stars scroll at 20% of DAG (parallax depth)
-  var _SPAWN_GAP    = 72;    // px between clusters → ~22 nodes on 1440px screen
+  var _BG_R        = 5.2; // base node radius
+  var _SCROLL_SPEED = 0.28; // DAG scroll speed — visible flowing motion
+  var _STAR_SPEED   = 0.056; // stars scroll at 20% of DAG (parallax depth)
+  var _SPAWN_GAP    = 48;    // px between clusters → denser DAG everywhere
   var _bgTime = 0;
   var _bgH = 600;
   var _bgW = 1400;
@@ -60,12 +60,12 @@
 
   function _bgInitStars(w, h) {
     _bgStars = [];
-    for (var i = 0; i < 85; i++) {
+    for (var i = 0; i < 140; i++) {
       _bgStars.push({
         absX: _bgRand(0, w * 1.6),
         y:    _bgRand(0, h),
-        r:    Math.random() < 0.72 ? 0.55 : 1.0,
-        a:    _bgRand(0.04, 0.18)
+        r:    Math.random() < 0.72 ? 0.6 : 1.2,
+        a:    _bgRand(0.06, 0.22)
       });
     }
   }
@@ -86,8 +86,8 @@
         id: _bgNextId++,
         absX: absX + _bgRand(-10, 10),
         y: y,
-        alpha: _bgRand(0.20, 0.46),
-        isChain: Math.random() > 0.68,
+        alpha: _bgRand(0.32, 0.62),
+        isChain: Math.random() > 0.55,
         isReal: false,
         parentIds: []
       };
@@ -268,9 +268,9 @@
         var isHot = (b.isChain || b.isReal) && (p.isChain || p.isReal);
         var dx = bx - px;
         var cp = dx * 0.42;
-        ctx.globalAlpha = ef * (isHot ? 0.22 : 0.08);
+        ctx.globalAlpha = ef * (isHot ? 0.38 : 0.16);
         ctx.strokeStyle = '#49e8c2';
-        ctx.lineWidth = isHot ? 0.9 : 0.5;
+        ctx.lineWidth = isHot ? 1.1 : 0.65;
         ctx.beginPath();
         ctx.moveTo(px, b.y > p.y ? p.y : p.y);
         ctx.moveTo(px, p.y);
@@ -330,19 +330,20 @@
 
       } else {
         // ── Synthetic ambient node ───────────────────────────────
-        var r = b.isChain ? _BG_R + 0.6 : _BG_R;
+        var r = b.isChain ? _BG_R + 0.8 : _BG_R;
 
-        ctx.globalAlpha = a * (b.isChain ? 0.58 : 0.26);
-        ctx.fillStyle = 'rgba(73,232,194,0.9)';
+        // Draw filled node with rounded rect instead of circle for kgi-like look
+        ctx.globalAlpha = a * (b.isChain ? 0.72 : 0.38);
+        ctx.fillStyle = 'rgba(73,232,194,0.18)';
+        var ns = r * 2;
         ctx.beginPath();
-        ctx.arc(bx, b.y, r, 0, Math.PI * 2);
+        if (ctx.roundRect) { ctx.roundRect(bx - r, b.y - r, ns, ns, 2); }
+        else { ctx.arc(bx, b.y, r, 0, Math.PI * 2); }
         ctx.fill();
 
-        ctx.globalAlpha = a * (b.isChain ? 0.26 : 0.11);
+        ctx.globalAlpha = a * (b.isChain ? 0.85 : 0.50);
         ctx.strokeStyle = '#49e8c2';
-        ctx.lineWidth = 0.65;
-        ctx.beginPath();
-        ctx.arc(bx, b.y, r + 2, 0, Math.PI * 2);
+        ctx.lineWidth = b.isChain ? 1.1 : 0.75;
         ctx.stroke();
       }
     });
