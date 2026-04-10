@@ -9,8 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg:       #030816;
-            --card:     #0a1628;
+            --bg:       transparent;
+            --card:     rgba(6,10,22,0.78);
             --border:   rgba(148,163,184,0.1);
             --accent:   #49e8c2;
             --accent2:  #7c6ff7;
@@ -496,7 +496,7 @@
             display: none;
             position: relative;
             z-index: 1;
-            background: var(--bg);
+            background: transparent;
             min-height: auto
         }
 
@@ -1843,15 +1843,15 @@
             padding: 20px 0 40px;
         }
 
-        /* Give non-overview views a solid background and clear the sticky header */
+        /* Non-overview views: transparent so DAG canvas shows through */
         #v-kaspa,
         #v-markets,
         #v-create,
         #v-skill,
         #v-wallet,
         #v-terms {
-            background: rgba(3, 7, 18, 0.95);
-            backdrop-filter: blur(4px);
+            background: transparent;
+            backdrop-filter: none;
             padding-top: 10px;
         }
 
@@ -4060,8 +4060,11 @@ body.htp-game-active {
     </script>
 <!-- duplicated chess.js removed -->
 <style id="htp-bg-fix">
-#dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.82!important;display:block!important;}
+#dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.92!important;display:block!important;}
 .dag-mini,#dagMiniWrap,#liveDagContainer,#dagMiniContainer{height:480px!important;min-height:480px!important;max-height:480px!important}
+/* Force all view sections transparent so DAG canvas is always visible */
+.view,.view.show,#v-overview,#v-markets,#v-create,#v-skill,#v-oracle,#v-portfolio,#v-wallet,#v-kaspa,#v-terms{background:transparent!important;}
+body,html{background:#010806!important;}
 </style>
 </head>
 <body>
