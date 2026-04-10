@@ -3076,10 +3076,20 @@ body:not(.on-overview) .bg-glow3 { opacity: 0.40  !important; }
         /* Connect Wallet button - green themed */
         .btn-c, #cBtn {
             background: linear-gradient(135deg, var(--accent), #22c55e) !important;
-            color: var(--bg) !important;
+            color: #030816 !important;
             font-weight: 700 !important;
             border: none !important;
             box-shadow: 0 0 15px rgba(73,232,194,0.2) !important;
+            min-width: 160px !important;
+            white-space: nowrap !important;
+        }
+        /* Connected state: dark bg so address text pops */
+        #cBtn:has(span) {
+            background: rgba(6,18,12,0.92) !important;
+            border: 1px solid rgba(73,232,194,0.5) !important;
+            color: #e2faf3 !important;
+            box-shadow: 0 0 16px rgba(73,232,194,0.25) !important;
+            min-width: 220px !important;
         }
         .btn-c:hover, #cBtn:hover {
             box-shadow: 0 0 25px rgba(73,232,194,0.35) !important;
@@ -7377,14 +7387,15 @@ event MyMarket {
                 (walletBalance.unconfirmed > 0 ? ', ' + sompiToKAS(walletBalance.unconfirmed) + ' pending' : '') + ')</span>';
 
             statusEl.style.display = 'block';
-            $('cBtn').textContent = '\u2713 ' + shortAddr(walletAddress);
+            var _shortA = shortAddr(walletAddress);
+            $('cBtn').innerHTML = '<span style="display:flex;align-items:center;gap:7px"><span style="width:7px;height:7px;border-radius:50%;background:#49e8c2;flex-shrink:0"></span><span style="font-size:13px;font-weight:700;letter-spacing:0.03em">' + _shortA + '</span><span id="cBtnBal" style="font-size:11px;opacity:0.75;border-left:1px solid rgba(0,0,0,0.3);padding-left:7px;margin-left:1px"></span></span>';
             updateBalanceDisplay();
         }
 
         function updateBalanceDisplay() {
             var kasStr = sompiToKAS(walletBalance.total) + ' KAS';
             // Header button balance
-            if ($('cBtnBal') && conn) $('cBtnBal').textContent = kasStr;
+            if ($('cBtnBal') && conn) { $('cBtnBal').textContent = kasStr; $('cBtnBal').style.fontWeight = '700'; $('cBtnBal').style.opacity = '1'; }
             // Wallet status panel
             var statusEl = $('walletStatus');
             if (statusEl && statusEl.style.display === 'block' && conn) {
@@ -8479,7 +8490,7 @@ function go(v) {
                 // Update top button
                 var shortA = keys.address.substring(0, 14) + '...' + keys.address.substring(keys.address.length - 6);
                 if ($('cBtn')) {
-                    $('cBtn').innerHTML = '<span style="display:flex;align-items:center;gap:6px"><span style="color:#49e8c2">\u2713</span><span>' + shortA + '</span><span id="cBtnBal" style="font-size:10px;opacity:0.7;margin-left:2px"></span></span>';
+                    $('cBtn').innerHTML = '<span style="display:flex;align-items:center;gap:7px"><span style="width:7px;height:7px;border-radius:50%;background:#49e8c2;flex-shrink:0"></span><span style="font-size:13px;font-weight:700;letter-spacing:0.03em">' + shortA + '</span><span id="cBtnBal" style="font-size:11px;opacity:0.75;border-left:1px solid rgba(0,0,0,0.3);padding-left:7px;margin-left:1px"></span></span>';
                     $('cBtn').style.background = 'linear-gradient(135deg, rgba(73,232,194,0.2), rgba(73,232,194,0.08))';
                     $('cBtn').style.border = '1px solid rgba(73,232,194,0.3)';
                     $('cBtn').style.color = '#49e8c2';
@@ -20791,7 +20802,7 @@ W.htpOracleDaemon=OD;
         var shortA = address.substring(0, 14) + '...' + address.substring(address.length - 6);
         var cBtn = document.getElementById('cBtn');
         if (cBtn) {
-            cBtn.innerHTML = '<span style="display:flex;align-items:center;gap:6px"><span style="color:#49e8c2">\u2713</span><span>' + shortA + '</span><span id="cBtnBal" style="font-size:10px;opacity:0.7;margin-left:2px"></span></span>';
+            cBtn.innerHTML = '<span style="display:flex;align-items:center;gap:7px"><span style="width:7px;height:7px;border-radius:50%;background:#49e8c2;flex-shrink:0"></span><span style="font-size:13px;font-weight:700;letter-spacing:0.03em">' + shortA + '</span><span id="cBtnBal" style="font-size:11px;opacity:0.75;border-left:1px solid rgba(0,0,0,0.3);padding-left:7px;margin-left:1px"></span></span>';
         }
         var dcBtn = document.getElementById('dcBtn');
         if (dcBtn) dcBtn.style.display = 'inline-block';
