@@ -4060,11 +4060,40 @@ body.htp-game-active {
     </script>
 <!-- duplicated chess.js removed -->
 <style id="htp-bg-fix">
-#dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:1!important;display:block!important;}
+/* === DAG BACKGROUND: canvas covers entire viewport, is the sole background === */
+#dagCanvas{
+  position:fixed!important;top:0!important;left:0!important;
+  width:100vw!important;height:100vh!important;
+  z-index:0!important;pointer-events:none!important;
+  opacity:1!important;display:block!important;
+}
+/* Override any specificity wars on opacity */
+body #dagCanvas, body.on-overview #dagCanvas { opacity:1!important; }
+
+/* DAG panels height */
 .dag-mini,#dagMiniWrap,#liveDagContainer,#dagMiniContainer{height:480px!important;min-height:480px!important;max-height:480px!important}
-/* Force all view sections transparent so DAG canvas is always visible */
-.view,.view.show,#v-overview,#v-markets,#v-create,#v-skill,#v-oracle,#v-portfolio,#v-wallet,#v-kaspa,#v-terms{background:transparent!important;}
-body,html{background:#010806!important;}
+
+/* Body/html: let canvas be the bg — body color matches canvas fill */
+html,body{background:#010806!important;}
+
+/* Shell wrappers: fully transparent so canvas shows through */
+.shell,.shell-main{background:transparent!important;}
+
+/* Every view section: transparent */
+.view,.view.show,
+#v-overview,#v-markets,#v-create,#v-skill,
+#v-oracle,#v-portfolio,#v-wallet,#v-kaspa,#v-terms
+{background:transparent!important;}
+
+/* Inner layout containers: transparent */
+.mx,.sec-pad,.mx.sec-pad,.hero-wrap,.hero,.hero-content{background:transparent!important;}
+
+/* Stats strip: keep its border-grid look but glass */
+.stats-strip{background:transparent!important;}
+.stat-card{background:rgba(1,8,6,0.55)!important;backdrop-filter:blur(8px)!important;}
+
+/* Section headers */
+.sh{background:transparent!important;}
 </style>
 </head>
 <body>
@@ -4073,6 +4102,7 @@ body,html{background:#010806!important;}
         <!-- animated BlockDAG background -->
         <canvas id="dagCanvas"></canvas>
         <script>
+/* HTP DAG BACKGROUND v2 — bold, unmistakable animated BlockDAG */
 (function(){
   var pc=document.getElementById('dagCanvas');
   if(!pc)return;
@@ -4088,57 +4118,71 @@ body,html{background:#010806!important;}
     cx.setTransform(dpr,0,0,dpr,0,0);
   }
   function spawn(){
-    var lH=28+Math.random()*24,nL=Math.floor(H/lH),li=Math.floor(Math.random()*nL);
-    var y=li*lH+lH/2+(Math.random()-0.5)*lH*0.7;
-    var sz=11+Math.random()*10,spd=0.5+Math.random()*0.4;
-    var b={x:W+20,y:y,sz:sz,vx:-spd,alpha:0.55+Math.random()*0.45,
-           glow:Math.random()>0.45,born:performance.now(),pulse:Math.random()*6.28,parents:[]};
-    var near=blocks.filter(function(n){return Math.abs(n.y-y)<150&&n.x<W-20&&n.x>b.x-280;}).slice(-5);
+    var lH=22+Math.random()*20,nL=Math.floor(H/lH),li=Math.floor(Math.random()*nL);
+    var y=li*lH+lH/2+(Math.random()-0.5)*lH*0.6;
+    var sz=13+Math.random()*13,spd=0.45+Math.random()*0.4;
+    var b={x:W+30,y:y,sz:sz,vx:-spd,alpha:0.7+Math.random()*0.3,
+           glow:Math.random()>0.3,born:performance.now(),pulse:Math.random()*6.28,parents:[]};
+    var near=blocks.filter(function(n){return Math.abs(n.y-y)<180&&n.x<W+10&&n.x>b.x-320;}).slice(-6);
     var nP=Math.min(near.length,1+Math.floor(Math.random()*3));
     for(var i=0;i<nP;i++){var p=near[Math.floor(Math.random()*near.length)];if(p&&b.parents.indexOf(p)===-1)b.parents.push(p);}
     blocks.push(b);lastSpawn=performance.now();
   }
-  function draw(ts){
-    cx.clearRect(0,0,W,H);
-    cx.strokeStyle='rgba(73,232,194,0.022)';cx.lineWidth=0.5;
-    for(var l=0;l*36+18<H;l++){cx.beginPath();cx.moveTo(0,l*36+18);cx.lineTo(W,l*36+18);cx.stroke();}
-    if(performance.now()-lastSpawn>55)spawn();
-    blocks=blocks.filter(function(b){return b.x>-80;});
+  function rrect(x,y,s,r){
+    cx.beginPath();cx.moveTo(x+r,y);cx.lineTo(x+s-r,y);cx.arcTo(x+s,y,x+s,y+r,r);
+    cx.lineTo(x+s,y+s-r);cx.arcTo(x+s,y+s,x+s-r,y+s,r);
+    cx.lineTo(x+r,y+s);cx.arcTo(x,y+s,x,y+s-r,r);cx.lineTo(x,y+r);
+    cx.arcTo(x,y,x+r,y,r);cx.closePath();
+  }
+  function draw(){
+    /* solid background — canvas IS the background */
+    cx.fillStyle='#010806';cx.fillRect(0,0,W,H);
+    /* faint grid lanes */
+    cx.strokeStyle='rgba(73,232,194,0.04)';cx.lineWidth=0.5;
+    for(var l=0;l*34+17<H;l++){cx.beginPath();cx.moveTo(0,l*34+17);cx.lineTo(W,l*34+17);cx.stroke();}
+    /* spawn throttle */
+    if(performance.now()-lastSpawn>42)spawn();
+    blocks=blocks.filter(function(b){return b.x>-100;});
+    /* draw parent edges first */
     blocks.forEach(function(b){
-      b.x+=b.vx;b.pulse+=0.018;
-      var age=(performance.now()-b.born)/18000;
-      var a=Math.max(0,b.alpha*(1-age*0.12));
+      b.x+=b.vx;b.pulse+=0.016;
+      var age=(performance.now()-b.born)/20000;
+      b._a=Math.max(0,b.alpha*(1-age*0.08));
       b.parents.forEach(function(p){
         cx.beginPath();cx.moveTo(b.x+b.sz/2,b.y);cx.lineTo(p.x+p.sz/2,p.y);
-        cx.strokeStyle=teal(a*0.32);cx.lineWidth=0.85;cx.stroke();
+        cx.strokeStyle=teal(b._a*0.5);cx.lineWidth=1;cx.stroke();
       });
-      var glow=0.38+0.28*Math.sin(b.pulse);
-      cx.shadowColor=b.glow?teal(glow*a):'transparent';cx.shadowBlur=b.glow?14:0;
-      var x=b.x,y=b.y-b.sz/2,s=b.sz,r=3;
-      cx.beginPath();cx.moveTo(x+r,y);cx.lineTo(x+s-r,y);cx.arcTo(x+s,y,x+s,y+r,r);
-      cx.lineTo(x+s,y+s-r);cx.arcTo(x+s,y+s,x+s-r,y+s,r);
-      cx.lineTo(x+r,y+s);cx.arcTo(x,y+s,x,y+s-r,r);cx.lineTo(x,y+r);
-      cx.arcTo(x,y,x+r,y,r);cx.closePath();
-      cx.fillStyle=teal(0.07*a);cx.fill();
-      cx.strokeStyle=teal(0.82*a*glow);cx.lineWidth=1.1;cx.stroke();
+    });
+    /* draw blocks on top of edges */
+    blocks.forEach(function(b){
+      var a=b._a;if(a<=0)return;
+      var glow=0.55+0.35*Math.sin(b.pulse);
+      var bx=b.x-b.sz/2,by=b.y-b.sz/2,s=b.sz,r=4;
+      /* glow shadow */
+      if(b.glow){cx.shadowColor=teal(glow*a*0.9);cx.shadowBlur=18;}
+      else{cx.shadowColor=teal(a*0.3);cx.shadowBlur=8;}
+      rrect(bx,by,s,r);
+      cx.fillStyle=teal(0.14*a);cx.fill();
+      cx.strokeStyle=teal(0.9*a*glow);cx.lineWidth=1.4;cx.stroke();
       cx.shadowBlur=0;
     });
     requestAnimationFrame(draw);
   }
   resize();
   window.addEventListener('resize',resize);
-  // Pre-populate the whole screen immediately
+  /* Pre-fill entire screen immediately so there's no blank frame */
   W=window.innerWidth;H=window.innerHeight;
-  for(var i=0;i<90;i++){
-    var lH=28+Math.random()*24,nL=Math.floor(H/lH),li=Math.floor(Math.random()*nL);
-    var y=li*lH+lH/2+(Math.random()-0.5)*lH*0.7;
-    blocks.push({x:Math.random()*W,y:y,sz:11+Math.random()*10,vx:-(0.5+Math.random()*0.4),
-      alpha:0.4+Math.random()*0.4,glow:Math.random()>0.5,
-      born:performance.now()-Math.random()*14000,pulse:Math.random()*6.28,parents:[]});
+  for(var i=0;i<130;i++){
+    var lH=22+Math.random()*20,nL=Math.floor(H/lH),li=Math.floor(Math.random()*nL);
+    var y=li*lH+lH/2+(Math.random()-0.5)*lH*0.6;
+    blocks.push({x:Math.random()*W,y:y,sz:13+Math.random()*13,vx:-(0.45+Math.random()*0.4),
+      alpha:0.5+Math.random()*0.5,glow:Math.random()>0.35,_a:0,
+      born:performance.now()-Math.random()*12000,pulse:Math.random()*6.28,parents:[]});
   }
-  for(var pi=6;pi<blocks.length;pi++){
-    var b=blocks[pi],near=blocks.slice(Math.max(0,pi-14),pi).filter(function(n){return Math.abs(n.y-b.y)<130&&n.x<b.x;});
-    var nP=Math.min(near.length,1+Math.floor(Math.random()*2));
+  /* wire parent connections */
+  for(var pi=5;pi<blocks.length;pi++){
+    var b=blocks[pi],near=blocks.slice(Math.max(0,pi-16),pi).filter(function(n){return Math.abs(n.y-b.y)<150&&n.x<b.x;});
+    var nP=Math.min(near.length,2+Math.floor(Math.random()*2));
     for(var j=0;j<nP;j++){var p=near[Math.floor(Math.random()*near.length)];if(p&&b.parents.indexOf(p)===-1)b.parents.push(p);}
   }
   requestAnimationFrame(draw);
