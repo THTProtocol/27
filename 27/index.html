@@ -8478,18 +8478,20 @@ function go(v) {
         function updGameOpts() {
             var g = $('sgGame');
             if (!g) return;
-            var times = { chess: ['1+0', '3+0', '3+2', '5+0', '5+3', '10+0', '10+5', '15+10', '30+0', '60+0'], connect4: ['2:00', '3:00', '5:00'], checkers: ['3+0', '5+0', '5+2', '10+0', '10+5'], tictactoe: ['0:30', '1:00', '2:00', '3:00', '5:00'] };
-            var series = ['1', '3', '5', '7'];
+            var opt = g.options[g.selectedIndex];
+            var rawTimes = opt && opt.getAttribute('data-times') ? opt.getAttribute('data-times').split(',') : [];
+            var rawSeries = opt && opt.getAttribute('data-series') ? opt.getAttribute('data-series').split(',') : ['1','3','5','7'];
+            var timeLabels = rawTimes.map(function(t) { var p = t.split('|'); return p[0] + '+' + p[1]; });
             var tSel = $('sgTime'), sSel = $('sgSeries');
             tSel.innerHTML = '';
-            (times[g.value] || []).forEach(function (t) {
+            timeLabels.forEach(function (t) {
                 var o = document.createElement('option');
                 o.value = t;
                 o.textContent = t;
                 tSel.appendChild(o);
             });
             sSel.innerHTML = '';
-            series.forEach(function (s) {
+            rawSeries.forEach(function (s) {
                 var o = document.createElement('option');
                 o.value = s;
                 o.textContent = s === '1' ? 'Single game' : 'Best of ' + s;
@@ -8497,10 +8499,10 @@ function go(v) {
             });
             var hint = $('sgTimeHint');
             if (hint) {
-                if (g.value === 'chess') hint.textContent = 'Total time per player.';
-                else if (g.value === 'connect4') hint.textContent = 'Total time per player.';
-                else if (g.value === 'checkers') hint.textContent = 'Total time per player.';
-                else if (g.value === 'tictactoe') hint.textContent = 'Total time per player.';
+                if (g.value === 'chess') hint.textContent = 'Minutes + increment per move';
+                else if (g.value === 'connect4') hint.textContent = 'Minutes + increment per move';
+                else if (g.value === 'checkers') hint.textContent = 'Minutes + increment per move';
+                else if (g.value === 'tictactoe') hint.textContent = 'Seconds or minutes per move';
             }
             // Update preview summary
             var gNames = { chess:'Chess', connect4:'Connect 4', checkers:'Checkers', tictactoe:'Tic-Tac-Toe' };
