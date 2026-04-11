@@ -9225,7 +9225,7 @@ function go(v) {
                 // Exclude already settled/refunded
                 if (e.status === 'settled' || e.status === 'cancelled_refunded') return false;
                 if (e.settled && !e.status) return false; // settled flag only
-                if (!myAddr) return true; // no wallet connected: show all
+                if (!myAddr) return false; // no wallet: show nothing
                 // Collect all address fields stored on this escrow
                 var addrs = [e.creator, e.creatorAddress, e.player, e.player1, e.player2,
                              e.winner, e.joinerAddress, e.winnerAddress].filter(Boolean);
@@ -9244,12 +9244,12 @@ function go(v) {
             if (!listEl) return;
 
             if (!mine.length) {
-                var noWallet = !myAddr ? '<br><a href="javascript:void(0)" onclick="go(\'wallet\')" style="color:#49e8c2;font-size:12px;font-weight:600">Connect wallet ↗</a>' : '';
-                listEl.innerHTML = '<div style="border:1px dashed rgba(73,232,194,0.1);border-radius:14px;padding:32px;text-align:center">' +
-                    '<div style="font-size:28px;margin-bottom:10px;opacity:.35">🏆</div>' +
-                    '<div style="font-size:13px;color:var(--muted);margin-bottom:4px">No claimable escrows found for your wallet.</div>' +
-                    '<div style="font-size:11px;color:var(--dim)">Use Manual Claim below if you have the txids.' + noWallet + '</div>' +
-                    '</div>';
+                var noWalletMsg = !myAddr
+                    ? '<div style="font-size:13px;color:var(--muted);margin-bottom:12px">Connect a wallet to view your claimable matches.</div>' +
+                      '<a href="javascript:void(0)" onclick="go(\'wallet\')" style="display:inline-block;font-size:12px;font-weight:700;color:#49e8c2;text-decoration:none;padding:8px 20px;border:1px solid rgba(73,232,194,0.3);border-radius:8px">Connect Wallet</a>'
+                    : '<div style="font-size:13px;color:var(--muted);margin-bottom:4px">No claimable matches for your address.</div>' +
+                      '<div style="font-size:11px;color:var(--dim)">Use Manual Claim below if you have the txids.</div>';
+                listEl.innerHTML = '<div style="border:1px dashed rgba(73,232,194,0.1);border-radius:14px;padding:32px;text-align:center">' + noWalletMsg + '</div>';
                 window._claimEscrows = mine;
                 return;
             }
