@@ -5027,10 +5027,13 @@ event MyMarket {
                     </div>
 
                     <!-- Open Matches Lobby -->
-                    <div class="sgv2-lobby">
-                        <div class="sgv2-lobby-hdr">
-                            <span>Open Matches</span>
-                            <span class="sgv2-lobby-badge" id="lobbyCount">0 open</span>
+                    <div class="sgv2-lobby" style="border:1px solid rgba(73,232,194,0.1);border-radius:16px;padding:20px 24px;background:rgba(6,12,22,0.55);backdrop-filter:blur(8px)">
+                        <div class="sgv2-lobby-hdr" style="margin-bottom:14px">
+                            <span style="display:flex;align-items:center;gap:8px">
+                                <span style="font-size:15px;font-weight:800;color:#e8e8e8;text-transform:uppercase;letter-spacing:.04em">Open Matches</span>
+                                <span style="width:8px;height:8px;border-radius:50%;background:#49e8c2;box-shadow:0 0 8px #49e8c2;animation:pulse 2s infinite"></span>
+                            </span>
+                            <span class="sgv2-lobby-badge" id="lobbyCount" style="font-size:11px;padding:4px 12px;border-radius:20px">0 matches</span>
                         </div>
                         <div id="matchLobby" style="max-height:400px;overflow-y:auto"></div>
                     </div>
@@ -5171,12 +5174,13 @@ event MyMarket {
                 <!-- Create Match Form -->
                 <div class="sgv2-mform" style="margin:0 auto;max-width:1200px;padding-left:24px;padding-right:24px">
                     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative;z-index:1">
-                        <h3>Create a Challenge Match</h3>
-                        <div style="font-size:10px;color:var(--accent);background:rgba(73,232,194,.06);border:1px solid rgba(73,232,194,.2);border-radius:6px;padding:3px 8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">
-                            Escrow Locked On-Chain
+                        <h3 style="font-size:22px">⚔ Create a Challenge</h3>
+                        <div style="font-size:10px;color:var(--accent);background:rgba(73,232,194,.08);border:1px solid rgba(73,232,194,.25);border-radius:20px;padding:4px 12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:inline-flex;align-items:center;gap:5px">
+                            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#49e8c2;box-shadow:0 0 6px #49e8c2"></span>
+                            On-Chain Escrow
                         </div>
                     </div>
-                    <p class="sgv2-sub">Select a game, set your stake and time controls. Your KAS is locked in a covenant until the match resolves.</p>
+                    <p class="sgv2-sub" style="margin-bottom:28px">Pick your game, set the stake, and lock KAS into a trustless covenant. Winner takes all — no arbiter needed.</p>
 
                     <!-- Game Picker -->
                     <select id="sgGame" onchange="updGameOpts()" style="display:none">
@@ -5186,37 +5190,77 @@ event MyMarket {
                         <option value="checkers" data-times="3|0,5|0,5|3,10|0,10|5,15|0" data-series="1,3,5,7">⚪ Checkers</option>
                         <option value="tictactoe" data-times="0|5,0|10,0|15,0|30,1|0,2|0,3|0,5|0" data-series="1,3,5,7,9">✕ Tic-Tac-Toe</option>
                     </select>
-                    <div class="sgv2-gpick" id="sgGamePicker">
-                        <button type="button" class="sg-gbtn" data-game="chess">
-                            <span class="sg-ico" style="color:#fff">&#9816;</span>
-                            <span class="sg-lbl">Chess</span>
+
+                    <div style="position:relative;z-index:1;margin-bottom:6px">
+                        <div style="font-size:11px;font-weight:700;color:rgba(73,232,194,.65);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Select Game</div>
+                    </div>
+
+                    <div class="sgv2-gpick" id="sgGamePicker" style="gap:14px">
+                        <button type="button" class="sg-gbtn" data-game="chess" style="padding:20px 10px 16px;gap:10px">
+                            <span class="sg-ico" style="color:#fff;font-size:40px">♞</span>
+                            <span class="sg-lbl" style="font-size:11px">Chess</span>
+                            <span style="font-size:9px;color:var(--dim);margin-top:2px">Classic strategy</span>
                         </button>
-                        <button type="button" class="sg-gbtn" data-game="connect4">
-                            <span class="sg-ico">&#128308;</span>
-                            <span class="sg-lbl">Connect 4</span>
+                        <button type="button" class="sg-gbtn" data-game="connect4" style="padding:20px 10px 16px;gap:10px">
+                            <span class="sg-ico" style="font-size:40px">🔴</span>
+                            <span class="sg-lbl" style="font-size:11px">Connect 4</span>
+                            <span style="font-size:9px;color:var(--dim);margin-top:2px">Drop to win</span>
                         </button>
-                        <button type="button" class="sg-gbtn" data-game="checkers">
-                            <span class="sg-ico">&#9898;</span>
-                            <span class="sg-lbl">Checkers</span>
+                        <button type="button" class="sg-gbtn" data-game="checkers" style="padding:20px 10px 16px;gap:10px">
+                            <span class="sg-ico" style="font-size:40px">⚪</span>
+                            <span class="sg-lbl" style="font-size:11px">Checkers</span>
+                            <span style="font-size:9px;color:var(--dim);margin-top:2px">Jump & capture</span>
                         </button>
-                        <button type="button" class="sg-gbtn" data-game="tictactoe">
-                            <span class="sg-ico" style="color:#49e8c2">&#10005;</span>
-                            <span class="sg-lbl">Tic-Tac-Toe</span>
+                        <button type="button" class="sg-gbtn" data-game="tictactoe" style="padding:20px 10px 16px;gap:10px">
+                            <span class="sg-ico" style="color:#49e8c2;font-size:40px">✕</span>
+                            <span class="sg-lbl" style="font-size:11px">Tic-Tac-Toe</span>
+                            <span style="font-size:9px;color:var(--dim);margin-top:2px">Quick rounds</span>
                         </button>
                     </div>
                     <script>(function(){var btns=document.querySelectorAll('#sgGamePicker .sg-gbtn'),sel=document.getElementById('sgGame');function act(g){btns.forEach(function(b){var on=b.getAttribute('data-game')===g;b.classList.toggle('act',on);});}btns.forEach(function(b){b.addEventListener('click',function(){sel.value=b.getAttribute('data-game');sel.dispatchEvent(new Event('change'));act(sel.value);});});})();</script>
 
                     <!-- Settings Row -->
-                    <div class="sgv2-settings">
-                        <div class="fg"><label>Escrow (KAS)</label><input type="number" id="sgEsc" value="5" min="1" max="10000" step="1" /></div>
-                        <div class="fg"><label>Time Control</label><select id="sgTime"></select>
+                    <div style="position:relative;z-index:1;margin-top:24px;margin-bottom:8px">
+                        <div style="font-size:11px;font-weight:700;color:rgba(73,232,194,.65);text-transform:uppercase;letter-spacing:.08em">Match Settings</div>
+                    </div>
+                    <div class="sgv2-settings" style="gap:18px">
+                        <div class="fg">
+                            <label>Escrow Amount (KAS)</label>
+                            <div style="position:relative">
+                                <input type="number" id="sgEsc" value="5" min="1" max="10000" step="1" style="padding-left:14px;padding-right:48px;font-size:16px;font-weight:700;height:46px" />
+                                <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--accent);font-weight:700;pointer-events:none">KAS</span>
+                            </div>
+                            <div style="margin-top:4px;font-size:10px;color:var(--dim)">Winner takes 98% · 2% protocol fee</div>
+                        </div>
+                        <div class="fg">
+                            <label>Time Control</label>
+                            <select id="sgTime" style="height:46px;font-size:14px;font-weight:600"></select>
                             <div style="margin-top:4px;font-size:10px;color:var(--dim)" id="sgTimeHint">Minutes + increment per move</div>
                         </div>
-                        <div class="fg"><label>Series (Best of)</label><select id="sgSeries"></select></div>
+                        <div class="fg">
+                            <label>Series (Best of)</label>
+                            <select id="sgSeries" style="height:46px;font-size:14px;font-weight:600"></select>
+                            <div style="margin-top:4px;font-size:10px;color:var(--dim)">Odd numbers only</div>
+                        </div>
                     </div>
 
-                    <button class="cta1" style="width:100%;justify-content:center;margin-top:20px;padding:14px 24px;font-size:15px;position:relative;z-index:1;letter-spacing:.03em"
-                        onclick="(function(){var g=document.getElementById('sgGame');if(!g||!g.value){if(typeof showToast==='function')showToast('Please select a game first','warn');return;}createMatchWithLobby();})()">Create Match &middot; Lock Escrow</button>
+                    <!-- Preview summary -->
+                    <div id="matchPreviewSummary" style="position:relative;z-index:1;margin-top:20px;padding:12px 16px;border-radius:10px;background:rgba(73,232,194,0.03);border:1px solid rgba(73,232,194,0.08);display:none;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                        <span style="color:var(--accent);font-weight:700" id="matchPreviewGame">—</span>
+                        <span style="width:1px;height:14px;background:rgba(73,232,194,0.15)"></span>
+                        <span id="matchPreviewStake">— KAS</span>
+                        <span style="width:1px;height:14px;background:rgba(73,232,194,0.15)"></span>
+                        <span id="matchPreviewTime">—</span>
+                        <span style="width:1px;height:14px;background:rgba(73,232,194,0.15)"></span>
+                        <span id="matchPreviewSeries">Bo —</span>
+                        <span style="margin-left:auto;font-size:10px;color:rgba(73,232,194,.5);font-weight:600">TRUSTLESS ESCROW</span>
+                    </div>
+
+                    <button class="cta1" id="createMatchCTA" style="width:100%;justify-content:center;margin-top:18px;padding:16px 24px;font-size:16px;font-weight:800;position:relative;z-index:1;letter-spacing:.02em;border-radius:14px;gap:8px"
+                        onclick="(function(){var g=document.getElementById('sgGame');if(!g||!g.value){if(typeof showToast==='function')showToast('Please select a game first','warn');return;}createMatchWithLobby();})()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><path d="M12 2v20M2 12h20"/></svg>
+                        Create Match · Lock Escrow
+                    </button>
                 </div>
                 <div style="margin-top:24px">
                     <h3 style="font-size:16px;margin:0 0 16px;font-weight:700;font-family:var(--sans);letter-spacing:-0.01em;color:var(--text)">Match Lifecycle</h3>
@@ -8572,6 +8616,18 @@ function go(v) {
                 else if (g.value === 'checkers') hint.textContent = 'Total time per player.';
                 else if (g.value === 'tictactoe') hint.textContent = 'Total time per player.';
             }
+            // Update preview summary
+            var gNames = { chess:'Chess', connect4:'Connect 4', checkers:'Checkers', tictactoe:'Tic-Tac-Toe' };
+            var pGame = document.getElementById('matchPreviewGame');
+            var pStake = document.getElementById('matchPreviewStake');
+            var pTime = document.getElementById('matchPreviewTime');
+            var pSeries = document.getElementById('matchPreviewSeries');
+            var pWrap = document.getElementById('matchPreviewSummary');
+            if (pGame) pGame.textContent = gNames[g.value] || g.value;
+            if (pStake) pStake.textContent = (document.getElementById('sgEsc')?document.getElementById('sgEsc').value:'5') + ' KAS';
+            if (pTime && tSel.value) pTime.textContent = tSel.value;
+            if (pSeries && sSel.value) pSeries.textContent = sSel.value === '1' ? 'Single' : 'Bo ' + sSel.value;
+            if (pWrap) pWrap.style.display = 'flex';
         }
 
 
