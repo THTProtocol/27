@@ -76,36 +76,21 @@
       ? v.outcomes.map(function(o) { return '"' + o + '"'; }).join(', ')
       : '"...", "..."';
 
+    var safeName = (v.title || 'Untitled').replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_').substring(0, 40) || 'MyEvent';
+
     var lines = [
       '// HTP Prediction Market Covenant',
       '// Generated: ' + new Date().toISOString(),
       '',
-      'DEFINE MARKET {',
-      '  title: "' + (v.title || '...') + '"',
-      '  outcomes: [' + outcomesArr + ']',
-      '  resolution_deadline: ' + (ts || '...'),
-      '  oracle_url: "' + (v.url || '...') + '"',
-      '  min_position: ' + v.minPosition + ' KAS',
-      '  treasury: ' + TREASURY,
-      '  fee_bps: ' + FEE_BPS,
+      'event ' + safeName + ' {',
+      '  outcomes: [' + outcomesArr + '];',
+      '  locktime: fromDate("' + (v.date ? v.date + 'T18:00:00Z' : '...') + '");',
+      '  oracle: bondedOracle(100);',
+      '  fee: 0.02;',
+      '  bond: 1000;',
+      '  source: "' + (v.url || '...') + '";',
+      '  network: tn12;',
       '}',
-      '',
-      'ESCROW {',
-      '  lock_condition: OR(',
-      '    AND(oracle_attests(outcome_index), send_to(winner_address)),',
-      '    AND(deadline_passed(), no_oracle_attest(), refund_all())',
-      '  )',
-      '}',
-      '',
-      'SETTLEMENT {',
-      '  on_resolve(outcome_index):',
-      '    payout = total_pool * (1 - fee_bps / 10000)',
-      '    fee = total_pool * (fee_bps / 10000)',
-      '    SEND fee TO treasury_address',
-      '    FOR EACH position IN positions[outcome_index]:',
-      '      share = position.size / winning_pool_size',
-      '      SEND payout * share TO position.address',
-      '}'
     ];
     return lines;
   }

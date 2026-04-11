@@ -2286,165 +2286,7 @@
             }
         }
 
-        /* ── Match Lifecycle (redesigned) ── */
-        .lifecycle {
-            margin-top: 20px;
-            display: flex;
-            position: relative;
-            padding: 0 20px;
-        }
-
-        .lifecycle::before {
-            content: "";
-            position: absolute;
-            top: 24px;
-            left: calc(10% + 20px);
-            right: calc(10% + 20px);
-            height: 3px;
-            background: var(--border);
-            border-radius: 2px;
-            z-index: 0;
-        }
-
-        .lifecycle::after {
-            content: "";
-            position: absolute;
-            top: 38px;
-            left: 10%;
-            width: var(--progress, 0%);
-            height: 2px;
-            background: linear-gradient(90deg, #49e8c2, rgba(73,232,194,0.6));
-            box-shadow: 0 0 8px rgba(73,232,194,0.3);
-            transition: width 0.6s cubic-bezier(.4,0,.2,1);
-            border-radius: 2px;
-            z-index: 1;
-            transition: width 0.6s ease;
-        }
-
-        .lcs {
-            flex: 1;
-            text-align: center;
-            padding: 0;
-            position: relative;
-            z-index: 2;
-        }
-
-        .lcs-dot {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            border: 2px solid rgba(73,232,194,0.4);
-            background: rgba(10,15,30,0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 10px;
-            font-size: 16px;
-            font-weight: 700;
-            color: rgba(73,232,194,0.8);
-            cursor: pointer;
-            transition: all 0.35s cubic-bezier(.4,0,.2,1);
-            position: relative;
-            z-index: 2;
-        }
-        .lcs-dot:hover {
-            border-color: #49e8c2;
-            color: #49e8c2;
-            box-shadow: 0 0 18px rgba(73,232,194,0.3), 0 0 6px rgba(73,232,194,0.15);
-            transform: scale(1.12);
-        }
-        .lcs-dot:hover::after {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            border-radius: 50%;
-            border: 1px solid rgba(73,232,194,0.2);
-            animation: lcsPing 1s ease-out forwards;
-        }
-        @keyframes lcsPing {
-            0% { transform: scale(1); opacity: 0.8; }
-            100% { transform: scale(1.6); opacity: 0; }
-        }
-        .lcs-dot-placeholder { transition: all 0.3s ease;
-        }
-
-        .lcs.done .lcs-dot {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: var(--bg);
-            box-shadow: 0 0 20px rgba(73, 232, 194, .35), 0 0 6px rgba(73, 232, 194, .2);
-        }
-
-        .lcs.active .lcs-dot {
-            border-color: var(--accent);
-            color: var(--accent);
-            box-shadow: 0 0 12px rgba(73, 232, 194, .2);
-            animation: lcsPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes lcsPulse {
-
-            0%,
-            100% {
-                box-shadow: 0 0 12px rgba(73, 232, 194, .2);
-            }
-
-            50% {
-                box-shadow: 0 0 24px rgba(73, 232, 194, .4);
-            }
-        }
-
-        .lcs-title {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text);
-            transition: color 0.3s;
-            margin-bottom: 4px;
-            transition: color 0.3s;
-        }
-
-        .lcs.done .lcs-title {
-            color: var(--accent);
-        }
-
-        .lcs.active .lcs-title {
-            color: var(--text);
-        }
-
-        .lcs-desc {
-            font-size: 11px;
-            color: var(--muted);
-            opacity: 0.7;
-            line-height: 1.4;
-            max-width: 100px;
-            margin: 0 auto;
-        }
-
-        .lcs.done .lcs-desc {
-            opacity: 1;
-            color: var(--muted);
-        }
-
-        @media (max-width: 768px) {
-            .lifecycle {
-                padding: 0 4px;
-            }
-
-            .lcs-dot {
-                width: 36px;
-                height: 36px;
-                font-size: 13px;
-            }
-
-            .lcs-title {
-                font-size: 11px;
-            }
-
-            .lcs-desc {
-                font-size: 9px;
-                max-width: 70px;
-            }
-        }
+        /* ── Match Lifecycle: see consolidated styles below ── */
 
         /* Overview mobile */
         @media(max-width:768px) {
@@ -3378,16 +3220,32 @@ body:not(.on-overview) .bg-glow3 { opacity: 0.40  !important; }
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            padding: 20px 0;
+            padding: 24px 0 8px;
+            gap: 4px;
         }
         .lifecycle::before {
             content: '';
             position: absolute;
-            top: 38px;
-            left: 10%;
-            right: 10%;
+            top: 48px;
+            left: calc(10% + 8px);
+            right: calc(10% + 8px);
             height: 2px;
-            background: linear-gradient(90deg, rgba(73,232,194,0.2), rgba(73,232,194,0.55), rgba(73,232,194,0.2));
+            background: rgba(73,232,194,0.12);
+            border-radius: 2px;
+        }
+        .lifecycle::after {
+            content: '';
+            position: absolute;
+            top: 48px;
+            left: calc(10% + 8px);
+            width: var(--progress, 0%);
+            max-width: calc(80% - 16px);
+            height: 2px;
+            background: linear-gradient(90deg, #49e8c2, rgba(73,232,194,0.5));
+            box-shadow: 0 0 10px rgba(73,232,194,0.3);
+            border-radius: 2px;
+            transition: width 0.6s cubic-bezier(.4,0,.2,1);
+            z-index: 1;
         }
         .lcs {
             display: flex;
@@ -3396,38 +3254,63 @@ body:not(.on-overview) .bg-glow3 { opacity: 0.40  !important; }
             text-align: center;
             flex: 1;
             position: relative;
-            z-index: 1;
+            z-index: 2;
+            cursor: pointer;
+            transition: transform 0.2s;
         }
+        .lcs:hover { transform: translateY(-2px); }
         .lcs-dot {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: rgba(10,15,30,0.9);
-            border: 2px solid rgba(73,232,194,0.3);
-            color: var(--accent);
-            font-size: 13px;
-            font-weight: 700;
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: rgba(10,15,30,0.95);
+            border: 1.5px solid rgba(73,232,194,0.2);
+            color: rgba(73,232,194,0.6);
+            font-size: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 10px;
-            font-family: var(--mono);
-            transition: all 0.3s;
-            box-shadow: 0 0 15px rgba(73,232,194,0.1);
+            transition: all 0.35s cubic-bezier(.4,0,.2,1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .lcs:hover .lcs-dot {
+            border-color: rgba(73,232,194,0.5);
+            box-shadow: 0 0 20px rgba(73,232,194,0.15), 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .lcs.done .lcs-dot {
+            background: linear-gradient(135deg, rgba(73,232,194,0.15), rgba(73,232,194,0.08));
+            border-color: rgba(73,232,194,0.5);
+            color: #49e8c2;
+            box-shadow: 0 0 20px rgba(73,232,194,0.2), 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .lcs.active .lcs-dot {
+            border-color: #49e8c2;
+            color: #49e8c2;
+            box-shadow: 0 0 20px rgba(73,232,194,0.25);
+            animation: lcsPulse 2.5s ease-in-out infinite;
+        }
+        @keyframes lcsPulse {
+            0%, 100% { box-shadow: 0 0 12px rgba(73,232,194,0.15); }
+            50% { box-shadow: 0 0 28px rgba(73,232,194,0.35); }
         }
         .lcs-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             color: var(--text);
-            margin-bottom: 4px;
-            letter-spacing: 0.01em;
+            margin-bottom: 3px;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
         }
+        .lcs.done .lcs-title { color: #49e8c2; }
         .lcs-desc {
             font-size: 10px;
             color: var(--dim);
-            max-width: 100px;
-            line-height: 1.4;
+            max-width: 90px;
+            line-height: 1.35;
+            opacity: 0.7;
         }
+        .lcs:hover .lcs-desc { opacity: 1; }
 
         .mkt-card {
             background: var(--card);
@@ -5263,32 +5146,33 @@ event MyMarket {
                     </button>
                 </div>
                 <div style="margin-top:24px">
-                    <h3 style="font-size:16px;margin:0 0 16px;font-weight:700;font-family:var(--sans);letter-spacing:-0.01em;color:var(--text)">Match Lifecycle</h3>
+                    <h3 style="font-size:15px;margin:0 0 4px;font-weight:700;font-family:var(--sans);letter-spacing:-0.01em;color:var(--text)">Match Lifecycle</h3>
+                    <p style="font-size:11px;color:var(--dim);margin:0 0 12px;line-height:1.5">Trustless 5-step flow: escrow lock → opponent match → on-chain play → proof verification → settlement</p>
                     <div class="lifecycle" style="--progress:0%" id="matchLifecycle">
                         <div class="lcs" data-step="1" onclick="hlStep(1)" title="Both players lock KAS into the covenant escrow">
-                            <div class="lcs-dot" id="lcsDot1">1</div>
+                            <div class="lcs-dot" id="lcsDot1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
                             <div class="lcs-title">Create</div>
-                            <div class="lcs-desc">Escrow locked on-chain</div>
+                            <div class="lcs-desc">Lock escrow on-chain</div>
                         </div>
                         <div class="lcs" data-step="2" onclick="hlStep(2)" title="Opponent matches the escrow - both sides committed">
-                            <div class="lcs-dot" id="lcsDot2">2</div>
+                            <div class="lcs-dot" id="lcsDot2"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
                             <div class="lcs-title">Accept</div>
                             <div class="lcs-desc">Opponent matches escrow</div>
                         </div>
                         <div class="lcs" data-step="3" onclick="hlStep(3)" title="Every move is hashed and committed to the chain">
-                            <div class="lcs-dot" id="lcsDot3">3</div>
+                            <div class="lcs-dot" id="lcsDot3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg></div>
                             <div class="lcs-title">Play</div>
-                            <div class="lcs-desc">Moves hashed on-chain</div>
+                            <div class="lcs-desc">Moves synced on-chain</div>
                         </div>
                         <div class="lcs" data-step="4" onclick="hlStep(4)" title="Game-over proof verified by the covenant script">
-                            <div class="lcs-dot" id="lcsDot4">4</div>
-                            <div class="lcs-title">Resolve</div>
+                            <div class="lcs-dot" id="lcsDot4"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
+                            <div class="lcs-title">Verify</div>
                             <div class="lcs-desc">Covenant verifies proof</div>
                         </div>
                         <div class="lcs" data-step="5" onclick="hlStep(5)" title="Winner receives 98% escrow, 2% protocol fee">
-                            <div class="lcs-dot" id="lcsDot5">5</div>
+                            <div class="lcs-dot" id="lcsDot5"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
                             <div class="lcs-title">Settle</div>
-                            <div class="lcs-desc">Winner receives escrow</div>
+                            <div class="lcs-desc">Winner paid instantly</div>
                         </div>
                     </div>
                     <!-- Lifecycle detail panel -->
@@ -7283,7 +7167,11 @@ event MyMarket {
         function getEscrowStore() {
             try { return JSON.parse(localStorage.getItem('htp_escrow_keys') || '{}'); } catch (e) { return {}; }
         }
-        function saveEscrowStore(s) { quotaSafeSet('htp_escrow_keys', JSON.stringify(s)); }
+        function saveEscrowStore(s) {
+            quotaSafeSet('htp_escrow_keys', JSON.stringify(s));
+            try { localStorage.setItem('htpescrowkeys', JSON.stringify(s)); } catch(e) {}
+            try { localStorage.setItem('htpcovenantescrows', JSON.stringify(Object.assign({}, JSON.parse(localStorage.getItem('htpcovenantescrows') || '{}'), s))); } catch(e) {}
+        }
 
         async function generateMatchEscrow(matchId) {
             var store = getEscrowStore();
@@ -8097,7 +7985,7 @@ function go(v) {
                                     entries,
                                     txOutputs,
                                     BigInt(opts.priorityFee || 0),
-                                    opts.payload ? opts.payload : undefined,
+                                    undefined,
                                     1
                                 );
                                 console.log('[HTP] Transaction created:', !!tx);
@@ -13155,7 +13043,7 @@ function showGameOverOverlay(title, amountText, color, match) {
             updateResolutionInfo();
         }
 
-        // -- Form â†' SilverScript sync --
+        // -- Form → SilverScript sync --
         var _ssUpdateLock = false;
         function syncFormToSS() {
             if (_ssUpdateLock) return;
@@ -13169,86 +13057,67 @@ function showGameOverOverlay(title, amountText, color, match) {
                 if (!ssEditor || !q) { _ssUpdateLock = false; return; }
 
                 var outcomes = getOutcomes();
-                var ss = '// Auto-generated from Event Form\n';
-
-                // Sync all create form fields
                 var cSrc = document.getElementById('cSrc');
                 var cCap = document.getElementById('cCap');
                 var cMax = document.getElementById('cMax');
                 var cEnd = document.getElementById('cEnd');
                 var cStk = document.getElementById('cStk');
-                if (cSrc && cSrc.value) ss += 'source: "' + cSrc.value + '";\n';
-                if (cCap) ss += 'maximizerCap: ' + cCap.value + '%;\n';
-                if (cMax) ss += 'maximizer: ' + cMax.value + ';\n';
-                if (cEnd && cEnd.value) ss += 'locktime: fromDate("' + cEnd.value + '");\n';
-                if (cStk && cStk.value) ss += 'stake: ' + cStk.value + ';\n';
-                
-                // Sync outcomes
-                var outcomeInputs = document.querySelectorAll('.outcome-input');
-                if (outcomeInputs.length > 0) {
-                    var outs = [];
-                    outcomeInputs.forEach(function (inp) { if (inp.value.trim()) outs.push('"' + inp.value.trim() + '"'); });
-                    if (outs.length > 0) ss += 'outcomes: [' + outs.join(', ') + '];\n';
-                }
                 var oracleType = oracle ? oracle.value : 'bondedOracle';
                 var bondAmt = bond ? bond.value : '100';
-                var img = window._htpEventImg || '';
 
-                ss += '@event "' + (q.value || 'Untitled Event').replace(/"/g, '\\"') + '"\n';
-                ss += '@category "' + (cat ? cat.value : 'General') + '"\n';
-                if (img) ss += '@image "' + img.substring(0, 60) + '..."\n';
-                ss += '@outcomes [' + outcomes.map(function (o) { return '"' + o.replace(/"/g, '\\"') + '"'; }).join(', ') + ']\n';
-                ss += '@oracle ' + oracleType + '\n';
+                // Generate a valid identifier from the title
+                var title = (q.value || 'Untitled').trim();
+                var safeName = title.replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_').substring(0, 40) || 'MyEvent';
 
-                // Oracle-specific params
-                if (oracleType === 'bondedOracle' || oracleType === 'hybridOracle') {
-                    ss += '@bond ' + bondAmt + '\n';
+                // Build valid SilverScript that the SS compiler can parse
+                var ss = '// Auto-generated from Event Form\n\n';
+                ss += 'event ' + safeName + ' {\n';
+                ss += '  outcomes: [' + outcomes.map(function(o) { return '"' + o.replace(/"/g, '\\"') + '"'; }).join(', ') + '];\n';
+
+                if (cEnd && cEnd.value) {
+                    ss += '  locktime: fromDate("' + cEnd.value + 'T18:00:00Z");\n';
+                } else {
+                    ss += '  locktime: fromDate("2026-12-31T18:00:00Z");\n';
                 }
 
-                if (oracleType === 'zkOracle' || oracleType === 'hybridOracle') {
+                // Oracle configuration
+                if (oracleType === 'zkFeed' || oracleType === 'zkOracle') {
                     var zkMode = document.getElementById('cZkMode');
-                    var mode = zkMode ? zkMode.value : 'zkTLS';
-                    ss += '@zkmode ' + mode + '\n';
-                    if (mode === 'zkTLS') {
+                    var feedName = 'CUSTOM';
+                    if (zkMode && zkMode.value === 'zkTLS') {
                         var u = document.getElementById('cZkTlsUrl');
-                        var p = document.getElementById('cZkTlsPath');
-                        var op = document.getElementById('cZkTlsOp');
-                        var val = document.getElementById('cZkTlsVal');
-                        ss += '@zktls.url "' + (u ? u.value : '') + '"\n';
-                        ss += '@zktls.path "' + (p ? p.value : '') + '"\n';
-                        ss += '@zktls.condition ' + (op ? op.value : 'eq') + ' "' + (val ? val.value : '') + '"\n';
-                    } else if (mode === 'zkCoprocessor') {
-                        var cq = document.getElementById('cZkChainQuery');
-                        ss += '@zkchain "' + (cq ? cq.value : '') + '"\n';
-                    } else if (mode === 'zkCompute') {
-                        var ah = document.getElementById('cZkAlgoHash');
-                        var of = document.getElementById('cZkOutputFmt');
-                        ss += '@zkcompute.hash "' + (ah ? ah.value : '') + '"\n';
-                        ss += '@zkcompute.output "' + (of ? of.value : '') + '"\n';
+                        feedName = u && u.value ? u.value.substring(0, 30) : 'zkTLS';
                     }
-                }
-                if (oracleType === 'apiOracle' || oracleType === 'hybridOracle') {
-                    var sources = typeof getApiSources === 'function' ? getApiSources() : [];
-                    var quorum = document.getElementById('cApiQuorum');
-                    var tolerance = document.getElementById('cApiTolerance');
-                    var timeout = document.getElementById('cApiTimeout');
-                    var fallback = document.getElementById('cApiFallback');
-                    ss += '@api.quorum ' + (quorum ? quorum.value : '2') + '\n';
-                    ss += '@api.tolerance ' + (tolerance ? tolerance.value : '0.1') + '%\n';
-                    ss += '@api.timeout ' + (timeout ? timeout.value : '10') + 's\n';
-                    ss += '@api.fallback ' + (fallback ? fallback.value : 'bondedFallback') + '\n';
-                    sources.forEach(function (src, i) {
-                        ss += '@api.source[' + i + '] "' + src.url + '" path:"' + src.path + '" type:' + src.type + '\n';
-                    });
+                    ss += '  oracle: zkFeed("' + feedName + '");\n';
+                } else if (oracleType === 'hybridOracle') {
+                    ss += '  oracle: hybridOracle("CUSTOM", ' + bondAmt + ');\n';
+                } else {
+                    ss += '  oracle: bondedOracle(' + bondAmt + ');\n';
                 }
 
-                ss += '\n// --- Covenant Logic ---\n';
-                ss += 'OP_PUSH "' + (q.value || '').replace(/"/g, '\\"').substring(0, 64) + '"\n';
-                ss += 'OP_PUSH ' + outcomes.length + '\n';
-                outcomes.forEach(function (o, i) {
-                    ss += 'OP_PUSH "' + o.replace(/"/g, '\\"') + '"  // outcome[' + i + ']\n';
-                });
-                ss += 'OP_CHECKSIG\n';
+                ss += '  fee: 0.02;\n';
+
+                if (cStk && cStk.value && parseInt(cStk.value) >= 1000) {
+                    ss += '  bond: ' + parseInt(cStk.value) + ';\n';
+                } else {
+                    ss += '  bond: 1000;\n';
+                }
+
+                if (cMax && cMax.value === 'true') {
+                    ss += '  maximizer: true;\n';
+                    if (cCap) ss += '  cap: ' + (parseInt(cCap.value) || 20) + ';\n';
+                }
+
+                if (cat && cat.value) {
+                    ss += '  category: "' + cat.value + '";\n';
+                }
+
+                if (cSrc && cSrc.value) {
+                    ss += '  source: "' + cSrc.value.replace(/"/g, '\\"') + '";\n';
+                }
+
+                ss += '  network: tn12;\n';
+                ss += '}\n';
 
                 ssEditor.value = ss;
                 if (typeof updateSSLineInfo === 'function') updateSSLineInfo();
@@ -13256,7 +13125,6 @@ function showGameOverOverlay(title, amountText, color, match) {
             _ssUpdateLock = false;
         }
 
-        // -- SilverScript â†' Form sync --
         function syncSSToForm() {
             if (_ssUpdateLock) return;
             _ssUpdateLock = true;
@@ -13666,6 +13534,8 @@ function showGameOverOverlay(title, amountText, color, match) {
 
   function saveEscrowStore() {
     try { localStorage.setItem('htp_covenant_escrows', JSON.stringify(_escrowStore)); } catch (e) { }
+    try { localStorage.setItem('htpcovenantescrows', JSON.stringify(_escrowStore)); } catch (e) { }
+    try { localStorage.setItem('htp-covenant-escrows', JSON.stringify(_escrowStore)); } catch (e) { }
   }
 
   // Generate a random 32-byte hex string for PrivateKey
@@ -15181,7 +15051,8 @@ else setTimeout(initV69,300);
 
     var privKey = new SDK.PrivateKey(escEntry.privateKey);
     var tx = SDK.createTransaction(entries, txOutputs, BigInt(0), undefined, 1);
-    var signed = SDK.signTransaction(tx, privKey, true);
+    var signFn = SDK.signTransaction || window.signTransaction;
+    var signed = signFn(tx, [privKey], true);
 
     var txObj;
     if (signed.toRpcTransaction) txObj = signed.toRpcTransaction();
@@ -21864,6 +21735,8 @@ document.querySelectorAll('button').forEach(function(b){
     return result;
   }
 
+  // Payload patch v2: NO payload injection into on-chain TX (breaks Schnorr sighash).
+  // Match metadata is stored in Firebase only; on-chain TX is a clean P2PK send.
   var _orig = window.htpSendTx;
   function waitAndPatch() {
     if (typeof window.htpSendTx !== 'function') {
@@ -21872,53 +21745,15 @@ document.querySelectorAll('button').forEach(function(b){
     var orig = window.htpSendTx;
     window.htpSendTx = function(toAddr, amountSompi, opts) {
       opts = opts || {};
-      // If caller passed payloadData (object), hex-encode it onto opts.payload
-      if (opts.payloadData && !opts.payload) {
-        opts.payload = toHex(JSON.stringify(opts.payloadData));
-        delete opts.payloadData;
-      }
+      // Strip any payload — payload in createTransaction corrupts Schnorr sighash
+      delete opts.payload;
+      delete opts.payloadData;
       const resolvedAmount = amountSompi ?? (opts && opts.amount);
       return orig.call(this, toAddr, resolvedAmount, Object.assign({}, opts, { amount: resolvedAmount }));
     };
-    console.log('[HTP Payload] htpSendTx patched -- payload support active');
+    console.log('[HTP Payload] htpSendTx patched -- clean TX (no payload)');
   }
   waitAndPatch();
-
-  // Patch createMatchWithLobby to pass payloadData on the stake TX
-  var _origCreate = window.createMatchWithLobby;
-  function waitAndPatchCreate() {
-    if (typeof window.createMatchWithLobby !== 'function') {
-      setTimeout(waitAndPatchCreate, 300); return;
-    }
-    var origCreate = window.createMatchWithLobby;
-    window.createMatchWithLobby = async function() {
-      // Intercept the htpSendTx call made inside createMatchWithLobby
-      var _origSend = window.htpSendTx;
-      window.htpSendTx = async function(toAddr, amountSompi, opts) {
-        opts = opts || {};
-        // Attach lobby metadata as payload on the escrow stake TX
-        if (!opts.payload && !opts.payloadData) {
-          var matchId = (window._pendingMatchId || '');
-          var meta = {
-            type: 'create',
-            game: (window._pendingMatchGame || 'chess'),
-            stake: String(amountSompi),
-            timeControl: (window._pendingMatchTime || '10+0'),
-            matchId: matchId,
-            creator: (window.walletAddress || '')
-          };
-          opts.payload = toHex(JSON.stringify(meta));
-        }
-        const resolvedAmount = amountSompi ?? (opts && opts.amount);
-        var r = await _origSend.call(this, toAddr, resolvedAmount, Object.assign({}, opts, { amount: resolvedAmount }));
-        window.htpSendTx = _origSend;
-        return r;
-      };
-      return origCreate.apply(this, arguments);
-    };
-    console.log('[HTP Payload] createMatchWithLobby patched -- lobby inscription active');
-  }
-  waitAndPatchCreate();
 })();
 </script>
 

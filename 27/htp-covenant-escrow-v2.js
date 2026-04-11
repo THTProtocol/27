@@ -268,7 +268,12 @@
     try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) { return {}; }
   }
   function writeStore(s) {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch (e) {}
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(s));
+      // Also write to alternate keys used by settlement engine
+      localStorage.setItem('htpcovenantescrows', JSON.stringify(s));
+      localStorage.setItem('htp_covenant_escrows', JSON.stringify(s));
+    } catch (e) {}
   }
 
   function getEscrow(matchId) {
@@ -328,15 +333,9 @@
     // 4. Build redeem script
     var redeemScript = buildRedeemScript(escrowPubHex, creatorPubHex, feeSpkHex);
 
-    // 5. Derive P2SH address
-    var escrowAddress;
-    try {
-      escrowAddress = await redeemScriptToAddress(redeemScript, networkId);
-    } catch (e) {
-      // Fallback: P2PK address (no covenant enforcement, still functional)
-      console.warn('[HTP Escrow] P2SH derivation failed — fallback to P2PK:', e.message);
-      escrowAddress = escrowPriv.toPublicKey().toAddress(networkId).toString();
-    }
+    // 5. Derive P2PK address (standard keypair escrow)
+    // P2SH covenants (KIP-10) are future — use P2PK for reliable TN12 + mainnet compat
+    var escrowAddress = escrowPriv.toPublicKey().toAddress(networkId).toString();
 
     // 6. Build + store escrow entry
     var entry = {
@@ -397,14 +396,21 @@
     var utxos = await fetchUtxos(escrow.address);
     if (!utxos || !utxos.length) throw new Error('[HTP Escrow] Escrow address has no UTXOs: ' + escrow.address);
 
-    // Normalise UTXO entries across REST and RPC formats
+    // Normalise UTXO entries across REST and RPC formats (P2PK — version 0)
     var totalSompi = 0n;
     var entries = utxos.map(function (u) {
       var e   = u.utxoEntry || u.entry || u;
       var spk = e.scriptPublicKey;
-      var sh  = typeof spk === 'string'
-        ? spk.substring(4)
-        : (spk && (spk.scriptPublicKey || spk.script) || '');
+      var scriptObj;
+      if (typeof spk === 'string') {
+        scriptObj = { version: 0, script: spk };
+      } else if (spk && typeof spk.scriptPublicKey === 'string') {
+        scriptObj = { version: spk.version || 0, script: spk.scriptPublicKey };
+      } else if (spk && typeof spk.script === 'string') {
+        scriptObj = spk;
+      } else {
+        scriptObj = { version: 0, script: spk || '' };
+      }
       var amt = BigInt(e.amount || 0);
       totalSompi += amt;
       return {
@@ -414,7 +420,7 @@
           index:          u.outpoint ? (u.outpoint.index || 0)  : (u.index || 0),
         },
         amount:           amt,
-        scriptPublicKey:  { version: 8, script: sh },  // version 8 = P2SH
+        scriptPublicKey:  scriptObj,
         blockDaaScore:    BigInt(e.blockDaaScore || 0),
       };
     });
@@ -429,43 +435,68 @@
     var txOutputs  = outputs.map(function (o) { return { address: o.address, amount: o.amount }; });
     var tx         = SDK.createTransaction(entries, txOutputs, 0n, undefined, 1);
 
-    // Sign
-    var signed = SDK.signTransaction(tx, privKey, true);
+    // Sign with escrow private key (standard P2PK Schnorr signature)
+    var signFn = SDK.signTransaction || W.signTransaction;
+    var signed = signFn(tx, [privKey], true);
 
-    // Inject correct scriptSig into each input (redeemScript push was missing)
-    // The WASM signTransaction gives us a bare sig; we must wrap it.
-    var txObj = signed.toRpcTransaction ? signed.toRpcTransaction()
-              : signed.serializeToObject ? signed.serializeToObject()
-              : JSON.parse(JSON.stringify(signed));
-
-    var redeemScriptHex = escrow.redeemScript;
-    (txObj.inputs || []).forEach(function (inp) {
-      // Extract raw sig from whatever signTransaction produced
-      var rawSig = inp.signatureScript || '';
-      // If it’s already a full scriptSig (>= 100 chars), strip it down to just the sig
-      // by reading the first push (the sig bytes)
-      var sigHex = rawSig;
-      if (rawSig.length >= 4) {
-        var firstPushLen = parseInt(rawSig.substring(0, 2), 16);
-        sigHex = rawSig.substring(2, 2 + firstPushLen * 2);
-      }
-      inp.signatureScript = branch === 'cancel'
-        ? buildCancelScriptSig(sigHex, redeemScriptHex)
-        : buildSettleScriptSig(sigHex, redeemScriptHex);
-    });
+    // Convert to serializable format for submission
+    var txObj;
+    if (signed.serializeToObject) txObj = signed.serializeToObject();
+    else if (signed.serializeToSafeJSON) txObj = JSON.parse(signed.serializeToSafeJSON());
+    else if (signed.toRpcTransaction) txObj = signed.toRpcTransaction();
+    else txObj = JSON.parse(JSON.stringify(signed));
 
     return txObj;
+  }
+
+  /**
+   * Format TX object for REST API submission (matches htpSendTx format).
+   */
+  function formatTxForApi(tx) {
+    return {
+      version: tx.version || 0,
+      inputs: (tx.inputs || []).map(function (inp) {
+        return {
+          previousOutpoint: {
+            transactionId: inp.transactionId || (inp.previousOutpoint && inp.previousOutpoint.transactionId) || '',
+            index: inp.index !== undefined ? inp.index : (inp.previousOutpoint && inp.previousOutpoint.index) || 0
+          },
+          signatureScript: inp.signatureScript || '',
+          sequence: typeof inp.sequence === 'string' ? parseInt(inp.sequence) : (inp.sequence || 0),
+          sigOpCount: inp.sigOpCount || 1
+        };
+      }),
+      outputs: (tx.outputs || []).map(function (outp) {
+        var amt = outp.amount || outp.value || 0;
+        if (typeof amt === 'string') amt = parseInt(amt);
+        var spk = outp.scriptPublicKey;
+        if (typeof spk === 'string') {
+          var ver = parseInt(spk.substring(0, 4), 16) || 0;
+          spk = { version: ver, scriptPublicKey: spk.substring(4) };
+        } else if (spk && typeof spk === 'object' && !spk.scriptPublicKey) {
+          spk = { version: spk.version || 0, scriptPublicKey: spk.script || '' };
+        }
+        return { amount: amt, scriptPublicKey: spk };
+      }),
+      lockTime: typeof tx.lockTime === 'string' ? parseInt(tx.lockTime) : (tx.lockTime || 0),
+      subnetworkId: tx.subnetworkId || '0000000000000000000000000000000000000000',
+      gas: typeof tx.gas === 'string' ? parseInt(tx.gas) : (tx.gas || 0),
+      payload: ''
+    };
   }
 
   /**
    * Submit a built TX object via RPC or REST.
    */
   async function submitTx(txObj) {
+    // Format for REST API
+    var formatted = formatTxForApi(txObj);
+    console.log('[HTP Escrow] Submitting TX:', JSON.stringify(formatted, function(k,v){ return typeof v === 'bigint' ? v.toString() : v; }, 2).substring(0, 2000));
+
     // RPC path (preferred)
     if (W.htpRpc && W.htpRpc.isConnected) {
       try {
-        // htpRpc.submitTransaction expects a WASM Transaction; pass raw object via rpc directly
-        var res = await W.htpRpc.rpc.submitTransaction({ transaction: txObj, allowOrphan: false });
+        var res = await W.htpRpc.rpc.submitTransaction({ transaction: formatted, allowOrphan: false });
         return res.transactionId || res.txId || res;
       } catch (e) {
         console.warn('[HTP Escrow] RPC submit failed, trying REST:', e.message);
@@ -475,7 +506,7 @@
     var resp = await fetch(getRestUrl() + '/transactions', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ transaction: txObj, allowOrphan: false },
+      body:    JSON.stringify({ transaction: formatted, allowOrphan: false },
                  function (k, v) { return typeof v === 'bigint' ? v.toString() : v; }),
     });
     if (!resp.ok) {
