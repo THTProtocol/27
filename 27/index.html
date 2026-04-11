@@ -3222,7 +3222,7 @@ body:not(.on-overview) .bg-glow3 { opacity: 0.40  !important; }
             align-items: flex-start;
             padding: 24px 0 8px;
             gap: 4px;
-            max-width: 600px;
+            max-width: 100%;
             margin: 0 auto;
         }
         .lifecycle::before {
@@ -5084,22 +5084,18 @@ event MyMarket {
                         <button type="button" class="sg-gbtn" data-game="chess" style="padding:20px 10px 16px;gap:10px">
                             <span class="sg-ico" style="color:#fff;font-size:40px">♞</span>
                             <span class="sg-lbl" style="font-size:11px">Chess</span>
-                            <span style="font-size:9px;color:var(--dim);margin-top:2px">Classic strategy</span>
                         </button>
                         <button type="button" class="sg-gbtn" data-game="connect4" style="padding:20px 10px 16px;gap:10px">
                             <span class="sg-ico" style="font-size:40px">🔴</span>
                             <span class="sg-lbl" style="font-size:11px">Connect 4</span>
-                            <span style="font-size:9px;color:var(--dim);margin-top:2px">Drop to win</span>
                         </button>
                         <button type="button" class="sg-gbtn" data-game="checkers" style="padding:20px 10px 16px;gap:10px">
                             <span class="sg-ico" style="font-size:40px">⚪</span>
                             <span class="sg-lbl" style="font-size:11px">Checkers</span>
-                            <span style="font-size:9px;color:var(--dim);margin-top:2px">Jump & capture</span>
                         </button>
                         <button type="button" class="sg-gbtn" data-game="tictactoe" style="padding:20px 10px 16px;gap:10px">
                             <span class="sg-ico" style="color:#49e8c2;font-size:40px">✕</span>
                             <span class="sg-lbl" style="font-size:11px">Tic-Tac-Toe</span>
-                            <span style="font-size:9px;color:var(--dim);margin-top:2px">Quick rounds</span>
                         </button>
                     </div>
                     <script>(function(){var btns=document.querySelectorAll('#sgGamePicker .sg-gbtn'),sel=document.getElementById('sgGame');function act(g){btns.forEach(function(b){var on=b.getAttribute('data-game')===g;b.classList.toggle('act',on);});}btns.forEach(function(b){b.addEventListener('click',function(){sel.value=b.getAttribute('data-game');sel.dispatchEvent(new Event('change'));act(sel.value);});});})();</script>
@@ -5112,19 +5108,19 @@ event MyMarket {
                         <div class="fg">
                             <label>Escrow Amount (KAS)</label>
                             <div style="position:relative">
-                                <input type="number" id="sgEsc" value="5" min="1" max="10000" step="1" style="padding-left:14px;padding-right:48px;font-size:16px;font-weight:700;height:46px" />
+                                <input type="number" id="sgEsc" value="5" min="1" max="10000" step="1" style="padding-left:14px;padding-right:48px;font-size:16px;font-weight:700;height:46px" oninput="updGameOpts()" />
                                 <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--accent);font-weight:700;pointer-events:none">KAS</span>
                             </div>
                             <div style="margin-top:4px;font-size:10px;color:var(--dim)">Winner takes 98% · 2% protocol fee</div>
                         </div>
                         <div class="fg">
                             <label>Time Control</label>
-                            <select id="sgTime" style="height:46px;font-size:14px;font-weight:600"></select>
+                            <select id="sgTime" style="height:46px;font-size:14px;font-weight:600" onchange="updGameOpts()"></select>
                             <div style="margin-top:4px;font-size:10px;color:var(--dim)" id="sgTimeHint">Minutes + increment per move</div>
                         </div>
                         <div class="fg">
                             <label>Series (Best of)</label>
-                            <select id="sgSeries" style="height:46px;font-size:14px;font-weight:600"></select>
+                            <select id="sgSeries" style="height:46px;font-size:14px;font-weight:600" onchange="updGameOpts()"></select>
                             <div style="margin-top:4px;font-size:10px;color:var(--dim)">Odd numbers only</div>
                         </div>
                     </div>
@@ -5149,7 +5145,7 @@ event MyMarket {
                 </div>
                 <div style="margin-top:24px;text-align:center">
                     <h3 style="font-size:15px;margin:0 0 4px;font-weight:700;font-family:var(--sans);letter-spacing:-0.01em;color:var(--text)">Match Lifecycle</h3>
-                    <p style="font-size:11px;color:var(--dim);margin:0 0 12px;line-height:1.5">Trustless 5-step flow: escrow lock → opponent match → on-chain play → proof verification → settlement</p>
+                    <p style="font-size:11px;color:var(--dim);margin:0 0 12px;line-height:1.5">Trustless 5-step flow: escrow lock · opponent match · on-chain play · proof verification · settlement</p>
                     <div class="lifecycle" style="--progress:0%" id="matchLifecycle">
                         <div class="lcs" data-step="1" onclick="hlStep(1)" title="Both players lock KAS into the covenant escrow">
                             <div class="lcs-dot" id="lcsDot1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
