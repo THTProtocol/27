@@ -5556,6 +5556,10 @@ event MyMarket {
                             style="padding:10px 20px;font-size:13px;font-weight:600;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.04em;transition:all .2s">
                             Event Markets
                         </button>
+                        <button id="ptSwitchClaim" onclick="setPortfolioType('claim')"
+                            style="padding:10px 20px;font-size:13px;font-weight:600;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.04em;transition:all .2s">
+                            Claim Now
+                        </button>
                     </div>
 
                     <!-- ══ SKILL GAMES SECTION ══ -->
@@ -5630,6 +5634,75 @@ event MyMarket {
                         </div>
                     </div>
 
+                    <!-- ══ CLAIM NOW SECTION (Access Gate) ══ -->
+                    <div id="ptClaimSection" style="display:none">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+                            <div style="background:rgba(73,232,194,0.04);border:1px solid rgba(73,232,194,0.1);border-radius:12px;padding:14px 16px">
+                                <div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Open Escrows</div>
+                                <div id="claimOpenCount" style="font-size:22px;font-weight:800;color:#49e8c2">—</div>
+                            </div>
+                            <div style="background:rgba(73,232,194,0.04);border:1px solid rgba(73,232,194,0.1);border-radius:12px;padding:14px 16px">
+                                <div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Claimable (KAS)</div>
+                                <div id="claimTotalKAS" style="font-size:22px;font-weight:800;color:#49e8c2">—</div>
+                            </div>
+                        </div>
+
+                        <!-- Auto-detected escrows -->
+                        <div style="margin-bottom:20px">
+                            <div style="font-size:11px;font-weight:700;color:rgba(73,232,194,.65);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Detected Escrows</div>
+                            <div id="claimEscrowList" style="display:grid;gap:8px">
+                                <div style="border:1px dashed rgba(73,232,194,0.1);border-radius:12px;padding:24px;text-align:center;font-size:12px;color:var(--dim)">
+                                    Scanning localStorage for open escrows...
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Manual Claim Form -->
+                        <div style="background:rgba(73,232,194,0.03);border:1px solid rgba(73,232,194,0.1);border-radius:14px;padding:20px">
+                            <div style="font-size:11px;font-weight:700;color:rgba(73,232,194,.65);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px">Manual Claim</div>
+                            <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Permissionless fallback — works even if the HTP site is down. Provide the on-chain proof of outcome and claim your winnings directly.</p>
+                            <div style="display:grid;gap:12px">
+                                <div class="fg">
+                                    <label>Escrow UTXO (txid)</label>
+                                    <input type="text" id="claimEscrowTxid" class="fi" maxlength="64" placeholder="64-char hex transaction id of the escrow funding TX" style="font-family:monospace;font-size:12px" />
+                                </div>
+                                <div class="fg">
+                                    <label>Game Outcome TX (txid)</label>
+                                    <input type="text" id="claimOutcomeTxid" class="fi" maxlength="64" placeholder="64-char hex — the on-chain TX that proves the winner" style="font-family:monospace;font-size:12px" />
+                                </div>
+                                <div class="fg">
+                                    <label>Claim to Address</label>
+                                    <input type="text" id="claimToAddr" class="fi" placeholder="kaspatest:qq... (defaults to connected wallet)" style="font-family:monospace;font-size:12px" />
+                                </div>
+                                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                                    <button class="cta1 wasm-gate" onclick="htpClaimNow()" id="claimNowBtn" style="min-width:160px">Claim Winnings</button>
+                                    <div style="display:flex;gap:8px">
+                                        <button class="chip chip-a" id="claimNetTN12" onclick="setClaimNet('tn12')">TN12</button>
+                                        <button class="chip" id="claimNetMain" onclick="setClaimNet('mainnet')">Mainnet</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="claimNowResult" style="margin-top:12px;display:none"></div>
+                        </div>
+
+                        <!-- Chrome Extension promo -->
+                        <div style="margin-top:16px;background:rgba(73,232,194,0.02);border:1px solid rgba(73,232,194,0.07);border-radius:12px;padding:16px;display:flex;align-items:center;gap:14px">
+                            <svg viewBox="0 0 32 32" fill="none" style="width:36px;height:36px;flex-shrink:0">
+                                <polygon points="16,2 28,9 28,23 16,30 4,23 4,9" fill="none" stroke="#49e8c2" stroke-width="1.5"/>
+                                <polygon points="16,7 23,11 23,21 16,25 9,21 9,11" fill="rgba(73,232,194,0.08)" stroke="#49e8c2" stroke-width="1"/>
+                                <circle cx="16" cy="16" r="3" fill="#49e8c2"/>
+                            </svg>
+                            <div style="flex:1;min-width:0">
+                                <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">HTP Access Gate — Chrome Extension</div>
+                                <div style="font-size:11px;color:var(--muted)">Claim wins from your browser toolbar — works independently, no website needed.</div>
+                            </div>
+                            <a href="https://github.com/THTProtocol/access-gate" target="_blank"
+                                style="flex-shrink:0;font-size:11px;font-weight:600;color:#49e8c2;text-decoration:none;padding:7px 14px;border:1px solid rgba(73,232,194,0.25);border-radius:8px;white-space:nowrap">
+                                GitHub ↗
+                            </a>
+                        </div>
+                    </div>
+
                     <!-- Hidden: Claims (auto-settled by covenant) -->
                     <div id="pTabClaims" style="display:none" aria-hidden="true">
                         <div id="claimsList" style="display:grid;gap:12px"></div>
@@ -5653,45 +5726,27 @@ event MyMarket {
 
                     <div class="w-grid">
                         <div class="card w-card" onclick="selWallet('KasWare')">
-                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img
-                                    src="https://www.google.com/s2/favicons?domain=kaspa.org&sz=64" alt="KasWare"
-                                    style="width:30px;height:30px;border-radius:6px"
-                                    onerror="this.onerror=null;this.style.display='none'" /></div>
+                            <div class="w-icon" style="background:rgba(73,232,194,0.06);border:1px solid rgba(73,232,194,0.15)"><span style="font-size:16px;font-weight:800;color:#49e8c2">KW</span></div>
                             <h3>KasWare</h3>
                         </div>
                         <div class="card w-card" onclick="selWallet('Kastle')">
-                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img
-                                    src="https://www.google.com/s2/favicons?domain=kastle.cc&sz=64" alt="Kastle"
-                                    style="width:30px;height:30px;border-radius:6px"
-                                    onerror="this.onerror=null;this.style.display='none'" /></div>
+                            <div class="w-icon" style="background:rgba(73,232,194,0.06);border:1px solid rgba(73,232,194,0.15)"><span style="font-size:16px;font-weight:800;color:#49e8c2">KT</span></div>
                             <h3>Kastle</h3>
                         </div>
                         <div class="card w-card" onclick="selWallet('Kasanova')">
-                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img
-                                    src="https://www.google.com/s2/favicons?domain=kasanova.app&sz=64" alt="Kasanova"
-                                    style="width:30px;height:30px;border-radius:6px"
-                                    onerror="this.onerror=null;this.style.display='none'" /></div>
+                            <div class="w-icon" style="background:rgba(73,232,194,0.06);border:1px solid rgba(73,232,194,0.15)"><span style="font-size:16px;font-weight:800;color:#49e8c2">KN</span></div>
                             <h3>Kasanova</h3>
                         </div>
                         <div class="card w-card" onclick="selWallet('Kaspium')">
-                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img
-                                    src="https://www.google.com/s2/favicons?domain=kaspium.io&sz=64" alt="Kaspium"
-                                    style="width:30px;height:30px;border-radius:6px"
-                                    onerror="this.onerror=null;this.style.display='none'" /></div>
+                            <div class="w-icon" style="background:rgba(73,232,194,0.06);border:1px solid rgba(73,232,194,0.15)"><span style="font-size:16px;font-weight:800;color:#49e8c2">KM</span></div>
                             <h3>Kaspium</h3>
                         </div>
                         <div class="card w-card" onclick="selWallet('KaspaCom')">
-                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img
-                                    src="https://www.google.com/s2/favicons?domain=wallet.kaspa.com&sz=64"
-                                    alt="KaspaCom" style="width:30px;height:30px;border-radius:6px"
-                                    onerror="this.onerror=null;this.style.display='none'" /></div>
+                            <div class="w-icon" style="background:rgba(73,232,194,0.06);border:1px solid rgba(73,232,194,0.15)"><span style="font-size:16px;font-weight:800;color:#49e8c2">KC</span></div>
                             <h3>KaspaCom</h3>
                         </div>
                         <div class="card w-card" onclick="selWallet('DEX.cc')">
-                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img
-                                    src="https://www.google.com/s2/favicons?domain=dex.cc&sz=64" alt="DEX.cc"
-                                    style="width:30px;height:30px;border-radius:6px"
-                                    onerror="this.onerror=null;this.style.display='none'" /></div>
+                            <div class="w-icon" style="background:rgba(73,232,194,0.06);border:1px solid rgba(73,232,194,0.15)"><span style="font-size:16px;font-weight:800;color:#49e8c2">DX</span></div>
                             <h3>DEX.cc</h3>
                         </div>
                     </div>
@@ -5785,6 +5840,20 @@ event MyMarket {
                             placeholder="word1 word2 ..."></textarea></div><button class="cta1 wasm-gate"
                         onclick="recW()">Connect from Seed</button>
                     <div id="recS" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
+                </div>
+                <div class="w-sec">
+                    <h3>Connect via Private Key</h3>
+                    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Import a raw 32-byte hex private key (64 hex characters). Never share your private key.</p>
+                    <div class="fg">
+                        <label>Hex private key</label>
+                        <input type="password" id="recHexKey" class="fi"
+                            placeholder="64-character hex private key..."
+                            maxlength="64"
+                            style="font-family:monospace;font-size:13px;letter-spacing:0.04em"
+                        />
+                    </div>
+                    <button class="cta1 wasm-gate" onclick="recHex()">Connect from Key</button>
+                    <div id="recHexS" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
                 </div>
     </div>
     </section>
@@ -8644,8 +8713,81 @@ function go(v) {
         }
         window.recW = recW;
 
+        function recHex() {
+            var hexKey = $('recHexKey') ? $('recHexKey').value.trim() : '';
+            var status = $('recHexS');
 
-        function useMn() {
+            if (status) status.innerHTML = '<span style="color:#f59e0b">Processing...</span>';
+
+            if (!hexKey) { if (status) status.innerHTML = '<span style="color:#ef4444">Paste a hex private key first.</span>'; return; }
+            if (!/^[0-9a-fA-F]{64}$/.test(hexKey)) { if (status) status.innerHTML = '<span style="color:#ef4444">Must be exactly 64 hex characters.</span>'; return; }
+
+            var sdk = window.kaspaSDK;
+            if (!sdk || !sdk.PrivateKey) {
+                if (status) status.innerHTML = '<span style="color:#f59e0b">WASM SDK still loading... Please wait and try again.</span>';
+                return;
+            }
+
+            try {
+                var prefix = (activeNet === 'tn12') ? 'kaspatest' : 'kaspa';
+                var priv   = new sdk.PrivateKey(hexKey);
+                var pubKey = priv.toPublicKey();
+                var addr   = pubKey.toAddress(prefix).toString();
+
+                // Store keys
+                var keys = { address: addr, privateKey: hexKey, publicKey: pubKey.toString(), ts: Date.now() };
+                window.htpKeys  = keys;
+                window._htpKeys = keys;
+                try {
+                    localStorage.setItem('htpWalletSession', JSON.stringify(keys));
+                    sessionStorage.setItem('htpKeysCache',   JSON.stringify(keys));
+                } catch(e) {}
+
+                walletAddress   = addr;
+                walletProvider  = 'hex';
+                startBalancePoller();
+                if ($('dcBtn')) $('dcBtn').style.display = 'inline-block';
+                conn = true;
+
+                var shortA = addr.substring(0, 14) + '...' + addr.slice(-6);
+                if ($('cBtn')) {
+                    $('cBtn').innerHTML = '<span style="display:flex;align-items:center;gap:7px"><span style="width:7px;height:7px;border-radius:50%;background:#49e8c2;flex-shrink:0"></span><span style="font-size:13px;font-weight:700;letter-spacing:0.03em">' + shortA + '</span><span id="cBtnBal" style="font-size:11px;opacity:0.75;border-left:1px solid rgba(0,0,0,0.3);padding-left:7px;margin-left:1px"></span></span>';
+                    $('cBtn').style.background = 'linear-gradient(135deg, rgba(73,232,194,0.2), rgba(73,232,194,0.08))';
+                    $('cBtn').style.border     = '1px solid rgba(73,232,194,0.3)';
+                    $('cBtn').style.color      = '#49e8c2';
+                }
+
+                var ws = $('walletStatus');
+                if (ws) {
+                    ws.style.display = 'block';
+                    ws.innerHTML = '<span style="color:var(--accent)">✓</span> <strong>Hex Key</strong> &middot; <span style="color:var(--accent)">Connected</span>' +
+                        '<br><code style="color:var(--accent);font-size:12px">' + addr + '</code>';
+                }
+
+                if (status) status.innerHTML = '<div style="padding:10px;border-radius:8px;background:rgba(73,232,194,0.06);border:1px solid rgba(73,232,194,0.15);margin-top:8px">' +
+                    '<div style="font-size:11px;color:var(--muted);margin-bottom:4px">CONNECTED (' + prefix.toUpperCase() + ')</div>' +
+                    '<div style="font-family:monospace;font-size:12px;word-break:break-all;color:var(--text)">' + addr + '</div></div>';
+
+                // Clear key from input
+                if ($('recHexKey')) $('recHexKey').value = '';
+
+                // Fetch balance
+                htpRpcApi.getUtxos(addr).then(function(utxos) {
+                    var bal = 0;
+                    (utxos || []).forEach(function(u) { bal += parseInt((u.utxoEntry || u).amount || 0); });
+                    walletBalance = { total: bal, confirmed: bal, pending: 0 };
+                    updateBalanceDisplay();
+                    window.htpWalletAddress = addr;
+                }).catch(function() {});
+
+                console.log('[HTP] Hex key connected:', addr);
+            } catch(e) {
+                if (status) status.innerHTML = '<span style="color:#ef4444">Invalid key: ' + (e.message || e) + '</span>';
+            }
+        }
+        window.recHex = recHex;
+
+
             var phrase = $('mnD') ? $('mnD').textContent : '';
             if (!phrase || phrase === 'Click above to generate.') { alert('Generate a mnemonic first.'); return; }
             if ($('recMn')) $('recMn').value = phrase;
@@ -8998,17 +9140,24 @@ function go(v) {
 
         // Portfolio type switcher: 'skill' | 'events'
         function setPortfolioType(type) {
-            var isSkill = type === 'skill';
+            var isSkill  = type === 'skill';
+            var isEvents = type === 'events';
+            var isClaim  = type === 'claim';
             var skillSec = document.getElementById('ptSkillSection');
             var evtSec   = document.getElementById('ptEventSection');
-            if (skillSec) skillSec.style.display = isSkill ? 'block' : 'none';
-            if (evtSec)   evtSec.style.display   = isSkill ? 'none'  : 'block';
+            var claimSec = document.getElementById('ptClaimSection');
+            if (skillSec) skillSec.style.display = isSkill  ? 'block' : 'none';
+            if (evtSec)   evtSec.style.display   = isEvents ? 'block' : 'none';
+            if (claimSec) claimSec.style.display  = isClaim  ? 'block' : 'none';
             var sw1 = document.getElementById('ptSwitchSkill');
             var sw2 = document.getElementById('ptSwitchEvent');
-            if (sw1) { sw1.style.color = isSkill ? '#49e8c2' : 'var(--muted)'; sw1.style.borderBottomColor = isSkill ? '#49e8c2' : 'transparent'; }
-            if (sw2) { sw2.style.color = isSkill ? 'var(--muted)' : '#49e8c2'; sw2.style.borderBottomColor = isSkill ? 'transparent' : '#49e8c2'; }
-            if (isSkill) setPortfolioSkillTab('matches');
-            else         setPortfolioEventTab('positions');
+            var sw3 = document.getElementById('ptSwitchClaim');
+            if (sw1) { sw1.style.color = isSkill  ? '#49e8c2' : 'var(--muted)'; sw1.style.borderBottomColor = isSkill  ? '#49e8c2' : 'transparent'; }
+            if (sw2) { sw2.style.color = isEvents ? '#49e8c2' : 'var(--muted)'; sw2.style.borderBottomColor = isEvents ? '#49e8c2' : 'transparent'; }
+            if (sw3) { sw3.style.color = isClaim  ? '#49e8c2' : 'var(--muted)'; sw3.style.borderBottomColor = isClaim  ? '#49e8c2' : 'transparent'; }
+            if (isSkill)  setPortfolioSkillTab('matches');
+            if (isEvents) setPortfolioEventTab('positions');
+            if (isClaim)  initClaimPanel();
         }
         // Skill Games sub-tabs: 'matches' | 'history'
         function setPortfolioSkillTab(tab) {
@@ -9048,6 +9197,146 @@ function go(v) {
             if (tab === 'history' && typeof renderHistoryTab === 'function') renderHistoryTab();
             if (typeof updatePortfolioStats === 'function') updatePortfolioStats();
         }
+
+        // ── Claim Now (Access Gate) ───────────────────────────────────────────
+        var _claimNet = 'tn12';
+        window.setClaimNet = function(net) {
+            _claimNet = net;
+            var t = document.getElementById('claimNetTN12');
+            var m = document.getElementById('claimNetMain');
+            if (t) t.classList.toggle('chip-a', net === 'tn12');
+            if (m) m.classList.toggle('chip-a', net === 'mainnet');
+        };
+
+        function initClaimPanel() {
+            // Auto-detect escrows from localStorage
+            var escrows = [];
+            var seen = new Set();
+            var totalSompi = 0;
+            ['htp_covenant_escrows','htpcovenantescrows','htp-covenant-escrows'].forEach(function(key) {
+                var raw = localStorage.getItem(key);
+                if (!raw) return;
+                try {
+                    var data = JSON.parse(raw);
+                    var items = Array.isArray(data) ? data : Object.values(data);
+                    items.forEach(function(e) {
+                        if (!e) return;
+                        var id = e.matchId || e.escrowAddress || '';
+                        if (seen.has(id)) return;
+                        seen.add(id);
+                        escrows.push(e);
+                        totalSompi += parseInt(e.amount || e.escrowAmount || 0);
+                    });
+                } catch(ex) {}
+            });
+
+            var cntEl = document.getElementById('claimOpenCount');
+            var kasEl = document.getElementById('claimTotalKAS');
+            if (cntEl) cntEl.textContent = escrows.length;
+            if (kasEl) kasEl.textContent = escrows.length > 0 ? (totalSompi / 1e8).toFixed(4) + ' KAS' : '0';
+
+            var listEl = document.getElementById('claimEscrowList');
+            if (!listEl) return;
+            if (!escrows.length) {
+                listEl.innerHTML = '<div style="border:1px dashed rgba(73,232,194,0.1);border-radius:12px;padding:24px;text-align:center;font-size:12px;color:var(--dim)">No open escrows found in storage. Use Manual Claim below if you have the txids.</div>';
+                return;
+            }
+
+            listEl.innerHTML = escrows.map(function(e, i) {
+                var kas = (parseInt(e.amount || e.escrowAmount || 0) / 1e8).toFixed(4);
+                var statusColor = e.status === 'won' ? '#34d399' : e.status === 'cancelled' ? '#f59e0b' : '#818cf8';
+                var canClaim = e.escrowTxid || e.fundTxid;
+                return '<div style="background:rgba(73,232,194,0.03);border:1px solid rgba(73,232,194,0.1);border-radius:12px;padding:14px 16px">' +
+                    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+                        '<span style="font-size:11px;font-weight:700;color:#49e8c2;text-transform:uppercase;letter-spacing:.06em">' + (e.game || 'Match') + '</span>' +
+                        '<span style="font-size:13px;font-weight:700">' + kas + ' KAS</span>' +
+                    '</div>' +
+                    '<div style="font-family:monospace;font-size:9px;color:#475569;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ID: ' + (e.matchId || '--') + '</div>' +
+                    '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,0.05);color:' + statusColor + '">' + (e.status || 'active') + '</span>' +
+                    (canClaim ? '<button onclick="prefillClaim(' + i + ')" style="margin-left:8px;font-size:10px;font-weight:600;padding:3px 10px;background:rgba(73,232,194,0.08);border:1px solid rgba(73,232,194,0.2);border-radius:6px;color:#49e8c2;cursor:pointer">Fill Form</button>' : '') +
+                '</div>';
+            }).join('');
+
+            window._claimEscrows = escrows;
+        }
+
+        window.prefillClaim = function(idx) {
+            var e = (window._claimEscrows || [])[idx];
+            if (!e) return;
+            var et = document.getElementById('claimEscrowTxid');
+            var ot = document.getElementById('claimOutcomeTxid');
+            var at = document.getElementById('claimToAddr');
+            if (et) et.value = e.escrowTxid || e.fundTxid || '';
+            if (ot) ot.value = e.outcomeTxid || e.settleTxid || '';
+            if (at && !at.value) at.value = window.walletAddress || '';
+            document.getElementById('claimEscrowTxid').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+
+        window.htpClaimNow = async function() {
+            var escrowTxid  = (document.getElementById('claimEscrowTxid')  || {}).value.trim();
+            var outcomeTxid = (document.getElementById('claimOutcomeTxid') || {}).value.trim();
+            var claimAddr   = (document.getElementById('claimToAddr')       || {}).value.trim() || window.walletAddress;
+            var resultEl    = document.getElementById('claimNowResult');
+            var btn         = document.getElementById('claimNowBtn');
+
+            function show(msg, ok) {
+                if (!resultEl) return;
+                resultEl.style.display = 'block';
+                resultEl.style.cssText = 'margin-top:12px;padding:12px;border-radius:10px;font-size:12px;display:block;' +
+                    (ok ? 'background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.2);color:#34d399'
+                        : 'background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);color:#f87171');
+                resultEl.innerHTML = msg;
+            }
+
+            if (!escrowTxid || escrowTxid.length !== 64) return show('Escrow txid must be 64 hex characters.', false);
+            if (!outcomeTxid || outcomeTxid.length !== 64) return show('Outcome txid must be 64 hex characters.', false);
+            if (!claimAddr) return show('No claim address — connect your wallet first.', false);
+
+            if (btn) { btn.disabled = true; btn.textContent = 'Verifying...'; }
+
+            try {
+                var base = _claimNet === 'mainnet' ? 'https://api.kaspa.org' : 'https://api-tn12.kaspa.org';
+                var treasury = _claimNet === 'mainnet'
+                    ? 'kaspa:qzhkxxaully8aagfxp2raz3t0qu3wmhqxtgx5x0zktwdd5lgqvlvq0c0q3fqk'
+                    : 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m';
+
+                // Verify escrow TX
+                var txRes = await fetch(base + '/transactions/' + escrowTxid);
+                if (!txRes.ok) throw new Error('Escrow transaction not found on-chain.');
+                var txData = await txRes.json();
+                var escrowSompi = (txData.outputs || []).reduce(function(s, o) { return s + parseInt(o.amount || 0); }, 0);
+                if (!escrowSompi) throw new Error('Could not read escrow amount.');
+
+                // Verify outcome TX
+                if (btn) btn.textContent = 'Checking outcome...';
+                var outRes = await fetch(base + '/transactions/' + outcomeTxid);
+                if (!outRes.ok) throw new Error('Outcome transaction not found on-chain.');
+
+                // Build resolve TX via htpSendTx
+                var feeAmt = Math.floor(escrowSompi * 2 / 100);
+                var networkFee = 10000;
+                var winnerAmt = escrowSompi - feeAmt - networkFee;
+                if (winnerAmt <= 0) throw new Error('Escrow too small to cover fees.');
+
+                if (btn) btn.textContent = 'Building TX...';
+
+                // Use htpSendTx with custom outputs
+                var result = await (window.htpSendTx || window.htpRpcApi.sendTx)({
+                    outputs: [
+                        { address: claimAddr,  amount: winnerAmt },
+                        { address: treasury,   amount: feeAmt }
+                    ],
+                    note: 'HTP Claim Now — ' + escrowTxid.substring(0, 16) + '...'
+                });
+
+                show('✓ Claimed! TX: ' + (result || 'submitted'), true);
+            } catch(err) {
+                show('Error: ' + (err.message || err), false);
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Claim Winnings'; }
+            }
+        };
+        // ─────────────────────────────────────────────────────────────────────
 
         function renderPositions() {
             var el = $('positionsList');
