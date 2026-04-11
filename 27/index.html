@@ -8787,7 +8787,7 @@ function go(v) {
         }
         window.recHex = recHex;
 
-
+        function useMn() {
             var phrase = $('mnD') ? $('mnD').textContent : '';
             if (!phrase || phrase === 'Click above to generate.') { alert('Generate a mnemonic first.'); return; }
             if ($('recMn')) $('recMn').value = phrase;
