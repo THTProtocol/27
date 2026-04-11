@@ -10,16 +10,16 @@ serde_json = "1"
 
 [[example]]
 name = "tictactoe"
-path = "examples/tictactoe.rs"
+path = "examples/tictactoe/main.rs"
 
 [[example]]
 name = "connect4"
-path = "examples/connect4.rs"
+path = "examples/connect4/main.rs"
 
 [[example]]
 name = "checkers"
-path = "examples/checkers.rs"
+path = "examples/checkers/main.rs"
 
 [[example]]
 name = "chess"
-path = "examples/chess.rs"
+path = "examples/chess/main.rs"
