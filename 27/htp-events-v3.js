@@ -236,8 +236,22 @@
     console.log('[HTP Events v3] New market detected');
   });
 
-  // Initialize
+  // Initialize — wait for Firebase to be ready
   function init() {
+    // Guard: if Firebase app not yet initialized, wait for it
+    if (!window.firebase || !window.firebase.apps || !window.firebase.apps.length) {
+      window.addEventListener('htp:firebase:ready', function() {
+        listenToMarkets();
+        console.log('[HTP Events v3] Prediction market listing initialized (deferred)');
+      });
+      // Also try after a short delay in case the event already fired
+      setTimeout(function() {
+        if (window.firebase && window.firebase.apps && window.firebase.apps.length) {
+          listenToMarkets();
+        }
+      }, 3000);
+      return;
+    }
     listenToMarkets();
     console.log('[HTP Events v3] Prediction market listing initialized');
   }

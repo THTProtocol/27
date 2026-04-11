@@ -25,6 +25,7 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     var db = firebase.database();
     console.log('%cHTP Firebase ready — hightable420', 'color:#49e8c2;font-weight:bold');
+    window.dispatchEvent(new CustomEvent('htp:firebase:ready'));
 
     window.htpFirebase = {
 
