@@ -5108,19 +5108,19 @@ event MyMarket {
                         <div class="fg">
                             <label>Escrow Amount (KAS)</label>
                             <div style="position:relative">
-                                <input type="number" id="sgEsc" value="5" min="1" max="10000" step="1" style="padding-left:14px;padding-right:48px;font-size:16px;font-weight:700;height:46px" oninput="updGameOpts()" />
+                                <input type="number" id="sgEsc" value="5" min="1" max="10000" step="1" style="padding-left:14px;padding-right:48px;font-size:16px;font-weight:700;height:46px" oninput="updPreview()" />
                                 <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--accent);font-weight:700;pointer-events:none">KAS</span>
                             </div>
                             <div style="margin-top:4px;font-size:10px;color:var(--dim)">Winner takes 98% · 2% protocol fee</div>
                         </div>
                         <div class="fg">
                             <label>Time Control</label>
-                            <select id="sgTime" style="height:46px;font-size:14px;font-weight:600" onchange="updGameOpts()"></select>
+                            <select id="sgTime" style="height:46px;font-size:14px;font-weight:600" onchange="updPreview()"></select>
                             <div style="margin-top:4px;font-size:10px;color:var(--dim)" id="sgTimeHint">Minutes + increment per move</div>
                         </div>
                         <div class="fg">
                             <label>Series (Best of)</label>
-                            <select id="sgSeries" style="height:46px;font-size:14px;font-weight:600" onchange="updGameOpts()"></select>
+                            <select id="sgSeries" style="height:46px;font-size:14px;font-weight:600" onchange="updPreview()"></select>
                             <div style="margin-top:4px;font-size:10px;color:var(--dim)">Odd numbers only</div>
                         </div>
                     </div>
@@ -8475,6 +8475,23 @@ function go(v) {
         }
 
 
+        function updPreview() {
+            var g = $('sgGame');
+            if (!g) return;
+            var tSel = $('sgTime'), sSel = $('sgSeries');
+            var gNames = { chess:'Chess', connect4:'Connect 4', checkers:'Checkers', tictactoe:'Tic-Tac-Toe' };
+            var pGame = document.getElementById('matchPreviewGame');
+            var pStake = document.getElementById('matchPreviewStake');
+            var pTime = document.getElementById('matchPreviewTime');
+            var pSeries = document.getElementById('matchPreviewSeries');
+            var pWrap = document.getElementById('matchPreviewSummary');
+            if (pGame) pGame.textContent = gNames[g.value] || g.value;
+            if (pStake) pStake.textContent = (document.getElementById('sgEsc')?document.getElementById('sgEsc').value:'5') + ' KAS';
+            if (pTime && tSel && tSel.value) pTime.textContent = tSel.value;
+            if (pSeries && sSel && sSel.value) pSeries.textContent = sSel.value === '1' ? 'Single' : 'Bo ' + sSel.value;
+            if (pWrap) pWrap.style.display = 'flex';
+        }
+
         function updGameOpts() {
             var g = $('sgGame');
             if (!g) return;
@@ -8504,18 +8521,7 @@ function go(v) {
                 else if (g.value === 'checkers') hint.textContent = 'Minutes + increment per move';
                 else if (g.value === 'tictactoe') hint.textContent = 'Seconds or minutes per move';
             }
-            // Update preview summary
-            var gNames = { chess:'Chess', connect4:'Connect 4', checkers:'Checkers', tictactoe:'Tic-Tac-Toe' };
-            var pGame = document.getElementById('matchPreviewGame');
-            var pStake = document.getElementById('matchPreviewStake');
-            var pTime = document.getElementById('matchPreviewTime');
-            var pSeries = document.getElementById('matchPreviewSeries');
-            var pWrap = document.getElementById('matchPreviewSummary');
-            if (pGame) pGame.textContent = gNames[g.value] || g.value;
-            if (pStake) pStake.textContent = (document.getElementById('sgEsc')?document.getElementById('sgEsc').value:'5') + ' KAS';
-            if (pTime && tSel.value) pTime.textContent = tSel.value;
-            if (pSeries && sSel.value) pSeries.textContent = sSel.value === '1' ? 'Single' : 'Bo ' + sSel.value;
-            if (pWrap) pWrap.style.display = 'flex';
+            updPreview();
         }
 
 
