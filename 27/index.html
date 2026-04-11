@@ -3222,6 +3222,8 @@ body:not(.on-overview) .bg-glow3 { opacity: 0.40  !important; }
             align-items: flex-start;
             padding: 24px 0 8px;
             gap: 4px;
+            max-width: 600px;
+            margin: 0 auto;
         }
         .lifecycle::before {
             content: '';
@@ -5145,7 +5147,7 @@ event MyMarket {
                         Create Match · Lock Escrow
                     </button>
                 </div>
-                <div style="margin-top:24px">
+                <div style="margin-top:24px;text-align:center">
                     <h3 style="font-size:15px;margin:0 0 4px;font-weight:700;font-family:var(--sans);letter-spacing:-0.01em;color:var(--text)">Match Lifecycle</h3>
                     <p style="font-size:11px;color:var(--dim);margin:0 0 12px;line-height:1.5">Trustless 5-step flow: escrow lock → opponent match → on-chain play → proof verification → settlement</p>
                     <div class="lifecycle" style="--progress:0%" id="matchLifecycle">
