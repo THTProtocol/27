@@ -37,8 +37,8 @@
   var _bgStars    = [];   // parallax starfield
   var _bgStarsOk  = false;
   var _BG_R        = 5.2; // base node radius
-  var _SCROLL_SPEED = 0.28; // DAG scroll speed — visible flowing motion
-  var _STAR_SPEED   = 0.056; // stars scroll at 20% of DAG (parallax depth)
+  var _SCROLL_SPEED = 0.55; // DAG scroll speed — visible flowing motion
+  var _STAR_SPEED   = 0.11;  // stars scroll at 20% of DAG (parallax depth)
   var _SPAWN_GAP    = 48;    // px between clusters → denser DAG everywhere
   var _bgTime = 0;
   var _bgH = 600;

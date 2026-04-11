@@ -5065,7 +5065,7 @@ event MyMarket {
                             On-Chain Escrow
                         </div>
                     </div>
-                    <p class="sgv2-sub" style="margin-bottom:28px">Pick your game, set the stake, and lock KAS into a trustless covenant. Winner takes all — no arbiter needed.</p>
+                    <p class="sgv2-sub" style="margin-bottom:28px">Pick your game, set the stake, and lock KAS into a trustless covenant. Winner takes all. No arbiter needed.</p>
 
                     <!-- Game Picker -->
                     <select id="sgGame" onchange="updGameOpts()" style="display:none">
@@ -5661,7 +5661,7 @@ event MyMarket {
                         <!-- Manual Claim Form -->
                         <div style="background:rgba(7,14,27,0.6);border:1px solid rgba(73,232,194,0.1);border-radius:14px;padding:20px">
                             <div style="font-size:11px;font-weight:700;color:rgba(73,232,194,.65);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Manual Claim</div>
-                            <p style="font-size:12px;color:var(--muted);margin:0 0 16px">Permissionless fallback — provide the on-chain proof and claim directly.</p>
+                            <p style="font-size:12px;color:var(--muted);margin:0 0 16px">Permissionless fallback. Provide the on-chain proof and claim directly.</p>
                             <div style="display:grid;gap:12px">
                                 <div class="fg">
                                     <label>Escrow UTXO txid</label>
@@ -9190,19 +9190,19 @@ function go(v) {
             if (m) m.classList.toggle('chip-a', net === 'mainnet');
         };
 
-        function initClaimPanel() {
+        window.initClaimPanel = function initClaimPanel() {
             var myAddr = window.walletAddress || window.htpWalletAddress || '';
             var addrEl = document.getElementById('claimWalletAddr');
             if (addrEl) addrEl.textContent = myAddr ? (myAddr.substring(0,16) + '...' + myAddr.slice(-8)) : 'No wallet connected';
 
             // Pre-fill claim address
             var claimAddrEl = document.getElementById('claimToAddr');
-            if (claimAddrEl && !claimAddrEl.value && myAddr) claimAddrEl.value = myAddr;
+            if (claimAddrEl && myAddr) claimAddrEl.value = myAddr;
 
-            // Gather escrows from all localStorage keys
+            // Gather escrows from all localStorage keys (deduplicated)
             var all = [];
             var seen = new Set();
-            ['htp_covenant_escrows','htpcovenantescrows','htp-covenant-escrows'].forEach(function(key) {
+            ['htp_covenant_escrows','htpcovenantescrows','htp-covenant-escrows','htpescrowkeys'].forEach(function(key) {
                 var raw = localStorage.getItem(key);
                 if (!raw) return;
                 try {
@@ -9218,15 +9218,19 @@ function go(v) {
                 } catch(ex) {}
             });
 
-            // Filter to only escrows that belong to the connected wallet and are claimable
+            // Filter: show only escrows belonging to the connected wallet.
+            // An escrow belongs to this wallet if any of its stored address fields match myAddr.
+            // Untagged legacy escrows (no address fields) are shown only when no wallet is connected.
             var mine = all.filter(function(e) {
-                if (!myAddr) return true; // no wallet = show all
-                var issMine = !e.creator || e.creator === myAddr ||
-                              !e.player   || e.player === myAddr ||
-                              !e.winner   || e.winner === myAddr;
-                // Exclude already settled/expired
-                var settled = e.status === 'settled' || e.status === 'cancelled_refunded';
-                return issMine && !settled;
+                // Exclude already settled/refunded
+                if (e.status === 'settled' || e.status === 'cancelled_refunded') return false;
+                if (e.settled && !e.status) return false; // settled flag only
+                if (!myAddr) return true; // no wallet connected: show all
+                // Collect all address fields stored on this escrow
+                var addrs = [e.creator, e.creatorAddress, e.player, e.player1, e.player2,
+                             e.winner, e.joinerAddress, e.winnerAddress].filter(Boolean);
+                if (addrs.length === 0) return true; // untagged legacy: show (backward compat)
+                return addrs.some(function(a) { return a === myAddr; });
             });
 
             var totalSompi = mine.reduce(function(s, e) { return s + parseInt(e.amount || e.escrowAmount || 0); }, 0);
@@ -9255,7 +9259,7 @@ function go(v) {
                 var kas   = (parseInt(e.amount || e.escrowAmount || 0) / 1e8).toFixed(4);
                 var isWon = e.status === 'won';
                 var isCancelled = e.status === 'cancelled' || e.status === 'refund_pending';
-                var statusLabel = isWon ? 'Won — Ready to Claim' : isCancelled ? 'Cancelled — Refundable' : 'Active';
+                var statusLabel = isWon ? 'Won: Ready to Claim' : isCancelled ? 'Cancelled: Refundable' : 'Active';
                 var statusBg  = isWon ? 'rgba(52,211,153,0.1)' : isCancelled ? 'rgba(245,158,11,0.1)' : 'rgba(99,102,241,0.1)';
                 var statusClr = isWon ? '#34d399' : isCancelled ? '#f59e0b' : '#818cf8';
                 var canClaim  = (isWon || isCancelled) && (e.escrowTxid || e.fundTxid);
@@ -9283,7 +9287,7 @@ function go(v) {
             }).join('');
 
             window._claimEscrows = mine;
-        }
+        };
 
         window.prefillClaim = function(idx) {
             var e = (window._claimEscrows || [])[idx];
@@ -9315,7 +9319,7 @@ function go(v) {
 
             if (!escrowTxid || escrowTxid.length !== 64) return show('Escrow txid must be 64 hex characters.', false);
             if (!outcomeTxid || outcomeTxid.length !== 64) return show('Outcome txid must be 64 hex characters.', false);
-            if (!claimAddr) return show('No claim address — connect your wallet first.', false);
+            if (!claimAddr) return show('No claim address. Connect your wallet first.', false);
 
             if (btn) { btn.disabled = true; btn.textContent = 'Verifying...'; }
 
@@ -9351,7 +9355,7 @@ function go(v) {
                         { address: claimAddr,  amount: winnerAmt },
                         { address: treasury,   amount: feeAmt }
                     ],
-                    note: 'HTP Claim Now — ' + escrowTxid.substring(0, 16) + '...'
+                    note: 'HTP Claim: ' + escrowTxid.substring(0, 16) + '...'
                 });
 
                 show('✓ Claimed! TX: ' + (result || 'submitted'), true);
@@ -12935,7 +12939,7 @@ async function sendPayoutTx(winnerAddr, totalStakeKAS) {
         if (!PSEED) {
           console.warn('HTP Payout: No escrow mnemonic set. Payout queued.');
           recordPendingPayout(winnerAddr, totalStakeKAS * 0.98);
-          showToast('Payout queued — no escrow mnemonic configured', 'info');
+          showToast('Payout queued: no escrow mnemonic configured', 'info');
           return null;
         }
         var escrowKeys = await window.kaspaFromMnemonic(PSEED, "kaspatest");
@@ -13903,6 +13907,7 @@ function showGameOverOverlay(title, amountText, color, match) {
         privateKey: priv.toString(),
         publicKey: pubHex,
         p2pkAddress: addr.toString(),
+        creatorAddress: _creatorAddr,
         created: Date.now()
       };
 
@@ -20549,7 +20554,12 @@ setInterval(function(){
     var cur=typeof W.walletAddress!=='undefined'?W.walletAddress:null;
     if(cur===_lastW)return;_lastW=cur;
     var av=document.querySelector('.view.show');
-    if(av&&av.id==='v-portfolio')_refreshPortfolio();
+    if(av&&av.id==='v-portfolio'){
+        _refreshPortfolio();
+        // Refresh claim panel if it is the active tab
+        var claimSec=document.getElementById('ptClaimSection');
+        if(claimSec&&claimSec.style.display!=='none'&&typeof W.initClaimPanel==='function')W.initClaimPanel();
+    }
 },1500);
 
 /* ──────────────────────────────────────────────────────────────────────
