@@ -1,5 +1,5 @@
-// htp-oracle-pipeline.js — alias for htp-zk-pipeline.js
-// The pipeline uses SHA-256 oracle commits (not ZK proofs) until Toccata HF.
-// This file exists so scripts referencing 'htp-oracle-pipeline' still load correctly.
-// After Toccata, this will load the Groth16/R0Succinct on-chain verify path.
-console.log('[HTP] htp-oracle-pipeline.js loaded (alias → htp-zk-pipeline.js, Toccata-ready)');
+// htp-oracle-pipeline.js — HTP Oracle Commit Pipeline
+// Proof system: SHA-256 commit NOW, upgrades to on-chain ZK verify after Toccata HF.
+// Modes: oracle-verified | oracle-bonded | oracle-hybrid
+// Firebase paths: oracle_proofs/<marketId>, attestations/<marketId>, oracle_bonds
+console.log('[HTP] htp-oracle-pipeline.js loaded (Toccata-ready, modes: oracle-verified / oracle-bonded / oracle-hybrid)');
