@@ -1,17 +1,20 @@
-//! HTP Rust Backend
+//! HTP Rust Backend v0.4.0
 //!
-//! Axum HTTP server — all core HTP business logic in native Rust.
+//! Axum HTTP server — ALL HTP business logic in native Rust.
 //!
-//! Modules ported from JS:
-//!   wallet.rs      ← htp-wallet-v3.js (BIP39/BIP44 derivation, balance)
-//!   escrow.rs      ← htp-covenant-escrow-v2.js (P2SH script, payout, cancel)
-//!   fee.rs         ← htp-fee-engine.js (skill game fees, maximizer logic)
-//!   settlement.rs  ← htp-autopayout-engine.js (preview, covenant integrity)
-//!   deadline.rs    ← htp-match-deadline.js (DAA-score timing)
-//!   utxo_mutex.rs  ← htp-utxo-mutex.js (per-match concurrency guard)
-//!   oracle.rs      ← htp-oracle-server.js (Connect4, TicTacToe, Chess, Resign)
-//!   blockdag.rs    ← dag-background.js data layer
-//!   broadcast.rs   ← Kaspa REST broadcast
+//! JS files fully deleted (logic now in Rust):
+//!   htp-fee-engine.js      → fee.rs
+//!   htp-match-deadline.js  → deadline.rs
+//!   htp-utxo-mutex.js      → utxo_mutex.rs
+//!   htp-oracle-pipeline.js → oracle_commit.rs
+//!   htp-zk-pipeline.js     → oracle_commit.rs
+//!
+//! JS files replaced with thin browser shims:
+//!   htp-covenant-escrow-v2.js → escrow.rs  (/escrow/*)
+//!   htp-autopayout-engine.js  → autopayout.rs (/autopayout/*)
+//!   htp-rpc-client.js         → wallet.rs + blockdag.rs
+//!   htp-event-creator.js      → markets.rs (/markets/create)
+//!   htp-events-v3.js          → markets.rs (/markets/list via Firebase proxy)
 //!
 //! Default: http://localhost:3000
 //! Production: Cloud Run (PORT env var)
@@ -24,6 +27,9 @@ mod settlement;
 mod deadline;
 mod utxo_mutex;
 mod oracle;
+mod oracle_commit;
+mod markets;
+mod autopayout;
 mod blockdag;
 mod broadcast;
 
@@ -37,7 +43,6 @@ use axum::{
 use tower_http::cors::CorsLayer;
 use std::{net::SocketAddr, sync::Arc};
 
-/// Shared application state.
 #[derive(Clone)]
 struct AppState {
     api_base: String,
@@ -48,22 +53,18 @@ fn api_base() -> String {
         .unwrap_or_else(|_| "https://api-tn12.kaspa.org".to_string())
 }
 
-// ============================================================
-// Health
-// ============================================================
+// ── Health ────────────────────────────────────────────────────────────────────
 
-async fn health(State(s): State<Arc<AppState>>) -> impl IntoResponse {
+async fn health(State(_s): State<Arc<AppState>>) -> impl IntoResponse {
     Json(types::HealthResponse {
-        status: "ok".to_string(),
+        status:  "ok".to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         network: std::env::var("KASPA_NETWORK")
             .unwrap_or_else(|_| "testnet-12".to_string()),
     })
 }
 
-// ============================================================
-// Wallet routes
-// ============================================================
+// ── Wallet ────────────────────────────────────────────────────────────────────
 
 async fn wallet_from_mnemonic(
     Json(req): Json<types::MnemonicRequest>,
@@ -83,9 +84,7 @@ async fn wallet_balance(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
 }
 
-// ============================================================
-// Escrow routes
-// ============================================================
+// ── Escrow ────────────────────────────────────────────────────────────────────
 
 async fn escrow_create(
     Json(req): Json<types::EscrowCreateRequest>,
@@ -111,9 +110,7 @@ async fn escrow_cancel(
         .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))
 }
 
-// ============================================================
-// Fee routes  (htp-fee-engine.js)
-// ============================================================
+// ── Fee Engine ────────────────────────────────────────────────────────────────
 
 async fn fee_skill_settle(
     Json(req): Json<types::FeeSkillSettleRequest>,
@@ -155,9 +152,7 @@ async fn fee_treasury(
     })
 }
 
-// ============================================================
-// Settlement routes  (htp-autopayout-engine.js / htp-settlement-preview.js)
-// ============================================================
+// ── Settlement ────────────────────────────────────────────────────────────────
 
 async fn settlement_preview(
     Json(req): Json<types::SettlementPreviewRequest>,
@@ -173,9 +168,7 @@ async fn settlement_covenant_validate(
     Json(settlement::validate_covenant(&req))
 }
 
-// ============================================================
-// Deadline routes  (htp-match-deadline.js)
-// ============================================================
+// ── Deadline ──────────────────────────────────────────────────────────────────
 
 async fn deadline_create(
     Json(req): Json<types::DeadlineCreateRequest>,
@@ -198,9 +191,7 @@ async fn deadline_daa(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
 }
 
-// ============================================================
-// Oracle routes  (htp-oracle-server.js)
-// ============================================================
+// ── Oracle Game Validators ────────────────────────────────────────────────────
 
 async fn oracle_connect4(
     Json(req): Json<oracle::Connect4Request>,
@@ -226,9 +217,64 @@ async fn oracle_resign(
     Json(oracle::process_resign(&req))
 }
 
-// ============================================================
-// BlockDAG + Broadcast routes
-// ============================================================
+// ── Oracle Commit Pipeline ────────────────────────────────────────────────────
+
+async fn oracle_commit(
+    Json(req): Json<types::OracleCommitRequest>,
+) -> impl IntoResponse {
+    Json(oracle_commit::submit_attestation(&req))
+}
+
+async fn oracle_auto_attest(
+    Json(req): Json<types::AutoAttestRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    oracle_commit::auto_attest(&req)
+        .await
+        .map(Json)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+}
+
+// ── Markets ───────────────────────────────────────────────────────────────────
+
+async fn markets_create(
+    Json(req): Json<types::MarketCreateRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    markets::create_market(&req)
+        .map(Json)
+        .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))
+}
+
+async fn markets_bet(
+    Json(req): Json<types::BetPlaceRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    markets::validate_bet(&req)
+        .map(Json)
+        .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))
+}
+
+async fn markets_odds(
+    Json(req): Json<types::OddsRequest>,
+) -> impl IntoResponse {
+    Json(markets::compute_odds(&req))
+}
+
+// ── Auto-Payout ───────────────────────────────────────────────────────────────
+
+async fn autopayout_resolve(
+    Json(req): Json<types::ResolveWinnerRequest>,
+) -> impl IntoResponse {
+    Json(autopayout::resolve_winner_address(&req))
+}
+
+async fn autopayout_prepare(
+    Json(req): Json<types::PrepareSettlementRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    autopayout::prepare_settlement(&req)
+        .map(Json)
+        .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))
+}
+
+// ── BlockDAG + Broadcast ──────────────────────────────────────────────────────
 
 async fn blockdag_live(
     State(s): State<Arc<AppState>>,
@@ -249,14 +295,11 @@ async fn tx_broadcast(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
 }
 
-// ============================================================
-// Server Setup
-// ============================================================
+// ── Server ────────────────────────────────────────────────────────────────────
 
 #[tokio::main]
 async fn main() {
     let _ = dotenvy::dotenv();
-
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -267,36 +310,45 @@ async fn main() {
     let state = Arc::new(AppState { api_base: api_base() });
 
     let app = Router::new()
-        // Health
-        .route("/health",                         get(health))
+        .route("/health",                          get(health))
         // Wallet
-        .route("/wallet/from-mnemonic",            post(wallet_from_mnemonic))
-        .route("/wallet/balance/{addr}",           get(wallet_balance))
+        .route("/wallet/from-mnemonic",             post(wallet_from_mnemonic))
+        .route("/wallet/balance/{addr}",            get(wallet_balance))
         // Escrow
-        .route("/escrow/create",                   post(escrow_create))
-        .route("/escrow/payout",                   post(escrow_payout))
-        .route("/escrow/cancel",                   post(escrow_cancel))
+        .route("/escrow/create",                    post(escrow_create))
+        .route("/escrow/payout",                    post(escrow_payout))
+        .route("/escrow/cancel",                    post(escrow_cancel))
         // Fee engine
-        .route("/fee/skill-settle",                post(fee_skill_settle))
-        .route("/fee/cancel-check",                post(fee_cancel_check))
-        .route("/fee/maximizer-win",               post(fee_maximizer_win))
-        .route("/fee/maximizer-lose",              post(fee_maximizer_lose))
-        .route("/fee/treasury",                    post(fee_treasury))
+        .route("/fee/skill-settle",                 post(fee_skill_settle))
+        .route("/fee/cancel-check",                 post(fee_cancel_check))
+        .route("/fee/maximizer-win",                post(fee_maximizer_win))
+        .route("/fee/maximizer-lose",               post(fee_maximizer_lose))
+        .route("/fee/treasury",                     post(fee_treasury))
         // Settlement
-        .route("/settlement/preview",              post(settlement_preview))
-        .route("/settlement/validate-covenant",    post(settlement_covenant_validate))
-        // Deadline (DAA-score timing)
-        .route("/deadline/create",                 post(deadline_create))
-        .route("/deadline/check",                  post(deadline_check))
-        .route("/deadline/daa",                    get(deadline_daa))
-        // Oracle (game validators)
-        .route("/oracle/connect4",                 post(oracle_connect4))
-        .route("/oracle/tictactoe",                post(oracle_tictactoe))
-        .route("/oracle/chess",                    post(oracle_chess))
-        .route("/oracle/resign",                   post(oracle_resign))
+        .route("/settlement/preview",               post(settlement_preview))
+        .route("/settlement/validate-covenant",     post(settlement_covenant_validate))
+        // Deadline
+        .route("/deadline/create",                  post(deadline_create))
+        .route("/deadline/check",                   post(deadline_check))
+        .route("/deadline/daa",                     get(deadline_daa))
+        // Oracle — game validators
+        .route("/oracle/connect4",                  post(oracle_connect4))
+        .route("/oracle/tictactoe",                 post(oracle_tictactoe))
+        .route("/oracle/chess",                     post(oracle_chess))
+        .route("/oracle/resign",                    post(oracle_resign))
+        // Oracle — commit pipeline
+        .route("/oracle/commit",                    post(oracle_commit))
+        .route("/oracle/auto-attest",               post(oracle_auto_attest))
+        // Markets
+        .route("/markets/create",                   post(markets_create))
+        .route("/markets/bet",                      post(markets_bet))
+        .route("/markets/odds",                     post(markets_odds))
+        // Auto-payout
+        .route("/autopayout/resolve",               post(autopayout_resolve))
+        .route("/autopayout/prepare",               post(autopayout_prepare))
         // BlockDAG + Broadcast
-        .route("/blockdag/live",                   get(blockdag_live))
-        .route("/tx/broadcast",                    post(tx_broadcast))
+        .route("/blockdag/live",                    get(blockdag_live))
+        .route("/tx/broadcast",                     post(tx_broadcast))
         .layer(CorsLayer::permissive())
         .with_state(state);
 
@@ -306,10 +358,8 @@ async fn main() {
         .unwrap_or(3000);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    tracing::info!("HTP Rust Backend v{} listening on http://{}", env!("CARGO_PKG_VERSION"), addr);
-    tracing::info!("Network : {}", std::env::var("KASPA_NETWORK").unwrap_or_else(|_| "testnet-12".to_string()));
-    tracing::info!("API base: {}", api_base());
-    tracing::info!("Routes  : wallet | escrow | fee | settlement | deadline | oracle | blockdag | broadcast");
+    tracing::info!("HTP Rust Backend v{} on http://{}", env!("CARGO_PKG_VERSION"), addr);
+    tracing::info!("Modules: wallet | escrow | fee | settlement | deadline | oracle | oracle_commit | markets | autopayout | blockdag | broadcast");
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
