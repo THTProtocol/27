@@ -23,6 +23,6 @@ RUN apt-get update \
 
 COPY --from=builder /app/target/release/htp-backend /app/htp-backend
 
-ENV PORT=3000
-EXPOSE 3000
+# PORT is injected by Railway at runtime — do NOT hardcode it here
+EXPOSE 8080
 CMD ["/app/htp-backend"]
