@@ -26,22 +26,44 @@ pub struct BalanceResponse { pub balance: u64, pub balance_kas: String, pub utxo
 pub struct EscrowCreateRequest { pub pubkey_a: String, pub pubkey_b: String, pub network: Option<String> }
 
 #[derive(Debug, Serialize)]
-pub struct EscrowCreateResponse { pub escrow_address: String, pub script_hash: String }
+pub struct EscrowCreateResponse { pub escrow_address: String, pub script_hash: String, pub redeem_script_hex: String }
 
+/// Payout request — settles escrow to winner + treasury.
+///
+/// `signing_key_hex`: the escrow private key (hex), used to produce the
+/// Schnorr signature on the settlement path (OP_ELSE branch).
+/// The key lives in the browser (localStorage) and is ONLY sent here
+/// at settlement time — it is never stored server-side.
 #[derive(Debug, Deserialize)]
 pub struct EscrowPayoutRequest {
-    pub escrow_address: String, pub winner_address: String,
-    pub treasury_address: String, pub fee_bps: u32, pub utxos: Vec<UtxoRef>,
+    pub escrow_address:   String,
+    pub winner_address:   String,
+    pub treasury_address: String,
+    pub fee_bps:          u32,
+    pub utxos:            Vec<UtxoRef>,
+    /// Escrow private key (hex, 32 bytes). Required for signing.
+    pub signing_key_hex:  Option<String>,
+    /// Redeem script hex — needed to build the scriptSig.
+    pub redeem_script_hex: Option<String>,
 }
 
+/// Cancel request — refunds escrow equally to both players.
+///
+/// `signing_key_hex`: creator's private key for the OP_IF (cancel) branch.
 #[derive(Debug, Deserialize)]
 pub struct EscrowCancelRequest {
-    pub escrow_address: String, pub player_a_address: String,
-    pub player_b_address: String, pub utxos: Vec<UtxoRef>,
+    pub escrow_address:    String,
+    pub player_a_address:  String,
+    pub player_b_address:  String,
+    pub utxos:             Vec<UtxoRef>,
+    /// Creator private key (hex, 32 bytes). Required for signing.
+    pub signing_key_hex:   Option<String>,
+    /// Redeem script hex — needed to build the scriptSig.
+    pub redeem_script_hex: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
-pub struct TxResponse { pub raw_tx: String, pub tx_id: String }
+pub struct TxResponse { pub raw_tx: String, pub tx_id: String, pub signed: bool }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct UtxoRef { pub tx_id: String, pub index: u32, pub amount: u64 }
@@ -258,4 +280,13 @@ pub struct PrepareSettlementResponse {
     pub winner_payout_sompi: u64, pub protocol_fee_sompi: u64,
     pub treasury_address: String, pub fee_breakdown: String,
     pub covenant_ok: bool, pub network: String,
+}
+
+// ============================================================
+// Game WebSocket  (game_ws.rs)
+// ============================================================
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct WsGameMessage {
+    pub kind: String,
+    pub payload: serde_json::Value,
 }
