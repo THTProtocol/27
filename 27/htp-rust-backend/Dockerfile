@@ -1,5 +1,5 @@
 # Build stage
-FROM rust:1.85-slim AS builder
+FROM rust:1.86-slim AS builder
 WORKDIR /app
 
 # Install build deps (needed by reqwest/rustls)
@@ -23,6 +23,6 @@ RUN apt-get update \
 
 COPY --from=builder /app/target/release/htp-backend /app/htp-backend
 
-ENV PORT=8080
-EXPOSE 8080
+ENV PORT=3000
+EXPOSE 3000
 CMD ["/app/htp-backend"]
