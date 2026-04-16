@@ -1,5 +1,5 @@
 /**
- * htp-autopayout-engine.js  —  High Table Protocol  —  v4.0
+ * htp-autopayout-engine.js  —  High Table Protocol  —  v4.1
  *
  * THE COMPLETE LAYER:
  *
@@ -25,23 +25,34 @@
  *     8×8 board, dark squares only, multi-jump support
  *     Red vs Black, king promotion glow, Firebase-synced clock
  *
- *  5. COVENANT INTEGRITY GUARD
+ *  5. GAME UI — TIC-TAC-TOE
+ *     3×3 grid, X vs O, Firebase-synced clock + moves
+ *     Payout routed through handleMatchGameOver (idempotent lock)
+ *
+ *  6. COVENANT INTEGRITY GUARD
  *     Validates that redeemScript fee SPK === current treasury SPK
  *     before any settlement TX is built. Blocks if mismatch.
  *
- *  6. PROTOCOL FEE ADDRESSES (canonical, read from HTPFee)
+ *  7. PROTOCOL FEE ADDRESSES (canonical, read from HTPFee)
  *     mainnet:    kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel
  *     testnet-12: kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m
  *
  *  LOAD ORDER: LAST — after all other htp-*.js files
+ *
+ *  v4.1 CHANGES:
+ *    - TTT applyTTTCell no longer calls settleMatchPayout directly.
+ *      All settlement now routes through handleMatchGameOver which holds
+ *      the Firebase relay/<matchId>/result idempotent lock.
+ *    - TTT winner passed as numeric side (1 or 2) not string 'me'/'opponent'
+ *      so normalizeWinner() and resolveWinnerAddress() work correctly.
  */
 
 ;(function(W) {
   'use strict';
 
-  const LOG  = (...a) => console.log('%c[HTP AutoPayout v4]', 'color:#49e8c2;font-weight:bold', ...a);
-  const WARN = (...a) => console.warn('[HTP AutoPayout v4]', ...a);
-  const ERR  = (...a) => console.error('[HTP AutoPayout v4]', ...a);
+  const LOG  = (...a) => console.log('%c[HTP AutoPayout v4.1]', 'color:#49e8c2;font-weight:bold', ...a);
+  const WARN = (...a) => console.warn('[HTP AutoPayout v4.1]', ...a);
+  const ERR  = (...a) => console.error('[HTP AutoPayout v4.1]', ...a);
 
   /* ═══════════════════════════════════════════════════════════════════════
    * 1. FIREBASE HELPERS
@@ -126,6 +137,8 @@
         iWon = (winnerRaw === mySide);
       } else if (game === 'ck' || game === 'checkers') {
         iWon = (winnerRaw === mySide);
+      } else if (game === 'ttt' || game === 'tictactoe') {
+        iWon = (winnerRaw === mySide);
       } else {
         const winnerColor = (winnerRaw === 'w' || winnerRaw === 1 || winnerRaw === 'white') ? 'white' : 'black';
         iWon = (winnerColor === myColor);
@@ -175,12 +188,13 @@
     };
 
     W.handleMatchGameOver._autoPayoutPatched = true;
-    LOG('handleMatchGameOver auto-payout patch installed');
+    LOG('handleMatchGameOver auto-payout patch installed (v4.1 — TTT idempotent)');
   }
 
   function normalizeWinner(raw, game) {
     if (game === 'c4' || game === 'connect4') return 'side' + raw;
     if (game === 'ck' || game === 'checkers') return 'side' + raw;
+    if (game === 'ttt' || game === 'tictactoe') return 'side' + raw;
     if (raw === 'w' || raw === 'white' || raw === 1) return 'white';
     if (raw === 'b' || raw === 'black' || raw === 2) return 'black';
     return String(raw);
@@ -640,8 +654,8 @@
     const ui   = W.chessUI || {};
     if (!el || !game) return;
     if (game.isCheckmate()) { el.textContent='♟ Checkmate!'; el.className='htp-chess-status-txt your-turn'; return; }
-    if (game.isCheck())     { el.textContent='⚠️ Check!';     el.className='htp-chess-status-txt'; return; }
-    if (game.isDraw() || game.isStalemate()) { el.textContent='🤝 Draw'; el.className='htp-chess-status-txt'; return; }
+    if (game.isCheck())     { el.textContent='Check!';     el.className='htp-chess-status-txt'; return; }
+    if (game.isDraw() || game.isStalemate()) { el.textContent='Draw'; el.className='htp-chess-status-txt'; return; }
     const myTurn = game.turn() === ui.playerColor;
     el.textContent = myTurn ? '● Your turn' : '○ Opponent\'s turn';
     el.className   = 'htp-chess-status-txt' + (myTurn ? ' your-turn' : '');
@@ -1109,6 +1123,12 @@
 
   /* ═══════════════════════════════════════════════════════════════════════
    * 7b. TIC-TAC-TOE ENGINE
+   *
+   * v4.1 FIX: applyTTTCell no longer calls settleMatchPayout directly.
+   * All game-over paths call handleMatchGameOver(reason, winnerSide)
+   * where winnerSide is numeric (1 or 2), consistent with C4/Checkers.
+   * handleMatchGameOver holds the Firebase idempotent lock that prevents
+   * double settlement when both browsers detect the winning move.
    * ═══════════════════════════════════════════════════════════════════════ */
   var WIN_LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 
@@ -1127,7 +1147,8 @@
           var winner=s===1?2:1;
           W.TTT.gameOver=true;
           if(typeof W.relaySend==='function')W.relaySend({type:'gameOver',game:'tictactoe',reason:'timeout',winner:winner});
-          if(typeof W.handleMatchGameOver==='function')W.handleMatchGameOver('timeout',winner===W.TTT.mySide?'me':'opponent');
+          // Route through handleMatchGameOver — idempotent lock handles payout
+          if(typeof W.handleMatchGameOver==='function')W.handleMatchGameOver('timeout',winner);
         }
         updateTTTClockDisplay();
       },100);
@@ -1206,25 +1227,19 @@
     if(win){
       W.TTT.gameOver=true;clearInterval(W.TTT._clk._iv);
       renderTTTBoard();
-      if(typeof W.handleMatchGameOver==='function')W.handleMatchGameOver(win.type==='draw'?'draw':'ttt-win',win.winner===W.TTT.mySide?'me':'opponent');
-      if(typeof W.settleMatchPayout==='function'){
-        var match=W.matchLobby&&W.matchLobby.activeMatch;
-        if(match){
-          var wAddr=win.type==='draw'?null:(win.winner===1?match.creator:match.opponent);
-          W.settleMatchPayout(W.TTT.matchId,wAddr,win.type==='draw',match.creator,match.opponent);
-        }
-      }
+      // FIX v4.1: pass numeric winner side (not 'me'/'opponent') so
+      // normalizeWinner() maps it to 'side1'/'side2' and resolveWinnerAddress()
+      // can look up the Kaspa address. Do NOT call settleMatchPayout here —
+      // handleMatchGameOver holds the Firebase idempotent lock.
+      if(typeof W.handleMatchGameOver==='function')
+        W.handleMatchGameOver(win.type==='draw'?'draw':'ttt-win', win.winner);
       return;
     }
-    // Check draw (all cells filled)
+    // Board full = draw
     if(W.TTT.board.every(function(c){return c!==0;})){
       W.TTT.gameOver=true;clearInterval(W.TTT._clk._iv);
       renderTTTBoard();
-      if(typeof W.handleMatchGameOver==='function')W.handleMatchGameOver('draw','draw');
-      if(typeof W.settleMatchPayout==='function'){
-        var match=W.matchLobby&&W.matchLobby.activeMatch;
-        if(match)W.settleMatchPayout(W.TTT.matchId,null,true,match.creator,match.opponent);
-      }
+      if(typeof W.handleMatchGameOver==='function')W.handleMatchGameOver('draw',null);
       return;
     }
     renderTTTBoard();
@@ -1332,7 +1347,7 @@
     patchHandleMatchGameOver();
     patchRelayHandler();
     patchBoardLaunchers();
-    LOG('✓ AutoPayout ✓ Chess v4 ✓ Connect4 v4 ✓ Checkers v4 ✓ Covenant guard ✓ Idempotent settlement');
+    LOG('v4.1 ✓ AutoPayout ✓ Chess ✓ Connect4 ✓ Checkers ✓ TTT (idempotent) ✓ Covenant guard');
     LOG('Treasury:',W.HTPFee?W.HTPFee.treasuryAddress():'(HTPFee loading)');
   }
 
