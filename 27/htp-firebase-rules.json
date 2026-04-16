@@ -1,28 +1,95 @@
 {
   "rules": {
-    ".read": "auth != null || true",
-    ".write": "auth != null || true",
     "matches": {
+      ".indexOn": ["info/status", "info/game", "info/created"],
+      ".read": true,
       "$matchId": {
-        ".read": true,
-        ".write": true
+        ".write": "auth != null"
       }
     },
     "relay": {
       "$matchId": {
         ".read": true,
-        ".write": true
+        ".write": "auth != null"
+      }
+    },
+    "lobby": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "markets": {
+      ".read": true,
+      "$marketId": {
+        ".write": "auth != null"
+      }
+    },
+    "events": {
+      ".indexOn": ["status", "creatorAddress", "createdAt"],
+      ".read": true,
+      "$eventId": {
+        ".write": "auth != null"
+      }
+    },
+    "attestations": {
+      ".read": true,
+      "$eventId": {
+        ".write": "auth != null && auth.token.oracle === true"
+      }
+    },
+    "oracleProofs": {
+      ".read": true,
+      "$marketId": {
+        ".write": "auth != null && auth.token.oracle === true"
       }
     },
     "escrows": {
       "$matchId": {
         ".read": true,
-        ".write": true
+        ".write": "auth != null"
       }
     },
-    "lobby": {
+    "walletstats": {
       ".read": true,
-      ".write": true
+      "$walletAddr": {
+        ".write": "auth != null"
+      }
+    },
+    "gamechain": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "settlement": {
+      ".read": true,
+      "$matchId": {
+        ".write": "auth != null"
+      }
+    },
+    "settlements": {
+      ".read": true,
+      "$matchId": {
+        ".write": "auth != null"
+      }
+    },
+    "settlement_requests": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "bets": {
+      ".indexOn": ["eventId", "userAddress", "outcome"],
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "watcher": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "balances": {
+      ".read": true,
+      ".write": false
+    },
+    "kaspa": {
+      ".read": true,
+      ".write": false
     }
   }
 }
