@@ -1,0 +1,60 @@
+name: Deploy Frontend → Firebase Hosting
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '27/index.html'
+      - '27/htp-*.js'
+      - '27/firebase.json'
+      - '27/database.rules.json'
+      - '27/.cloud-run-url'
+      - '.github/workflows/deploy-hosting.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read Cloud Run URL
+        id: cloud_run
+        run: |
+          if [ -f 27/.cloud-run-url ]; then
+            URL=$(cat 27/.cloud-run-url | tr -d '\n')
+            echo "url=$URL" >> $GITHUB_OUTPUT
+            echo "Found Cloud Run URL: $URL"
+          else
+            echo "url=" >> $GITHUB_OUTPUT
+            echo "No .cloud-run-url file found — skipping URL injection"
+          fi
+
+      - name: Inject HTP_RUST_API into index.html
+        if: steps.cloud_run.outputs.url != ''
+        run: |
+          URL="${{ steps.cloud_run.outputs.url }}"
+          # Inject/update window.HTP_RUST_API right after <head>
+          sed -i "s|window\.HTP_RUST_API\s*=\s*['\"][^'\"]*['"]|window.HTP_RUST_API = '$URL'|g" 27/index.html
+          # If tag doesn't exist yet, insert it after <head>
+          if ! grep -q 'HTP_RUST_API' 27/index.html; then
+            sed -i 's|<head>|<head>\n<script>window.HTP_RUST_API = "'"$URL"'";</script>|' 27/index.html
+          fi
+          echo "✅ Injected HTP_RUST_API=$URL into index.html"
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Deploy Firebase Hosting
+        working-directory: 27
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          firebase deploy --only hosting --project hightable420 --token "$FIREBASE_TOKEN"
+
+      - name: Deploy Firebase Database Rules
+        working-directory: 27
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          firebase deploy --only database --project hightable420 --token "$FIREBASE_TOKEN"
