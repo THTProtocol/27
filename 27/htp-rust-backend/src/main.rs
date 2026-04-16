@@ -1,6 +1,6 @@
-//! HTP Rust Backend v0.4.0
+//! HTP Rust Backend v0.5.0
 //!
-//! Axum HTTP server — ALL HTP business logic in native Rust.
+//! Axum HTTP + WebSocket server — ALL HTP business logic in native Rust.
 //!
 //! JS files fully deleted (logic now in Rust):
 //!   htp-fee-engine.js      → fee.rs
@@ -14,10 +14,14 @@
 //!   htp-autopayout-engine.js  → autopayout.rs (/autopayout/*)
 //!   htp-rpc-client.js         → wallet.rs + blockdag.rs
 //!   htp-event-creator.js      → markets.rs (/markets/create)
-//!   htp-events-v3.js          → markets.rs (/markets/list via Firebase proxy)
+//!   htp-events-v3.js          → markets.rs (/markets/list)
+//!
+//! Firebase RTDB relay replaced with Rust WebSocket:
+//!   htp-chess-sync.js   → game_ws.rs  (ws://<host>/ws/game/<matchId>)
+//!   htp-games-sync.js   → game_ws.rs  (ws://<host>/ws/game/<matchId>)
 //!
 //! Default: http://localhost:3000
-//! Production: Cloud Run (PORT env var)
+//! Production: Cloud Run / Railway (PORT env var)
 
 mod types;
 mod wallet;
@@ -32,6 +36,7 @@ mod markets;
 mod autopayout;
 mod blockdag;
 mod broadcast;
+mod game_ws;
 
 use axum::{
     extract::{Path, Json, State},
@@ -42,10 +47,14 @@ use axum::{
 };
 use tower_http::cors::CorsLayer;
 use std::{net::SocketAddr, sync::Arc};
+use game_ws::MatchRegistry;
+
+// ── Shared app state ──────────────────────────────────────────────────────────
 
 #[derive(Clone)]
 struct AppState {
-    api_base: String,
+    api_base:    String,
+    ws_registry: MatchRegistry,
 }
 
 fn api_base() -> String {
@@ -307,10 +316,33 @@ async fn main() {
         )
         .init();
 
-    let state = Arc::new(AppState { api_base: api_base() });
+    let state = Arc::new(AppState {
+        api_base:    api_base(),
+        ws_registry: game_ws::new_registry(),
+    });
+
+    // WS routes need MatchRegistry as state (extracted directly)
+    let ws_state = state.ws_registry.clone();
 
     let app = Router::new()
         .route("/health",                          get(health))
+        // ── WebSocket game relay (replaces Firebase RTDB) ──
+        .route("/ws/game/{match_id}",              get({
+            let reg = ws_state.clone();
+            move |ws: axum::extract::WebSocketUpgrade, Path(mid): Path<String>| {
+                let reg = reg.clone();
+                async move {
+                    ws.on_upgrade(move |sock| game_ws::handle_socket_pub(sock, mid, reg))
+                }
+            }
+        }))
+        .route("/ws/broadcast/{match_id}",         post({
+            let reg = ws_state.clone();
+            move |Path(mid): Path<String>, body: Json<game_ws::BroadcastBody>| {
+                let reg = reg.clone();
+                async move { game_ws::rest_broadcast_inner(mid, reg, body).await }
+            }
+        }))
         // Wallet
         .route("/wallet/from-mnemonic",             post(wallet_from_mnemonic))
         .route("/wallet/balance/{addr}",            get(wallet_balance))
@@ -359,7 +391,7 @@ async fn main() {
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     tracing::info!("HTP Rust Backend v{} on http://{}", env!("CARGO_PKG_VERSION"), addr);
-    tracing::info!("Modules: wallet | escrow | fee | settlement | deadline | oracle | oracle_commit | markets | autopayout | blockdag | broadcast");
+    tracing::info!("WS relay active: ws://{}/ws/game/<matchId>", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();

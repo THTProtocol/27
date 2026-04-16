@@ -1,8 +1,8 @@
 [package]
 name = "htp-rust-backend"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
-description = "High Table Protocol — full Rust backend: wallet, escrow, fee, settlement, deadline, oracle, markets, autopayout"
+description = "High Table Protocol — full Rust backend: wallet, escrow, fee, settlement, deadline, oracle, markets, autopayout, WebSocket game relay"
 
 [[bin]]
 name = "htp-backend"
@@ -10,7 +10,7 @@ path = "src/main.rs"
 
 [dependencies]
 tokio        = { version = "1",    features = ["full"] }
-axum         = { version = "0.7",  features = ["macros"] }
+axum         = { version = "0.7",  features = ["macros", "ws"] }
 tower-http   = { version = "0.5",  features = ["cors"] }
 serde        = { version = "1",    features = ["derive"] }
 serde_json   = "1"
@@ -31,7 +31,7 @@ chrono       = { version = "0.4",  features = ["serde"] }
 rand         = "0.8"
 base64       = "0.22"
 
-# Chess engine — full shakmaty for /oracle/chess (uncomment when ready)
+# Chess engine — full shakmaty for /oracle/chess
 # shakmaty = "0.27"
 
 [profile.release]
