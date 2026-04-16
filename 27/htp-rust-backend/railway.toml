@@ -1,0 +1,16 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "/app/htp-backend"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "htp-backend"
+
+[services.variables]
+PORT = "8080"
+KASPA_NETWORK = "testnet-12"
+KASPA_API_BASE = "https://api-tn12.kaspa.org"
