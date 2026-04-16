@@ -1,8 +1,9 @@
 /**
  * htp-cancel-flow.js — Skill Game Creator Cancel Flow
- * Checks HTPFee.skillGameCanCreatorCancel() before firing refund TX.
- * Depends on: htp-fee-engine.js, htp-covenant-escrow-v2.js
- * No Firebase required for the cancel TX itself.
+ *
+ * Checks whether the creator is allowed to cancel before firing the refund TX.
+ * Uses HTPFee (htp-fee-shim.js) if loaded; falls back to safe local logic.
+ * Depends on: htp-fee-shim.js, htp-covenant-escrow-v2.js
  */
 (function(W) {
   'use strict';
@@ -76,36 +77,36 @@
     document.head.appendChild(s);
   }
 
-  /**
-   * Mount a cancel button into a container element.
-   * @param {string} containerId
-   * @param {object} opts — { matchId, stakeKas, opponentJoined, creatorAddress }
-   */
+  function canCancel(matchData) {
+    var Fee = W.HTPFee;
+    if (Fee && typeof Fee.skillGameCanCreatorCancel === 'function') {
+      return Fee.skillGameCanCreatorCancel(matchData);
+    }
+    // Safe fallback if shim not yet loaded
+    var joined = matchData.opponentJoined || matchData.status === 'active';
+    return {
+      allowed: !joined,
+      reason:  joined ? 'Game already started — leaving counts as forfeit' : 'No opponent yet — full refund available',
+    };
+  }
+
   function mount(containerId, opts) {
     injectStyles();
     const container = document.getElementById(containerId);
     if (!container) return;
 
     const { matchId, stakeKas = 0, opponentJoined = false, creatorAddress } = opts || {};
-
-    // Gate check via HTPFee
-    const Fee = W.HTPFee;
-    const canCancel = Fee
-      ? Fee.skillGameCanCreatorCancel({ opponentJoined, creatorAddress, status: opponentJoined ? 'active' : 'pending' })
-      : { allowed: !opponentJoined, reason: opponentJoined ? 'Game already started' : 'OK' };
+    const check = canCancel({ opponentJoined, creatorAddress, status: opponentJoined ? 'active' : 'pending' });
 
     container.innerHTML = `
       <button class="htp-cancel-btn" id="htp-cancel-btn-${matchId}"
-        ${!canCancel.allowed ? 'disabled title="' + canCancel.reason + '"' : ''}>
+        ${!check.allowed ? 'disabled title="' + check.reason + '"' : ''}>
         ✕ Cancel Game
       </button>
       <div class="htp-cancel-status" id="htp-cancel-status-${matchId}"></div>
     `;
 
-    if (!canCancel.allowed) {
-      setStatus(matchId, 'err', canCancel.reason);
-      return;
-    }
+    if (!check.allowed) { setStatus(matchId, 'err', check.reason); return; }
 
     document.getElementById(`htp-cancel-btn-${matchId}`).addEventListener('click', function() {
       showConfirmModal(matchId, stakeKas, creatorAddress);
@@ -120,21 +121,14 @@
   }
 
   function showConfirmModal(matchId, stakeKas, creatorAddress) {
-    // Check opponent hasn't just joined (live re-check)
     const latestCheck = async () => {
       if (W.firebase && W.firebase.database) {
         try {
           const snap = await W.firebase.database().ref(`matches/${matchId}`).once('value');
           const data = snap.val();
           if (data) {
-            const Fee = W.HTPFee;
-            const check = Fee
-              ? Fee.skillGameCanCreatorCancel(data)
-              : { allowed: !data.opponentJoined, reason: 'OK' };
-            if (!check.allowed) {
-              setStatus(matchId, 'err', check.reason);
-              return false;
-            }
+            const c = canCancel(data);
+            if (!c.allowed) { setStatus(matchId, 'err', c.reason); return false; }
           }
         } catch(e) {}
       }
@@ -146,7 +140,7 @@
     modal.innerHTML = `
       <div class="htp-cancel-confirm-card">
         <h3>Cancel Game?</h3>
-        <p>This will refund your full stake back to your wallet. You cannot undo this.</p>
+        <p>This will refund your full stake to your wallet. This action cannot be undone.</p>
         <div class="refund-amount">${stakeKas.toFixed(2)} KAS</div>
         <div class="refund-label">Refund amount (minus ~0.0001 KAS network fee)</div>
         <div class="htp-cancel-modal-btns">
@@ -163,10 +157,8 @@
     document.getElementById('htp-cc-confirm').addEventListener('click', async function() {
       this.textContent = 'Checking...';
       this.disabled    = true;
-
       const ok = await latestCheck();
       if (!ok) { modal.remove(); return; }
-
       this.textContent = 'Sending refund TX...';
       modal.remove();
 
@@ -177,7 +169,7 @@
         if (!W.cancelMatchEscrow) throw new Error('cancelMatchEscrow not loaded');
         const txId = await W.cancelMatchEscrow(matchId);
         if (txId) {
-          setStatus(matchId, 'ok', '✓ Refunded! TX: ' + String(txId).substring(0,20) + '…');
+          setStatus(matchId, 'ok', '✓ Refunded! TX: ' + String(txId).substring(0, 20) + '…');
           if (btn) { btn.textContent = '✓ Cancelled'; btn.style.opacity = '0.5'; }
           window.dispatchEvent(new CustomEvent('htp:match:cancelled', { detail: { matchId, txId } }));
         } else {
@@ -191,24 +183,15 @@
     });
   }
 
-  /**
-   * Update cancel button state when match data changes (e.g. opponent joins).
-   * Call this from your Firebase listener when match status changes.
-   */
   function update(matchId, matchData) {
     const btn = document.getElementById(`htp-cancel-btn-${matchId}`);
     if (!btn) return;
-    const Fee = W.HTPFee;
-    const check = Fee
-      ? Fee.skillGameCanCreatorCancel(matchData)
-      : { allowed: !matchData.opponentJoined, reason: 'OK' };
-    btn.disabled = !check.allowed;
-    if (!check.allowed) {
-      btn.title = check.reason;
-      setStatus(matchId, 'err', check.reason);
-    }
+    const c = canCancel(matchData);
+    btn.disabled = !c.allowed;
+    if (!c.allowed) { btn.title = c.reason; setStatus(matchId, 'err', c.reason); }
+    else { btn.title = ''; }
   }
 
   W.HTPCancelFlow = { mount, update };
-  console.log('[HTPCancelFlow] loaded');
+  console.log('[HTPCancelFlow v2] loaded — uses htp-fee-shim.js');
 })(window);

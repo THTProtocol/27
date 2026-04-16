@@ -1,8 +1,8 @@
 /**
  * htp-settlement-overlay.js — Settlement Preview + Result Overlay
+ *
  * Shows exact payout breakdown before TX fires, and win/loss/draw result.
- * Depends on: htp-fee-engine.js (HTPFee)
- * No Firebase required.
+ * Depends on: htp-fee-shim.js (window.HTPFee)
  */
 (function(W) {
   'use strict';
@@ -14,238 +14,188 @@
     s.textContent = `
       .htp-overlay-backdrop {
         position: fixed; inset: 0;
-        background: rgba(0,0,0,0.75);
-        backdrop-filter: blur(6px);
+        background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
         z-index: 9999;
         display: flex; align-items: center; justify-content: center;
-        animation: htp-fade-in 0.2s ease;
       }
-      @keyframes htp-fade-in { from { opacity:0 } to { opacity:1 } }
-      @keyframes htp-slide-up { from { transform:translateY(24px);opacity:0 } to { transform:translateY(0);opacity:1 } }
       .htp-overlay-card {
         background: #0f172a;
         border: 1px solid rgba(73,232,194,0.25);
-        border-radius: 16px;
-        padding: 32px;
-        max-width: 420px;
-        width: 90%;
-        text-align: center;
-        animation: htp-slide-up 0.25s ease;
-        font-family: 'Inter', sans-serif;
-        color: #e2e8f0;
+        border-radius: 16px; padding: 28px;
+        max-width: 420px; width: 92%;
+        font-family: 'Inter', sans-serif; color: #e2e8f0;
+        animation: htp-slide-up 0.22s ease;
       }
-      .htp-overlay-icon {
-        font-size: 56px;
-        margin-bottom: 12px;
-        display: block;
+      @keyframes htp-slide-up {
+        from { opacity:0; transform:translateY(16px); }
+        to   { opacity:1; transform:translateY(0); }
       }
-      .htp-overlay-title {
-        font-size: 26px;
-        font-weight: 800;
-        margin-bottom: 6px;
-        letter-spacing: -0.02em;
+      .htp-overlay-card h2 {
+        font-size: 18px; font-weight: 800; color: #fff;
+        margin: 0 0 18px; letter-spacing: -0.02em;
+        display: flex; align-items: center; gap: 10px;
       }
-      .htp-overlay-title.win  { color: #49e8c2; }
-      .htp-overlay-title.lose { color: #ef4444; }
-      .htp-overlay-title.draw { color: #f59e0b; }
-      .htp-overlay-title.preview { color: #3b82f6; }
-      .htp-overlay-subtitle {
+      .htp-overlay-card h2 .badge {
+        font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+        padding: 3px 10px; border-radius: 99px; text-transform: uppercase;
+      }
+      .badge.win   { background: rgba(73,232,194,0.15); color: #49e8c2; }
+      .badge.lose  { background: rgba(239,68,68,0.15);  color: #ef4444; }
+      .badge.draw  { background: rgba(148,163,184,0.15); color: #94a3b8; }
+      .htp-overlay-rows { margin-bottom: 18px; }
+      .htp-overlay-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
         font-size: 13px;
-        color: #64748b;
-        margin-bottom: 24px;
       }
-      .htp-breakdown {
-        background: #1e293b;
-        border-radius: 10px;
-        padding: 16px;
-        margin-bottom: 20px;
-        text-align: left;
+      .htp-overlay-row:last-child { border-bottom: none; }
+      .htp-overlay-row .lbl { color: #64748b; }
+      .htp-overlay-row .val { font-weight: 600; color: #fff; }
+      .htp-overlay-row.muted .val { color: #64748b; font-weight: 400; }
+      .htp-overlay-row.highlight .val { color: #49e8c2; font-size: 16px; font-weight: 800; }
+      .htp-overlay-actions { display: flex; gap: 10px; }
+      .htp-overlay-actions button {
+        flex: 1; padding: 11px; border: none; border-radius: 8px;
+        font-weight: 700; font-size: 14px; cursor: pointer;
+        font-family: 'Inter', sans-serif; transition: opacity 0.2s;
       }
-      .htp-breakdown-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 5px 0;
-        font-size: 13px;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
-      }
-      .htp-breakdown-row:last-child { border-bottom: none; }
-      .htp-breakdown-row .bd-label { color: #94a3b8; }
-      .htp-breakdown-row .bd-value { font-weight: 600; color: #e2e8f0; }
-      .htp-breakdown-row .bd-value.green  { color: #49e8c2; }
-      .htp-breakdown-row .bd-value.red    { color: #ef4444; }
-      .htp-breakdown-row .bd-value.yellow { color: #f59e0b; }
-      .htp-breakdown-row .bd-value.muted  { color: #64748b; font-size: 11px; }
-      .htp-overlay-payout-big {
-        font-size: 36px;
-        font-weight: 800;
-        color: #49e8c2;
-        margin-bottom: 4px;
-      }
-      .htp-overlay-payout-big.lose { color: #ef4444; }
-      .htp-overlay-payout-big.draw { color: #f59e0b; }
-      .htp-overlay-buttons {
-        display: flex; gap: 10px;
-      }
-      .htp-overlay-btn {
-        flex: 1;
-        padding: 12px;
-        border-radius: 8px;
-        border: none;
-        font-weight: 700;
-        font-size: 14px;
-        cursor: pointer;
-        transition: opacity 0.2s, transform 0.1s;
-      }
-      .htp-overlay-btn:active { transform: scale(0.97); }
-      .htp-overlay-btn.primary {
-        background: linear-gradient(135deg, #49e8c2, #3b82f6);
-        color: #0f172a;
-      }
-      .htp-overlay-btn.secondary {
-        background: #1e293b;
-        color: #94a3b8;
-        border: 1px solid rgba(255,255,255,0.08);
-      }
-      .htp-overlay-btn:hover { opacity: 0.9; }
-      .htp-tx-link {
-        font-size: 11px;
-        color: #475569;
-        margin-top: 14px;
-        word-break: break-all;
-      }
-      .htp-tx-link a { color: #3b82f6; text-decoration: none; }
-      .htp-tx-link a:hover { text-decoration: underline; }
+      .htp-overlay-actions .confirm { background: linear-gradient(135deg, #49e8c2, #3b82f6); color: #0f172a; }
+      .htp-overlay-actions .cancel  { background: #1e293b; color: #94a3b8; }
+      .htp-overlay-actions button:hover { opacity: 0.88; }
+      .htp-overlay-explorer { font-size: 11px; text-align: center; margin-top: 12px; }
+      .htp-overlay-explorer a { color: #49e8c2; text-decoration: none; }
+      .htp-overlay-explorer a:hover { text-decoration: underline; }
     `;
     document.head.appendChild(s);
   }
 
-  function getExplorer(txId) {
-    const net = W.activeNet || W.HTP_NETWORK || 'mainnet';
-    const base = net === 'mainnet'
-      ? 'https://explorer.kaspa.org/txs/'
-      : 'https://explorer-tn12.kaspa.org/txs/';
-    return base + txId;
+  function getFee() {
+    return W.HTPFee || null;
   }
 
-  function show(opts) {
-    // opts = { type, matchId, stakeKas, winner, playerA, playerB, txId, isMaximizer, betKas, odds, onConfirm, onCancel }
+  /**
+   * Show settlement preview before TX fires.
+   * @param {object} opts — { stakeKas, isMaximizer, betKas, isDraw, result: 'win'|'lose'|'draw', txCb }
+   */
+  function showPreview(opts, txCb) {
     injectStyles();
+    const Fee = getFee();
+    if (!Fee) { console.error('[SettlementOverlay] HTPFee shim not loaded'); return; }
 
-    const Fee = W.HTPFee;
-    if (!Fee) { console.error('[SettlementOverlay] HTPFee not loaded'); return; }
+    const stakeKas    = opts.stakeKas    || 0;
+    const isMaximizer = opts.isMaximizer || false;
+    const betKas      = opts.betKas      || stakeKas;
+    const isDraw      = opts.isDraw      || false;
+    const result      = opts.result      || (isDraw ? 'draw' : 'win');
 
-    const { type = 'preview', matchId, stakeKas = 0, winner, playerA, playerB,
-            txId, isMaximizer, betKas, odds = 2, onConfirm, onCancel } = opts;
+    let rows = [];
+    let title = 'Settlement Preview';
+    let badge = result;
 
-    let icon, titleText, titleClass, payoutBig, payoutClass, subtitle, rows = [], primaryLabel, secondaryLabel;
-
-    if (type === 'win') {
-      icon = '🏆'; titleClass = 'win'; titleText = 'You Won!';
-      const calc = Fee.skillGameSettle(stakeKas);
-      subtitle = `Match ${matchId || ''} settled on-chain`;
-      payoutBig = '+' + calc.winnerPayout.toFixed(2) + ' KAS'; payoutClass = '';
+    if (isDraw) {
+      const half = stakeKas; // each player gets their stake back minus small fee
+      const fee  = stakeKas * 2 * 0.01; // 1% on draws
       rows = [
-        { label: 'Total pool',     value: calc.totalPool.toFixed(2) + ' KAS', cls: '' },
-        { label: 'Protocol fee',   value: '−' + calc.protocolFee.toFixed(2) + ' KAS', cls: 'muted' },
-        { label: 'Your payout',    value: calc.winnerPayout.toFixed(2) + ' KAS', cls: 'green' },
-        { label: 'Treasury',       value: Fee.treasuryAddress().substring(0,18)+'…', cls: 'muted' },
+        { label: 'Result',       value: 'Draw',                    cls: '' },
+        { label: 'Your stake',   value: stakeKas.toFixed(2) + ' KAS', cls: '' },
+        { label: 'Protocol fee', value: (fee/2).toFixed(2) + ' KAS (1%)', cls: 'muted' },
+        { label: 'You receive',  value: (stakeKas - fee/2).toFixed(2) + ' KAS', cls: 'highlight' },
       ];
-      primaryLabel = txId ? 'View on Explorer' : 'Claim Payout';
-      secondaryLabel = 'Close';
-
-    } else if (type === 'lose') {
-      icon = '💀'; titleClass = 'lose'; titleText = 'You Lost';
-      subtitle = `Match ${matchId || ''} settled`;
-      payoutBig = '0 KAS'; payoutClass = 'lose';
-      rows = [
-        { label: 'Result', value: 'Loss', cls: 'red' },
-        { label: 'Stake',  value: stakeKas.toFixed(2) + ' KAS lost', cls: 'muted' },
-      ];
-      if (isMaximizer) {
-        const calc = Fee.maximizerLoseSettle(betKas || stakeKas);
+    } else if (isMaximizer) {
+      if (result === 'win') {
+        const calc = Fee.maximizerWinSettle(betKas, opts.odds || 2.0);
         rows = [
-          { label: 'Your bet',       value: (betKas||stakeKas).toFixed(2) + ' KAS', cls: '' },
-          { label: 'Hedge (50%)',    value: calc.hedgeAmount.toFixed(2) + ' KAS', cls: 'yellow' },
-          { label: 'Hedge fee (30%)',value: '−' + calc.protocolFee.toFixed(2) + ' KAS', cls: 'muted' },
-          { label: 'Claimable',      value: calc.claimable.toFixed(2) + ' KAS', cls: 'yellow' },
+          { label: 'Result',         value: 'Maximizer Win',          cls: '' },
+          { label: 'Bet',            value: betKas.toFixed(2) + ' KAS', cls: '' },
+          { label: 'Protocol fee',   value: calc.protocolFee.toFixed(2) + ' KAS (2%)', cls: 'muted' },
+          { label: 'Treasury',       value: Fee.treasuryAddress().substring(0,18)+'…', cls: 'muted' },
+          { label: 'Your payout',    value: calc.netPayout.toFixed(2) + ' KAS', cls: 'highlight' },
         ];
-        payoutBig = 'Claim ' + (betKas||stakeKas) * 0.35 |0 + ' KAS'; payoutClass = 'draw';
-        titleText = 'You Lost — Claim Hedge';
+      } else {
+        const calc = Fee.maximizerLoseSettle(betKas);
+        rows = [
+          { label: 'Result',       value: 'Maximizer — Claim Hedge', cls: '' },
+          { label: 'Bet',          value: betKas.toFixed(2) + ' KAS', cls: '' },
+          { label: 'Hedge fee',    value: calc.protocolFee.toFixed(2) + ' KAS (30%)', cls: 'muted' },
+          { label: 'Claimable',    value: calc.claimable.toFixed(2) + ' KAS', cls: 'highlight' },
+        ];
       }
-      primaryLabel = isMaximizer ? 'Claim Hedge' : 'Close';
-      secondaryLabel = 'Close';
-
-    } else if (type === 'draw') {
-      icon = '🤝'; titleClass = 'draw'; titleText = 'Draw';
-      const half = stakeKas; // each gets their stake back
-      subtitle = `Match ${matchId || ''} — stakes returned`;
-      payoutBig = half.toFixed(2) + ' KAS each'; payoutClass = 'draw';
-      rows = [
-        { label: 'Each player gets', value: half.toFixed(2) + ' KAS', cls: 'yellow' },
-        { label: 'Protocol fee',     value: 'None (draw)', cls: 'muted' },
-      ];
-      primaryLabel = 'Claim Refund'; secondaryLabel = 'Close';
-
     } else {
-      // preview — before TX fires
-      icon = '📋'; titleClass = 'preview'; titleText = 'Settlement Preview';
-      subtitle = 'Review before signing';
       const calc = Fee.skillGameSettle(stakeKas);
-      payoutBig = calc.winnerPayout.toFixed(2) + ' KAS'; payoutClass = '';
-      rows = [
-        { label: 'Stake each',     value: stakeKas.toFixed(2) + ' KAS', cls: '' },
-        { label: 'Total pool',     value: calc.totalPool.toFixed(2) + ' KAS', cls: '' },
-        { label: 'Protocol fee',   value: calc.protocolFee.toFixed(2) + ' KAS (2%)', cls: 'muted' },
-        { label: 'Winner gets',    value: calc.winnerPayout.toFixed(2) + ' KAS', cls: 'green' },
-        { label: 'Winner address', value: (winner||'TBD').substring(0,16)+'…', cls: 'muted' },
-        { label: 'Treasury',       value: Fee.treasuryAddress().substring(0,18)+'…', cls: 'muted' },
-      ];
-      primaryLabel = 'Confirm & Sign'; secondaryLabel = 'Cancel';
+      if (result === 'win') {
+        rows = [
+          { label: 'Result',       value: 'Winner',                          cls: '' },
+          { label: 'Total pool',   value: calc.totalPool.toFixed(2) + ' KAS', cls: '' },
+          { label: 'Stake each',   value: stakeKas.toFixed(2) + ' KAS',       cls: '' },
+          { label: 'Protocol fee', value: calc.protocolFee.toFixed(2) + ' KAS (2%)', cls: 'muted' },
+          { label: 'Treasury',     value: Fee.treasuryAddress().substring(0,18)+'…', cls: 'muted' },
+          { label: 'Your payout',  value: calc.winnerPayout.toFixed(2) + ' KAS', cls: 'highlight' },
+        ];
+      } else {
+        rows = [
+          { label: 'Result',     value: 'Defeat',    cls: '' },
+          { label: 'You lose',   value: stakeKas.toFixed(2) + ' KAS', cls: 'muted' },
+          { label: 'Your payout', value: '0 KAS',   cls: '' },
+        ];
+      }
     }
 
-    const rowsHtml = rows.map(r =>
-      `<div class="htp-breakdown-row"><span class="bd-label">${r.label}</span><span class="bd-value ${r.cls}">${r.value}</span></div>`
+    const rowsHTML = rows.map(r =>
+      `<div class="htp-overlay-row ${r.cls}"><span class="lbl">${r.label}</span><span class="val">${r.value}</span></div>`
     ).join('');
-
-    const txHtml = txId
-      ? `<div class="htp-tx-link">TX: <a href="${getExplorer(txId)}" target="_blank">${txId.substring(0,24)}…</a></div>`
-      : '';
 
     const backdrop = document.createElement('div');
     backdrop.className = 'htp-overlay-backdrop';
     backdrop.innerHTML = `
       <div class="htp-overlay-card">
-        <span class="htp-overlay-icon">${icon}</span>
-        <div class="htp-overlay-title ${titleClass}">${titleText}</div>
-        <div class="htp-overlay-subtitle">${subtitle}</div>
-        <div class="htp-overlay-payout-big ${payoutClass}">${payoutBig}</div>
-        <div class="htp-breakdown">${rowsHtml}</div>
-        <div class="htp-overlay-buttons">
-          <button class="htp-overlay-btn secondary" id="htp-overlay-cancel">${secondaryLabel}</button>
-          <button class="htp-overlay-btn primary"   id="htp-overlay-confirm">${primaryLabel}</button>
+        <h2>${title} <span class="badge ${badge}">${badge.toUpperCase()}</span></h2>
+        <div class="htp-overlay-rows">${rowsHTML}</div>
+        <div class="htp-overlay-actions">
+          <button class="cancel" id="htp-ov-cancel">Cancel</button>
+          <button class="confirm" id="htp-ov-confirm">Confirm &amp; Sign</button>
         </div>
-        ${txHtml}
       </div>
     `;
     document.body.appendChild(backdrop);
 
-    document.getElementById('htp-overlay-confirm').addEventListener('click', function() {
-      if (txId) { window.open(getExplorer(txId), '_blank'); }
+    document.getElementById('htp-ov-cancel').addEventListener('click', function() { backdrop.remove(); });
+    backdrop.addEventListener('click', function(e) { if (e.target === backdrop) backdrop.remove(); });
+    document.getElementById('htp-ov-confirm').addEventListener('click', async function() {
+      this.textContent = 'Signing…';
+      this.disabled    = true;
       backdrop.remove();
-      if (typeof onConfirm === 'function') onConfirm();
+      if (typeof txCb === 'function') await txCb();
     });
-    document.getElementById('htp-overlay-cancel').addEventListener('click', function() {
-      backdrop.remove();
-      if (typeof onCancel === 'function') onCancel();
-    });
-    backdrop.addEventListener('click', function(e) {
-      if (e.target === backdrop) { backdrop.remove(); if (typeof onCancel === 'function') onCancel(); }
-    });
-
-    return backdrop;
   }
 
-  W.HTPSettlementOverlay = { show };
-  console.log('[HTPSettlementOverlay] loaded');
+  /**
+   * Show result after TX is broadcast.
+   * @param {object} opts — { result: 'win'|'lose'|'draw', txId, explorerBase }
+   */
+  function showResult(opts) {
+    injectStyles();
+    const { result, txId, explorerBase } = opts || {};
+    const explorerUrl = txId
+      ? (explorerBase || 'https://explorer-tn12.kaspa.org/txs/') + txId
+      : null;
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'htp-overlay-backdrop';
+    backdrop.innerHTML = `
+      <div class="htp-overlay-card" style="text-align:center">
+        <h2 style="justify-content:center">Game Over <span class="badge ${result || 'draw'}">${(result||'draw').toUpperCase()}</span></h2>
+        ${txId ? `<p style="font-size:12px;color:#64748b;word-break:break-all;margin:0 0 16px">${txId}</p>` : ''}
+        ${explorerUrl ? `<div class="htp-overlay-explorer"><a href="${explorerUrl}" target="_blank" rel="noopener">View on Explorer ↗</a></div>` : ''}
+        <div class="htp-overlay-actions" style="margin-top:16px">
+          <button class="confirm" id="htp-ov-close">Close</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+    document.getElementById('htp-ov-close').addEventListener('click', function() { backdrop.remove(); });
+    backdrop.addEventListener('click', function(e) { if (e.target === backdrop) backdrop.remove(); });
+  }
+
+  W.HTPSettlementOverlay = { showPreview, showResult };
+  console.log('[HTPSettlementOverlay v2] loaded — uses htp-fee-shim.js');
 })(window);
