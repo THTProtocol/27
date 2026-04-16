@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 
 # Cache deps layer
-COPY Cargo.toml Cargo.lock ./
+COPY Cargo.toml ./
 RUN mkdir src && echo 'fn main(){}' > src/main.rs \
     && cargo build --release \
     && rm -rf src
