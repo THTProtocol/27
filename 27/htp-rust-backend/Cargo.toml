@@ -1,8 +1,8 @@
 [package]
 name = "htp-rust-backend"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-description = "High Table Protocol - Rust backend replacing WASM for native-speed transaction construction"
+description = "High Table Protocol - Rust backend: tx construction, wallet ops, and game oracle"
 
 [[bin]]
 name = "htp-backend"
@@ -32,6 +32,9 @@ hex = "0.4"
 
 # BIP39 mnemonic
 bip39 = "2"
+
+# Chess engine (next PR: full shakmaty integration for /oracle/chess)
+# shakmaty = "0.27"
 
 # Logging
 tracing = "0.1"
