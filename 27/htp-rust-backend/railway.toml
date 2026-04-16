@@ -5,12 +5,6 @@ dockerfilePath = "Dockerfile"
 [deploy]
 startCommand = "/app/htp-backend"
 healthcheckPath = "/health"
-healthcheckTimeout = 30
+healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 5
-
-[deploy.envs]
-PORT = "8080"
-KASPA_NETWORK = "testnet-12"
-KASPA_API_BASE = "https://api-tn12.kaspa.org"
-RUST_LOG = "info"
