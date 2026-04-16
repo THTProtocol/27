@@ -1,14 +1,4 @@
 //! escrow.rs — KIP-10 P2SH Covenant Escrow: create, sign-payout, sign-cancel
-//!
-//! Kaspa uses Schnorr signatures over secp256k1.
-//! The signature message is BLAKE2b-256 of the serialised transaction
-//! (matching Kaspa's SigHash spec: version + inputs + outputs + locktime).
-//!
-//! Script paths:
-//!   OP_IF   → cancel:     <creator_pubkey> OP_CHECKSIG
-//!   OP_ELSE → settlement: <settlement_pubkey> OP_CHECKSIG
-//!                         OP_TXOUTPUTCOUNT OP_2 OP_EQUAL
-//!   OP_ENDIF
 
 use anyhow::Result;
 use blake2::{Blake2b, Digest};
@@ -20,7 +10,6 @@ use crate::types::*;
 
 const NETWORK_FEE_SOMPI: u64 = 10_000;
 
-// Script opcodes (Kaspa / KIP-10 / KIP-17)
 const OP_IF:            u8 = 0x63;
 const OP_ELSE:          u8 = 0x67;
 const OP_ENDIF:         u8 = 0x68;
@@ -28,8 +17,8 @@ const OP_CHECKSIG:      u8 = 0xAC;
 const OP_TXOUTPUTCOUNT: u8 = 0xC1;
 const OP_EQUAL:         u8 = 0x87;
 const OP_2:             u8 = 0x52;
-const OP_1:             u8 = 0x51; // push TRUE  (settlement branch selector)
-const OP_0:             u8 = 0x00; // push FALSE (cancel branch selector)
+const OP_1:             u8 = 0x51;
+const OP_0:             u8 = 0x00;
 
 fn push_bytes(data: &[u8]) -> Vec<u8> {
     let mut out = Vec::new();
@@ -52,7 +41,6 @@ fn push_bytes(data: &[u8]) -> Vec<u8> {
     out
 }
 
-/// Kaspa SigHash: BLAKE2b-256 over the serialised transaction.
 fn sighash(tx: &serde_json::Value) -> [u8; 32] {
     let preimage = serde_json::to_vec(tx).unwrap_or_default();
     let mut h = <Blake2b<U32>>::new();
@@ -60,8 +48,6 @@ fn sighash(tx: &serde_json::Value) -> [u8; 32] {
     h.finalize().into()
 }
 
-/// Sign a sighash with Schnorr (BIP-340 x-only keypair).
-/// Uses only secp256k1::{Secp256k1, SecretKey, Message, Keypair} — no bitcoin-hashes feature needed.
 fn schnorr_sign(secret_key_hex: &str, hash: &[u8; 32]) -> Result<String> {
     let secp = Secp256k1::new();
     let sk_bytes = hex::decode(secret_key_hex)
@@ -73,11 +59,10 @@ fn schnorr_sign(secret_key_hex: &str, hash: &[u8; 32]) -> Result<String> {
         .map_err(|e| anyhow::anyhow!("Bad secret key: {}", e))?;
     let keypair = secp256k1::Keypair::from_secret_key(&secp, &sk);
     let msg = Message::from_digest(*hash);
-    let sig = secp.sign_schnorr(&msg, &keypair);
+    let sig = secp.sign_schnorr_with_rng(&msg, &keypair, &mut rand::thread_rng());
     Ok(hex::encode(sig.as_ref()))
 }
 
-/// scriptSig for settlement path (OP_ELSE): <sig> OP_1 <redeemScript>
 fn settlement_script_sig(sig_hex: &str, redeem_script: &[u8]) -> String {
     let sig_bytes = hex::decode(sig_hex).unwrap_or_default();
     let mut s = Vec::new();
@@ -87,7 +72,6 @@ fn settlement_script_sig(sig_hex: &str, redeem_script: &[u8]) -> String {
     hex::encode(&s)
 }
 
-/// scriptSig for cancel path (OP_IF): <sig> OP_0 <redeemScript>
 fn cancel_script_sig(sig_hex: &str, redeem_script: &[u8]) -> String {
     let sig_bytes = hex::decode(sig_hex).unwrap_or_default();
     let mut s = Vec::new();
@@ -97,9 +81,6 @@ fn cancel_script_sig(sig_hex: &str, redeem_script: &[u8]) -> String {
     hex::encode(&s)
 }
 
-/// Create a KIP-10 P2SH escrow address.
-/// Returns address, script_hash, and redeem_script_hex.
-/// redeem_script_hex MUST be stored — it is required for signing later.
 pub fn create_escrow(req: &EscrowCreateRequest) -> Result<EscrowCreateResponse> {
     let network = req.network.as_deref().unwrap_or("testnet-12");
     let prefix  = if network.contains("main") { "kaspa" } else { "kaspatest" };
@@ -109,9 +90,6 @@ pub fn create_escrow(req: &EscrowCreateRequest) -> Result<EscrowCreateResponse> 
     let pubkey_b = hex::decode(&req.pubkey_b)
         .map_err(|_| anyhow::anyhow!("Invalid hex for pubkey_b"))?;
 
-    // OP_IF <pubkey_a> OP_CHECKSIG
-    // OP_ELSE <pubkey_b> OP_CHECKSIG OP_TXOUTPUTCOUNT OP_2 OP_EQUAL
-    // OP_ENDIF
     let mut script = Vec::new();
     script.push(OP_IF);
     script.extend(push_bytes(&pubkey_a));
@@ -136,9 +114,6 @@ pub fn create_escrow(req: &EscrowCreateRequest) -> Result<EscrowCreateResponse> 
     Ok(EscrowCreateResponse { escrow_address, script_hash: script_hash_hex, redeem_script_hex })
 }
 
-/// Build + sign a payout TX (settlement path: OP_ELSE).
-/// Output 0 → winner_address, Output 1 → treasury_address.
-/// Returns signed=true when signing_key_hex + redeem_script_hex are provided.
 pub fn build_payout(req: &EscrowPayoutRequest) -> Result<TxResponse> {
     let total: u64 = req.utxos.iter().map(|u| u.amount).sum();
     if total <= NETWORK_FEE_SOMPI {
@@ -199,8 +174,6 @@ pub fn build_payout(req: &EscrowPayoutRequest) -> Result<TxResponse> {
     Ok(TxResponse { raw_tx: serde_json::to_string(&tx)?, tx_id, signed })
 }
 
-/// Build + sign a cancel TX (cancel path: OP_IF).
-/// Output 0 → player_a (half), Output 1 → player_b (half).
 pub fn build_cancel(req: &EscrowCancelRequest) -> Result<TxResponse> {
     let total: u64 = req.utxos.iter().map(|u| u.amount).sum();
     if total <= NETWORK_FEE_SOMPI {

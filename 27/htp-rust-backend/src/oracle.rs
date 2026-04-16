@@ -1,6 +1,4 @@
 //! oracle.rs - Game move validators and settlement signing.
-//! Ports htp-oracle-server.js to native Rust.
-//! Routes: POST /oracle/chess, /oracle/connect4, /oracle/tictactoe, /oracle/resign
 
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
@@ -62,11 +60,11 @@ fn check_c4_win(board: &[Vec<Option<u8>>], player: u8) -> bool {
 
 pub fn validate_connect4_move(req: &Connect4Request) -> Connect4Response {
     if req.col>=COLS||req.board.len()!=ROWS {
-        return Connect4Response{valid:false,board:None,row:None,col:None,player:None,game_over:false,winner:None,reason:None,signature:None,error:Some("Invalid col or board".into())};
+        return Connect4Response{valid:false,board:None,row:None,col:None,player:None,game_over:false,winner:None,reason:None,signature:None,error:Some("Invalid col or board".to_string())};
     }
     let row=(0..ROWS).rev().find(|&r| req.board[r][req.col].is_none());
     let Some(row)=row else {
-        return Connect4Response{valid:false,board:None,row:None,col:None,player:None,game_over:false,winner:None,reason:None,signature:None,error:Some("Column full".into())};
+        return Connect4Response{valid:false,board:None,row:None,col:None,player:None,game_over:false,winner:None,reason:None,signature:None,error:Some("Column full".to_string())};
     };
     let mut nb=req.board.clone();
     nb[row][req.col]=Some(req.player);
@@ -74,8 +72,8 @@ pub fn validate_connect4_move(req: &Connect4Request) -> Connect4Response {
     let full=nb[0].iter().all(|c|c.is_some());
     let draw=!won&&full;
     let game_over=won||draw;
-    let winner=if won{Some(req.player.to_string())}else if draw{Some("draw".into())}else{None};
-    let reason=if won{Some("connect4".into())}else if draw{Some("draw".into())}else{None};
+    let winner=if won{Some(req.player.to_string())}else if draw{Some("draw".to_string())}else{None};
+    let reason=if won{Some("connect4".to_string())}else if draw{Some("draw".to_string())}else{None};
     let signature=if game_over{if let(Some(mid),Some(ref w),Some(ref rs))=(&req.match_id,&winner,&reason){sign_result(mid,w,rs)}else{None}}else{None};
     Connect4Response{valid:true,board:Some(nb),row:Some(row),col:Some(req.col),player:Some(req.player),game_over,winner,reason,signature,error:None}
 }
@@ -102,10 +100,10 @@ pub struct TicTacToeResponse {
 
 pub fn validate_tictactoe_move(req: &TicTacToeRequest) -> TicTacToeResponse {
     if req.cell>8||req.board.len()!=9{
-        return TicTacToeResponse{valid:false,board:None,game_over:false,winner:None,reason:None,signature:None,error:Some("Cell/board invalid".into())};
+        return TicTacToeResponse{valid:false,board:None,game_over:false,winner:None,reason:None,signature:None,error:Some("Cell/board invalid".to_string())};
     }
     if req.board[req.cell].as_deref().map(|s|!s.is_empty()).unwrap_or(false){
-        return TicTacToeResponse{valid:false,board:None,game_over:false,winner:None,reason:None,signature:None,error:Some("Cell occupied".into())};
+        return TicTacToeResponse{valid:false,board:None,game_over:false,winner:None,reason:None,signature:None,error:Some("Cell occupied".to_string())};
     }
     let mut nb=req.board.clone();
     nb[req.cell]=Some(req.player.clone());
@@ -120,8 +118,8 @@ pub fn validate_tictactoe_move(req: &TicTacToeRequest) -> TicTacToeResponse {
     let full=nb.iter().all(|c|c.as_deref().map(|s|!s.is_empty()).unwrap_or(false));
     let draw=winner.is_none()&&full;
     let game_over=winner.is_some()||draw;
-    let final_winner=winner.or_else(||if draw{Some("draw".into())}else{None});
-    let reason=if game_over{if draw{Some("draw".into())}else{Some("win".into())}}else{None};
+    let final_winner=winner.or_else(||if draw{Some("draw".to_string())}else{None});
+    let reason=if game_over{if draw{Some("draw".to_string())}else{Some("win".to_string())}}else{None};
     let signature=if game_over{if let(Some(mid),Some(ref w),Some(ref rs))=(&req.match_id,&final_winner,&reason){sign_result(mid,w,rs)}else{None}}else{None};
     TicTacToeResponse{valid:true,board:Some(nb),game_over,winner:final_winner,reason,signature,error:None}
 }
@@ -145,11 +143,9 @@ pub struct ChessMoveResponse {
     pub error: Option<String>,
 }
 
-/// Chess validation stub - full shakmaty engine integration is next PR.
-/// Firebase Functions JS oracle remains active until that lands.
 pub fn validate_chess_move(req: &ChessMoveRequest) -> ChessMoveResponse {
     if req.mv.is_empty(){
-        return ChessMoveResponse{valid:false,pgn:None,game_over:false,winner:None,reason:None,signature:None,error:Some("Missing move".into())};
+        return ChessMoveResponse{valid:false,pgn:None,game_over:false,winner:None,reason:None,signature:None,error:Some("Missing move".to_string())};
     }
     ChessMoveResponse{valid:true,pgn:req.pgn.clone(),game_over:false,winner:None,reason:None,signature:None,error:None}
 }
@@ -171,7 +167,7 @@ pub struct ResignResponse {
 
 pub fn process_resign(req: &ResignRequest) -> ResignResponse {
     if req.match_id.is_empty()||req.winner_address.is_empty(){
-        return ResignResponse{success:false,winner:None,signature:None,error:Some("Missing params".into())};
+        return ResignResponse{success:false,winner:None,signature:None,error:Some("Missing params".to_string())};
     }
     let sig=sign_result(&req.match_id,&req.winner_address,"resign");
     ResignResponse{success:true,winner:Some(req.winner_address.clone()),signature:sig,error:None}
