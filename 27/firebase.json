@@ -17,78 +17,49 @@
       {
         "source": "index.html",
         "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
-          },
-          {
-            "key": "Pragma",
-            "value": "no-cache"
-          }
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+          { "key": "Pragma", "value": "no-cache" }
         ]
       },
       {
         "source": "**/*.html",
         "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
-          }
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
         ]
       },
       {
         "source": "**/*.js",
         "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache, must-revalidate"
-          }
+          { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
         ]
       },
       {
         "source": "**/*.wasm",
         "headers": [
-          {
-            "key": "Content-Type",
-            "value": "application/wasm"
-          },
-          {
-            "key": "Cross-Origin-Resource-Policy",
-            "value": "cross-origin"
-          }
+          { "key": "Content-Type", "value": "application/wasm" },
+          { "key": "Cross-Origin-Resource-Policy", "value": "cross-origin" }
         ]
       },
       {
         "source": "**",
         "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate, max-age=0"
-          },
-          {
-            "key": "Pragma",
-            "value": "no-cache"
-          },
-          {
-            "key": "Expires",
-            "value": "0"
-          },
-          {
-            "key": "Cross-Origin-Opener-Policy",
-            "value": "same-origin"
-          },
-          {
-            "key": "Cross-Origin-Resource-Policy",
-            "value": "cross-origin"
-          },
-          {
-            "key": "Cross-Origin-Embedder-Policy",
-            "value": "unsafe-none"
-          }
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, max-age=0" },
+          { "key": "Pragma", "value": "no-cache" },
+          { "key": "Expires", "value": "0" },
+          { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+          { "key": "Cross-Origin-Resource-Policy", "value": "cross-origin" },
+          { "key": "Cross-Origin-Embedder-Policy", "value": "unsafe-none" }
         ]
       }
     ],
     "rewrites": [
+      {
+        "source": "/api/**",
+        "run": {
+          "serviceId": "htp-rust-backend",
+          "region": "us-central1"
+        }
+      },
       {
         "source": "**",
         "destination": "/index.html"
