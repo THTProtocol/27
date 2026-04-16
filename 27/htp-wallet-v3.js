@@ -245,13 +245,6 @@
  * Unifies window.walletAddress / window.htpAddress / window.connectedAddress
  * into a single backing store so ALL panels (navbar, portfolio, claim)
  * always show the same connected wallet.
- *
- * Root cause that was fixed:
- *   - htpConnectManual (index.html) only wrote window.walletAddress
- *   - htp-wallet-v3.js only wrote connectedAddress + htpAddress
- *   - Portfolio initClaimPanel read walletAddress -> showed stale escrow addr
- *   - Navbar read connectedAddress -> showed correct wallet addr
- *   => two different addresses shown simultaneously
  * ═══════════════════════════════════════════════════════════════════════════ */
 (function(W) {
   'use strict';
@@ -265,6 +258,8 @@
         set: function(v) {
           _addr = v || '';
           if (_addr) { try { localStorage.setItem('htp_last_address', _addr); } catch(e) {} }
+          // Keep claim address chip in sync
+          _updateClaimAddrDisplay(_addr);
         },
         configurable: true, enumerable: true
       });
@@ -303,8 +298,134 @@
     try { var s = localStorage.getItem('htp_last_address'); if (s && s.startsWith('kaspa')) _addr = s; } catch(e) {}
   }
 
-  W.addEventListener('htp:wallet:connected',    function(e) { if (e.detail && e.detail.address) _addr = e.detail.address; });
-  W.addEventListener('htp:wallet:disconnected', function()  { _addr = ''; try { localStorage.removeItem('htp_last_address'); } catch(e) {} });
+  W.addEventListener('htp:wallet:connected',    function(e) { if (e.detail && e.detail.address) _addr = e.detail.address; _updateClaimAddrDisplay(_addr); });
+  W.addEventListener('htp:wallet:disconnected', function()  { _addr = ''; _updateClaimAddrDisplay(''); try { localStorage.removeItem('htp_last_address'); } catch(e) {} });
 
   console.log('[htp-address-sync v1] Unified address proxy active —', _addr || '(no address yet)');
+})(window);
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * CLAIM ADDRESS LOCK PATCH
+ *
+ * The "Claim to Address" field in the Manual Claim form was a free-text
+ * <input> — users should never type an address there. The claim destination
+ * must always be the connected wallet (extension, mnemonic, or hex import).
+ *
+ * This patch:
+ *  1. On DOM ready, replaces the <input id="claimToAddr"> with a read-only
+ *     address chip showing the connected wallet address.
+ *  2. Keeps a hidden <input id="claimToAddr"> in the DOM (value always = 
+ *     connected address) so htpClaimNow() continues to read it unchanged.
+ *  3. Shows a "Connect wallet first" prompt if no wallet is connected.
+ *  4. Updates the display on every wallet connect/disconnect event.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+(function(W) {
+  'use strict';
+
+  function _buildClaimAddrChip(addr) {
+    var short = addr
+      ? addr.substring(0, 14) + '...' + addr.slice(-8)
+      : null;
+
+    var wrapper = document.createElement('div');
+    wrapper.id = 'claimToAddrDisplay';
+    wrapper.style.cssText = [
+      'display:flex',
+      'align-items:center',
+      'gap:10px',
+      'padding:10px 14px',
+      'background:rgba(73,232,194,0.04)',
+      'border:1px solid rgba(73,232,194,0.18)',
+      'border-radius:10px',
+      'min-height:42px'
+    ].join(';');
+
+    if (addr) {
+      // Green dot + address
+      var dot = document.createElement('span');
+      dot.style.cssText = 'width:7px;height:7px;border-radius:50%;background:#49e8c2;flex-shrink:0;display:inline-block';
+
+      var addrSpan = document.createElement('span');
+      addrSpan.id = 'claimToAddrText';
+      addrSpan.style.cssText = 'font-family:monospace;font-size:12px;color:#49e8c2;word-break:break-all';
+      addrSpan.title = addr;
+      addrSpan.textContent = short;
+
+      var lockIcon = document.createElement('span');
+      lockIcon.style.cssText = 'margin-left:auto;font-size:11px;color:rgba(73,232,194,0.4);white-space:nowrap;flex-shrink:0';
+      lockIcon.textContent = '🔒 connected wallet';
+
+      wrapper.appendChild(dot);
+      wrapper.appendChild(addrSpan);
+      wrapper.appendChild(lockIcon);
+    } else {
+      // No wallet connected
+      var warn = document.createElement('span');
+      warn.id = 'claimToAddrText';
+      warn.style.cssText = 'font-size:12px;color:#f59e0b';
+      warn.innerHTML = '⚠ Connect your wallet first — winnings go to your connected address';
+      wrapper.style.borderColor = 'rgba(245,158,11,0.3)';
+      wrapper.appendChild(warn);
+    }
+
+    return wrapper;
+  }
+
+  function _updateClaimAddrDisplay(addr) {
+    // Update the visible chip
+    var display = document.getElementById('claimToAddrDisplay');
+    if (display) {
+      var newChip = _buildClaimAddrChip(addr);
+      display.parentNode.replaceChild(newChip, display);
+    }
+    // Keep the hidden input value in sync so htpClaimNow() still works
+    var hidden = document.getElementById('claimToAddr');
+    if (hidden) hidden.value = addr || '';
+  }
+
+  // Expose so the address-sync patch (above) can call it
+  W._updateClaimAddrDisplay = _updateClaimAddrDisplay;
+
+  function _installClaimAddrLock() {
+    var input = document.getElementById('claimToAddr');
+    if (!input) return; // not on this page / not rendered yet
+
+    var addr = W.connectedAddress || W.htpAddress || W.walletAddress || '';
+
+    // Build the visible chip
+    var chip = _buildClaimAddrChip(addr);
+
+    // Hide the original input but keep it in DOM so htpClaimNow() reads it
+    input.type = 'hidden';
+    input.value = addr;
+    input.style.display = 'none';
+
+    // Also hide the parent <div class="fg"> label + input wrapper,
+    // replace it with just the chip (no label needed — self-explanatory)
+    var fg = input.closest('.fg') || input.parentNode;
+    if (fg) {
+      fg.style.cssText = '';           // clear any flex/grid layout
+      // Insert chip before the hidden input
+      fg.insertBefore(chip, input);
+      // Hide the label inside fg (the text "Claim to Address (defaults...)")
+      var lbl = fg.querySelector('label');
+      if (lbl) lbl.style.display = 'none';
+    } else {
+      input.parentNode.insertBefore(chip, input);
+    }
+
+    console.log('[HTP Claim Lock] claimToAddr locked to connected wallet:', addr || '(none)');
+  }
+
+  // Install on DOMContentLoaded and retry for late renders
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _installClaimAddrLock);
+  } else {
+    _installClaimAddrLock();
+  }
+  // Portfolio tab may render the claim form lazily — retry a few times
+  setTimeout(_installClaimAddrLock, 400);
+  setTimeout(_installClaimAddrLock, 1200);
+  setTimeout(_installClaimAddrLock, 3000);
+
 })(window);
