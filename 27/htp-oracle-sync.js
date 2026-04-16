@@ -1,6 +1,11 @@
-// HTP Oracle Sync v2 — unified naming
+// HTP Oracle Sync v3 — accurate mode naming
 // Modes: oracle-verified | oracle-bonded | oracle-hybrid
 // Firebase: oracle_proofs/<id>, attestations/<id>, oracle_bonds
+//
+// Display names (post-Toccata accurate):
+//   oracle-verified = "L1-Verified (ZK)"        — Groth16/STARK proof verified by L1 nodes
+//   oracle-bonded   = "Bond-Attested"            — human attester posts bond, result is challengeable
+//   oracle-hybrid   = "ZK-Primary + Bond Fallback" — ZK first, bond escalation if ZK unavailable
 (function() {
 'use strict';
 
@@ -21,7 +26,7 @@ window.refreshOracleStats = async function() {
       earned     += parseFloat(d.earned   || 0);
       slashed    += parseFloat(d.slashed  || 0);
       resolved   += parseInt(d.resolved   || 0);
-      confirmed  += parseInt(d.confirmed  || d.zkConfirmed || 0); // compat
+      confirmed  += parseInt(d.confirmed  || d.zkConfirmed || 0);
     });
 
     var set = function(id, val) {
@@ -42,22 +47,23 @@ window.refreshOracleStats = async function() {
   }
 };
 
-// ── Unified mode names ──────────────────────────────────────────────
-// oracle-verified = on-chain proof verified (was: zkOracle / miner)
-// oracle-bonded   = bond-staked reporter    (was: bondedOracle / bonded)
-// oracle-hybrid   = verified + bond fallback (was: hybridOracle / hybrid)
+// ── Unified mode display names ──────────────────────────────────────
+// Internal values never change (backward compat with Firestore docs).
+// Only the human-visible labels change here.
 
 var MODE_LABELS = {
-  'oracle-verified': 'Verified',
-  'oracle-bonded':   'Bonded',
-  'oracle-hybrid':   'Hybrid'
+  'oracle-verified': 'L1-Verified (ZK)',
+  'oracle-bonded':   'Bond-Attested',
+  'oracle-hybrid':   'ZK-Primary + Bond Fallback'
 };
 
-// Backward compat: old values silently map to unified names
+// Backward compat: all legacy strings map to unified internal keys
 var MODE_ALIAS = {
   'miner':        'oracle-verified',
   'bonded':       'oracle-bonded',
   'hybrid':       'oracle-hybrid',
+  'zk':           'oracle-verified',
+  'bond':         'oracle-bonded',
   'zkOracle':     'oracle-verified',
   'bondedOracle': 'oracle-bonded',
   'hybridOracle': 'oracle-hybrid'
@@ -67,26 +73,88 @@ function normalizeMode(mode) {
   return MODE_ALIAS[mode] || mode;
 }
 
-// 2. setOracleMode — accepts old or new mode strings
-var _origSetMode = window.setOracleMode;
+// 2. setOracleMode — accepts any legacy or new mode string
 window.setOracleMode = function(rawMode) {
   var mode = normalizeMode(rawMode);
-  if (_origSetMode) _origSetMode(mode);
 
-  var disp = document.getElementById('oracleModeDisplay');
-  if (disp) disp.textContent = MODE_LABELS[mode] || mode;
+  // Update all display spans
+  document.querySelectorAll('#oracleModeDisplay, [id="oracleModeDisplay"]').forEach(function(el) {
+    el.textContent = MODE_LABELS[mode] || mode;
+  });
 
-  // cOracle always stores the unified mode string
+  // Sync both select elements to the canonical internal value
   var cOracle = document.getElementById('cOracle');
-  if (cOracle) cOracle.value = mode;
+  var modeSelect = document.getElementById('oracleModeSelect');
+
+  // Map internal oracle-* keys back to the values each select uses
+  var cOracleMap = {
+    'oracle-verified': 'zkOracle',
+    'oracle-bonded':   'bondedOracle',
+    'oracle-hybrid':   'hybridOracle'
+  };
+  var modeSelectMap = {
+    'oracle-verified': 'zk',
+    'oracle-bonded':   'bond',
+    'oracle-hybrid':   'hybrid'
+  };
+
+  if (cOracle && cOracleMap[mode]) cOracle.value = cOracleMap[mode];
+  if (modeSelect && modeSelectMap[mode]) modeSelect.value = modeSelectMap[mode];
 
   var bondAmt = document.getElementById('oBondAmt');
   if (bondAmt && mode === 'oracle-bonded') bondAmt.min = 5000;
 
-  console.log('[HTP Oracle Sync] Mode:', mode, '(' + (MODE_LABELS[mode] || mode) + ')');
+  console.log('[HTP Oracle Sync] Mode set:', mode, '→', MODE_LABELS[mode] || mode);
 };
 
-// 3. Attest panel — select market from queue
+// 3. Patch the oracleModeSelect dropdown option text on load
+function patchDropdownLabels() {
+  // oracleModeSelect (oracle tab selector)
+  var ms = document.getElementById('oracleModeSelect');
+  if (ms) {
+    Array.from(ms.options).forEach(function(opt) {
+      var mapped = MODE_ALIAS[opt.value] || opt.value;
+      if (MODE_LABELS[mapped]) opt.text = MODE_LABELS[mapped];
+    });
+  }
+  // cOracle (event creator selector)
+  var co = document.getElementById('cOracle');
+  if (co) {
+    Array.from(co.options).forEach(function(opt) {
+      var mapped = MODE_ALIAS[opt.value] || opt.value;
+      if (MODE_LABELS[mapped]) opt.text = MODE_LABELS[mapped];
+    });
+  }
+  // Section header — "ZK Miner Attestation Status" → "ZK Verifier Attestation Status"
+  document.querySelectorAll('h3').forEach(function(h) {
+    if (h.textContent.trim() === 'ZK Miner Attestation Status') {
+      h.textContent = 'ZK Verifier Attestation Status';
+    }
+  });
+  // Paragraph text containing "ZK miners"
+  document.querySelectorAll('p').forEach(function(p) {
+    if (p.textContent.indexOf('ZK miners') !== -1) {
+      p.innerHTML = p.innerHTML.replace(/ZK miners/g, 'ZK verifiers');
+    }
+  });
+  // oracleModeDisplay initial value
+  var disp = document.getElementById('oracleModeDisplay');
+  if (disp && disp.textContent === 'Hybrid ZK+Bond Fallback') {
+    disp.textContent = MODE_LABELS['oracle-hybrid'];
+  }
+}
+
+// 4. Patch the _OL badge map used in markets list
+function patchOracleBadgeMap() {
+  if (window._OL) {
+    window._OL['hybridOracle'] = 'ZK-Primary + Bond Fallback';
+    window._OL['zkOracle']     = 'L1-Verified (ZK)';
+    window._OL['bondedOracle'] = 'Bond-Attested';
+    window._OL['apiOracle']    = 'API Quorum';
+  }
+}
+
+// 5. Attest panel — select market from queue
 window.selectOracleMarket = function(eventId, outcomes) {
   var activeEl = document.getElementById('activeEventId');
   if (activeEl) { activeEl.value = eventId; activeEl.dataset.eventId = eventId; }
@@ -108,7 +176,7 @@ window.selectOracleMarket = function(eventId, outcomes) {
   console.log('[HTP Oracle Sync] Market selected:', eventId, 'outcomes:', outcomes);
 };
 
-// 4. Wire oracle queue cards
+// 6. Wire oracle queue cards
 var _origRenderQueue = window.renderOracleQueue;
 window.renderOracleQueue = function() {
   if (_origRenderQueue) _origRenderQueue.apply(this, arguments);
@@ -126,7 +194,7 @@ window.renderOracleQueue = function() {
   }, 100);
 };
 
-// 5. Auto-refresh on wallet connect
+// 7. Auto-refresh on wallet connect
 var _origOnWasmReady = window._onWasmReady;
 window._onWasmReady = function() {
   if (_origOnWasmReady) _origOnWasmReady();
@@ -138,11 +206,24 @@ document.addEventListener('click', function(e) {
   if (nav) setTimeout(window.refreshOracleStats, 300);
 });
 
+// Run label patches after DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    patchDropdownLabels();
+    patchOracleBadgeMap();
+  });
+} else {
+  patchDropdownLabels();
+  patchOracleBadgeMap();
+}
+// Re-run after dynamic content loads
 setTimeout(function() {
+  patchDropdownLabels();
+  patchOracleBadgeMap();
   if (window.connectedAddress || window.htpAddress || window.walletAddress) {
     window.refreshOracleStats();
   }
-}, 3000);
+}, 2000);
 
-console.log('[HTP Oracle Sync v2] Loaded — modes: oracle-verified / oracle-bonded / oracle-hybrid');
+console.log('[HTP Oracle Sync v3] Loaded — L1-Verified (ZK) / Bond-Attested / ZK-Primary + Bond Fallback');
 })();
