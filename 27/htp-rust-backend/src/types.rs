@@ -126,3 +126,174 @@ pub struct KaspaBlockDagInfo {
     pub hashrate: Option<f64>,
     pub block_rate: Option<f64>,
 }
+
+// ============================================================
+// Fee Engine types  (fee.rs)
+// ============================================================
+
+#[derive(Debug, Deserialize)]
+pub struct FeeSkillSettleRequest {
+    pub stake_kas: f64,
+    pub network: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FeeSkillSettleResponse {
+    pub total_pool: f64,
+    pub protocol_fee: f64,
+    pub winner_payout: f64,
+    pub protocol_fee_sompi: u64,
+    pub winner_payout_sompi: u64,
+    pub fee_breakdown: String,
+    pub treasury_address: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CancelCheckResponse {
+    pub allowed: bool,
+    pub reason: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CancelCheckRequest {
+    pub game_status: String,
+    pub opponent_joined: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct MaximizerSplitResponse {
+    pub pool_contribution: f64,
+    pub hedge_amount: f64,
+    pub effective_pool_bet: f64,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MaximizerWinRequest {
+    pub bet_kas: f64,
+    pub odds: f64,
+    pub network: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct MaximizerWinResponse {
+    pub gross_payout: f64,
+    pub protocol_fee: f64,
+    pub net_payout: f64,
+    pub hedge_returned: f64,
+    pub total_received: f64,
+    pub fee_breakdown: String,
+    pub treasury_address: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MaximizerLoseRequest {
+    pub bet_kas: f64,
+    pub network: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct MaximizerLoseResponse {
+    pub pool_lost: f64,
+    pub hedge_fee: f64,
+    pub hedge_recovered: f64,
+    pub net_loss: f64,
+    pub fee_breakdown: String,
+    pub treasury_address: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TreasuryRequest {
+    pub network: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TreasuryResponse {
+    pub treasury_address: String,
+    pub network: String,
+}
+
+// ============================================================
+// Settlement types  (settlement.rs)
+// ============================================================
+
+#[derive(Debug, Deserialize)]
+pub struct SettlementPreviewRequest {
+    pub stake_kas: f64,
+    pub winner_address: Option<String>,
+    pub player_a_address: Option<String>,
+    pub player_b_address: Option<String>,
+    pub is_draw: Option<bool>,
+    pub network: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SettlementPreviewResponse {
+    pub stake_kas: f64,
+    pub total_pool: f64,
+    pub winner_amount: f64,
+    pub player_a_amount: f64,
+    pub player_b_amount: f64,
+    pub protocol_fee: f64,
+    pub protocol_fee_sompi: u64,
+    pub winner_payout_sompi: u64,
+    pub treasury_address: String,
+    pub fee_breakdown: String,
+    pub is_draw: bool,
+    pub network: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CovenantValidateRequest {
+    pub redeem_script_hex: String,
+    pub network: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CovenantValidateResponse {
+    pub valid: bool,
+    pub expected_treasury: String,
+    pub found_in_script: bool,
+    pub error: Option<String>,
+}
+
+// ============================================================
+// Deadline types  (deadline.rs)
+// ============================================================
+
+#[derive(Debug, Deserialize)]
+pub struct DeadlineCreateRequest {
+    pub current_daa: u64,
+    pub seconds: Option<f64>,
+    pub daa_score: Option<u64>,
+    pub label: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DeadlineCreateResponse {
+    pub deadline_daa: u64,
+    pub current_daa: u64,
+    pub remaining_daa: u64,
+    pub remaining_secs: f64,
+    pub label: String,
+    pub expired: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DeadlineCheckRequest {
+    pub current_daa: u64,
+    pub deadline_daa: u64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DeadlineCheckResponse {
+    pub expired: bool,
+    pub remaining_daa: u64,
+    pub remaining_secs: f64,
+    pub current_daa: u64,
+    pub deadline_daa: u64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DaaResponse {
+    pub virtual_daa_score: u64,
+}
