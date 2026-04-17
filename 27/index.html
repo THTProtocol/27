@@ -4099,9 +4099,17 @@ html,body{background:#010806!important;}
         <header class="hdr">
             <div class="hdr-in">
                 <a href="javascript:void(0)" class="hdr-brand" onclick="go('overview');return false">
-                    <div class="logo"><img
-                            id="htp-logo-img" src="" alt="HTP"
-                            alt="High Table Protocol" /></div>
+                    <div class="logo">
+                        <img id="htp-logo-img" src="" alt="High Table Protocol"
+                            onerror="this.style.display='none';document.getElementById('htp-logo-svg').style.display='flex'"
+                            style="width:100%;height:100%;object-fit:cover;display:block" />
+                        <div id="htp-logo-svg" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a2e26,#071e1a);border-radius:10px">
+                            <svg viewBox="0 0 40 40" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="4" y="4" width="32" height="32" rx="6" stroke="#49e8c2" stroke-width="2" fill="rgba(73,232,194,0.08)"/>
+                                <text x="20" y="27" text-anchor="middle" font-size="18" font-weight="900" font-family="Inter,sans-serif" fill="#49e8c2">3</text>
+                            </svg>
+                        </div>
+                    </div>
                     <div class="hdr-t"><span>HIGH TABLE PROTOCOL</span><span>Truth Markets on Kaspa</span></div>
                 </a>
                 <button class="menu-toggle" onclick="this.nextElementSibling.classList.toggle('open')"
