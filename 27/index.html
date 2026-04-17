@@ -4823,7 +4823,7 @@ event MyMarket {
                 .sgv2-mform::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(73,232,194,0.008) 2px,rgba(73,232,194,0.008) 4px);pointer-events:none}
                 .sgv2-mform h3{margin:0 0 4px;font-size:20px;font-weight:800;letter-spacing:-0.02em;color:#e8f0f0;position:relative;z-index:1}
                 .sgv2-mform .sgv2-sub{font-size:12px;color:var(--dim);margin:0 0 22px;position:relative;z-index:1;line-height:1.6}
-                .sgv2-gpick{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;position:relative;z-index:1}
+                .sgv2-gpick{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;position:relative;z-index:1}
                 @media(max-width:600px){.sgv2-gpick{grid-template-columns:repeat(2,1fr)}}
                 .sgv2-gpick button{background:rgba(1,8,6,0.5);border:1.5px solid rgba(73,232,194,0.08);border-radius:12px;padding:18px 10px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .2s;position:relative;z-index:1}
                 .sgv2-gpick button:hover{border-color:rgba(73,232,194,0.3);background:rgba(73,232,194,0.06);box-shadow:0 0 16px rgba(73,232,194,0.06)}
@@ -5032,6 +5032,18 @@ event MyMarket {
                         <button type="button" class="sg-gbtn" data-game="tictactoe" style="padding:20px 10px 16px;gap:10px">
                             <span class="sg-ico" style="color:#49e8c2;font-size:40px">✕</span>
                             <span class="sg-lbl" style="font-size:11px">Tic-Tac-Toe</span>
+                        </button>
+                        <button type="button" class="sg-gbtn" data-game="poker" style="padding:20px 10px 16px;gap:10px">
+                            <span class="sg-ico" style="font-size:36px">
+                                <svg viewBox="0 0 40 40" width="36" height="36"><rect width="40" height="40" rx="6" fill="#1a1a2e" stroke="rgba(73,232,194,0.3)" stroke-width="1.5"/><text x="20" y="16" font-size="13" text-anchor="middle" fill="#49e8c2" font-weight="800">A</text><text x="20" y="29" font-size="11" text-anchor="middle" fill="#49e8c2">♠</text></svg>
+                            </span>
+                            <span class="sg-lbl" style="font-size:11px">Poker</span>
+                        </button>
+                        <button type="button" class="sg-gbtn" data-game="blackjack" style="padding:20px 10px 16px;gap:10px">
+                            <span class="sg-ico" style="font-size:36px">
+                                <svg viewBox="0 0 40 40" width="36" height="36"><rect width="40" height="40" rx="6" fill="#1a1a2e" stroke="rgba(73,232,194,0.3)" stroke-width="1.5"/><text x="14" y="16" font-size="11" text-anchor="middle" fill="#fff" font-weight="800">K</text><text x="26" y="16" font-size="11" text-anchor="middle" fill="#49e8c2" font-weight="800">A</text><text x="14" y="29" font-size="11" text-anchor="middle" fill="#fff">♥</text><text x="26" y="29" font-size="11" text-anchor="middle" fill="#49e8c2">♠</text></svg>
+                            </span>
+                            <span class="sg-lbl" style="font-size:11px">Blackjack</span>
                         </button>
                     </div>
                     <script>(function(){var btns=document.querySelectorAll('#sgGamePicker .sg-gbtn'),sel=document.getElementById('sgGame');function act(g){btns.forEach(function(b){var on=b.getAttribute('data-game')===g;b.classList.toggle('act',on);});}btns.forEach(function(b){b.addEventListener('click',function(){sel.value=b.getAttribute('data-game');sel.dispatchEvent(new Event('change'));act(sel.value);});});})();</script>
