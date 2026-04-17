@@ -1,27 +1,9 @@
-//! HTP Rust Backend v0.5.0
+//! HTP Rust Backend v0.6.0
 //!
-//! Axum HTTP + WebSocket server — ALL HTP business logic in native Rust.
-//!
-//! JS files fully deleted (logic now in Rust):
-//!   htp-fee-engine.js      → fee.rs
-//!   htp-match-deadline.js  → deadline.rs
-//!   htp-utxo-mutex.js      → utxo_mutex.rs
-//!   htp-oracle-pipeline.js → oracle_commit.rs
-//!   htp-zk-pipeline.js     → oracle_commit.rs
-//!
-//! JS files replaced with thin browser shims:
-//!   htp-covenant-escrow-v2.js → escrow.rs  (/escrow/*)
-//!   htp-autopayout-engine.js  → autopayout.rs (/autopayout/*)
-//!   htp-rpc-client.js         → wallet.rs + blockdag.rs
-//!   htp-event-creator.js      → markets.rs (/markets/create)
-//!   htp-events-v3.js          → markets.rs (/markets/list)
-//!
-//! Firebase RTDB relay replaced with Rust WebSocket:
-//!   htp-chess-sync.js   → game_ws.rs  (ws://<host>/ws/game/<matchId>)
-//!   htp-games-sync.js   → game_ws.rs  (ws://<host>/ws/game/<matchId>)
-//!
-//! Default: http://localhost:3000
-//! Production: Cloud Run / Railway (PORT env var)
+//! Changes v0.6.0:
+//!   - /fee/draw-settle added (was 404)
+//!   - escrow bech32m address encoding fixed
+//!   - escrow cancel now routes 1% draw fee to treasury
 
 mod types;
 mod wallet;
@@ -49,8 +31,6 @@ use tower_http::cors::CorsLayer;
 use std::{net::SocketAddr, sync::Arc};
 use game_ws::MatchRegistry;
 
-// ── Shared app state ──────────────────────────────────────────────────────────
-
 #[derive(Clone)]
 struct AppState {
     api_base:    String,
@@ -62,8 +42,7 @@ fn api_base() -> String {
         .unwrap_or_else(|_| "https://api-tn12.kaspa.org".to_string())
 }
 
-// ── Health ────────────────────────────────────────────────────────────────────
-
+// ── Health ─────────────────────────────────────────────────────────────────────
 async fn health(State(_s): State<Arc<AppState>>) -> impl IntoResponse {
     Json(types::HealthResponse {
         status:  "ok".to_string(),
@@ -73,8 +52,7 @@ async fn health(State(_s): State<Arc<AppState>>) -> impl IntoResponse {
     })
 }
 
-// ── Wallet ────────────────────────────────────────────────────────────────────
-
+// ── Wallet ─────────────────────────────────────────────────────────────────────
 async fn wallet_from_mnemonic(
     Json(req): Json<types::MnemonicRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
@@ -93,8 +71,7 @@ async fn wallet_balance(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
 }
 
-// ── Escrow ────────────────────────────────────────────────────────────────────
-
+// ── Escrow ─────────────────────────────────────────────────────────────────────
 async fn escrow_create(
     Json(req): Json<types::EscrowCreateRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
@@ -120,11 +97,19 @@ async fn escrow_cancel(
 }
 
 // ── Fee Engine ────────────────────────────────────────────────────────────────
-
 async fn fee_skill_settle(
     Json(req): Json<types::FeeSkillSettleRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     fee::skill_game_settle(&req)
+        .map(Json)
+        .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))
+}
+
+// NEW: draw settle handler
+async fn fee_draw_settle(
+    Json(req): Json<types::FeeDrawSettleRequest>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    fee::draw_settle(&req)
         .map(Json)
         .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))
 }
@@ -162,7 +147,6 @@ async fn fee_treasury(
 }
 
 // ── Settlement ────────────────────────────────────────────────────────────────
-
 async fn settlement_preview(
     Json(req): Json<types::SettlementPreviewRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
@@ -177,8 +161,7 @@ async fn settlement_covenant_validate(
     Json(settlement::validate_covenant(&req))
 }
 
-// ── Deadline ──────────────────────────────────────────────────────────────────
-
+// ── Deadline ───────────────────────────────────────────────────────────────────
 async fn deadline_create(
     Json(req): Json<types::DeadlineCreateRequest>,
 ) -> impl IntoResponse {
@@ -200,8 +183,7 @@ async fn deadline_daa(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
 }
 
-// ── Oracle Game Validators ────────────────────────────────────────────────────
-
+// ── Oracle ─────────────────────────────────────────────────────────────────────
 async fn oracle_connect4(
     Json(req): Json<oracle::Connect4Request>,
 ) -> impl IntoResponse {
@@ -226,8 +208,6 @@ async fn oracle_resign(
     Json(oracle::process_resign(&req))
 }
 
-// ── Oracle Commit Pipeline ────────────────────────────────────────────────────
-
 async fn oracle_commit(
     Json(req): Json<types::OracleCommitRequest>,
 ) -> impl IntoResponse {
@@ -244,7 +224,6 @@ async fn oracle_auto_attest(
 }
 
 // ── Markets ───────────────────────────────────────────────────────────────────
-
 async fn markets_create(
     Json(req): Json<types::MarketCreateRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
@@ -267,8 +246,7 @@ async fn markets_odds(
     Json(markets::compute_odds(&req))
 }
 
-// ── Auto-Payout ───────────────────────────────────────────────────────────────
-
+// ── Auto-Payout ──────────────────────────────────────────────────────────────
 async fn autopayout_resolve(
     Json(req): Json<types::ResolveWinnerRequest>,
 ) -> impl IntoResponse {
@@ -283,8 +261,7 @@ async fn autopayout_prepare(
         .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))
 }
 
-// ── BlockDAG + Broadcast ──────────────────────────────────────────────────────
-
+// ── BlockDAG + Broadcast ────────────────────────────────────────────────────
 async fn blockdag_live(
     State(s): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
@@ -304,8 +281,7 @@ async fn tx_broadcast(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
 }
 
-// ── Server ────────────────────────────────────────────────────────────────────
-
+// ── Router ─────────────────────────────────────────────────────────────────────
 #[tokio::main]
 async fn main() {
     let _ = dotenvy::dotenv();
@@ -320,20 +296,16 @@ async fn main() {
         api_base:    api_base(),
         ws_registry: game_ws::new_registry(),
     });
-
-    // WS routes need MatchRegistry as state (extracted directly)
     let ws_state = state.ws_registry.clone();
 
     let app = Router::new()
         .route("/health",                          get(health))
-        // ── WebSocket game relay (replaces Firebase RTDB) ──
+        // WebSocket game relay
         .route("/ws/game/{match_id}",              get({
             let reg = ws_state.clone();
             move |ws: axum::extract::WebSocketUpgrade, Path(mid): Path<String>| {
                 let reg = reg.clone();
-                async move {
-                    ws.on_upgrade(move |sock| game_ws::handle_socket_pub(sock, mid, reg))
-                }
+                async move { ws.on_upgrade(move |sock| game_ws::handle_socket_pub(sock, mid, reg)) }
             }
         }))
         .route("/ws/broadcast/{match_id}",         post({
@@ -352,6 +324,7 @@ async fn main() {
         .route("/escrow/cancel",                    post(escrow_cancel))
         // Fee engine
         .route("/fee/skill-settle",                 post(fee_skill_settle))
+        .route("/fee/draw-settle",                  post(fee_draw_settle))   // NEW
         .route("/fee/cancel-check",                 post(fee_cancel_check))
         .route("/fee/maximizer-win",                post(fee_maximizer_win))
         .route("/fee/maximizer-lose",               post(fee_maximizer_lose))
@@ -363,12 +336,11 @@ async fn main() {
         .route("/deadline/create",                  post(deadline_create))
         .route("/deadline/check",                   post(deadline_check))
         .route("/deadline/daa",                     get(deadline_daa))
-        // Oracle — game validators
+        // Oracle
         .route("/oracle/connect4",                  post(oracle_connect4))
         .route("/oracle/tictactoe",                 post(oracle_tictactoe))
         .route("/oracle/chess",                     post(oracle_chess))
         .route("/oracle/resign",                    post(oracle_resign))
-        // Oracle — commit pipeline
         .route("/oracle/commit",                    post(oracle_commit))
         .route("/oracle/auto-attest",               post(oracle_auto_attest))
         // Markets
@@ -388,11 +360,9 @@ async fn main() {
         .unwrap_or_else(|_| "3000".to_string())
         .parse()
         .unwrap_or(3000);
-
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     tracing::info!("HTP Rust Backend v{} on http://{}", env!("CARGO_PKG_VERSION"), addr);
     tracing::info!("WS relay active: ws://{}/ws/game/<matchId>", addr);
-
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
