@@ -1,79 +1,182 @@
-# HTP Antigravity — Fix & Implementation Package
+<p align="center">
+  <img src="https://img.shields.io/badge/Kaspa-Testnet_12-00d4aa?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiIGZpbGw9IiMwMGQ0YWEiLz48L3N2Zz4=&logoColor=white" alt="Kaspa Testnet 12" />
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" />
+  <img src="https://img.shields.io/badge/Firebase-Hosting-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" alt="Firebase Hosting" />
+  <img src="https://img.shields.io/badge/Rust-Backend-000000?style=for-the-badge&logo=rust&logoColor=white" alt="Rust Backend" />
+</p>
 
-Structured fixes and new features for **High Table Protocol** (hightable420.web.app).
+<h1 align="center">
+  ♛ High Table Protocol
+</h1>
 
-## Structure
+<p align="center">
+  <strong>Trustless skill-based wagering on Kaspa</strong><br/>
+  <sub>Chess · Connect 4 · Checkers · Tic-Tac-Toe — all settled on-chain</sub>
+</p>
+
+<p align="center">
+  <a href="https://hightable420.web.app"><strong>🌐 Launch App</strong></a>
+  &nbsp;&nbsp;·&nbsp;&nbsp;
+  <a href="./WHITEPAPER.md"><strong>📄 Whitepaper</strong></a>
+  &nbsp;&nbsp;·&nbsp;&nbsp;
+  <a href="https://github.com/THTProtocol/27/issues"><strong>🐛 Report Bug</strong></a>
+</p>
+
+---
+
+## ✨ What is HTP?
+
+High Table Protocol (HTP) lets two players wager **KAS** on classic board games with **zero trust required**. Escrow is locked in a Kaspa covenant, moves are synced in real-time via Firebase, and settlement happens atomically on-chain.
+
+> **No custodians. No arbiters. Winner takes all (minus 2% protocol fee).**
+
+---
+
+## 🎮 Supported Games
+
+| Game | Engine | Status |
+|:-----|:-------|:------:|
+| ♟️ **Chess** | `chess.js` + custom UI | ✅ Live |
+| 🔴 **Connect 4** | Drop-column engine | ✅ Live |
+| ⚪ **Checkers** | Multi-jump validation | ✅ Live |
+| ❌ **Tic-Tac-Toe** | Minimax engine | ✅ Live |
+
+---
+
+## 🔄 Match Lifecycle
 
 ```
-antigravity/
-├── src/                        # Drop-in replacements for /27 project root
-│   ├── htp-utxo-mutex.js       # P0 — UTXO double-spend guard
-│   ├── htp-board-engine-fix.js # P0 — Chess API normaliser + clock fix
-│   └── htp-chess-ui.js         # P1 — Piece colouring + promotion modal
-├── oracle/                     # Run from htp-oracle-daemon/
-│   ├── watcher.js              # P0 — Fixed settlement watcher v2.1
-│   ├── package.json
-│   └── .env.example
-├── functions/                  # Firebase Cloud Functions (requires Blaze)
-│   ├── htp-oracle-server.js    # P1 — Oracle + move validator
-│   ├── test-oracle.js          # 10 tests — run before deploying
-│   └── package.json
-├── patch-index.py              # Injects src/ scripts into index.html
-├── deploy.sh                   # Lint → test → deploy pipeline
-└── README.md
+┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
+│  CREATE   │───▸│  ACCEPT  │───▸│   PLAY   │───▸│  VERIFY  │───▸│  SETTLE  │
+│           │    │          │    │          │    │          │    │          │
+│ Lock KAS  │    │ Opponent │    │ Moves on │    │ Covenant │    │ Winner   │
+│ in escrow │    │ matches  │    │ chain    │    │ checks   │    │ paid     │
+│           │    │ escrow   │    │          │    │ proof    │    │ 98% pool │
+└──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘
 ```
 
-## Quick Start (P0 — do this when Firebase is back up)
+> 💡 Creator can cancel before an opponent joins (full refund). After the game starts, leaving counts as a forfeit.
 
-### 1. Copy src/ files to your /27 project root
+---
+
+## 🏗️ Architecture
+
+```
+27/
+├── index.html                  # Single-page application
+├── htp-*.js                    # Frontend modules (30+ files)
+│   ├── htp-init.js             #   App bootstrap
+│   ├── htp-wallet-v3.js        #   Kaspa wallet integration
+│   ├── htp-chess-ui.js          #   Chess board + drag-and-drop
+│   ├── htp-covenant-escrow-v2.js#   Escrow covenant logic
+│   ├── htp-fee-shim.js         #   Fee calculation (mirrors Rust)
+│   └── htp-settlement-*.js     #   Settlement overlay + preview
+├── chess.min.js                # Chess engine (chess.js)
+├── kaspa_bg.wasm               # Kaspa WASM SDK
+├── firebase-config.js          # Firebase project config
+│
+├── htp-rust-backend/           # ⚙️ Rust Backend (Axum)
+│   ├── src/                    #   Rust source modules
+│   │   ├── fee.rs              #   Canonical fee calculations
+│   │   └── ...                 #   Oracle, settlement, API
+│   ├── Cargo.toml              #   Dependencies
+│   ├── Dockerfile              #   Container build
+│   └── railway.toml            #   Railway deployment
+│
+├── htp-oracle-daemon/          # 👁️ Oracle Settlement Watcher
+│   ├── watcher.js              #   UTXO monitoring v2.1
+│   └── package.json            #   Node dependencies
+│
+├── functions/                  # ☁️ Firebase Cloud Functions
+│   ├── htp-oracle-server.js    #   Oracle + move validator
+│   └── test-oracle.js          #   10 integration tests
+│
+├── WHITEPAPER.md               # 📄 Protocol whitepaper v1.0
+└── README.md                   # 📖 You are here
+```
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js ≥ 18
+- Firebase CLI (`npm i -g firebase-tools`)
+- Rust toolchain (for backend)
+
+### 1. Clone & Install
+
 ```bash
-cp src/htp-utxo-mutex.js    /mnt/c/Users/User/Desktop/27/
-cp src/htp-board-engine-fix.js /mnt/c/Users/User/Desktop/27/
-cp src/htp-chess-ui.js      /mnt/c/Users/User/Desktop/27/
+git clone https://github.com/THTProtocol/27.git
+cd 27/27
+npm install
 ```
 
-### 2. Patch index.html (injects scripts in correct order)
+### 2. Configure Environment
+
 ```bash
-cd /mnt/c/Users/User/Desktop/27
-python3 /path/to/antigravity/patch-index.py
+cp htp-oracle-daemon/.env.example htp-oracle-daemon/.env
+# Edit with your Firebase + Kaspa RPC credentials
 ```
 
-### 3. Fix the Oracle daemon
+### 3. Run Locally
+
 ```bash
-cp oracle/watcher.js /mnt/c/Users/User/Desktop/27/htp-oracle-daemon/watcher.js
-cd /mnt/c/Users/User/Desktop/27/htp-oracle-daemon
-# Edit .env — set FIREBASE_DB_URL
-node watcher.js   # should print "HTP Settlement Watcher v2.1 starting..."
+# Frontend (Firebase Hosting emulator)
+firebase emulators:start
+
+# Oracle daemon
+cd htp-oracle-daemon && node watcher.js
+
+# Rust backend
+cd htp-rust-backend && cargo run
 ```
 
 ### 4. Deploy
+
 ```bash
-cd /mnt/c/Users/User/Desktop/27
-bash /path/to/antigravity/deploy.sh hosting
+./deploy.sh   # Lint → Test → Deploy pipeline
 ```
 
-## P1 — Firebase Functions (requires Blaze plan)
+---
 
-1. Upgrade project at https://console.firebase.google.com/project/hightable420/usage/details
-2. Copy functions/ to your /27 project:
-   ```bash
-   cp -r functions /mnt/c/Users/User/Desktop/27/
-   ```
-3. Generate oracle key and store as secret:
-   ```bash
-   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-   firebase functions:secrets:set HTP_ORACLE_PRIVKEY
-   ```
-4. Test and deploy:
-   ```bash
-   cd /mnt/c/Users/User/Desktop/27
-   bash /path/to/antigravity/deploy.sh functions
-   ```
+## 🌍 Deployment
 
-## Verify Deployment (browser console should show)
-```
-[HTP-MUTEX] UTXO mutex loaded
-[HTP-MUTEX] htpSendTx serialised — UTXO double-spend guard active
-[HTP-FIX]  Board Engine Fix v2.0 loaded
-[HTP-UI]   Chess UI v2.0 loaded
-```
+| Component | Platform | URL |
+|:----------|:---------|:----|
+| **Frontend** | Firebase Hosting | [hightable420.web.app](https://hightable420.web.app) |
+| **Rust Backend** | Railway / Cloud Run | Configured via `.cloud-run-url` |
+| **Database** | Firebase Realtime DB | Auto-configured |
+| **Oracle Daemon** | Self-hosted | `htp-oracle-daemon/` |
+
+---
+
+## 🔒 Security
+
+- **Fee calculations** are implemented in Rust (`fee.rs`) as the canonical source of truth. The JavaScript `htp-fee-shim.js` mirrors these for UI responsiveness and falls back to the Rust API for settlement.
+- **Escrow transactions** use Schnorr signatures and P2SH scripts.
+- **No private keys** are stored server-side — ever.
+- **Firebase rules** enforce read/write permissions per-match.
+
+---
+
+## 🤝 Contributing
+
+1. **Fork** the repository
+2. **Branch** — `git checkout -b feat/your-feature`
+3. **Commit** — `git commit -m 'feat: description'`
+4. **Push** — `git push origin feat/your-feature`
+5. **PR** — Open a Pull Request
+
+---
+
+## 📜 License
+
+MIT — see [LICENSE](./LICENSE) for details.
+
+---
+
+<p align="center">
+  <strong>♛ High Table Protocol</strong> · Built on Kaspa · Trustless by Design
+</p>
