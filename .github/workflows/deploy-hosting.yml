@@ -6,6 +6,10 @@ on:
     paths:
       - '27/index.html'
       - '27/htp-*.js'
+      - '27/*.js'
+      - '27/*.jpg'
+      - '27/*.png'
+      - '27/*.wasm'
       - '27/firebase.json'
       - '27/database.rules.json'
       - '27/.cloud-run-url'
