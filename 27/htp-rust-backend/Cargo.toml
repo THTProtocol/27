@@ -1,6 +1,6 @@
 [package]
 name = "htp-rust-backend"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 description = "High Table Protocol — full Rust backend: wallet, escrow, fee, settlement, deadline, oracle, markets, autopayout, WebSocket game relay"
 
