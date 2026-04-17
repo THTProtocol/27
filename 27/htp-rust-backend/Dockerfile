@@ -23,6 +23,8 @@ RUN apt-get update \
 
 COPY --from=builder /app/target/release/htp-backend /app/htp-backend
 
-# PORT is injected by Railway at runtime — do NOT hardcode it here
+# Railway injects PORT at runtime. We default to 8080 so the healthcheck
+# and proxy always agree even if the env var arrives late.
+ENV PORT=8080
 EXPOSE 8080
 CMD ["/app/htp-backend"]
