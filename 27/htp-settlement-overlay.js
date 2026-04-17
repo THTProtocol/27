@@ -1,201 +1,329 @@
 /**
- * htp-settlement-overlay.js — Settlement Preview + Result Overlay
- *
- * Shows exact payout breakdown before TX fires, and win/loss/draw result.
+ * htp-settlement-overlay.js — v3.0
+ * Cinematic win/lose/draw overlay.
  * Depends on: htp-fee-shim.js (window.HTPFee)
+ * Listens to: htp:settlement:complete CustomEvent
  */
-(function(W) {
+;(function(W) {
   'use strict';
 
+  var EXPLORER_BASE = 'https://explorer-tn12.kaspa.org/txs/';
+  var DISMISS_MS    = 8000;
+
   function injectStyles() {
-    if (document.getElementById('htp-overlay-style')) return;
-    const s = document.createElement('style');
-    s.id = 'htp-overlay-style';
-    s.textContent = `
-      .htp-overlay-backdrop {
-        position: fixed; inset: 0;
-        background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
-        z-index: 9999;
-        display: flex; align-items: center; justify-content: center;
-      }
-      .htp-overlay-card {
-        background: #0f172a;
-        border: 1px solid rgba(73,232,194,0.25);
-        border-radius: 16px; padding: 28px;
-        max-width: 420px; width: 92%;
-        font-family: 'Inter', sans-serif; color: #e2e8f0;
-        animation: htp-slide-up 0.22s ease;
-      }
-      @keyframes htp-slide-up {
-        from { opacity:0; transform:translateY(16px); }
-        to   { opacity:1; transform:translateY(0); }
-      }
-      .htp-overlay-card h2 {
-        font-size: 18px; font-weight: 800; color: #fff;
-        margin: 0 0 18px; letter-spacing: -0.02em;
-        display: flex; align-items: center; gap: 10px;
-      }
-      .htp-overlay-card h2 .badge {
-        font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
-        padding: 3px 10px; border-radius: 99px; text-transform: uppercase;
-      }
-      .badge.win   { background: rgba(73,232,194,0.15); color: #49e8c2; }
-      .badge.lose  { background: rgba(239,68,68,0.15);  color: #ef4444; }
-      .badge.draw  { background: rgba(148,163,184,0.15); color: #94a3b8; }
-      .htp-overlay-rows { margin-bottom: 18px; }
-      .htp-overlay-row {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
-        font-size: 13px;
-      }
-      .htp-overlay-row:last-child { border-bottom: none; }
-      .htp-overlay-row .lbl { color: #64748b; }
-      .htp-overlay-row .val { font-weight: 600; color: #fff; }
-      .htp-overlay-row.muted .val { color: #64748b; font-weight: 400; }
-      .htp-overlay-row.highlight .val { color: #49e8c2; font-size: 16px; font-weight: 800; }
-      .htp-overlay-actions { display: flex; gap: 10px; }
-      .htp-overlay-actions button {
-        flex: 1; padding: 11px; border: none; border-radius: 8px;
-        font-weight: 700; font-size: 14px; cursor: pointer;
-        font-family: 'Inter', sans-serif; transition: opacity 0.2s;
-      }
-      .htp-overlay-actions .confirm { background: linear-gradient(135deg, #49e8c2, #3b82f6); color: #0f172a; }
-      .htp-overlay-actions .cancel  { background: #1e293b; color: #94a3b8; }
-      .htp-overlay-actions button:hover { opacity: 0.88; }
-      .htp-overlay-explorer { font-size: 11px; text-align: center; margin-top: 12px; }
-      .htp-overlay-explorer a { color: #49e8c2; text-decoration: none; }
-      .htp-overlay-explorer a:hover { text-decoration: underline; }
-    `;
+    if (document.getElementById('htp-ov3-style')) return;
+    var s = document.createElement('style');
+    s.id = 'htp-ov3-style';
+    s.textContent = [
+      '.htp-ov3-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.82);backdrop-filter:blur(8px);z-index:99999;display:flex;align-items:center;justify-content:center;}',
+      '.htp-ov3-card{background:#0f172a;border:1px solid rgba(73,232,194,0.22);border-radius:20px;padding:36px 32px 28px;max-width:440px;width:93%;font-family:Inter,sans-serif;color:#e2e8f0;position:relative;overflow:hidden;animation:htp-ov3-in 0.28s cubic-bezier(.22,.68,0,1.2);}',
+      '@keyframes htp-ov3-in{from{opacity:0;transform:translateY(24px) scale(0.96);}to{opacity:1;transform:none;}}',
+      '.htp-ov3-headline{font-size:32px;font-weight:900;letter-spacing:-0.03em;text-align:center;margin:0 0 4px;}',
+      '.htp-ov3-headline.win{color:#49e8c2;}',
+      '.htp-ov3-headline.lose{color:#ef4444;}',
+      '.htp-ov3-headline.draw{color:#94a3b8;}',
+      '.htp-ov3-amount{font-size:44px;font-weight:900;color:#49e8c2;text-align:center;margin:10px 0 6px;letter-spacing:-0.04em;font-variant-numeric:tabular-nums;}',
+      '.htp-ov3-amount.lose{color:#ef4444;font-size:28px;}',
+      '.htp-ov3-amount.draw{color:#94a3b8;font-size:30px;}',
+      '.htp-ov3-sub{font-size:12px;color:#475569;text-align:center;margin:0 0 20px;}',
+      '.htp-ov3-rows{margin:0 0 18px;}',
+      '.htp-ov3-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px;}',
+      '.htp-ov3-row:last-child{border-bottom:none;}',
+      '.htp-ov3-row .lbl{color:#64748b;}',
+      '.htp-ov3-row .val{font-weight:600;color:#cbd5e1;}',
+      '.htp-ov3-row.payout .val{color:#49e8c2;font-size:16px;font-weight:800;}',
+      '.htp-ov3-explorer{text-align:center;margin:0 0 20px;}',
+      '.htp-ov3-explorer a{color:#49e8c2;font-size:12px;text-decoration:none;border-bottom:1px solid rgba(73,232,194,0.3);}',
+      '.htp-ov3-explorer a:hover{border-bottom-color:#49e8c2;}',
+      '.htp-ov3-actions{display:flex;gap:10px;}',
+      '.htp-ov3-actions button{flex:1;padding:12px;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;font-family:Inter,sans-serif;transition:opacity 0.18s;}',
+      '.htp-ov3-btn-lobby{background:#1e293b;color:#94a3b8;}',
+      '.htp-ov3-btn-lobby:hover{opacity:0.8;}',
+      '.htp-ov3-progress{position:absolute;bottom:0;left:0;height:3px;background:#49e8c2;transition:width linear;}',
+      '.htp-ov3-progress.lose{background:#ef4444;}',
+      '.htp-ov3-progress.draw{background:#94a3b8;}',
+      /* Confetti particles */
+      '.htp-confetti-wrap{position:absolute;inset:0;pointer-events:none;overflow:hidden;}',
+      '.htp-confetti-p{position:absolute;width:8px;height:8px;border-radius:2px;opacity:0;animation:htp-confetti-fly 1.4s ease-out forwards;}',
+      '@keyframes htp-confetti-fly{0%{transform:translate(0,0) rotate(0deg);opacity:1;}100%{transform:var(--tx) var(--ty) rotate(var(--tr));opacity:0;}}',
+    ].join('');
     document.head.appendChild(s);
   }
 
-  function getFee() {
-    return W.HTPFee || null;
-  }
-
-  /**
-   * Show settlement preview before TX fires.
-   * @param {object} opts — { stakeKas, isMaximizer, betKas, isDraw, result: 'win'|'lose'|'draw', txCb }
-   */
-  function showPreview(opts, txCb) {
-    injectStyles();
-    const Fee = getFee();
-    if (!Fee) { console.error('[SettlementOverlay] HTPFee shim not loaded'); return; }
-
-    const stakeKas    = opts.stakeKas    || 0;
-    const isMaximizer = opts.isMaximizer || false;
-    const betKas      = opts.betKas      || stakeKas;
-    const isDraw      = opts.isDraw      || false;
-    const result      = opts.result      || (isDraw ? 'draw' : 'win');
-
-    let rows = [];
-    let title = 'Settlement Preview';
-    let badge = result;
-
-    if (isDraw) {
-      const half = stakeKas; // each player gets their stake back minus small fee
-      const fee  = stakeKas * 2 * 0.01; // 1% on draws
-      rows = [
-        { label: 'Result',       value: 'Draw',                    cls: '' },
-        { label: 'Your stake',   value: stakeKas.toFixed(2) + ' KAS', cls: '' },
-        { label: 'Protocol fee', value: (fee/2).toFixed(2) + ' KAS (1%)', cls: 'muted' },
-        { label: 'You receive',  value: (stakeKas - fee/2).toFixed(2) + ' KAS', cls: 'highlight' },
-      ];
-    } else if (isMaximizer) {
-      if (result === 'win') {
-        const calc = Fee.maximizerWinSettle(betKas, opts.odds || 2.0);
-        rows = [
-          { label: 'Result',         value: 'Maximizer Win',          cls: '' },
-          { label: 'Bet',            value: betKas.toFixed(2) + ' KAS', cls: '' },
-          { label: 'Protocol fee',   value: calc.protocolFee.toFixed(2) + ' KAS (2%)', cls: 'muted' },
-          { label: 'Treasury',       value: Fee.treasuryAddress().substring(0,18)+'…', cls: 'muted' },
-          { label: 'Your payout',    value: calc.netPayout.toFixed(2) + ' KAS', cls: 'highlight' },
-        ];
-      } else {
-        const calc = Fee.maximizerLoseSettle(betKas);
-        rows = [
-          { label: 'Result',       value: 'Maximizer — Claim Hedge', cls: '' },
-          { label: 'Bet',          value: betKas.toFixed(2) + ' KAS', cls: '' },
-          { label: 'Hedge fee',    value: calc.protocolFee.toFixed(2) + ' KAS (30%)', cls: 'muted' },
-          { label: 'Claimable',    value: calc.claimable.toFixed(2) + ' KAS', cls: 'highlight' },
-        ];
-      }
-    } else {
-      const calc = Fee.skillGameSettle(stakeKas);
-      if (result === 'win') {
-        rows = [
-          { label: 'Result',       value: 'Winner',                          cls: '' },
-          { label: 'Total pool',   value: calc.totalPool.toFixed(2) + ' KAS', cls: '' },
-          { label: 'Stake each',   value: stakeKas.toFixed(2) + ' KAS',       cls: '' },
-          { label: 'Protocol fee', value: calc.protocolFee.toFixed(2) + ' KAS (2%)', cls: 'muted' },
-          { label: 'Treasury',     value: Fee.treasuryAddress().substring(0,18)+'…', cls: 'muted' },
-          { label: 'Your payout',  value: calc.winnerPayout.toFixed(2) + ' KAS', cls: 'highlight' },
-        ];
-      } else {
-        rows = [
-          { label: 'Result',     value: 'Defeat',    cls: '' },
-          { label: 'You lose',   value: stakeKas.toFixed(2) + ' KAS', cls: 'muted' },
-          { label: 'Your payout', value: '0 KAS',   cls: '' },
-        ];
-      }
+  function buildConfetti(card) {
+    var wrap = document.createElement('div');
+    wrap.className = 'htp-confetti-wrap';
+    var colors = ['#49e8c2','#3b82f6','#a78bfa','#f59e0b','#34d399','#fff'];
+    for (var i = 0; i < 28; i++) {
+      var p = document.createElement('div');
+      p.className = 'htp-confetti-p';
+      var angle = (Math.random() * 360);
+      var dist  = 80 + Math.random() * 160;
+      var tx    = Math.round(Math.cos(angle * Math.PI / 180) * dist);
+      var ty    = Math.round(Math.sin(angle * Math.PI / 180) * dist - 60);
+      p.style.cssText = [
+        'left:' + (30 + Math.random() * 40) + '%;',
+        'top:' + (20 + Math.random() * 30) + '%;',
+        'background:' + colors[i % colors.length] + ';',
+        '--tx:translateX(' + tx + 'px);',
+        '--ty:translateY(' + ty + 'px);',
+        '--tr:' + (Math.random() * 720 - 360) + 'deg;',
+        'animation-delay:' + (Math.random() * 0.3) + 's;',
+        'animation-duration:' + (1.0 + Math.random() * 0.8) + 's;',
+      ].join('');
+      wrap.appendChild(p);
     }
-
-    const rowsHTML = rows.map(r =>
-      `<div class="htp-overlay-row ${r.cls}"><span class="lbl">${r.label}</span><span class="val">${r.value}</span></div>`
-    ).join('');
-
-    const backdrop = document.createElement('div');
-    backdrop.className = 'htp-overlay-backdrop';
-    backdrop.innerHTML = `
-      <div class="htp-overlay-card">
-        <h2>${title} <span class="badge ${badge}">${badge.toUpperCase()}</span></h2>
-        <div class="htp-overlay-rows">${rowsHTML}</div>
-        <div class="htp-overlay-actions">
-          <button class="cancel" id="htp-ov-cancel">Cancel</button>
-          <button class="confirm" id="htp-ov-confirm">Confirm &amp; Sign</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(backdrop);
-
-    document.getElementById('htp-ov-cancel').addEventListener('click', function() { backdrop.remove(); });
-    backdrop.addEventListener('click', function(e) { if (e.target === backdrop) backdrop.remove(); });
-    document.getElementById('htp-ov-confirm').addEventListener('click', async function() {
-      this.textContent = 'Signing…';
-      this.disabled    = true;
-      backdrop.remove();
-      if (typeof txCb === 'function') await txCb();
-    });
+    card.appendChild(wrap);
   }
 
-  /**
-   * Show result after TX is broadcast.
-   * @param {object} opts — { result: 'win'|'lose'|'draw', txId, explorerBase }
-   */
+  function animateCounter(el, target, durationMs) {
+    var start = performance.now();
+    function tick(now) {
+      var pct = Math.min((now - start) / durationMs, 1);
+      var ease = 1 - Math.pow(1 - pct, 3);
+      el.textContent = (target * ease).toFixed(4) + ' KAS';
+      if (pct < 1) requestAnimationFrame(tick);
+      else el.textContent = target.toFixed(4) + ' KAS';
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function startDismissBar(bar, cls, ms, onDone) {
+    bar.style.width = '100%';
+    bar.style.transitionDuration = ms + 'ms';
+    setTimeout(function() { bar.style.width = '0%'; }, 30);
+    setTimeout(onDone, ms);
+  }
+
+  function closeOverlay(backdrop) {
+    backdrop.style.opacity = '0';
+    backdrop.style.transition = 'opacity 0.3s';
+    setTimeout(function() { if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop); }, 320);
+  }
+
+  function addEscDismiss(backdrop) {
+    function onKey(e) { if (e.key === 'Escape') { closeOverlay(backdrop); document.removeEventListener('keydown', onKey); } }
+    document.addEventListener('keydown', onKey);
+    backdrop.addEventListener('click', function(e) { if (e.target === backdrop) { closeOverlay(backdrop); document.removeEventListener('keydown', onKey); } });
+  }
+
+  // ── showResult ───────────────────────────────────────────────────────────
   function showResult(opts) {
     injectStyles();
-    const { result, txId, explorerBase } = opts || {};
-    const explorerUrl = txId
-      ? (explorerBase || 'https://explorer-tn12.kaspa.org/txs/') + txId
-      : null;
+    opts = opts || {};
+    var result   = opts.result || 'draw';
+    var txId     = opts.txId || '';
+    var stakeKas = parseFloat(opts.stakeKas) || 0;
+    var isDraw   = result === 'draw';
+    var isWin    = result === 'win';
+    var isLose   = result === 'lose';
 
-    const backdrop = document.createElement('div');
-    backdrop.className = 'htp-overlay-backdrop';
-    backdrop.innerHTML = `
-      <div class="htp-overlay-card" style="text-align:center">
-        <h2 style="justify-content:center">Game Over <span class="badge ${result || 'draw'}">${(result||'draw').toUpperCase()}</span></h2>
-        ${txId ? `<p style="font-size:12px;color:#64748b;word-break:break-all;margin:0 0 16px">${txId}</p>` : ''}
-        ${explorerUrl ? `<div class="htp-overlay-explorer"><a href="${explorerUrl}" target="_blank" rel="noopener">View on Explorer ↗</a></div>` : ''}
-        <div class="htp-overlay-actions" style="margin-top:16px">
-          <button class="confirm" id="htp-ov-close">Close</button>
-        </div>
-      </div>
-    `;
+    var Fee = W.HTPFee;
+    var payout = 0, fee = 0, pool = 0, treasury = '';
+    if (Fee && isWin) {
+      var calc = Fee.skillGameSettle(stakeKas);
+      payout   = calc.winnerPayout;
+      fee      = calc.protocolFee;
+      pool     = calc.totalPool;
+      treasury = calc.treasuryAddress;
+    } else if (Fee && isDraw) {
+      var dc   = Fee.drawSettle ? Fee.drawSettle(stakeKas) : { refund: stakeKas * 0.99, protocolFee: stakeKas * 0.01, treasuryAddress: Fee.treasuryAddress() };
+      payout   = dc.refund;
+      fee      = dc.protocolFee;
+      treasury = dc.treasuryAddress;
+    }
+
+    var explorerUrl = txId ? (EXPLORER_BASE + txId) : '';
+
+    var backdrop = document.createElement('div');
+    backdrop.className = 'htp-ov3-backdrop';
+
+    var card = document.createElement('div');
+    card.className = 'htp-ov3-card';
+
+    var progressBar = document.createElement('div');
+    progressBar.className = 'htp-ov3-progress ' + result;
+
+    if (isWin) buildConfetti(card);
+
+    // Headline
+    var hl = document.createElement('div');
+    hl.className = 'htp-ov3-headline ' + result;
+    hl.textContent = isWin ? '🏆 YOU WIN' : isLose ? 'DEFEAT' : 'DRAW';
+    card.appendChild(hl);
+
+    // Animated amount
+    var amountEl = document.createElement('div');
+    amountEl.className = 'htp-ov3-amount ' + result;
+    if (isWin) {
+      amountEl.textContent = '0.0000 KAS';
+    } else if (isDraw) {
+      amountEl.textContent = payout > 0 ? payout.toFixed(4) + ' KAS' : 'Refund';
+    } else {
+      amountEl.textContent = '-' + stakeKas.toFixed(4) + ' KAS';
+    }
+    card.appendChild(amountEl);
+
+    var sub = document.createElement('div');
+    sub.className = 'htp-ov3-sub';
+    sub.textContent = isWin ? 'Payout breakdown' : isLose ? 'Stake lost' : 'Draw refund';
+    card.appendChild(sub);
+
+    // Rows
+    var rowsEl = document.createElement('div');
+    rowsEl.className = 'htp-ov3-rows';
+    var rows = [];
+    if (isWin && Fee) {
+      rows = [
+        { lbl: 'Total pool',     val: pool.toFixed(4) + ' KAS' },
+        { lbl: 'Protocol fee',   val: fee.toFixed(4) + ' KAS (2%)', cls: 'muted' },
+        { lbl: 'Treasury',       val: treasury ? (treasury.substring(0,14) + '…') : '—' },
+        { lbl: 'YOUR PAYOUT',    val: payout.toFixed(4) + ' KAS', cls: 'payout' },
+      ];
+    } else if (isDraw && Fee) {
+      rows = [
+        { lbl: 'Your stake',     val: stakeKas.toFixed(4) + ' KAS' },
+        { lbl: 'Protocol fee',   val: fee.toFixed(4) + ' KAS (1%)' },
+        { lbl: 'REFUND',         val: payout.toFixed(4) + ' KAS', cls: 'payout' },
+      ];
+    } else if (isLose) {
+      rows = [
+        { lbl: 'Stake lost', val: stakeKas.toFixed(4) + ' KAS' },
+        { lbl: 'Payout',     val: '0 KAS' },
+      ];
+      if (opts.opponentAddress) rows.push({ lbl: 'Winner', val: opts.opponentAddress.substring(0,16) + '…' });
+    }
+    rows.forEach(function(r) {
+      var row = document.createElement('div');
+      row.className = 'htp-ov3-row' + (r.cls ? ' ' + r.cls : '');
+      row.innerHTML = '<span class="lbl">' + r.lbl + '</span><span class="val">' + r.val + '</span>';
+      rowsEl.appendChild(row);
+    });
+    card.appendChild(rowsEl);
+
+    // Explorer link
+    if (explorerUrl) {
+      var expDiv = document.createElement('div');
+      expDiv.className = 'htp-ov3-explorer';
+      expDiv.innerHTML = '<a href="' + explorerUrl + '" target="_blank" rel="noopener">View on Explorer →</a>';
+      card.appendChild(expDiv);
+    }
+
+    // Actions
+    var actions = document.createElement('div');
+    actions.className = 'htp-ov3-actions';
+    var lobbyBtn = document.createElement('button');
+    lobbyBtn.className = 'htp-ov3-btn-lobby';
+    lobbyBtn.textContent = 'Back to Lobby';
+    lobbyBtn.addEventListener('click', function() {
+      closeOverlay(backdrop);
+      if (W.htpShowTab) W.htpShowTab('lobby');
+    });
+    actions.appendChild(lobbyBtn);
+    card.appendChild(actions);
+
+    card.appendChild(progressBar);
+    backdrop.appendChild(card);
     document.body.appendChild(backdrop);
-    document.getElementById('htp-ov-close').addEventListener('click', function() { backdrop.remove(); });
-    backdrop.addEventListener('click', function(e) { if (e.target === backdrop) backdrop.remove(); });
+
+    addEscDismiss(backdrop);
+    startDismissBar(progressBar, result, DISMISS_MS, function() { closeOverlay(backdrop); });
+
+    if (isWin && payout > 0) {
+      setTimeout(function() { animateCounter(amountEl, payout, 1500); }, 120);
+    }
   }
 
-  W.HTPSettlementOverlay = { showPreview, showResult };
-  console.log('[HTPSettlementOverlay v2] loaded — uses htp-fee-shim.js');
+  // ── showPreview ──────────────────────────────────────────────────────────
+  function showPreview(opts, txCb) {
+    injectStyles();
+    var Fee = W.HTPFee;
+    if (!Fee) { console.error('[SettlementOverlay v3] HTPFee shim not loaded'); return; }
+
+    var stakeKas = opts.stakeKas || 0;
+    var isDraw   = opts.isDraw   || false;
+    var result   = opts.result   || (isDraw ? 'draw' : 'win');
+    var rows = [];
+
+    if (isDraw) {
+      var dc = Fee.drawSettle ? Fee.drawSettle(stakeKas) : { refund: stakeKas * 0.99, protocolFee: stakeKas * 0.01, treasuryAddress: Fee.treasuryAddress() };
+      rows = [
+        { lbl: 'Your stake',   val: stakeKas.toFixed(4) + ' KAS' },
+        { lbl: 'Protocol fee', val: dc.protocolFee.toFixed(4) + ' KAS (1%)' },
+        { lbl: 'You receive',  val: dc.refund.toFixed(4) + ' KAS', cls: 'payout' },
+      ];
+    } else if (result === 'win') {
+      var calc = Fee.skillGameSettle(stakeKas);
+      rows = [
+        { lbl: 'Total pool',   val: calc.totalPool.toFixed(4) + ' KAS' },
+        { lbl: 'Protocol fee', val: calc.protocolFee.toFixed(4) + ' KAS (2%)' },
+        { lbl: 'Treasury',     val: Fee.treasuryAddress().substring(0,14) + '…' },
+        { lbl: 'Your payout',  val: calc.winnerPayout.toFixed(4) + ' KAS', cls: 'payout' },
+      ];
+    } else {
+      rows = [
+        { lbl: 'Result',     val: 'Defeat' },
+        { lbl: 'You lose',   val: stakeKas.toFixed(4) + ' KAS' },
+        { lbl: 'Payout',     val: '0 KAS' },
+      ];
+    }
+
+    var backdrop = document.createElement('div');
+    backdrop.className = 'htp-ov3-backdrop';
+    var card = document.createElement('div');
+    card.className = 'htp-ov3-card';
+
+    var titleEl = document.createElement('div');
+    titleEl.className = 'htp-ov3-headline ' + result;
+    titleEl.style.fontSize = '20px';
+    titleEl.textContent = 'Settlement Preview';
+    card.appendChild(titleEl);
+
+    var rowsEl = document.createElement('div');
+    rowsEl.className = 'htp-ov3-rows';
+    rows.forEach(function(r) {
+      var row = document.createElement('div');
+      row.className = 'htp-ov3-row' + (r.cls ? ' ' + r.cls : '');
+      row.innerHTML = '<span class="lbl">' + r.lbl + '</span><span class="val">' + r.val + '</span>';
+      rowsEl.appendChild(row);
+    });
+    card.appendChild(rowsEl);
+
+    var actions = document.createElement('div');
+    actions.className = 'htp-ov3-actions';
+    var cancelBtn = document.createElement('button');
+    cancelBtn.className = 'htp-ov3-btn-lobby';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', function() { closeOverlay(backdrop); });
+    var confirmBtn = document.createElement('button');
+    confirmBtn.style.cssText = 'flex:1;padding:12px;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;font-family:Inter,sans-serif;background:linear-gradient(135deg,#49e8c2,#3b82f6);color:#0f172a;';
+    confirmBtn.textContent = 'Confirm & Sign';
+    confirmBtn.addEventListener('click', async function() {
+      confirmBtn.textContent = 'Signing…';
+      confirmBtn.disabled = true;
+      closeOverlay(backdrop);
+      if (typeof txCb === 'function') await txCb();
+    });
+    actions.appendChild(cancelBtn);
+    actions.appendChild(confirmBtn);
+    card.appendChild(actions);
+    backdrop.appendChild(card);
+    document.body.appendChild(backdrop);
+    addEscDismiss(backdrop);
+  }
+
+  // Listen for autopayout engine settlement event
+  W.addEventListener('htp:settlement:complete', function(e) {
+    var d = e.detail || {};
+    var result = d.isDraw ? 'draw' : (d.winner && (d.winner === W.connectedAddress || d.winner === W.htpAddress)) ? 'win' : 'lose';
+    showResult({
+      result:   result,
+      txId:     d.txId,
+      stakeKas: d.stakeKas || 0,
+      opponentAddress: d.winner,
+    });
+  });
+
+  W.HTPSettlementOverlay = { showPreview: showPreview, showResult: showResult };
+  console.log('[HTPSettlementOverlay v3] loaded');
 })(window);
