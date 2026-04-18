@@ -1,51 +1,42 @@
-<<<<<<< HEAD
-/* htp-utxo-mutex.js v1.0 — UTXO spend lock to prevent double-spend */
+/* htp-utxo-mutex.js — UTXO spend-lock / mutex
+ * Prevents double-spend races when two payout paths fire concurrently.
+ */
 (function(){
   'use strict';
-  var W = window;
+  console.log('[HTP UTXO Mutex] loaded');
+
   var _locks = {};
-  W.HTPUtxoMutex = {
-    acquire: function(utxoId) {
-      if (_locks[utxoId]) return false;
-      _locks[utxoId] = Date.now();
+
+  window.HTPUtxoMutex = {
+    /**
+     * Acquire a lock for a given matchId + utxo key.
+     * Returns true if lock was granted, false if already held.
+     */
+    acquire: function(key) {
+      if (_locks[key]) return false;
+      _locks[key] = Date.now();
       return true;
     },
-    release: function(utxoId) {
-      delete _locks[utxoId];
+
+    /** Release the lock. */
+    release: function(key) {
+      delete _locks[key];
     },
-    isLocked: function(utxoId) {
-      return !!_locks[utxoId];
+
+    /** Check without acquiring. */
+    isLocked: function(key) {
+      return !!_locks[key];
     },
-    releaseStale: function(maxAgeMs) {
+
+    /** Auto-expire locks older than 60 s (safety net). */
+    gc: function() {
       var now = Date.now();
       Object.keys(_locks).forEach(function(k) {
-        if (now - _locks[k] > (maxAgeMs || 60000)) delete _locks[k];
+        if (now - _locks[k] > 60000) delete _locks[k];
       });
     }
   };
-  console.log('[HTP UTXO Mutex v1.0] loaded');
+
+  // Run GC every 30 s
+  setInterval(function(){ window.HTPUtxoMutex.gc(); }, 30000);
 })();
-=======
-/* HTP UTXO Mutex v1.0 — prevents double-spend on concurrent TX builds */
-(function(W){
-  'use strict';
-  var _locked = {};
-  W.HTPUtxoMutex = {
-    acquire: function(escrowAddr) {
-      if (_locked[escrowAddr]) return false;
-      _locked[escrowAddr] = Date.now();
-      return true;
-    },
-    release: function(escrowAddr) {
-      delete _locked[escrowAddr];
-    },
-    isLocked: function(escrowAddr) {
-      return !!_locked[escrowAddr];
-    },
-    autoRelease: function(escrowAddr, ms) {
-      setTimeout(function(){ delete _locked[escrowAddr]; }, ms || 30000);
-    }
-  };
-  console.log('[HTP UTXO Mutex v1.0] loaded');
-})(window);
->>>>>>> d3fb362 (fix: add 4 missing JS modules, silence /deadline/daa 500 errors)

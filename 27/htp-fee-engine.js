@@ -1,36 +1,34 @@
-<<<<<<< HEAD
-/* htp-fee-engine.js v1.0 — Fee calculation engine */
+/* htp-fee-engine.js — HTP Fee Engine stub
+ * Referenced by index.html; full logic lives in htp-fee-shim.js
+ */
 (function(){
   'use strict';
-  var W = window;
-=======
-/* HTP Fee Engine v1.0 */
-(function(W){
-  'use strict';
->>>>>>> d3fb362 (fix: add 4 missing JS modules, silence /deadline/daa 500 errors)
-  W.HTPFeeEngine = {
-    PROTOCOL_FEE: 0.02,
-    calcWin: function(stakeKas) {
+  console.log('[HTP Fee Engine] loaded');
+
+  // Expose a minimal fee engine so nothing breaks
+  window.HTPFeeEngine = window.HTPFeeEngine || {
+    // 2% protocol fee on the winner's gross payout
+    PROTOCOL_FEE_PCT: 0.02,
+
+    /** Win: winner takes pool minus protocol fee */
+    winSettle: function(stakeKas) {
       var pool = stakeKas * 2;
-      var fee = pool * this.PROTOCOL_FEE;
-      return { pool: pool, fee: fee, payout: pool - fee };
+      var fee  = pool * this.PROTOCOL_FEE_PCT;
+      return { payout: pool - fee, protocolFee: fee, pool: pool };
     },
-    calcDraw: function(stakeKas) {
+
+    /** Draw: each player gets stake minus 1% of their own stake */
+    drawSettle: function(stakeKas) {
       var fee = stakeKas * 0.01;
-      return { refund: stakeKas - fee, fee: fee };
+      return { refund: stakeKas - fee, protocolFee: fee };
     },
-<<<<<<< HEAD
+
+    /** Treasury address (falls back to shim if loaded) */
     treasury: function() {
-      return W.HTP_FEE_ADDR || 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m';
+      if (window.HTPFee && typeof window.HTPFee.treasury === 'function') {
+        return window.HTPFee.treasury();
+      }
+      return window._htpTreasuryAddr || '';
     }
   };
-  console.log('[HTP Fee Engine v1.0] loaded');
 })();
-=======
-    treasuryAddress: function() {
-      return W.HTP_TREASURY_ADDR || 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m';
-    }
-  };
-  console.log('[HTP Fee Engine v1.0] loaded');
-})(window);
->>>>>>> d3fb362 (fix: add 4 missing JS modules, silence /deadline/daa 500 errors)

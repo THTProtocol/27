@@ -1,73 +1,48 @@
-<<<<<<< HEAD
-/* htp-zk-pipeline.js v1.0 — ZK proof pipeline stub for oracle attestation */
+/* htp-zk-pipeline.js — ZK proof pipeline shim
+ * Thin client-side wrapper that delegates ZK verification requests
+ * to the Rust backend (/oracle/zk-verify).  Falls back gracefully
+ * if the backend is offline.
+ */
 (function(){
   'use strict';
-  var W = window;
-  W.HTPZkPipeline = {
-    VERSION: '1.0',
-    /* Submit a ZK proof for oracle resolution.
-     * In production this calls the Rust backend /oracle/zk/submit.
-     * Here we provide a graceful stub so the page loads without crashing. */
-    submit: function(opts) {
-      var base = W.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
-      return fetch(base + '/oracle/zk/submit', {
+  console.log('[HTP ZK Pipeline] loaded');
+
+  var BASE = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
+
+  window.HTPZkPipeline = {
+    /**
+     * Submit a ZK proof for oracle resolution.
+     * @param {object} payload  { marketId, outcome, proof, publicInputs }
+     * @returns {Promise<{verified: boolean, txId?: string}>}
+     */
+    verify: function(payload) {
+      return fetch(BASE + '/oracle/zk-verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(opts || {})
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined
       })
-      .then(function(r){ return r.json(); })
-      .catch(function(e){
-        console.warn('[HTP ZK Pipeline] submit error:', e.message);
-        return { ok: false, error: e.message };
+      .then(function(r) {
+        if (!r.ok) throw new Error('ZK verify HTTP ' + r.status);
+        return r.json();
+      })
+      .catch(function(e) {
+        console.warn('[HTP ZK Pipeline] verify failed:', e.message);
+        return { verified: false, error: e.message };
       });
     },
-    /* Verify a previously submitted ZK proof */
-    verify: function(proofId) {
-      var base = W.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
-      return fetch(base + '/oracle/zk/verify/' + encodeURIComponent(proofId))
-      .then(function(r){ return r.json(); })
-      .catch(function(e){
-        console.warn('[HTP ZK Pipeline] verify error:', e.message);
-        return { ok: false, error: e.message };
-      });
-    },
-    /* Check pipeline health */
-    health: function() {
-      var base = W.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
-      return fetch(base + '/oracle/zk/health')
-      .then(function(r){ return r.ok; })
-      .catch(function(){ return false; });
+
+    /**
+     * Fetch the current ZK circuit parameters from the backend.
+     * @returns {Promise<object>}
+     */
+    getParams: function() {
+      return fetch(BASE + '/oracle/zk-params')
+        .then(function(r) { return r.json(); })
+        .catch(function(e) {
+          console.warn('[HTP ZK Pipeline] getParams failed:', e.message);
+          return {};
+        });
     }
   };
-  console.log('[HTP ZK Pipeline v1.0] loaded');
 })();
-=======
-/* HTP ZK Pipeline v1.0 — ZK proof stub for oracle attestation */
-(function(W){
-  'use strict';
-  W.HTPZkPipeline = {
-    version: '1.0',
-    generateProof: function(marketId, outcome, oracleAddr) {
-      return Promise.resolve({
-        marketId: marketId,
-        outcome: outcome,
-        oracle: oracleAddr,
-        proof: 'zk_stub_' + Date.now(),
-        ts: Date.now()
-      });
-    },
-    verifyProof: function(proofObj) {
-      return Promise.resolve(!!(proofObj && proofObj.proof && proofObj.oracle));
-    },
-    submitOnChain: function(proofObj) {
-      var api = W.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
-      return fetch(api + '/oracle/zk-submit', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify(proofObj)
-      }).then(function(r){ return r.json(); });
-    }
-  };
-  console.log('[HTP ZK Pipeline v1.0] loaded');
-})(window);
->>>>>>> d3fb362 (fix: add 4 missing JS modules, silence /deadline/daa 500 errors)

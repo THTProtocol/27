@@ -1,51 +1,43 @@
-<<<<<<< HEAD
-/* htp-match-deadline.js v1.0 — DAA-based match deadline enforcement */
+/* htp-match-deadline.js — Match deadline / timeout enforcement
+ * Watches active matches; if no move arrives within the timeout window
+ * the match is flagged as abandoned and the present player wins on time.
+ */
 (function(){
   'use strict';
-  var W = window;
-  W.HTPMatchDeadline = {
-    DEFAULT_BLOCKS: 1000,
-    set: function(matchId, daaScore, blocks) {
-      var deadline = daaScore + (blocks || this.DEFAULT_BLOCKS);
-      try { localStorage.setItem('htp_dl_' + matchId, deadline); } catch(e){}
-      return deadline;
+  console.log('[HTP Match Deadline] loaded');
+
+  var MOVE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes default
+  var _timers = {};
+
+  window.HTPMatchDeadline = {
+    /**
+     * (Re)start the inactivity clock for a match.
+     * @param {string} matchId
+     * @param {function} onTimeout  called with matchId when clock expires
+     * @param {number}   [ms]       override default timeout (ms)
+     */
+    reset: function(matchId, onTimeout, ms) {
+      this.clear(matchId);
+      _timers[matchId] = setTimeout(function() {
+        console.warn('[HTP Match Deadline] timeout for', matchId);
+        if (typeof onTimeout === 'function') onTimeout(matchId);
+      }, ms || MOVE_TIMEOUT_MS);
     },
-    get: function(matchId) {
-      try { return parseInt(localStorage.getItem('htp_dl_' + matchId) || '0'); } catch(e){ return 0; }
-    },
-    isExpired: function(matchId, currentDaa) {
-      var dl = this.get(matchId);
-      return dl > 0 && currentDaa > dl;
-    },
+
+    /** Cancel the clock (called on move received or game over). */
     clear: function(matchId) {
-      try { localStorage.removeItem('htp_dl_' + matchId); } catch(e){}
+      if (_timers[matchId]) {
+        clearTimeout(_timers[matchId]);
+        delete _timers[matchId];
+      }
+    },
+
+    /** Clear all active timers (e.g. on page unload). */
+    clearAll: function() {
+      Object.keys(_timers).forEach(function(id) {
+        clearTimeout(_timers[id]);
+      });
+      _timers = {};
     }
   };
-  console.log('[HTP Match Deadline v1.0] loaded');
 })();
-=======
-/* HTP Match Deadline v1.0 — DAA-based deadline enforcement */
-(function(W){
-  'use strict';
-  W.HTPMatchDeadline = {
-    BLOCKS_PER_HOUR: 3600,
-    setDeadline: function(matchId, hoursFromNow) {
-      var daa = W._htpDaaScore || 0;
-      var deadline = daa + (hoursFromNow * this.BLOCKS_PER_HOUR);
-      try { localStorage.setItem('htp_deadline_' + matchId, String(deadline)); } catch(e){}
-      return deadline;
-    },
-    isExpired: function(matchId) {
-      var daa = W._htpDaaScore || 0;
-      try {
-        var dl = parseInt(localStorage.getItem('htp_deadline_' + matchId) || '0', 10);
-        return dl > 0 && daa > dl;
-      } catch(e){ return false; }
-    },
-    clear: function(matchId) {
-      try { localStorage.removeItem('htp_deadline_' + matchId); } catch(e){}
-    }
-  };
-  console.log('[HTP Match Deadline v1.0] loaded');
-})(window);
->>>>>>> d3fb362 (fix: add 4 missing JS modules, silence /deadline/daa 500 errors)
