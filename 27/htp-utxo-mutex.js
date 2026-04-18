@@ -1,37 +1,30 @@
 // htp-utxo-mutex.js v1.0
+// Prevents double-spend by serialising UTXO consumption
 (function(){
   'use strict';
-  var _locks = {};
+  var _queue = Promise.resolve();
+  var _locked = false;
+
   window.HTPUtxoMutex = {
-    acquire: function(matchId) {
-      if (_locks[matchId]) {
-        console.warn('[HTP UTXO Mutex] Lock already held for', matchId);
-        return false;
-      }
-      _locks[matchId] = Date.now();
-      console.log('[HTP UTXO Mutex] Acquired lock for', matchId);
-      return true;
+    acquire: function() {
+      var release;
+      var ticket = new Promise(function(resolve) { release = resolve; });
+      var prev = _queue;
+      _queue = prev.then(function() { return ticket; });
+      return prev.then(function() {
+        _locked = true;
+        return release;
+      });
     },
-    release: function(matchId) {
-      if (_locks[matchId]) {
-        delete _locks[matchId];
-        console.log('[HTP UTXO Mutex] Released lock for', matchId);
-      }
-    },
-    isLocked: function(matchId) {
-      return !!_locks[matchId];
-    },
-    releaseStale: function(maxAgeMs) {
-      var now = Date.now();
-      var age = maxAgeMs || 120000;
-      Object.keys(_locks).forEach(function(id) {
-        if (now - _locks[id] > age) {
-          console.warn('[HTP UTXO Mutex] Releasing stale lock for', id);
-          delete _locks[id];
-        }
+    isLocked: function() { return _locked; },
+    wrap: function(fn) {
+      return window.HTPUtxoMutex.acquire().then(function(release) {
+        return Promise.resolve().then(fn).finally(function() {
+          _locked = false;
+          release();
+        });
       });
     }
   };
-  setInterval(function() { window.HTPUtxoMutex.releaseStale(120000); }, 60000);
   console.log('[HTP UTXO Mutex v1.0] loaded');
 })();

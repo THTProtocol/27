@@ -22,5 +22,5 @@
       return { payout: poolKas - fee, fee: fee, treasury: this.getTreasury() };
     }
   };
-  console.log('[HTP Fee Engine v1.0] loaded — treasury: ' + window.HTPFeeEngine.getTreasury());
+  console.log('[HTP Fee Engine v1.0] loaded — treasury:', window.HTPFeeEngine.getTreasury());
 })();
