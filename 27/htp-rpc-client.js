@@ -88,3 +88,14 @@ W.htpFetchDaa = async function(network) {
     return { daa: window._htpDaaCache || 58000000 };
   }
 };
+
+
+/* DAA 500 silent-fail patch */
+var _origFetchDaa = W.htpFetchDaa;
+W.htpFetchDaa = function(network) {
+  return _origFetchDaa(network).catch(function(e) {
+    // silently return cached value on 500
+    var cached = W._htpDaaScore || 0;
+    return cached;
+  });
+};
