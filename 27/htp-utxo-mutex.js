@@ -1,20 +1,17 @@
-/* htp-utxo-mutex.js — UTXO spend-lock stub */
+/* htp-utxo-mutex.js — stub v1.0 */
 (function(){
   'use strict';
-  var W = typeof window !== 'undefined' ? window : this;
-  W.HTPUtxoMutex = {
+  console.log('[HTP UTXO Mutex] stub loaded');
+  window.HTPUtxoMutex = window.HTPUtxoMutex || {
     _locks: {},
-    acquire: function(utxoId) {
-      if (this._locks[utxoId]) return false;
-      this._locks[utxoId] = true;
-      return true;
+    acquire: function(key) {
+      if (this._locks[key]) return Promise.reject(new Error('UTXO locked: ' + key));
+      this._locks[key] = true;
+      return Promise.resolve();
     },
-    release: function(utxoId) {
-      delete this._locks[utxoId];
+    release: function(key) {
+      delete this._locks[key];
     },
-    isLocked: function(utxoId) {
-      return !!this._locks[utxoId];
-    }
+    version: '1.0-stub'
   };
-  console.log('[HTP UTXO Mutex] loaded');
 })();

@@ -1,25 +1,22 @@
-/* htp-match-deadline.js — match deadline / DAA enforcement stub */
+/* htp-match-deadline.js — stub v1.0 */
 (function(){
   'use strict';
-  var W = typeof window !== 'undefined' ? window : this;
-  W.HTPMatchDeadline = {
+  console.log('[HTP Match Deadline] stub loaded');
+  window.HTPMatchDeadline = window.HTPMatchDeadline || {
     _timers: {},
-    set: function(matchId, daaDeadline, onExpire) {
-      clearTimeout(this._timers[matchId]);
-      /* poll every 10s and call onExpire when DAA passes deadline */
-      var self = this;
-      this._timers[matchId] = setInterval(function(){
-        var daa = W.HTP_CACHED_DAA || 0;
-        if (daa >= daaDeadline) {
-          clearInterval(self._timers[matchId]);
-          if (typeof onExpire === 'function') onExpire(matchId);
-        }
-      }, 10000);
+    set: function(matchId, ms, cb) {
+      this.clear(matchId);
+      this._timers[matchId] = setTimeout(function() {
+        console.warn('[HTP Match Deadline] expired:', matchId);
+        if (typeof cb === 'function') cb(matchId);
+      }, ms);
     },
     clear: function(matchId) {
-      clearInterval(this._timers[matchId]);
-      delete this._timers[matchId];
-    }
+      if (this._timers[matchId]) {
+        clearTimeout(this._timers[matchId]);
+        delete this._timers[matchId];
+      }
+    },
+    version: '1.0-stub'
   };
-  console.log('[HTP Match Deadline] loaded');
 })();
