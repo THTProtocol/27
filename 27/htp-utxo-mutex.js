@@ -1,42 +1,36 @@
-/* htp-utxo-mutex.js — UTXO spend-lock / mutex
- * Prevents double-spend races when two payout paths fire concurrently.
- */
+// htp-utxo-mutex.js v1.0
+// Prevents double-spend by serialising UTXO consumption
 (function(){
   'use strict';
-  console.log('[HTP UTXO Mutex] loaded');
-
-  var _locks = {};
-
+  var _lock = false;
+  var _queue = [];
   window.HTPUtxoMutex = {
-    /**
-     * Acquire a lock for a given matchId + utxo key.
-     * Returns true if lock was granted, false if already held.
-     */
-    acquire: function(key) {
-      if (_locks[key]) return false;
-      _locks[key] = Date.now();
-      return true;
+    acquire: function() {
+      return new Promise(function(resolve) {
+        if (!_lock) {
+          _lock = true;
+          resolve();
+        } else {
+          _queue.push(resolve);
+        }
+      });
     },
-
-    /** Release the lock. */
-    release: function(key) {
-      delete _locks[key];
+    release: function() {
+      if (_queue.length > 0) {
+        var next = _queue.shift();
+        next();
+      } else {
+        _lock = false;
+      }
     },
-
-    /** Check without acquiring. */
-    isLocked: function(key) {
-      return !!_locks[key];
-    },
-
-    /** Auto-expire locks older than 60 s (safety net). */
-    gc: function() {
-      var now = Date.now();
-      Object.keys(_locks).forEach(function(k) {
-        if (now - _locks[k] > 60000) delete _locks[k];
+    run: function(fn) {
+      var self = this;
+      return self.acquire().then(function() {
+        return Promise.resolve().then(fn).finally(function() {
+          self.release();
+        });
       });
     }
   };
-
-  // Run GC every 30 s
-  setInterval(function(){ window.HTPUtxoMutex.gc(); }, 30000);
+  console.log('[HTP UTXO Mutex v1.0] loaded');
 })();

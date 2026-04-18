@@ -1,48 +1,39 @@
-/* htp-zk-pipeline.js — ZK proof pipeline shim
- * Thin client-side wrapper that delegates ZK verification requests
- * to the Rust backend (/oracle/zk-verify).  Falls back gracefully
- * if the backend is offline.
- */
+// htp-zk-pipeline.js v1.0
+// ZK proof pipeline shim — submits oracle attestations to Rust backend for verification
 (function(){
   'use strict';
-  console.log('[HTP ZK Pipeline] loaded');
-
-  var BASE = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
-
+  var API = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
   window.HTPZkPipeline = {
-    /**
-     * Submit a ZK proof for oracle resolution.
-     * @param {object} payload  { marketId, outcome, proof, publicInputs }
-     * @returns {Promise<{verified: boolean, txId?: string}>}
-     */
-    verify: function(payload) {
-      return fetch(BASE + '/oracle/zk-verify', {
+    verify: function(proof, publicInputs) {
+      return fetch(API + '/zk/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined
-      })
-      .then(function(r) {
-        if (!r.ok) throw new Error('ZK verify HTTP ' + r.status);
+        body: JSON.stringify({ proof: proof, inputs: publicInputs })
+      }).then(function(r) {
+        if (!r.ok) throw new Error('ZK verify failed: ' + r.status);
         return r.json();
-      })
-      .catch(function(e) {
-        console.warn('[HTP ZK Pipeline] verify failed:', e.message);
-        return { verified: false, error: e.message };
       });
     },
-
-    /**
-     * Fetch the current ZK circuit parameters from the backend.
-     * @returns {Promise<object>}
-     */
-    getParams: function() {
-      return fetch(BASE + '/oracle/zk-params')
-        .then(function(r) { return r.json(); })
-        .catch(function(e) {
-          console.warn('[HTP ZK Pipeline] getParams failed:', e.message);
-          return {};
-        });
+    attest: function(marketId, outcome, bondAmount) {
+      return fetch(API + '/zk/attest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ marketId: marketId, outcome: outcome, bond: bondAmount })
+      }).then(function(r) {
+        if (!r.ok) throw new Error('ZK attest failed: ' + r.status);
+        return r.json();
+      });
+    },
+    submit: function(marketId, proofBundle) {
+      return fetch(API + '/zk/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ marketId: marketId, bundle: proofBundle })
+      }).then(function(r) {
+        if (!r.ok) throw new Error('ZK submit failed: ' + r.status);
+        return r.json();
+      });
     }
   };
+  console.log('[HTP ZK Pipeline v1.0] loaded');
 })();

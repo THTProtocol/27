@@ -1,34 +1,26 @@
-/* htp-fee-engine.js — HTP Fee Engine stub
- * Referenced by index.html; full logic lives in htp-fee-shim.js
- */
+// htp-fee-engine.js v1.0
 (function(){
   'use strict';
-  console.log('[HTP Fee Engine] loaded');
-
-  // Expose a minimal fee engine so nothing breaks
-  window.HTPFeeEngine = window.HTPFeeEngine || {
-    // 2% protocol fee on the winner's gross payout
-    PROTOCOL_FEE_PCT: 0.02,
-
-    /** Win: winner takes pool minus protocol fee */
-    winSettle: function(stakeKas) {
+  window.HTPFeeEngine = {
+    TREASURY_MAINNET: 'kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel',
+    TREASURY_TN12: 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m',
+    getTreasury: function() {
+      var net = (window.localStorage.getItem('htp_network') || 'tn12').toLowerCase();
+      return net === 'mainnet' ? this.TREASURY_MAINNET : this.TREASURY_TN12;
+    },
+    skillWin: function(stakeKas) {
       var pool = stakeKas * 2;
-      var fee  = pool * this.PROTOCOL_FEE_PCT;
-      return { payout: pool - fee, protocolFee: fee, pool: pool };
+      var fee = pool * 0.02;
+      return { payout: pool - fee, fee: fee, treasury: this.getTreasury() };
     },
-
-    /** Draw: each player gets stake minus 1% of their own stake */
-    drawSettle: function(stakeKas) {
+    skillDraw: function(stakeKas) {
       var fee = stakeKas * 0.01;
-      return { refund: stakeKas - fee, protocolFee: fee };
+      return { refund: stakeKas - fee, fee: fee, treasury: this.getTreasury() };
     },
-
-    /** Treasury address (falls back to shim if loaded) */
-    treasury: function() {
-      if (window.HTPFee && typeof window.HTPFee.treasury === 'function') {
-        return window.HTPFee.treasury();
-      }
-      return window._htpTreasuryAddr || '';
+    marketWin: function(poolKas) {
+      var fee = poolKas * 0.02;
+      return { payout: poolKas - fee, fee: fee, treasury: this.getTreasury() };
     }
   };
+  console.log('[HTP Fee Engine v1.0] loaded');
 })();
