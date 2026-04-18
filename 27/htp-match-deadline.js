@@ -1,27 +1,38 @@
-/* htp-match-deadline.js — Match DAA deadline enforcer stub */
+/* htp-match-deadline.js — HTP Match Deadline stub v1.0
+   Tracks per-match DAA deadlines and flags matches as abandoned
+   after 30 s of no txId response.
+*/
 (function(){
   'use strict';
   console.log('[HTP Match Deadline] loaded');
 
-  window.HTPMatchDeadline = {
-    DEFAULT_BLOCKS: 3600,
+  var W = window;
+  var _timers = {};
 
-    calc: function(currentDaa, offsetBlocks) {
-      var offset = offsetBlocks || window.HTPMatchDeadline.DEFAULT_BLOCKS;
-      return (currentDaa || 0) + offset;
+  W.HTPMatchDeadline = {
+    /**
+     * Start a 30-second deadline for matchId.
+     * onExpire(matchId) is called if no clearDeadline() arrives in time.
+     */
+    startDeadline: function(matchId, onExpire) {
+      if (_timers[matchId]) clearTimeout(_timers[matchId]);
+      _timers[matchId] = setTimeout(function() {
+        delete _timers[matchId];
+        console.warn('[HTP Match Deadline] match', matchId, 'timed out — flagging disputed');
+        if (typeof onExpire === 'function') onExpire(matchId);
+      }, 30000);
     },
-
-    isExpired: function(deadlineDaa, currentDaa) {
-      return currentDaa >= deadlineDaa;
+    clearDeadline: function(matchId) {
+      if (_timers[matchId]) {
+        clearTimeout(_timers[matchId]);
+        delete _timers[matchId];
+      }
     },
-
-    formatRemaining: function(deadlineDaa, currentDaa) {
-      var remaining = deadlineDaa - currentDaa;
-      if (remaining <= 0) return 'Expired';
-      var secs = Math.round(remaining);  // ~1 block/s on TN12
-      if (secs < 60) return secs + 's';
-      if (secs < 3600) return Math.floor(secs/60) + 'm ' + (secs%60) + 's';
-      return Math.floor(secs/3600) + 'h ' + Math.floor((secs%3600)/60) + 'm';
+    clearAll: function() {
+      Object.keys(_timers).forEach(function(id) {
+        clearTimeout(_timers[id]);
+      });
+      _timers = {};
     }
   };
 })();

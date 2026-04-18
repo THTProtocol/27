@@ -1,36 +1,34 @@
-/* htp-zk-pipeline.js — ZK proof pipeline stub */
+/* htp-zk-pipeline.js — HTP ZK Pipeline stub v1.0
+   Provides a lightweight shim for ZK proof generation/verification
+   until the full WASM ZK module is available.
+*/
 (function(){
   'use strict';
   console.log('[HTP ZK Pipeline] loaded');
 
-  window.HTPZkPipeline = {
-    /* Simulate ZK proof generation for oracle attestation */
-    generateProof: function(outcomeData) {
-      return new Promise(function(resolve) {
-        setTimeout(function() {
-          resolve({
-            proof: '0x' + Array.from({length: 64}, function() {
-              return Math.floor(Math.random()*16).toString(16);
-            }).join(''),
-            publicInputs: outcomeData,
-            verified: true,
-            timestamp: Date.now()
-          });
-        }, 200);
+  var W = window;
+
+  W.HTPZKPipeline = {
+    /**
+     * Generate a proof commitment for a set of move hashes.
+     * Returns a hex string (SHA-256-like commitment via SubtleCrypto).
+     */
+    commit: function(movesArr) {
+      var data = JSON.stringify(movesArr);
+      var buf  = new TextEncoder().encode(data);
+      return crypto.subtle.digest('SHA-256', buf).then(function(hashBuf) {
+        return Array.from(new Uint8Array(hashBuf))
+          .map(function(b){ return b.toString(16).padStart(2,'0'); })
+          .join('');
       });
     },
-
-    verifyProof: function(proof, publicInputs) {
-      return new Promise(function(resolve) {
-        setTimeout(function() {
-          resolve({ valid: true, proof: proof, inputs: publicInputs });
-        }, 100);
+    /**
+     * Verify a commitment matches a move list.
+     */
+    verify: function(movesArr, commitment) {
+      return W.HTPZKPipeline.commit(movesArr).then(function(c) {
+        return c === commitment;
       });
-    },
-
-    submitToChain: function(proof) {
-      console.log('[HTP ZK Pipeline] submitToChain (stub):', proof);
-      return Promise.resolve({ submitted: true, txId: null });
     }
   };
 })();

@@ -1,24 +1,27 @@
-/* htp-utxo-mutex.js — UTXO spend-lock mutex stub */
+/* htp-utxo-mutex.js — HTP UTXO Mutex stub v1.0
+   Prevents double-spend by serialising concurrent TX builds.
+*/
 (function(){
   'use strict';
   console.log('[HTP UTXO Mutex] loaded');
 
-  var _locks = {};
+  var W = window;
+  var _queue = Promise.resolve();
 
-  window.HTPUtxoMutex = {
-    acquire: function(utxoId) {
-      if (_locks[utxoId]) return false;
-      _locks[utxoId] = Date.now();
-      return true;
+  W.HTPUtxoMutex = {
+    /**
+     * Acquire the mutex, run fn(), then release.
+     * Returns fn()'s resolved value.
+     */
+    run: function(fn) {
+      _queue = _queue.then(function() {
+        return Promise.resolve().then(fn);
+      });
+      return _queue;
     },
-    release: function(utxoId) {
-      delete _locks[utxoId];
-    },
-    isLocked: function(utxoId) {
-      return !!_locks[utxoId];
-    },
-    releaseAll: function() {
-      _locks = {};
+    /** Reset the queue (emergency use only) */
+    reset: function() {
+      _queue = Promise.resolve();
     }
   };
 })();
