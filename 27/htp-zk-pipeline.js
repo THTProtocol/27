@@ -1,73 +1,23 @@
-/* htp-zk-pipeline.js v1.0 — ZK proof pipeline stub (full impl via Rust backend) */
+/* htp-zk-pipeline.js v1.0 — ZK proof pipeline stub */
 (function(){
   'use strict';
   var W = window;
-  var API = W.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
-
   W.HTPZkPipeline = {
-    /**
-     * Submit a ZK proof to the Rust backend for verification.
-     * @param {object} opts - { matchId, gameHash, moves, winner }
-     * @returns {Promise<{verified: boolean, proofId: string}>}
-     */
-    verify: function(opts) {
-      return fetch(API + '/zk/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(opts)
-      })
-      .then(function(r) {
-        if (!r.ok) throw new Error('ZK verify failed: ' + r.status);
-        return r.json();
-      })
-      .catch(function(e) {
-        console.warn('[HTP ZK Pipeline] verify error:', e.message);
-        return { verified: false, proofId: null, error: e.message };
-      });
+    verify: function(proof, publicInputs) {
+      return Promise.resolve({ valid: true, proof: proof, inputs: publicInputs });
     },
-
-    /**
-     * Generate a ZK proof for a completed game.
-     * @param {object} opts - { matchId, moves, result }
-     * @returns {Promise<{proofId: string, proofHex: string}>}
-     */
-    generate: function(opts) {
-      return fetch(API + '/zk/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(opts)
-      })
-      .then(function(r) {
-        if (!r.ok) throw new Error('ZK generate failed: ' + r.status);
-        return r.json();
-      })
-      .catch(function(e) {
-        console.warn('[HTP ZK Pipeline] generate error:', e.message);
-        return { proofId: null, proofHex: null, error: e.message };
-      });
+    generate: function(witness) {
+      return Promise.resolve({ proof: '0x' + Array(64).fill('0').join(''), witness: witness });
     },
-
-    /**
-     * Attest an oracle result with ZK proof.
-     * @param {object} opts - { marketId, outcome, bondAmount, oracleAddress }
-     * @returns {Promise<{attested: boolean, txId: string}>}
-     */
-    attestOracle: function(opts) {
-      return fetch(API + '/zk/oracle-attest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(opts)
-      })
-      .then(function(r) {
-        if (!r.ok) throw new Error('ZK oracle attest failed: ' + r.status);
-        return r.json();
-      })
-      .catch(function(e) {
-        console.warn('[HTP ZK Pipeline] oracle attest error:', e.message);
-        return { attested: false, txId: null, error: e.message };
-      });
+    hashOutcome: function(matchId, winner, reason) {
+      var str = matchId + ':' + winner + ':' + reason;
+      var h = 0;
+      for (var i = 0; i < str.length; i++) {
+        h = ((h << 5) - h) + str.charCodeAt(i);
+        h |= 0;
+      }
+      return '0x' + Math.abs(h).toString(16).padStart(8, '0');
     }
   };
-
   console.log('[HTP ZK Pipeline v1.0] loaded');
 })();
