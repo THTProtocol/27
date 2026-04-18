@@ -1,50 +1,51 @@
-/* htp-zk-pipeline.js — HTP ZK Pipeline v1.0 */
-(function(){
+/* htp-zk-pipeline.js — ZK proof pipeline shim v1.0 */
+(function() {
   'use strict';
-  var W = window;
+  console.log('[HTP ZK Pipeline] loaded');
 
-  W.HTPZkPipeline = {
-    _rustApi: W.HTP_RUST_API || 'https://htp-backend-production.up.railway.app',
+  var RUST_API = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
 
-    // Generate a ZK proof for a game outcome
-    generateProof: function(matchId, moves, outcome) {
-      console.log('[HTP ZK] Generating proof for match:', matchId);
-      return fetch(this._rustApi + '/zk/prove', {
+  window.HTPZkPipeline = {
+    /**
+     * Submit game transcript to Rust backend for ZK proof generation.
+     * Returns promise resolving to { proofId, status }
+     */
+    submitTranscript: function(matchId, transcript) {
+      return fetch(RUST_API + '/zk/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchId: matchId, moves: moves, outcome: outcome })
-      })
-      .then(function(r) { return r.ok ? r.json() : Promise.reject(new Error('ZK prove failed: ' + r.status)); })
-      .then(function(data) {
-        console.log('[HTP ZK] Proof generated:', data.proofHash);
-        return data;
-      })
-      .catch(function(e) {
-        console.warn('[HTP ZK] Proof generation failed (stub fallback):', e.message);
-        // Stub fallback — returns a mock proof so the app doesnt crash
-        return { proofHash: 'stub-proof-' + matchId, verified: false, stub: true };
+        body: JSON.stringify({ matchId: matchId, transcript: transcript })
+      }).then(function(r) {
+        if (!r.ok) throw new Error('ZK submit failed: ' + r.status);
+        return r.json();
       });
     },
 
-    // Verify a ZK proof on-chain
-    verifyProof: function(proofHash) {
-      console.log('[HTP ZK] Verifying proof:', proofHash);
-      if (proofHash && proofHash.startsWith('stub-proof-')) {
-        console.warn('[HTP ZK] Stub proof — skipping verification');
-        return Promise.resolve({ verified: false, stub: true });
-      }
-      return fetch(this._rustApi + '/zk/verify', {
+    /**
+     * Poll proof status by proofId.
+     * Returns promise resolving to { status: 'pending'|'ready'|'failed', proof? }
+     */
+    pollStatus: function(proofId) {
+      return fetch(RUST_API + '/zk/status/' + proofId)
+        .then(function(r) {
+          if (!r.ok) throw new Error('ZK poll failed: ' + r.status);
+          return r.json();
+        });
+    },
+
+    /**
+     * Verify a proof on-chain via Rust backend.
+     * Returns promise resolving to { verified: bool, txId? }
+     */
+    verify: function(proofId) {
+      return fetch(RUST_API + '/zk/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proofHash: proofHash })
-      })
-      .then(function(r) { return r.ok ? r.json() : Promise.reject(new Error('ZK verify failed: ' + r.status)); })
-      .catch(function(e) {
-        console.warn('[HTP ZK] Verification failed:', e.message);
-        return { verified: false, error: e.message };
+        body: JSON.stringify({ proofId: proofId })
+      }).then(function(r) {
+        if (!r.ok) throw new Error('ZK verify failed: ' + r.status);
+        return r.json();
       });
     }
   };
-
-  console.log('[HTP ZK Pipeline v1.0] loaded');
 })();

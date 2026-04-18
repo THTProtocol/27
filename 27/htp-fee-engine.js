@@ -1,27 +1,19 @@
-/* htp-fee-engine.js — HTP Fee Engine v1.0 */
-(function(){
+/* htp-fee-engine.js — HTP Fee Engine stub v1.0 */
+(function() {
   'use strict';
-  var W = window;
+  console.log('[HTP Fee Engine] loaded');
 
-  W.HTPFeeEngine = {
-    FEE_RATE: 0.02,
-    DRAW_FEE_RATE: 0.01,
-
-    winFee: function(stakeKas) {
+  window.HTPFeeEngine = {
+    /* 2% protocol fee on winnings only */
+    calcWinFee: function(stakeKas) {
       var pool = stakeKas * 2;
-      return { fee: pool * this.FEE_RATE, payout: pool * (1 - this.FEE_RATE) };
+      var fee  = pool * 0.02;
+      return { pool: pool, fee: fee, payout: pool - fee };
     },
-
-    drawFee: function(stakeKas) {
-      var fee = stakeKas * this.DRAW_FEE_RATE;
-      return { fee: fee, refund: stakeKas - fee };
-    },
-
-    calcPayout: function(stakeKas, outcome) {
-      if (outcome === 'draw') return this.drawFee(stakeKas);
-      return this.winFee(stakeKas);
+    /* Draw: 1% of one player stake refunded as fee */
+    calcDrawFee: function(stakeKas) {
+      var fee = stakeKas * 0.01;
+      return { refund: stakeKas - fee, fee: fee };
     }
   };
-
-  console.log('[HTP Fee Engine v1.0] loaded');
 })();

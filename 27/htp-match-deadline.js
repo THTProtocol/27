@@ -1,42 +1,36 @@
-/* htp-match-deadline.js — HTP Match Deadline v1.0 */
-(function(){
+/* htp-match-deadline.js — Match DAA deadline tracker v1.0 */
+(function() {
   'use strict';
-  var W = window;
-  var _deadlines = {};
+  console.log('[HTP Match Deadline] loaded');
 
-  W.HTPMatchDeadline = {
-    TIMEOUT_MS: 30 * 60 * 1000, // 30 minutes default
+  window.HTPMatchDeadline = {
+    /* DAA blocks per hour on Kaspa ~3600 (1 block/sec) */
+    BLOCKS_PER_HOUR: 3600,
 
-    set: function(matchId, timeoutMs) {
-      var ms = timeoutMs || this.TIMEOUT_MS;
-      if (_deadlines[matchId]) clearTimeout(_deadlines[matchId].timer);
-      var deadline = Date.now() + ms;
-      var timer = setTimeout(function() {
-        console.warn('[HTP Match Deadline] Match timed out:', matchId);
-        W.dispatchEvent(new CustomEvent('htp:match:timeout', { detail: { matchId: matchId } }));
-        delete _deadlines[matchId];
-      }, ms);
-      _deadlines[matchId] = { deadline: deadline, timer: timer };
-      console.log('[HTP Match Deadline] Set deadline for', matchId, 'in', ms/1000, 's');
+    /** Return the deadline DAA score given match creation DAA + hours */
+    calc: function(creationDaa, hours) {
+      return creationDaa + (hours * this.BLOCKS_PER_HOUR);
     },
 
-    clear: function(matchId) {
-      if (_deadlines[matchId]) {
-        clearTimeout(_deadlines[matchId].timer);
-        delete _deadlines[matchId];
-        console.log('[HTP Match Deadline] Cleared deadline for', matchId);
-      }
+    /** Returns true if current DAA has passed the deadline */
+    isPast: function(deadlineDaa, currentDaa) {
+      return currentDaa >= deadlineDaa;
     },
 
-    remaining: function(matchId) {
-      if (!_deadlines[matchId]) return 0;
-      return Math.max(0, _deadlines[matchId].deadline - Date.now());
+    /** Remaining blocks until deadline (0 if past) */
+    remaining: function(deadlineDaa, currentDaa) {
+      return Math.max(0, deadlineDaa - currentDaa);
     },
 
-    isExpired: function(matchId) {
-      return this.remaining(matchId) === 0;
+    /** Human readable remaining time string */
+    remainingStr: function(deadlineDaa, currentDaa) {
+      var blocks = this.remaining(deadlineDaa, currentDaa);
+      if (blocks === 0) return 'Expired';
+      var mins = Math.floor(blocks / 60);
+      var hrs  = Math.floor(mins / 60);
+      mins = mins % 60;
+      if (hrs > 0) return hrs + 'h ' + mins + 'm';
+      return mins + 'm';
     }
   };
-
-  console.log('[HTP Match Deadline v1.0] loaded');
 })();

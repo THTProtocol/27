@@ -1,37 +1,31 @@
-/* htp-utxo-mutex.js — HTP UTXO Mutex v1.0 */
-(function(){
+/* htp-utxo-mutex.js — UTXO spend-lock mutex v1.0 */
+(function() {
   'use strict';
-  var W = window;
+  console.log('[HTP UTXO Mutex] loaded');
+
   var _locks = {};
 
-  W.HTPUtxoMutex = {
-    acquire: function(matchId) {
-      if (_locks[matchId]) {
-        console.warn('[HTP UTXO Mutex] Lock already held for', matchId);
-        return false;
-      }
-      _locks[matchId] = Date.now();
-      console.log('[HTP UTXO Mutex] Acquired lock for', matchId);
+  window.HTPUtxoMutex = {
+    /* Returns true if lock acquired, false if already locked */
+    acquire: function(utxoKey) {
+      if (_locks[utxoKey]) return false;
+      _locks[utxoKey] = Date.now();
       return true;
     },
-
-    release: function(matchId) {
-      if (_locks[matchId]) {
-        delete _locks[matchId];
-        console.log('[HTP UTXO Mutex] Released lock for', matchId);
-      }
+    release: function(utxoKey) {
+      delete _locks[utxoKey];
     },
-
-    isLocked: function(matchId) {
-      return !!_locks[matchId];
+    isLocked: function(utxoKey) {
+      return !!_locks[utxoKey];
     },
-
-    withLock: function(matchId, fn) {
-      if (!this.acquire(matchId)) return Promise.reject(new Error('UTXO lock held: ' + matchId));
-      var self = this;
-      return Promise.resolve().then(fn).finally(function() { self.release(matchId); });
+    /* Auto-release stale locks older than 120 seconds */
+    gc: function() {
+      var now = Date.now();
+      Object.keys(_locks).forEach(function(k) {
+        if (now - _locks[k] > 120000) delete _locks[k];
+      });
     }
   };
 
-  console.log('[HTP UTXO Mutex v1.0] loaded');
+  setInterval(window.HTPUtxoMutex.gc, 30000);
 })();
