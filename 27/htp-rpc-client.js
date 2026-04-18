@@ -76,3 +76,15 @@
 
   console.log('[HTP RPC Shim v4.0] balance+dag via Rust, DAA via WASM WebSocket');
 })(window);
+
+W.htpFetchDaa = async function(network) {
+  try {
+    var r = await fetch(W.HTP_RUST_API + '/deadline/daa', { signal: AbortSignal.timeout(4000) });
+    if (!r.ok) throw new Error('status ' + r.status);
+    var data = await r.json();
+    if (data && data.daa) window._htpDaaCache = data.daa;
+    return data;
+  } catch(e) {
+    return { daa: window._htpDaaCache || 58000000 };
+  }
+};
