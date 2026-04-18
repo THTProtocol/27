@@ -1,45 +1,37 @@
 // htp-zk-pipeline.js v1.0
-// ZK proof pipeline stub — verifies oracle attestations via Rust backend
+// ZK proof pipeline shim — submits move proofs to Rust backend for verification
 (function(){
   'use strict';
   var API = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
 
   window.HTPZkPipeline = {
-    verify: function(marketId, outcome, proof) {
-      return fetch(API + '/zk/verify', {
+    // Submit a game-move proof for on-chain verification
+    submitMoveProof: function(matchId, moveData, network) {
+      return fetch(API + '/zk/verify-move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marketId: marketId, outcome: outcome, proof: proof })
+        body: JSON.stringify({ matchId: matchId, move: moveData, network: network || 'tn12' })
       }).then(function(r) {
-        if (!r.ok) throw new Error('[HTP ZK] verify failed: ' + r.status);
+        if (!r.ok) throw new Error('ZK verify failed: ' + r.status);
         return r.json();
-      }).then(function(d) {
-        console.log('[HTP ZK Pipeline] Verified:', marketId, d);
-        return d;
       });
     },
-    submit: function(marketId, outcome, attestation) {
-      return fetch(API + '/zk/submit', {
+    // Submit a game-outcome proof
+    submitOutcomeProof: function(matchId, outcome, network) {
+      return fetch(API + '/zk/verify-outcome', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marketId: marketId, outcome: outcome, attestation: attestation })
+        body: JSON.stringify({ matchId: matchId, outcome: outcome, network: network || 'tn12' })
       }).then(function(r) {
-        if (!r.ok) throw new Error('[HTP ZK] submit failed: ' + r.status);
+        if (!r.ok) throw new Error('ZK outcome verify failed: ' + r.status);
         return r.json();
-      }).then(function(d) {
-        console.log('[HTP ZK Pipeline] Submitted:', marketId, d);
-        return d;
       });
     },
-    // Fallback: bond-attested resolution (no ZK proof required)
-    bondAttest: function(marketId, outcome, bondAddress) {
-      return fetch(API + '/oracle/bond-attest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marketId: marketId, outcome: outcome, bondAddress: bondAddress })
-      }).then(function(r) {
-        if (!r.ok) throw new Error('[HTP ZK] bond-attest failed: ' + r.status);
-        return r.json();
+    // Graceful no-op if backend is offline
+    trySubmitMoveProof: function(matchId, moveData, network) {
+      return this.submitMoveProof(matchId, moveData, network).catch(function(e) {
+        console.warn('[HTP ZK Pipeline] Move proof skipped (backend offline):', e.message);
+        return { verified: false, skipped: true };
       });
     }
   };
