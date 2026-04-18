@@ -1,22 +1,33 @@
 /* htp-zk-pipeline.js — HTP ZK Pipeline stub v1.0
-   Proof submission + verification shim; delegates to Rust backend. */
+ * Stub for ZK proof generation/verification pipeline.
+ * Full ZK logic is handled server-side via Rust backend.
+ * Prevents 404/500 on script load.
+ */
 (function(){
   'use strict';
   console.log('[HTP ZK Pipeline] loaded');
 
-  var API = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
-
-  window.HTPZkPipeline = {
-    submitProof: function(marketId, outcome, proof) {
-      return fetch(API + '/oracle/zk/submit', {
+  window.HTPZkPipeline = window.HTPZkPipeline || {
+    // Submit a proof request to the Rust backend.
+    submitProof: function(matchId, moves, outcome) {
+      var api = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
+      return fetch(api + '/zk/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marketId: marketId, outcome: outcome, proof: proof })
-      }).then(function(r) { return r.json(); });
+        body: JSON.stringify({ matchId: matchId, moves: moves, outcome: outcome })
+      }).then(function(r) {
+        if (!r.ok) throw new Error('ZK submit failed: ' + r.status);
+        return r.json();
+      });
     },
-    verifyProof: function(marketId, proofId) {
-      return fetch(API + '/oracle/zk/verify/' + marketId + '/' + proofId)
-        .then(function(r) { return r.json(); });
+    // Verify a proof via the Rust backend.
+    verifyProof: function(matchId, proofId) {
+      var api = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
+      return fetch(api + '/zk/verify/' + matchId + '/' + proofId)
+        .then(function(r) {
+          if (!r.ok) throw new Error('ZK verify failed: ' + r.status);
+          return r.json();
+        });
     }
   };
 })();
