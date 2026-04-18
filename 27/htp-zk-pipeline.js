@@ -1,37 +1,42 @@
 // htp-zk-pipeline.js v1.0
-// ZK proof verification pipeline stub — delegates to Rust API
+// ZK proof pipeline shim — routes to Rust backend for proof generation/verification
 (function(){
   'use strict';
-  var API = function() { return window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app'; };
+  var BASE = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
+
   window.HTPZkPipeline = {
-    // Submit a game move hash for ZK proof generation
-    submitMoveHash: function(matchId, moveHash, network) {
-      network = network || window.localStorage.getItem('htp_network') || 'tn12';
-      return fetch(API() + '/zk/submit', {
+    // Generate a ZK proof for a move sequence
+    generateProof: function(matchId, moves) {
+      return fetch(BASE + '/zk/prove', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchId: matchId, moveHash: moveHash, network: network })
+        body: JSON.stringify({ matchId: matchId, moves: moves })
       }).then(function(r) {
-        if (!r.ok) throw new Error('[HTP ZK] submit failed: ' + r.status);
+        if (!r.ok) throw new Error('[HTPZkPipeline] prove failed: ' + r.status);
         return r.json();
       });
     },
-    // Verify a ZK proof for settlement
+    // Verify a ZK proof against the covenant
     verifyProof: function(matchId, proof) {
-      return fetch(API() + '/zk/verify', {
+      return fetch(BASE + '/zk/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ matchId: matchId, proof: proof })
       }).then(function(r) {
-        if (!r.ok) throw new Error('[HTP ZK] verify failed: ' + r.status);
+        if (!r.ok) throw new Error('[HTPZkPipeline] verify failed: ' + r.status);
         return r.json();
       });
     },
-    // Check if ZK pipeline is online
-    health: function() {
-      return fetch(API() + '/zk/health', { method: 'GET', signal: AbortSignal.timeout(5000) })
-        .then(function(r) { return r.ok; })
-        .catch(function() { return false; });
+    // Submit verified proof to oracle for settlement
+    submitToOracle: function(matchId, proof, winner) {
+      return fetch(BASE + '/zk/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ matchId: matchId, proof: proof, winner: winner })
+      }).then(function(r) {
+        if (!r.ok) throw new Error('[HTPZkPipeline] submit failed: ' + r.status);
+        return r.json();
+      });
     }
   };
   console.log('[HTP ZK Pipeline v1.0] loaded');
