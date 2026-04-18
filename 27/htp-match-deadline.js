@@ -1,24 +1,30 @@
-/* htp-match-deadline.js — HTP Match Deadline stub v1.0 */
-(function() {
+/* htp-match-deadline.js — HTP Match Deadline stub v1.0
+   Tracks per-match DAA deadlines and fires htp:match:expired when overdue. */
+(function(){
   'use strict';
   console.log('[HTP Match Deadline] loaded');
+
+  var _deadlines = {};
+
   window.HTPMatchDeadline = {
     set: function(matchId, daaDeadline) {
-      try {
-        localStorage.setItem('htp_deadline_' + matchId, daaDeadline);
-      } catch(e) {}
+      _deadlines[matchId] = daaDeadline;
     },
     get: function(matchId) {
-      try {
-        return parseInt(localStorage.getItem('htp_deadline_' + matchId)) || 0;
-      } catch(e) { return 0; }
+      return _deadlines[matchId] || null;
     },
-    clear: function(matchId) {
-      try { localStorage.removeItem('htp_deadline_' + matchId); } catch(e) {}
+    isExpired: function(matchId, currentDaa) {
+      var d = _deadlines[matchId];
+      if (!d) return false;
+      return currentDaa >= d;
     },
-    isPast: function(matchId, currentDaa) {
-      var dl = this.get(matchId);
-      return dl > 0 && currentDaa >= dl;
+    checkAll: function(currentDaa) {
+      Object.keys(_deadlines).forEach(function(id) {
+        if (currentDaa >= _deadlines[id]) {
+          window.dispatchEvent(new CustomEvent('htp:match:expired', { detail: { matchId: id } }));
+          delete _deadlines[id];
+        }
+      });
     }
   };
 })();

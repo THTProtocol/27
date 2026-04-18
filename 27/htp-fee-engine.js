@@ -1,20 +1,21 @@
 /* htp-fee-engine.js — HTP Fee Engine stub v1.0 */
-(function() {
+(function(){
   'use strict';
   console.log('[HTP Fee Engine] loaded');
+
+  var PROTOCOL_FEE = 0.02;
+  var TREASURY = window.HTP_TREASURY_ADDR || 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m';
+
   window.HTPFeeEngine = {
-    calcFee: function(stakeKas, mode) {
-      var rate = (mode === 'draw') ? 0.01 : 0.02;
-      return parseFloat((stakeKas * rate).toFixed(8));
-    },
-    calcPayout: function(stakeKas, mode) {
+    calcWinFee: function(stakeKas) {
       var pool = stakeKas * 2;
-      var fee = this.calcFee(stakeKas, mode);
-      return parseFloat((pool - fee).toFixed(8));
+      var fee  = pool * PROTOCOL_FEE;
+      return { pool: pool, fee: fee, payout: pool - fee, treasuryAddress: TREASURY };
     },
-    calcDrawRefund: function(stakeKas) {
-      var fee = this.calcFee(stakeKas, 'draw');
-      return parseFloat((stakeKas - fee).toFixed(8));
-    }
+    calcDrawFee: function(stakeKas) {
+      var fee = stakeKas * 0.01;
+      return { refund: stakeKas - fee, protocolFee: fee, treasuryAddress: TREASURY };
+    },
+    treasuryAddress: function() { return TREASURY; }
   };
 })();
