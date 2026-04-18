@@ -1,37 +1,36 @@
 // htp-utxo-mutex.js v1.0
-// Prevents double-spend by locking UTXOs during TX construction
+// Prevents double-spend by serialising concurrent UTXO operations
 (function(){
   'use strict';
-  var _locks = {};
+  var _queue = Promise.resolve();
+  var _locked = false;
   window.HTPUtxoMutex = {
-    lock: function(matchId) {
-      if (_locks[matchId]) return false;
-      _locks[matchId] = Date.now();
-      return true;
-    },
-    unlock: function(matchId) {
-      delete _locks[matchId];
-    },
-    isLocked: function(matchId) {
-      return !!_locks[matchId];
-    },
-    tryLock: function(matchId, timeoutMs) {
-      var self = this;
-      timeoutMs = timeoutMs || 30000;
-      if (this.lock(matchId)) return Promise.resolve(true);
-      return new Promise(function(resolve) {
-        var start = Date.now();
-        var interval = setInterval(function() {
-          if (!self.isLocked(matchId)) {
-            clearInterval(interval);
-            self.lock(matchId);
-            resolve(true);
-          } else if (Date.now() - start > timeoutMs) {
-            clearInterval(interval);
-            resolve(false);
-          }
-        }, 100);
+    acquire: function() {
+      var resolve;
+      var ticket = new Promise(function(r){ resolve = r; });
+      _queue = _queue.then(function() {
+        _locked = true;
+        return ticket;
       });
+      return {
+        release: function() {
+          _locked = false;
+          resolve();
+        }
+      };
+    },
+    isLocked: function() { return _locked; },
+    wrap: function(fn) {
+      return function() {
+        var args = arguments;
+        var ctx = this;
+        var lock = window.HTPUtxoMutex.acquire();
+        return Promise.resolve().then(function() {
+          return fn.apply(ctx, args);
+        }).finally(function() {
+          lock.release();
+        });
+      };
     }
   };
   console.log('[HTP UTXO Mutex v1.0] loaded');
