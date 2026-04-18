@@ -17,10 +17,10 @@
       var fee = stakeKas * 0.01;
       return { refund: stakeKas - fee, fee: fee, treasury: this.getTreasury() };
     },
-    eventWin: function(poolKas) {
-      var fee = poolKas * 0.02;
-      return { payout: poolKas - fee, fee: fee, treasury: this.getTreasury() };
+    eventWin: function(pool, maxCap) {
+      var fee = pool * 0.02;
+      return { payout: pool - fee, fee: fee, treasury: this.getTreasury() };
     }
   };
-  console.log('[HTP Fee Engine v1.0] loaded');
+  console.log('[HTP Fee Engine v1.0] loaded — treasury:', window.HTPFeeEngine.getTreasury());
 })();
