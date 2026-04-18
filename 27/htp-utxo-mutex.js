@@ -1,47 +1,37 @@
 /* htp-utxo-mutex.js — HTP UTXO Mutex v1.0 */
 (function(){
   'use strict';
-  console.log('[HTP UTXO Mutex v1.0] loaded');
-
   var W = window;
   var _locks = {};
 
-  /**
-   * Acquire a lock for a given key (matchId or escrow address).
-   * Returns true if acquired, false if already locked.
-   */
-  function acquire(key) {
-    if (_locks[key]) return false;
-    _locks[key] = Date.now();
-    return true;
-  }
+  W.HTPUtxoMutex = {
+    acquire: function(matchId) {
+      if (_locks[matchId]) {
+        console.warn('[HTP UTXO Mutex] Lock already held for', matchId);
+        return false;
+      }
+      _locks[matchId] = Date.now();
+      console.log('[HTP UTXO Mutex] Acquired lock for', matchId);
+      return true;
+    },
 
-  /**
-   * Release a lock.
-   */
-  function release(key) {
-    delete _locks[key];
-  }
+    release: function(matchId) {
+      if (_locks[matchId]) {
+        delete _locks[matchId];
+        console.log('[HTP UTXO Mutex] Released lock for', matchId);
+      }
+    },
 
-  /**
-   * Check if locked.
-   */
-  function isLocked(key) {
-    return !!_locks[key];
-  }
+    isLocked: function(matchId) {
+      return !!_locks[matchId];
+    },
 
-  /**
-   * Auto-expire locks older than ttlMs (default 60s) to prevent deadlocks.
-   */
-  function gcLocks(ttlMs) {
-    ttlMs = ttlMs || 60000;
-    var now = Date.now();
-    Object.keys(_locks).forEach(function(k) {
-      if (now - _locks[k] > ttlMs) delete _locks[k];
-    });
-  }
+    withLock: function(matchId, fn) {
+      if (!this.acquire(matchId)) return Promise.reject(new Error('UTXO lock held: ' + matchId));
+      var self = this;
+      return Promise.resolve().then(fn).finally(function() { self.release(matchId); });
+    }
+  };
 
-  setInterval(function() { gcLocks(60000); }, 30000);
-
-  W.HTPUtxoMutex = { acquire: acquire, release: release, isLocked: isLocked };
+  console.log('[HTP UTXO Mutex v1.0] loaded');
 })();
