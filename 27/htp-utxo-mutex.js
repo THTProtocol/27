@@ -1,34 +1,27 @@
 // htp-utxo-mutex.js v1.0
-// Prevents double-spend by serialising UTXO consumption
 (function(){
   'use strict';
-  var _lock = false;
-  var _queue = [];
+  var _locks = {};
   window.HTPUtxoMutex = {
-    acquire: function() {
-      return new Promise(function(resolve) {
-        if (!_lock) {
-          _lock = true;
-          resolve();
-        } else {
-          _queue.push(resolve);
-        }
-      });
+    acquire: function(matchId) {
+      if (_locks[matchId]) return false;
+      _locks[matchId] = Date.now();
+      return true;
     },
-    release: function() {
-      if (_queue.length > 0) {
-        var next = _queue.shift();
-        next();
-      } else {
-        _lock = false;
+    release: function(matchId) {
+      delete _locks[matchId];
+    },
+    isLocked: function(matchId) {
+      return !!_locks[matchId];
+    },
+    withLock: function(matchId, fn) {
+      if (!this.acquire(matchId)) {
+        console.warn('[HTP UTXO Mutex] Already locked:', matchId);
+        return Promise.reject(new Error('UTXO mutex locked for ' + matchId));
       }
-    },
-    run: function(fn) {
       var self = this;
-      return self.acquire().then(function() {
-        return Promise.resolve().then(fn).finally(function() {
-          self.release();
-        });
+      return Promise.resolve().then(fn).finally(function() {
+        self.release(matchId);
       });
     }
   };
