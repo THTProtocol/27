@@ -1,34 +1,59 @@
-/* htp-zk-pipeline.js — HTP ZK Pipeline stub v1.0
-   Provides a lightweight shim for ZK proof generation/verification
-   until the full WASM ZK module is available.
-*/
+/* htp-zk-pipeline.js — HTP ZK Pipeline v1.0 */
 (function(){
   'use strict';
-  console.log('[HTP ZK Pipeline] loaded');
+  console.log('[HTP ZK Pipeline v1.0] loaded');
 
   var W = window;
+  var RUST_API = W.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
 
-  W.HTPZKPipeline = {
-    /**
-     * Generate a proof commitment for a set of move hashes.
-     * Returns a hex string (SHA-256-like commitment via SubtleCrypto).
-     */
-    commit: function(movesArr) {
-      var data = JSON.stringify(movesArr);
-      var buf  = new TextEncoder().encode(data);
-      return crypto.subtle.digest('SHA-256', buf).then(function(hashBuf) {
-        return Array.from(new Uint8Array(hashBuf))
-          .map(function(b){ return b.toString(16).padStart(2,'0'); })
-          .join('');
-      });
-    },
-    /**
-     * Verify a commitment matches a move list.
-     */
-    verify: function(movesArr, commitment) {
-      return W.HTPZKPipeline.commit(movesArr).then(function(c) {
-        return c === commitment;
-      });
-    }
+  /**
+   * Submit a ZK proof for oracle resolution.
+   * @param {object} params - { marketId, outcome, proof, publicInputs }
+   * @returns {Promise<{ verified: boolean, txId?: string }>}
+   */
+  function submitProof(params) {
+    return fetch(RUST_API + '/zk/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    })
+    .then(function(r) { return r.json(); })
+    .catch(function(e) {
+      console.warn('[HTP ZK Pipeline] submitProof error:', e.message);
+      return { verified: false, error: e.message };
+    });
+  }
+
+  /**
+   * Verify a ZK proof without submitting.
+   * @param {object} params - { proof, publicInputs, circuit }
+   * @returns {Promise<{ valid: boolean }>}
+   */
+  function verifyProof(params) {
+    return fetch(RUST_API + '/zk/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    })
+    .then(function(r) { return r.json(); })
+    .catch(function(e) {
+      console.warn('[HTP ZK Pipeline] verifyProof error:', e.message);
+      return { valid: false, error: e.message };
+    });
+  }
+
+  /**
+   * Get proof status.
+   */
+  function getProofStatus(proofId) {
+    return fetch(RUST_API + '/zk/status/' + proofId)
+      .then(function(r) { return r.json(); })
+      .catch(function(e) { return { status: 'unknown', error: e.message }; });
+  }
+
+  W.HTPZkPipeline = {
+    submitProof: submitProof,
+    verifyProof: verifyProof,
+    getProofStatus: getProofStatus
   };
 })();
