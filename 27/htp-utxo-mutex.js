@@ -4,26 +4,24 @@
   'use strict';
   var _locks = {};
   window.HTPUtxoMutex = {
-    lock: function(matchId) {
-      if (_locks[matchId]) return false;
-      _locks[matchId] = Date.now();
-      return true;
-    },
-    unlock: function(matchId) {
-      delete _locks[matchId];
+    acquire: function(matchId) {
+      return new Promise(function(resolve, reject) {
+        if (_locks[matchId]) {
+          return reject(new Error('[HTP UTXO Mutex] Lock already held for: ' + matchId));
+        }
+        _locks[matchId] = true;
+        console.log('[HTP UTXO Mutex] Lock acquired:', matchId);
+        resolve(function release() {
+          delete _locks[matchId];
+          console.log('[HTP UTXO Mutex] Lock released:', matchId);
+        });
+      });
     },
     isLocked: function(matchId) {
       return !!_locks[matchId];
     },
-    withLock: function(matchId, fn) {
-      if (!this.lock(matchId)) {
-        console.warn('[HTP UTXO Mutex] Already locked:', matchId);
-        return Promise.reject(new Error('UTXO locked: ' + matchId));
-      }
-      var self = this;
-      return Promise.resolve()
-        .then(fn)
-        .finally(function() { self.unlock(matchId); });
+    forceRelease: function(matchId) {
+      delete _locks[matchId];
     }
   };
   console.log('[HTP UTXO Mutex v1.0] loaded');
