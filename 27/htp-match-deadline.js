@@ -1,26 +1,15 @@
 // htp-match-deadline.js v1.0
-// Flags matches as abandoned/disputed after timeout
 (function(){
   'use strict';
-  var ABANDON_MS = 5 * 60 * 1000; // 5 minutes no move
   var _timers = {};
-
   window.HTPMatchDeadline = {
-    start: function(matchId, onTimeout) {
+    // Start a deadline timer; onExpire called after ms milliseconds
+    set: function(matchId, ms, onExpire) {
       this.clear(matchId);
       _timers[matchId] = setTimeout(function() {
-        console.warn('[HTPMatchDeadline] Match ' + matchId + ' timed out — flagging abandoned');
-        if (typeof onTimeout === 'function') onTimeout(matchId);
-        // Write disputed flag to Firebase if available
-        try {
-          var db = firebase.database();
-          db.ref('matches/' + matchId).update({ status: 'disputed', disputedAt: Date.now() });
-        } catch(e) {}
-      }, ABANDON_MS);
-    },
-    reset: function(matchId, onTimeout) {
-      // Reset timer on new move
-      this.start(matchId, onTimeout);
+        delete _timers[matchId];
+        if (typeof onExpire === 'function') onExpire(matchId);
+      }, ms);
     },
     clear: function(matchId) {
       if (_timers[matchId]) {

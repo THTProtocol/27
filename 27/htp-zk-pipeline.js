@@ -1,40 +1,28 @@
 // htp-zk-pipeline.js v1.0
-// ZK proof pipeline shim — routes to Rust backend for proof generation/verification
 (function(){
   'use strict';
-  var BASE = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
-
   window.HTPZkPipeline = {
-    // Generate a ZK proof for a move sequence
-    generateProof: function(matchId, moves) {
-      return fetch(BASE + '/zk/prove', {
+    // Verify a ZK proof via Rust backend
+    verify: function(proof, publicInputs) {
+      var api = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
+      return fetch(api + '/zk/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchId: matchId, moves: moves })
+        body: JSON.stringify({ proof: proof, public_inputs: publicInputs })
       }).then(function(r) {
-        if (!r.ok) throw new Error('[HTPZkPipeline] prove failed: ' + r.status);
+        if (!r.ok) throw new Error('ZK verify failed: ' + r.status);
         return r.json();
       });
     },
-    // Verify a ZK proof against the covenant
-    verifyProof: function(matchId, proof) {
-      return fetch(BASE + '/zk/verify', {
+    // Generate a ZK proof for a game result
+    prove: function(gameId, moveLog, result) {
+      var api = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
+      return fetch(api + '/zk/prove', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchId: matchId, proof: proof })
+        body: JSON.stringify({ game_id: gameId, moves: moveLog, result: result })
       }).then(function(r) {
-        if (!r.ok) throw new Error('[HTPZkPipeline] verify failed: ' + r.status);
-        return r.json();
-      });
-    },
-    // Submit verified proof to oracle for settlement
-    submitToOracle: function(matchId, proof, winner) {
-      return fetch(BASE + '/zk/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchId: matchId, proof: proof, winner: winner })
-      }).then(function(r) {
-        if (!r.ok) throw new Error('[HTPZkPipeline] submit failed: ' + r.status);
+        if (!r.ok) throw new Error('ZK prove failed: ' + r.status);
         return r.json();
       });
     }
