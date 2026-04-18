@@ -1,28 +1,24 @@
 // htp-utxo-mutex.js v1.0
-// Prevents double-spend by serialising concurrent TX builds
 (function(){
   'use strict';
-  var _queue = Promise.resolve();
-  var _locked = false;
-
+  var _locks = {};
   window.HTPUtxoMutex = {
-    acquire: function() {
-      var release;
-      _queue = _queue.then(function() {
-        return new Promise(function(resolve) { release = resolve; });
-      });
-      _locked = true;
-      return release;
+    acquire: function(matchId) {
+      if (_locks[matchId]) return false;
+      _locks[matchId] = Date.now();
+      return true;
     },
-    isLocked: function() { return _locked; },
-    wrap: function(fn) {
-      return function() {
-        var args = arguments;
-        var release = window.HTPUtxoMutex.acquire();
-        return Promise.resolve()
-          .then(function() { return fn.apply(this, args); })
-          .finally(function() { _locked = false; if (release) release(); });
-      };
+    release: function(matchId) {
+      delete _locks[matchId];
+    },
+    isLocked: function(matchId) {
+      return !!_locks[matchId];
+    },
+    expireStale: function(maxAgeMs) {
+      var now = Date.now();
+      Object.keys(_locks).forEach(function(id) {
+        if (now - _locks[id] > (maxAgeMs || 60000)) delete _locks[id];
+      });
     }
   };
   console.log('[HTP UTXO Mutex v1.0] loaded');

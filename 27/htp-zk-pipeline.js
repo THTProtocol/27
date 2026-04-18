@@ -1,37 +1,36 @@
 // htp-zk-pipeline.js v1.0
-// ZK proof pipeline shim — submits move proofs to Rust backend for verification
 (function(){
   'use strict';
   var API = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
-
   window.HTPZkPipeline = {
-    // Submit a game-move proof for on-chain verification
-    submitMoveProof: function(matchId, moveData, network) {
-      return fetch(API + '/zk/verify-move', {
+    verify: function(proof, publicInputs) {
+      return fetch(API + '/zk/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchId: matchId, move: moveData, network: network || 'tn12' })
-      }).then(function(r) {
+        body: JSON.stringify({ proof: proof, public_inputs: publicInputs })
+      })
+      .then(function(r) {
         if (!r.ok) throw new Error('ZK verify failed: ' + r.status);
         return r.json();
+      })
+      .catch(function(e) {
+        console.warn('[HTP ZK Pipeline] verify error:', e.message);
+        return { verified: false, error: e.message };
       });
     },
-    // Submit a game-outcome proof
-    submitOutcomeProof: function(matchId, outcome, network) {
-      return fetch(API + '/zk/verify-outcome', {
+    generateProof: function(witnessData) {
+      return fetch(API + '/zk/prove', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchId: matchId, outcome: outcome, network: network || 'tn12' })
-      }).then(function(r) {
-        if (!r.ok) throw new Error('ZK outcome verify failed: ' + r.status);
+        body: JSON.stringify({ witness: witnessData })
+      })
+      .then(function(r) {
+        if (!r.ok) throw new Error('ZK prove failed: ' + r.status);
         return r.json();
-      });
-    },
-    // Graceful no-op if backend is offline
-    trySubmitMoveProof: function(matchId, moveData, network) {
-      return this.submitMoveProof(matchId, moveData, network).catch(function(e) {
-        console.warn('[HTP ZK Pipeline] Move proof skipped (backend offline):', e.message);
-        return { verified: false, skipped: true };
+      })
+      .catch(function(e) {
+        console.warn('[HTP ZK Pipeline] prove error:', e.message);
+        return { proof: null, error: e.message };
       });
     }
   };
