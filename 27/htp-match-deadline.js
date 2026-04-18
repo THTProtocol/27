@@ -1,22 +1,36 @@
 // htp-match-deadline.js v1.0
-// Monitors active matches; flags them as abandoned if no move for 5 min
+// Tracks match deadlines and triggers timeout payouts
 (function(){
   'use strict';
-  var TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
   var _timers = {};
+  var TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes default
 
   window.HTPMatchDeadline = {
-    reset: function(matchId) {
-      clearTimeout(_timers[matchId]);
-      _timers[matchId] = setTimeout(function(){
-        console.warn('[HTP Match Deadline] match', matchId, 'timed out — flagging abandoned');
-        window.dispatchEvent(new CustomEvent('htp:match:timeout', { detail: { matchId: matchId } }));
-      }, TIMEOUT_MS);
+    set: function(matchId, onTimeout, msOverride) {
+      this.clear(matchId);
+      var ms = msOverride || TIMEOUT_MS;
+      _timers[matchId] = setTimeout(function() {
+        console.warn('[HTP Match Deadline] Timeout fired for match:', matchId);
+        if (typeof onTimeout === 'function') onTimeout(matchId);
+        delete _timers[matchId];
+      }, ms);
+      console.log('[HTP Match Deadline] Set for', matchId, '— expires in', ms / 1000, 's');
+    },
+    reset: function(matchId, onTimeout, msOverride) {
+      this.set(matchId, onTimeout, msOverride);
     },
     clear: function(matchId) {
-      clearTimeout(_timers[matchId]);
-      delete _timers[matchId];
+      if (_timers[matchId]) {
+        clearTimeout(_timers[matchId]);
+        delete _timers[matchId];
+      }
+    },
+    clearAll: function() {
+      Object.keys(_timers).forEach(function(id) {
+        clearTimeout(_timers[id]);
+      });
+      _timers = {};
     }
   };
-  console.log('[HTP Match Deadline v1.0] loaded — timeout:', TIMEOUT_MS / 1000, 's');
+  console.log('[HTP Match Deadline v1.0] loaded');
 })();
