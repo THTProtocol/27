@@ -17,7 +17,7 @@
       var fee = stakeKas * 0.01;
       return { refund: stakeKas - fee, fee: fee, treasury: this.getTreasury() };
     },
-    eventWin: function(poolKas) {
+    marketWin: function(stakeKas, poolKas) {
       var fee = poolKas * 0.02;
       return { payout: poolKas - fee, fee: fee, treasury: this.getTreasury() };
     }

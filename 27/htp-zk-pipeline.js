@@ -1,39 +1,43 @@
 // htp-zk-pipeline.js v1.0
+// ZK proof verification pipeline for oracle resolutions
 (function(){
   'use strict';
-  var API = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
   window.HTPZkPipeline = {
-    // Generate ZK proof for oracle resolution
-    prove: function(opts) {
-      return fetch(API + '/oracle/zk/prove', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(opts)
-      }).then(function(r) {
-        if (!r.ok) throw new Error('[ZK Prove] HTTP ' + r.status);
-        return r.json();
-      });
-    },
-    // Verify ZK proof on-chain
+    RUST_API: window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app',
     verify: function(proof, publicInputs) {
-      return fetch(API + '/oracle/zk/verify', {
+      var self = this;
+      return fetch(self.RUST_API + '/zk/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proof: proof, publicInputs: publicInputs })
-      }).then(function(r) {
-        if (!r.ok) throw new Error('[ZK Verify] HTTP ' + r.status);
+        body: JSON.stringify({ proof: proof, public_inputs: publicInputs })
+      })
+      .then(function(r) {
+        if (!r.ok) throw new Error('ZK verify failed: ' + r.status);
         return r.json();
+      })
+      .then(function(data) {
+        console.log('[HTP ZK Pipeline] Proof verified:', data);
+        return data;
+      })
+      .catch(function(e) {
+        console.warn('[HTP ZK Pipeline] Verify error (non-fatal):', e.message);
+        return { verified: false, error: e.message };
       });
     },
-    // Submit attested result with ZK proof
-    submit: function(marketId, outcome, proof) {
-      return fetch(API + '/oracle/zk/submit', {
+    generateProof: function(witness) {
+      var self = this;
+      return fetch(self.RUST_API + '/zk/prove', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marketId: marketId, outcome: outcome, proof: proof })
-      }).then(function(r) {
-        if (!r.ok) throw new Error('[ZK Submit] HTTP ' + r.status);
+        body: JSON.stringify({ witness: witness })
+      })
+      .then(function(r) {
+        if (!r.ok) throw new Error('ZK prove failed: ' + r.status);
         return r.json();
+      })
+      .catch(function(e) {
+        console.warn('[HTP ZK Pipeline] Prove error (non-fatal):', e.message);
+        return null;
       });
     }
   };
