@@ -1,33 +1,65 @@
-/* htp-zk-pipeline.js — HTP ZK Pipeline stub v1.0
- * Stub for ZK proof generation/verification pipeline.
- * Full ZK logic is handled server-side via Rust backend.
- * Prevents 404/500 on script load.
+/* htp-zk-pipeline.js — HTP ZK Pipeline v1.0
+ * Client-side ZK proof submission and verification pipeline.
+ * Delegates heavy lifting to the Rust backend /zk/* endpoints.
  */
 (function(){
   'use strict';
-  console.log('[HTP ZK Pipeline] loaded');
+  var W = window;
 
-  window.HTPZkPipeline = window.HTPZkPipeline || {
-    // Submit a proof request to the Rust backend.
-    submitProof: function(matchId, moves, outcome) {
-      var api = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
-      return fetch(api + '/zk/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchId: matchId, moves: moves, outcome: outcome })
-      }).then(function(r) {
-        if (!r.ok) throw new Error('ZK submit failed: ' + r.status);
-        return r.json();
-      });
+  function api() {
+    return W.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
+  }
+
+  function post(path, body) {
+    return fetch(api() + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function(r){
+      if (!r.ok) throw new Error('ZK API ' + path + ' returned ' + r.status);
+      return r.json();
+    });
+  }
+
+  W.HTPZkPipeline = {
+    /**
+     * Submit a ZK proof for oracle resolution.
+     * @param {{ marketId, outcome, proof, publicInputs }} opts
+     * @returns {Promise<{ verified: boolean, attestation: string }>}
+     */
+    submitOracleProof: function(opts) {
+      return post('/zk/oracle/verify', opts);
     },
-    // Verify a proof via the Rust backend.
-    verifyProof: function(matchId, proofId) {
-      var api = window.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
-      return fetch(api + '/zk/verify/' + matchId + '/' + proofId)
-        .then(function(r) {
-          if (!r.ok) throw new Error('ZK verify failed: ' + r.status);
-          return r.json();
-        });
+
+    /**
+     * Submit a ZK proof for game outcome.
+     * @param {{ matchId, winner, moveHash, proof }} opts
+     * @returns {Promise<{ verified: boolean, txId?: string }>}
+     */
+    submitGameProof: function(opts) {
+      return post('/zk/game/verify', opts);
+    },
+
+    /**
+     * Verify a previously submitted proof by attestation ID.
+     * @param {string} attestationId
+     * @returns {Promise<{ valid: boolean, timestamp: number }>}
+     */
+    verifyAttestation: function(attestationId) {
+      return fetch(api() + '/zk/attest/' + attestationId)
+        .then(function(r){ return r.json(); });
+    },
+
+    /**
+     * Health-check the ZK pipeline endpoint.
+     * @returns {Promise<boolean>}
+     */
+    healthCheck: function() {
+      return fetch(api() + '/zk/health', { method: 'GET' })
+        .then(function(r){ return r.ok; })
+        .catch(function(){ return false; });
     }
   };
+
+  console.log('[HTP ZK Pipeline v1.0] loaded — backend: ' + api());
 })();
