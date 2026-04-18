@@ -1,2 +1,11 @@
-/* htp-utxo-mutex.js */
-(function(){'use strict';var L={};window.HTPUtxoMutex={acquire:function(id){L[id]=Date.now();return true;},release:function(id){delete L[id];},isLocked:function(id){return!!L[id];}};console.log('[HTP UTXO Mutex] loaded');})();
+// htp-utxo-mutex.js v1.0 — UTXO mutex stub
+(function() {
+  'use strict';
+  var _lock = false;
+  window.HTPUtxoMutex = {
+    acquire: function() { if (_lock) return false; _lock = true; return true; },
+    release: function() { _lock = false; },
+    isLocked: function() { return _lock; }
+  };
+  console.log('[HTP UTXO Mutex] loaded');
+})();
