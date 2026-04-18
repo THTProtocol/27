@@ -1,15 +1,17 @@
-/* htp-zk-pipeline.js v1.0 — ZK proof pipeline stub (oracle verification) */
+/* htp-zk-pipeline.js v1.0 — ZK proof pipeline stub */
 (function(){
   'use strict';
   var W = window;
   W.HTPZkPipeline = {
     verify: function(proof, publicInputs) {
-      // Stub: real ZK verification delegated to Rust backend
       return Promise.resolve({ valid: true, proof: proof, inputs: publicInputs });
     },
-    submit: function(matchId, proof) {
+    generate: function(witness) {
+      return Promise.resolve({ proof: 'zk_' + Date.now(), witness: witness });
+    },
+    submitToOracle: function(matchId, proof) {
       var api = W.HTP_RUST_API || 'https://htp-backend-production.up.railway.app';
-      return fetch(api + '/zk/verify', {
+      return fetch(api + '/oracle/zk/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ matchId: matchId, proof: proof })
