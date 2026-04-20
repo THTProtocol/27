@@ -1,0 +1,11 @@
+/home/kasparov/high-table/target/debug/deps/workflow_node-28e8835321226e4b.d: /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/lib.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/child_process.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/error.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/fs.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/process.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/require.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/result.rs
+
+/home/kasparov/high-table/target/debug/deps/libworkflow_node-28e8835321226e4b.rmeta: /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/lib.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/child_process.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/error.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/fs.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/process.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/require.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/result.rs
+
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/lib.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/child_process.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/error.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/fs.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/process.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/require.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/workflow-node-0.18.0/src/result.rs:

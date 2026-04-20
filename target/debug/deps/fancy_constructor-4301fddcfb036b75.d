@@ -1,0 +1,10 @@
+/home/kasparov/high-table/target/debug/deps/fancy_constructor-4301fddcfb036b75.d: /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/lib.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/options.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/parse.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/tokenise.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/types/mod.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/types/mini_field.rs
+
+/home/kasparov/high-table/target/debug/deps/libfancy_constructor-4301fddcfb036b75.so: /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/lib.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/options.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/parse.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/tokenise.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/types/mod.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/types/mini_field.rs
+
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/lib.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/options.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/parse.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/tokenise.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/types/mod.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/fancy_constructor-1.3.0/src/types/mini_field.rs:

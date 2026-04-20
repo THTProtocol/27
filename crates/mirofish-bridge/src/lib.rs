@@ -11,7 +11,7 @@ use tracing::{debug, info, warn};
 #[derive(Error, Debug)]
 pub enum MiroFishError {
     #[error("HTTP request failed: {0}")]
-    HttpError(#[from] reqwest::Error),
+    HttpError(String),
     
     #[error("JSON serialization failed: {0}")]
     JsonError(#[from] serde_json::Error),
@@ -147,15 +147,16 @@ impl MiroFishClient {
             .post(&url)
             .json(body)
             .send()
-            .await?;
+            .await
+            .map_err(|e| MiroFishError::HttpError(format!("Request failed: {}", e)))?;
 
         if !response.status().is_success() {
-            return Err(MiroFishError::HttpError(
-                reqwest::Error::from(reqwest::StatusCode::from_u16(response.status().as_u16()).unwrap())
-            ));
+            let status = response.status();
+            return Err(MiroFishError::HttpError(format!("HTTP {}", status)));
         }
 
-        let bytes = response.bytes().await?;
+        let bytes = response.bytes().await
+            .map_err(|e| MiroFishError::HttpError(format!("Failed to read response: {}", e)))?;
         Ok(bytes.to_vec())
     }
 }

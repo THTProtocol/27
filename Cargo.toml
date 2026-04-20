@@ -15,7 +15,8 @@ authors = ["High Table Protocol"]
 # Kaspa crates - latest versions from research
 kaspa-wasm = "0.15.0"
 kaspa-os = "0.13.4"
-kaspa-rpc = "0.15.0"
+kaspa-wrpc-client = "0.15.0"
+kaspa-rpc-core = "0.15.0"
 
 # Async runtime
 tokio = { version = "1.43", features = ["full"] }

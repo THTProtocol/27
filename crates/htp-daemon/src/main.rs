@@ -3,8 +3,7 @@
 //! Main daemon entry point for Kaspa TN12 network.
 //! Monitors covenant escrow addresses and triggers MiroFish image generation.
 
-use kaspa_rpc::Resolver;
-use kaspa_wasm::WrpcClient;
+use kaspa_wasm::{Resolver, WrpcClient};
 use mirofish_bridge::MiroFishClient;
 use tracing::{info, error, Level};
 use tracing_subscriber::FmtSubscriber;

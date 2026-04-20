@@ -1,0 +1,11 @@
+/home/kasparov/high-table/target/debug/deps/rlimit-fa6c1feca4873568.d: /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/lib.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/tools.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/bindings.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/unix.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/resource/mod.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/resource/generated.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/proc_limits.rs
+
+/home/kasparov/high-table/target/debug/deps/librlimit-fa6c1feca4873568.rmeta: /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/lib.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/tools.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/bindings.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/unix.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/resource/mod.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/resource/generated.rs /home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/proc_limits.rs
+
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/lib.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/tools.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/bindings.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/unix.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/resource/mod.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/resource/generated.rs:
+/home/kasparov/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rlimit-0.10.2/src/proc_limits.rs:
