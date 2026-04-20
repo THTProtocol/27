@@ -1,0 +1,150 @@
+{
+  "research_date": "2026-04-20",
+  "sources": {
+    "rusty-kaspa_releases": {
+      "url": "https://github.com/kaspanet/rusty-kaspa/releases",
+      "status": "success",
+      "releases_2025_2026": [
+        {
+          "version": "musl-toolchain-v1",
+          "date": "27 Mar 12:10 3 weeks ago",
+          "description": "Pre-built x86_64-multilib-linux-musl toolchain (crosstool-ng 1.26.0)"
+        },
+        {
+          "version": "v1.1.0",
+          "date": "04 Mar 15:04 Mar 4",
+          "description": "Major release with VSPC API v2, IBD catchup improvements, performance optimizations"
+        }
+      ],
+      "found_future_dates": [
+        "May 5, 2025",
+        "March 6, 2025"
+      ]
+    },
+    "kips_kip0017": {
+      "url": "https://github.com/kaspanet/kips/blob/master/kip-0017.md",
+      "status": "not_found",
+      "note": "File not found - KIP-0017 is in pull request stage at https://github.com/kaspanet/kips/pull/32",
+      "pull_request": "https://github.com/kaspanet/kips/pull/32"
+    },
+    "kirpanotes_covenants": {
+      "url": "https://kaspanotes.com/resources/covenants++/overview",
+      "status": "success",
+      "essence": {
+        "covenants_plus_plus": "Advanced UTXO-based covenants with covenant IDs and opcodes",
+        "active_features": "Some features on mainnet, others on testnet",
+        "use_cases": [
+          "Tokens (fungible & non-fungible)",
+          "Vaults",
+          "Congestion control",
+          "Whitelisting",
+          "Escrow",
+          "Time-delayed spending"
+        ],
+        "key_kips": [
+          "KIP-10: New Transaction Opcodes for Enhanced Script Functionality",
+          "KIP-17: Covenants and Improved Scripting Capabilities",
+          "KIP-20: Covenant IDs"
+        ],
+        "covenant_concepts": {
+          "covenant_id": "32 byte hash stored on UTXO representing covenant lineage",
+          "covenant_binding": "Transaction output field with authorizing_input and covenant_id",
+          "genesis_creation": "Creating new covenant ID via BLAKE2b hash",
+          "continuation": "Output inherits covenant ID from authorizing input"
+        }
+      }
+    },
+    "kips_pull32_opcodes": {
+      "url": "https://github.com/kaspanet/kips/pull/32",
+      "status": "success",
+      "opcodes": [
+        {"name": "OpTxVersion", "hex": "0xb2", "description": "Returns the version of the transaction"},
+        {"name": "OpTxLockTime", "hex": "0xb5", "description": "Returns the locktime field of the transaction"},
+        {"name": "OpTxSubnetId", "hex": "0xb6", "description": "Returns the subnetwork ID of the transaction"},
+        {"name": "OpTxGas", "hex": "0xb7", "description": "Returns the gas field of the transaction"},
+        {"name": "OpTxPayloadLen", "hex": "0xc4", "description": "Returns the payload length of the transaction"},
+        {"name": "OpTxPayloadSubstr", "hex": "0xb8", "description": "Returns the payload substring of the transaction from start to end"},
+        {"name": "OpTxInputSpkLen", "hex": "0xc5", "description": "Returns the script public key length of the specified input"},
+        {"name": "OpTxInputSpkSubstr", "hex": "0xc6", "description": "Returns the script public key substring of the specified input"},
+        {"name": "OpTxOutputSpkLen", "hex": "0xc7", "description": "Returns the script public key length of the specified output"},
+        {"name": "OpTxOutputSpkSubstr", "hex": "0xc8", "description": "Returns the script public key substring of the specified output"},
+        {"name": "OpTxInputScriptSigLen", "hex": "0xc9", "description": "Returns the script signature length of the input"},
+        {"name": "OpTxInputScriptSigSubstr", "hex": "0xca", "description": "Returns the script signature substring of the input"},
+        {"name": "OpOutpointTxId", "hex": "0xba", "description": "Returns the transaction ID of the outpoint"},
+        {"name": "OpOutpointIndex", "hex": "0xbb", "description": "Returns the index of the outpoint"},
+        {"name": "OpTxInputSeq", "hex": "0xbd", "description": "Returns the sequence number of the input"},
+        {"name": "OpTxInputIsCoinbase", "hex": "0xc1", "description": "Returns whether the input is a coinbase"},
+        {"name": "OpCat", "hex": "0x7e", "description": "Concatenates two byte strings"},
+        {"name": "OpSubstr", "hex": "0x7f", "description": "Returns the substring of a byte string"},
+        {"name": "OpBlake2bWithKey", "hex": "0xa7", "description": "Returns the Blake2b hash of the data with key for domain separation"},
+        {"name": "OpInvert", "hex": "0x83", "description": "Returns the bitwise NOT of a byte string"},
+        {"name": "OpAnd", "hex": "0x84", "description": "Returns the bitwise AND of two byte strings"},
+        {"name": "OpOr", "hex": "0x85", "description": "Returns the bitwise OR of two byte strings"},
+        {"name": "OpXor", "hex": "0x86", "description": "Returns the bitwise XOR of two byte strings"},
+        {"name": "OpMul", "hex": "0x95", "description": "Returns the product of two numbers"},
+        {"name": "OpDiv", "hex": "0x96", "description": "Returns the quotient of two numbers"},
+        {"name": "OpMod", "hex": "0x97", "description": "Returns the remainder of two numbers"}
+      ],
+      "total_opcodes": 26
+    },
+    "kdapp_episode_interface": {
+      "url": "https://github.com/michaelsutton/kdapp/blob/master/kdapp/src/episode.rs",
+      "status": "success",
+      "episode_id": "u32",
+      "interface_def": "pub trait Episode {
+    type Command: BorshSerialize + BorshDeserialize + Debug + Clone;
+    type CommandRollback: BorshSerialize + BorshDeserialize;
+    type CommandError: Error + 'static;
+
+    /// Initialize the episode, possibly providing a set of authorized pubkey participants
+    fn initialize(participants: Vec<PubKey>, metadata: &PayloadMetadata) -> Self;
+
+    /// Execute a command advancing the state of the episode, possibly attaching the already verified
+    /// authorized pubkey requesting this execution. Returns a rollback object which can be used later
+    /// to rollback from the currently obtained state back to the state prior to this call.
+    fn execute(
+        &mut self,
+        cmd: &Self::Command,
+        authorization: Option<PubKey>,
+        metadata: &PayloadMetadata,
+    ) -> Result<Self::CommandRollback, EpisodeError<Self::CommandError>>;
+
+    /// Rollback a previous execute op
+    fn rollback(&mut self, rollback: Self::CommandRollback) -> bool;
+}
+
+pub trait EpisodeEventHandler<G: Episode> {
+    /// Called by the engine on episode initialization
+    fn on_initialize(&self, episode_id: EpisodeId, episode: &G);
+    
+    /// Called by the engine following a successful command execution
+    fn on_command(
+        &self,
+        episode_id: EpisodeId,
+        episode: &G,
+        cmd: &G::Command,
+        authorization: Option<PubKey>,
+        metadata: &PayloadMetadata,
+    );
+    
+    /// Called by the engine following a command rollback
+    fn on_rollback(&self, episode_id: EpisodeId, episode: &G);
+}",
+      "structs": {
+        "EpisodeError": "Authentication, validation, and rollback errors for contract logic",
+        "PayloadMetadata": "{
+    pub accepting_hash: Hash,  // Accepting block hash
+    pub accepting_daa: u64,    // DAA (Difficulty Adjustment Algorithm) score
+    pub accepting_time: u64,   // Timestamp
+    pub tx_id: Hash,          // Transaction ID
+}"
+      }
+    }
+  },
+  "summary": {
+    "rusty_kaspa_status": "Active development with recent major v1.1.0 release featuring VSPC API v2",
+    "covenants_status": "In active development (KIP-17/20), some features on testnet awaiting mainnet deployment",
+    "kdapp_episodes": "Episode-based self-replicating Kaspa dApp engine for creating autonomous applications on Kaspa",
+    "silverscript": "CashScript-inspired language for covenant script development"
+  }
+}

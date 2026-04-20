@@ -1,0 +1,36 @@
+[package]
+name = "htp-daemon"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+description = "High Table Protocol Daemon for Kaspa TN12"
+
+[[bin]]
+name = "htp-daemon"
+path = "src/main.rs"
+
+[dependencies]
+# Local dependencies
+mirofish-bridge = { path = "../mirofish-bridge" }
+
+# Kaspa crates - latest versions from research
+kaspa-wasm = { workspace = true }
+kaspa-rpc = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Filesystem utilities
+tokio = { workspace = true, features = ["fs"] }

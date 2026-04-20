@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+  high-table:
+    build: .
+    container_name: high-table
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - KASPA_WRPC_URL=ws://kaspa-node:17210
+      - MAINNET_API=https://api.kaspa.org
+      - AUTO_RESOLVE=true
+      - ORACLE_CHECK_MS=10000
+      - INDEXER_POLL_MS=5000
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - kaspa-node
+    networks:
+      - hightable
+
+  kaspa-node:
+    image: supertypo/rusty-kaspa:latest
+    container_name: kaspa-tn12
+    restart: unless-stopped
+    command: >
+      kaspad
+        --testnet
+        --netsuffix=12
+        --utxoindex
+        --rpclisten=0.0.0.0:16210
+        --rpclisten-borsh=0.0.0.0:17210
+        --listen=0.0.0.0:16211
+    ports:
+      - "16210:16210"
+      - "17210:17210"
+      - "16211:16211"
+    volumes:
+      - kaspa-data:/app/data
+    networks:
+      - hightable
+
+  nginx:
+    image: nginx:alpine
+    container_name: high-table-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - high-table
+    networks:
+      - hightable
+
+volumes:
+  kaspa-data:
+
+networks:
+  hightable:
+    driver: bridge

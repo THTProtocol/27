@@ -1,0 +1,32 @@
+{
+  "name": "high-table-protocol",
+  "version": "8.0.0",
+  "description": "Prediction Markets & Skill Games on Kaspa — Covenant-powered protocol",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node tests/run-all.js",
+    "test:scripts": "node tests/test-scripts.js",
+    "test:fees": "node tests/test-fees.js",
+    "test:settlement": "node tests/test-settlement.js",
+    "test:validator": "node tests/test-validator.js",
+    "test:games": "node tests/test-games.js",
+    "validate": "node -e \"const v = new (require('./lib/script-validator'))(); console.log(v.validate(process.argv[1]))\"",
+    "disassemble": "node -e \"const v = new (require('./lib/script-validator'))(); console.log(v.disassemble(process.argv[1]))\"",
+    "stats": "node -e \"const db = new (require('./lib/db'))(); console.log(db.getStats())\"",
+    "reset": "rm -rf data/*.json && echo 'Data reset.'"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.1",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["kaspa", "prediction-market", "covenants", "blockdag", "chess", "silverscript"],
+  "author": "High Table Protocol",
+  "license": "MIT"
+}
