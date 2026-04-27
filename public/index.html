@@ -851,7 +851,7 @@
             max-width: 600px;
         }
 
-        .sec-pad {
+        .sec-pad { overflow:visible;
             padding: 8px 0 16px
         }
 
@@ -1627,7 +1627,7 @@
             line-height: 1.6
         }
 
-        .kaspa-stats {
+        .kaspa-stats { overflow:visible;
             margin-top: 24px;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -1843,7 +1843,7 @@
 
 
         /* ── Improved section spacing ── */
-        .sec-pad {
+        .sec-pad { overflow:visible;
             padding: 20px 0 40px;
         }
 
@@ -1875,7 +1875,7 @@
         }
 
         /* Better stats bar spacing */
-        .kaspa-stats {
+        .kaspa-stats { overflow:visible;
             margin-top: 40px;
         }
 
@@ -2016,7 +2016,7 @@
             }
 
             /* Section padding */
-            .sec-pad {
+            .sec-pad { overflow:visible;
                 padding: 16px 0 32px;
             }
 
@@ -2047,7 +2047,7 @@
             }
 
             /* Stats bar */
-            .kaspa-stats {
+            .kaspa-stats { overflow:visible;
                 grid-template-columns: repeat(3, 1fr);
                 margin-top: 24px;
             }
@@ -2263,7 +2263,7 @@
                 font-size: 12px;
             }
 
-            .kaspa-stats {
+            .kaspa-stats { overflow:visible;
                 grid-template-columns: repeat(2, 1fr);
             }
 
@@ -2875,8 +2875,8 @@ body:not(.on-overview) .bg-glow3 { opacity: 0.40  !important; }
         
 
         /* Eliminate empty spaces - content sections */
-        .sec-pad { padding: 8px 20px 24px; }
-        @media(min-width:768px) { .sec-pad { padding: 10px 32px 28px; } }
+        .sec-pad { overflow:visible; padding: 8px 20px 24px; }
+        @media(min-width:768px) { .sec-pad { overflow:visible; padding: 10px 32px 28px; } }
         
         /* Cards get glass morphism so DAG shows through */
         .card {
@@ -2960,7 +2960,7 @@ body:not(.on-overview) .bg-glow3 { opacity: 0.40  !important; }
         #v-kaspa .mx.sec-pad,
         #v-skill .mx.sec-pad,
         #v-markets .mx.sec-pad,
-        #v-create .mx.sec-pad {
+        #v-create .mx.sec-pad { overflow:visible;
             padding-top: 6px !important;
         }
         
@@ -3514,7 +3514,7 @@ body:not(.on-overview) .bg-glow3 { opacity: 0.40  !important; }
         /* === Color Harmony - Kaspa Green Theme === */
         .card { background: rgba(10, 15, 30, 0.6); border-color: rgba(73, 232, 194, 0.08); }
         .card:hover { border-color: rgba(73, 232, 194, 0.2); }
-        .kaspa-stats { background: rgba(10, 15, 30, 0.4); border: 1px solid rgba(73, 232, 194, 0.08); border-radius: 14px; padding: 20px; }
+        .kaspa-stats { overflow:visible; background: rgba(10, 15, 30, 0.4); border: 1px solid rgba(73, 232, 194, 0.08); border-radius: 14px; padding: 20px; }
         .kaspa-stats .ks-v { color: #49e8c2; }
         .oracle-stats-bar { background: rgba(10, 15, 30, 0.5); border: 1px solid rgba(73, 232, 194, 0.08); border-radius: 14px; }
         .oracle-stat .os-val { color: #49e8c2; }
@@ -3700,7 +3700,7 @@ body:not(.on-overview) .bg-glow3 { opacity: 0.40  !important; }
             gap: 40px !important;
         }
         /* Section padding consistency */
-        .sec-pad, .mx.sec-pad {
+        .sec-pad, .mx.sec-pad { overflow:visible;
             padding-top: 20px !important;
             padding-bottom: 40px !important;
         }
@@ -3732,7 +3732,7 @@ body:not(.on-overview) .bg-glow3 { opacity: 0.40  !important; }
             margin-top: 16px !important;
         }
         /* Portfolio tabs spacing */
-        #v-portfolio .kaspa-stats {
+        #v-portfolio .kaspa-stats { overflow:visible;
             margin-bottom: 20px !important;
         }
         /* Match form proper spacing */
