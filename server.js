@@ -16,7 +16,7 @@ const ScriptValidator = require('./lib/script-validator');
 const { getOdds, estimatePayout, FEE_SCHEDULE, calculateGamePayout } = require('./lib/fees');
 
 const PORT = process.env.PORT || 3000;
-const KASPA_RPC_URL = process.env.KASPA_WRPC_URL || 'ws://127.0.0.1:16110';
+const KASPA_RPC_URL = process.env.KASPA_WRPC_URL || 'ws://127.0.0.1:16210';
 const MAINNET_API = process.env.MAINNET_API || 'https://api.kaspa.org';
 
 const app = express();
@@ -46,158 +46,6 @@ const oracle = new OracleDaemon(rpc, db, settlement, indexer);
 // ─── WebSocket Clients ──────────────────────────────────
 const clients = new Set();
 const gameRooms = new Map();
-
-
-// POSITIONS v9 — Address-based, returns unsigned TX (Step 1B)
-// ═══════════════════════════════════════════
-
-api.post("/api/markets/:id/build-position", async (req, res) => {
-  const { address, side, amountKAS } = req.body;
-  if (!address || !side || !amountKAS)
-    return res.status(400).json({ error: 'address, side, amountKAS required' });
-
-  const evt = db.prepare("SELECT * FROM events WHERE id = ?").get(req.params.id);
-  if (!evt) return res.status(404).json({ error: 'market not found' });
-  if (evt.status !== 'open') return res.status(400).json({ error: 'market not open' });
-  if (side !== evt.outcomea && side !== evt.outcomeb)
-    return res.status(400).json({ error: 'invalid side: ' + side });
-
-  const amountSompi = Math.round(amountKAS * 1e8);
-  if (amountSompi < (evt.minposition || 1e8))
-    return res.status(400).json({ error: 'min position: ' + ((evt.minposition || 1e8) / 1e8) + ' KAS' });
-
-  try {
-    // Fetch real UTXOs from the node
-    const utxoResult = await rpc.getUtxosByAddress(address);
-    const entries = utxoResult.entries || utxoResult || [];
-
-    // Calculate available balance
-    let available = 0;
-    const selectedUtxos = [];
-    for (const entry of entries) {
-      const amt = parseInt(entry.utxoEntry ? entry.utxoEntry.amount : entry.amount || '0', 10);
-      if (amt <= 0) continue;
-      selectedUtxos.push({
-        transactionId: entry.outpoint ? entry.outpoint.transactionId : entry.transactionId,
-        index: entry.outpoint ? entry.outpoint.index : entry.index,
-        amount: amt,
-        scriptPublicKey: entry.utxoEntry ? entry.utxoEntry.scriptPublicKey : entry.scriptPublicKey,
-      });
-      available += amt;
-      if (available >= amountSompi + 5000) break; // +5000 for fee
-    }
-
-    if (available < amountSompi)
-      return res.status(400).json({
-        error: 'insufficient balance',
-        required: amountSompi,
-        available: available,
-        requiredKAS: amountKAS,
-        availableKAS: available / 1e8,
-      });
-
-    // Get current odds
-    const yesPool = db.prepare("SELECT COALESCE(SUM(amount),0) as total FROM positions WHERE eventid = ? AND side = ?").get(evt.id, evt.outcomea);
-    const noPool  = db.prepare("SELECT COALESCE(SUM(amount),0) as total FROM positions WHERE eventid = ? AND side = ?").get(evt.id, evt.outcomeb);
-    const totalPool = parseInt(yesPool.total,10) + parseInt(noPool.total,10) + amountSompi;
-    const sidePool  = (side === evt.outcomea ? parseInt(yesPool.total,10) : parseInt(noPool.total,10)) + amountSompi;
-    const odds = sidePool > 0 ? totalPool / sidePool : 2;
-
-    res.json({
-      status: 'unsigned',
-      market: { id: evt.id, title: evt.title, side, outcomeA: evt.outcomea, outcomeB: evt.outcomeb },
-      position: { address, side, amountSompi, amountKAS, estimatedOdds: Math.round(odds * 100) / 100 },
-      inputs: selectedUtxos,
-      fee: 5000,
-      change: available - amountSompi - 5000,
-      instructions: 'Sign this transaction client-side, then POST to /api/tx/submit',
-    });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// Record a confirmed position (after TX is on-chain)
-api.post("/api/markets/:id/confirm-position", (req, res) => {
-  const { address, side, amountSompi, transactionId } = req.body;
-  if (!address || !side || !amountSompi || !transactionId)
-    return res.status(400).json({ error: 'address, side, amountSompi, transactionId required' });
-
-  const evt = db.prepare("SELECT * FROM events WHERE id = ?").get(req.params.id);
-  if (!evt) return res.status(404).json({ error: 'market not found' });
-
-  const posId = require('crypto').randomUUID().replace(/-/g,'').substring(0,16);
-  db.prepare("INSERT INTO positions (id, eventid, walletid, side, amount) VALUES (?,?,?,?,?)")
-    .run(posId, evt.id, address, side, amountSompi);
-
-  broadcast({ type: 'position-confirmed', eventId: evt.id, side, amount: amountSompi, txId: transactionId });
-  res.json({ positionId: posId, eventId: evt.id, address, side, amountSompi, transactionId });
-});
-
-// Market odds endpoint
-api.get("/api/markets/:id/odds", (req, res) => {
-  const evt = db.prepare("SELECT * FROM events WHERE id = ?").get(req.params.id);
-  if (!evt) return res.status(404).json({ error: 'not found' });
-
-  const a = db.prepare("SELECT COALESCE(SUM(amount),0) as total, COUNT(*) as count FROM positions WHERE eventid = ? AND side = ?").get(evt.id, evt.outcomea);
-  const b = db.prepare("SELECT COALESCE(SUM(amount),0) as total, COUNT(*) as count FROM positions WHERE eventid = ? AND side = ?").get(evt.id, evt.outcomeb);
-  const totalPool = parseInt(a.total,10) + parseInt(b.total,10);
-  const oddsA = parseInt(a.total,10) > 0 ? totalPool / parseInt(a.total,10) : 2;
-  const oddsB = parseInt(b.total,10) > 0 ? totalPool / parseInt(b.total,10) : 2;
-
-  res.json({
-    marketId: evt.id,
-    outcomeA: { name: evt.outcomea, pool: parseInt(a.total,10), poolKAS: parseInt(a.total,10)/1e8, count: a.count, odds: Math.round(oddsA*100)/100 },
-    outcomeB: { name: evt.outcomeb, pool: parseInt(b.total,10), poolKAS: parseInt(b.total,10)/1e8, count: b.count, odds: Math.round(oddsB*100)/100 },
-    totalPool, totalPoolKAS: totalPool / 1e8,
-  });
-});
-
-
-
-
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// Record a confirmed position (after TX is on-chain)
-api.post("/api/markets/:id/confirm-position", (req, res) => {
-  const { address, side, amountSompi, transactionId } = req.body;
-  if (!address || !side || !amountSompi || !transactionId)
-    return res.status(400).json({ error: 'address, side, amountSompi, transactionId required' });
-
-  const evt = db.prepare("SELECT * FROM events WHERE id = ?").get(req.params.id);
-  if (!evt) return res.status(404).json({ error: 'market not found' });
-
-  const posId = require('crypto').randomUUID().replace(/-/g,'').substring(0,16);
-  db.prepare("INSERT INTO positions (id, eventid, walletid, side, amount) VALUES (?,?,?,?,?)")
-    .run(posId, evt.id, address, side, amountSompi);
-
-  broadcast({ type: 'position-confirmed', eventId: evt.id, side, amount: amountSompi, txId: transactionId });
-  res.json({ positionId: posId, eventId: evt.id, address, side, amountSompi, transactionId });
-});
-
-// Market odds endpoint
-api.get("/api/markets/:id/odds", (req, res) => {
-  const evt = db.prepare("SELECT * FROM events WHERE id = ?").get(req.params.id);
-  if (!evt) return res.status(404).json({ error: 'not found' });
-
-  const a = db.prepare("SELECT COALESCE(SUM(amount),0) as total, COUNT(*) as count FROM positions WHERE eventid = ? AND side = ?").get(evt.id, evt.outcomea);
-  const b = db.prepare("SELECT COALESCE(SUM(amount),0) as total, COUNT(*) as count FROM positions WHERE eventid = ? AND side = ?").get(evt.id, evt.outcomeb);
-  const totalPool = parseInt(a.total,10) + parseInt(b.total,10);
-  const oddsA = parseInt(a.total,10) > 0 ? totalPool / parseInt(a.total,10) : 2;
-  const oddsB = parseInt(b.total,10) > 0 ? totalPool / parseInt(b.total,10) : 2;
-
-  res.json({
-    marketId: evt.id,
-    outcomeA: { name: evt.outcomea, pool: parseInt(a.total,10), poolKAS: parseInt(a.total,10)/1e8, count: a.count, odds: Math.round(oddsA*100)/100 },
-    outcomeB: { name: evt.outcomeb, pool: parseInt(b.total,10), poolKAS: parseInt(b.total,10)/1e8, count: b.count, odds: Math.round(oddsB*100)/100 },
-    totalPool, totalPoolKAS: totalPool / 1e8,
-  });
-});
-
-
 
 function broadcast(event, data) {
   const msg = JSON.stringify({ event, data });
@@ -257,6 +105,22 @@ function handleWsMessage(ws, msg) {
       if (!game || game.status !== 'playing') return;
       db.addMove(msg.gameId, { from: msg.from, to: msg.to, piece: msg.piece, fen: msg.fen, boardState: msg.boardState, player: msg.player });
       broadcastToGame(msg.gameId, 'game-move', { gameId: msg.gameId, from: msg.from, to: msg.to, piece: msg.piece, fen: msg.fen, boardState: msg.boardState, player: msg.player });
+      break;
+    }
+    case 'game-action': {
+      // Generic action for poker/blackjack (fold, call, raise, hit, stand, etc.)
+      const game = db.getGame(msg.gameId);
+      if (!game || game.status !== 'playing') return;
+      db.addMove(msg.gameId, { action: msg.action, data: msg.data, player: msg.player });
+      broadcastToGame(msg.gameId, 'game-action', { gameId: msg.gameId, action: msg.action, data: msg.data, player: msg.player });
+      break;
+    }
+    case 'game-state-update': {
+      // Full state sync for card games (server-authoritative state push)
+      const game = db.getGame(msg.gameId);
+      if (!game || game.status !== 'playing') return;
+      db.updateGame(msg.gameId, { boardState: msg.state });
+      broadcastToGame(msg.gameId, 'game-state-update', { gameId: msg.gameId, state: msg.state });
       break;
     }
     case 'game-resign': {
@@ -377,7 +241,7 @@ app.post('/api/markets/:id/position', async (req, res) => {
       return res.status(400).json({ error: 'Below minimum position: ' + (market.minPositionSompi / 1e8) + ' KAS' });
     }
 
-    const utxos = this.indexer ? this.indexer.getMarketUtxos(market.id) : null;
+    const utxos = indexer.getMarketUtxos(market.id);
     const poolUtxo = utxos?.poolUtxo || { outpoint: { transactionId: market.genesisTxId, index: 0 },
       utxoEntry: { amount: market.poolAmountSompi.toString(), scriptPublicKey: { script: market.poolScriptHex } } };
 
@@ -410,6 +274,51 @@ app.post('/api/markets/:id/position', async (req, res) => {
   }
 });
 
+app.post('/api/markets/:id/build-position', async (req, res) => {
+  const { address, side, amountKAS } = req.body;
+  if (!address || !side || !amountKAS)
+    return res.status(400).json({ error: 'address, side, amountKAS required' });
+  const m = db.getMarket(req.params.id);
+  if (!m) return res.status(404).json({ error: 'market not found' });
+  if (m.status !== 'open') return res.status(400).json({ error: 'market not open' });
+  try {
+    const amountSompi = Math.round(amountKAS * 1e8);
+    const utxoResult = await rpc.getUtxosByAddress(address);
+    const entries = utxoResult.entries || utxoResult || [];
+    let available = 0;
+    const selected = [];
+    for (const e of entries) {
+      const amt = parseInt(e.utxoEntry ? e.utxoEntry.amount : e.amount || '0', 10);
+      if (amt <= 0) continue;
+      selected.push({
+        transactionId: e.outpoint ? e.outpoint.transactionId : e.transactionId,
+        index: e.outpoint ? e.outpoint.index : e.index, amount: amt,
+        scriptPublicKey: e.utxoEntry ? e.utxoEntry.scriptPublicKey : e.scriptPublicKey,
+      });
+      available += amt;
+      if (available >= amountSompi + 5000) break;
+    }
+    if (available < amountSompi)
+      return res.status(400).json({ error: 'insufficient balance', required: amountSompi, available });
+    const odds = getOdds((m.sideATotalSompi||0) + (side==='A'?amountSompi:0), (m.sideBTotalSompi||0) + (side==='B'?amountSompi:0));
+    res.json({ status: 'unsigned', market: { id: m.id, title: m.title, side },
+      position: { address, side, amountSompi, amountKAS, estimatedOdds: side==='A' ? odds.oddsA : odds.oddsB },
+      inputs: selected, fee: 5000, change: available - amountSompi - 5000 });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/markets/:id/confirm-position', (req, res) => {
+  const { address, side, amountSompi, transactionId } = req.body;
+  if (!address || !side || !amountSompi || !transactionId)
+    return res.status(400).json({ error: 'address, side, amountSompi, transactionId required' });
+  const evt = db.getMarket(req.params.id);
+  if (!evt) return res.status(404).json({ error: 'market not found' });
+  const posId = require('crypto').randomUUID().replace(/-/g,'').substring(0,16);
+  db.addPosition(evt.id, { userAddr: address, side: side === evt.outcomeA ? 1 : 2, amountSompi, txId: transactionId });
+  broadcast('position-confirmed', { eventId: evt.id, side, amount: amountSompi, txId: transactionId });
+  res.json({ positionId: posId, eventId: evt.id, address, side, amountSompi, transactionId });
+});
+
 app.post('/api/markets/:id/resolve', async (req, res) => {
   try {
     const { outcome, oracleSig } = req.body;
@@ -423,7 +332,13 @@ app.post('/api/markets/:id/resolve', async (req, res) => {
 app.get('/api/markets/:id/odds', (req, res) => {
   const m = db.getMarket(req.params.id);
   if (!m) return res.status(404).json({ error: 'Not found' });
-  res.json(getOdds(m.sideATotalSompi, m.sideBTotalSompi));
+  const odds = getOdds(m.sideATotalSompi, m.sideBTotalSompi);
+  const total = (m.sideATotalSompi || 0) + (m.sideBTotalSompi || 0);
+  res.json({
+    marketId: m.id, totalPool: total, totalPoolKAS: total / 1e8,
+    outcomeA: { name: m.outcomeA || 'A', pool: m.sideATotalSompi || 0, odds: odds.oddsA },
+    outcomeB: { name: m.outcomeB || 'B', pool: m.sideBTotalSompi || 0, odds: odds.oddsB },
+  });
 });
 
 app.get('/api/markets/:id/estimate', (req, res) => {
@@ -434,8 +349,7 @@ app.get('/api/markets/:id/estimate', (req, res) => {
   res.json({ estimatedPayout: est, estimatedPayoutKas: est / 1e8 });
 });
 
-
-// ─── REST API: Node Info (v9) ───────────────────────────
+// ─── REST API: Node Info ─────────────────────────────────
 app.get('/api/node/info', async (req, res) => {
   try {
     const info = await rpc.getInfo();
@@ -495,51 +409,6 @@ app.post('/api/tx/submit', async (req, res) => {
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-app.get('/api/markets/:id/odds', (req, res) => {
-  const m = db.getMarket(req.params.id);
-  if (!m) return res.status(404).json({ error: 'not found' });
-  const odds = getOdds(m.sideATotalSompi, m.sideBTotalSompi);
-  const total = (m.sideATotalSompi || 0) + (m.sideBTotalSompi || 0);
-  res.json({
-    marketId: m.id, totalPool: total, totalPoolKAS: total / 1e8,
-    outcomeA: { name: m.sideAName || 'A', pool: m.sideATotalSompi || 0, odds: odds.oddsA },
-    outcomeB: { name: m.sideBName || 'B', pool: m.sideBTotalSompi || 0, odds: odds.oddsB },
-  });
-});
-
-app.post('/api/markets/:id/build-position', async (req, res) => {
-  const { address, side, amountKAS } = req.body;
-  if (!address || !side || !amountKAS)
-    return res.status(400).json({ error: 'address, side, amountKAS required' });
-  const m = db.getMarket(req.params.id);
-  if (!m) return res.status(404).json({ error: 'market not found' });
-  try {
-    const amountSompi = Math.round(amountKAS * 1e8);
-    const utxoResult = await rpc.getUtxosByAddress(address);
-    const entries = utxoResult.entries || utxoResult || [];
-    let available = 0;
-    const selected = [];
-    for (const e of entries) {
-      const amt = parseInt(e.utxoEntry ? e.utxoEntry.amount : e.amount || '0', 10);
-      if (amt <= 0) continue;
-      selected.push({
-        transactionId: e.outpoint ? e.outpoint.transactionId : e.transactionId,
-        index: e.outpoint ? e.outpoint.index : e.index, amount: amt,
-        scriptPublicKey: e.utxoEntry ? e.utxoEntry.scriptPublicKey : e.scriptPublicKey,
-      });
-      available += amt;
-      if (available >= amountSompi + 5000) break;
-    }
-    if (available < amountSompi)
-      return res.status(400).json({ error: 'insufficient balance', required: amountSompi, available });
-    const odds = getOdds((m.sideATotalSompi||0) + (side==='A'?amountSompi:0), (m.sideBTotalSompi||0) + (side==='B'?amountSompi:0));
-    res.json({ status: 'unsigned', market: { id: m.id, title: m.title, side },
-      position: { address, side, amountSompi, amountKAS, estimatedOdds: side==='A' ? odds.oddsA : odds.oddsB },
-      inputs: selected, fee: 5000, change: available - amountSompi - 5000 });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-
 // ─── REST API: Games ────────────────────────────────────
 app.get('/api/games', (req, res) => {
   const { status, type } = req.query;
@@ -557,7 +426,7 @@ app.get('/api/games/:id', (req, res) => {
 
 app.post('/api/games', async (req, res) => {
   try {
-    const { type, playerA, playerAPubkey, stakeKas, timeControl, timeoutHours } = req.body;
+    const { type, playerA, playerAPubkey, stakeKas, timeControl, timeoutHours, options } = req.body;
     const stakeSompi = Math.floor((stakeKas || 1) * 1e8);
     const currentDaa = await rpc.getCurrentDaaScore();
     const timeoutDaa = currentDaa + rpc.hoursToDAATicks(timeoutHours || 4);
@@ -572,6 +441,7 @@ app.post('/api/games', async (req, res) => {
     const game = db.createGame({
       type: type || 'chess', playerA, playerAPubkey, stakeSompi,
       escrowScriptHex: escrow.escrowScript.hex, timeoutDaa, timeControl: timeControl || '10+0',
+      options: options || {},
     });
 
     indexer.trackGame(game.id, escrow.escrowScript.hex);
@@ -663,7 +533,7 @@ app.post('/api/oracle/resolve', async (req, res) => {
   }
 });
 
-// ─── REST API: Mainnet Proxy (for The Vault) ────────────
+// ─── REST API: Mainnet Proxy ────────────────────────────
 app.get('/api/mainnet/:path(*)', async (req, res) => {
   try {
     const url = MAINNET_API + '/' + req.params.path;
@@ -679,7 +549,7 @@ app.get('/api/mainnet/:path(*)', async (req, res) => {
 app.get('/api/network', async (req, res) => {
   try {
     const info = await rpc.getBlockDagInfo();
-    const hashrate = rpc.calculateHashrate(info.difficulty);
+    const hashrate = rpc.calculateHashrate ? rpc.calculateHashrate(info.difficulty) : 0;
     res.json({
       networkName: info.networkName || 'testnet-12',
       blockCount: info.blockCount,
@@ -687,7 +557,7 @@ app.get('/api/network', async (req, res) => {
       tipHashes: info.tipHashes,
       difficulty: info.difficulty,
       virtualDaaScore: info.virtualDaaScore,
-      hashrate: rpc.formatHashrate(hashrate),
+      hashrate: rpc.formatHashrate ? rpc.formatHashrate(hashrate) : hashrate,
       hashrateRaw: hashrate,
     });
   } catch (e) {
@@ -701,125 +571,6 @@ app.get('*', (req, res) => {
 });
 
 // ─── Start ──────────────────────────────────────────────
-
-
-// ═══════════════════════════════════════════
-
-
-// ═══════════════════════════════════════════
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// Record a confirmed position (after TX is on-chain)
-api.post("/api/markets/:id/confirm-position", (req, res) => {
-  const { address, side, amountSompi, transactionId } = req.body;
-  if (!address || !side || !amountSompi || !transactionId)
-    return res.status(400).json({ error: 'address, side, amountSompi, transactionId required' });
-
-  const evt = db.prepare("SELECT * FROM events WHERE id = ?").get(req.params.id);
-  if (!evt) return res.status(404).json({ error: 'market not found' });
-
-  const posId = require('crypto').randomUUID().replace(/-/g,'').substring(0,16);
-  db.prepare("INSERT INTO positions (id, eventid, walletid, side, amount) VALUES (?,?,?,?,?)")
-    .run(posId, evt.id, address, side, amountSompi);
-
-  broadcast({ type: 'position-confirmed', eventId: evt.id, side, amount: amountSompi, txId: transactionId });
-  res.json({ positionId: posId, eventId: evt.id, address, side, amountSompi, transactionId });
-});
-
-// Market odds endpoint
-api.get("/api/markets/:id/odds", (req, res) => {
-  const evt = db.prepare("SELECT * FROM events WHERE id = ?").get(req.params.id);
-  if (!evt) return res.status(404).json({ error: 'not found' });
-
-  const a = db.prepare("SELECT COALESCE(SUM(amount),0) as total, COUNT(*) as count FROM positions WHERE eventid = ? AND side = ?").get(evt.id, evt.outcomea);
-  const b = db.prepare("SELECT COALESCE(SUM(amount),0) as total, COUNT(*) as count FROM positions WHERE eventid = ? AND side = ?").get(evt.id, evt.outcomeb);
-  const totalPool = parseInt(a.total,10) + parseInt(b.total,10);
-  const oddsA = parseInt(a.total,10) > 0 ? totalPool / parseInt(a.total,10) : 2;
-  const oddsB = parseInt(b.total,10) > 0 ? totalPool / parseInt(b.total,10) : 2;
-
-  res.json({
-    marketId: evt.id,
-    outcomeA: { name: evt.outcomea, pool: parseInt(a.total,10), poolKAS: parseInt(a.total,10)/1e8, count: a.count, odds: Math.round(oddsA*100)/100 },
-    outcomeB: { name: evt.outcomeb, pool: parseInt(b.total,10), poolKAS: parseInt(b.total,10)/1e8, count: b.count, odds: Math.round(oddsB*100)/100 },
-    totalPool, totalPoolKAS: totalPool / 1e8,
-  });
-});
-
-
-// NODE — Real chain data (Step 1A)
-// ═══════════════════════════════════════════
-
-api.get("/api/node/info", async (req, res) => {
-  try {
-    const info = await rpc.getInfo();
-    const dag  = await rpc.getBlockDagInfo();
-    res.json({
-      synced:       !!info.isSynced,
-      utxoIndexed:  !!info.isUtxoIndexed,
-      mempoolSize:  info.mempoolSize || 0,
-      p2pId:        info.p2pId || '',
-      serverVersion:info.serverVersion || '',
-      networkId:    dag.networkId || dag.network || 'testnet-12',
-      blockCount:   dag.blockCount || dag.headerCount || 0,
-      virtualDaaScore: dag.virtualDaaScore || dag.virtual_daa_score || '0',
-      tipHashes:    dag.tipHashes || dag.tips || [],
-      difficulty:   dag.difficulty || 0,
-    });
-  } catch (e) {
-    res.status(503).json({ error: 'Node unavailable', detail: e.message });
-  }
-});
-
-api.get("/api/node/balance/:addr", async (req, res) => {
-  try {
-    const result = await rpc.getBalanceByAddress(req.params.addr);
-    const bal = parseInt(result.balance || result || '0', 10);
-    res.json({ address: req.params.addr, balance: bal, balanceKAS: bal / 1e8 });
-  } catch (e) { res.status(400).json({ error: e.message }); }
-});
-
-api.get("/api/node/utxos/:addr", async (req, res) => {
-  try {
-    const result = await rpc.getUtxosByAddress(req.params.addr);
-    const entries = result.entries || result || [];
-    res.json({ address: req.params.addr, count: entries.length, entries });
-  } catch (e) { res.status(400).json({ error: e.message }); }
-});
-
-api.get("/api/node/dag", async (req, res) => {
-  try {
-    const dag = await rpc.getBlockDagInfo();
-    const tips = dag.tipHashes || dag.tips || [];
-    const blocks = [];
-    for (const hash of tips.slice(0, 10)) {
-      try {
-        const b = await rpc.getBlockByHash(hash);
-        blocks.push({
-          hash: hash.substring(0, 16) + '...',
-          hashFull: hash,
-          txCount: b.transactions ? b.transactions.length : 0,
-          daaScore: b.verboseData ? b.verboseData.daaScore : null,
-          timestamp: b.header ? b.header.timestamp : null,
-        });
-      } catch {}
-    }
-    res.json({ virtualDaaScore: dag.virtualDaaScore || '0', blockCount: dag.blockCount || 0, tipCount: tips.length, tips: blocks });
-  } catch (e) { res.status(503).json({ error: e.message }); }
-});
-
-api.post("/api/tx/submit", async (req, res) => {
-  try {
-    const { transaction } = req.body;
-    if (!transaction) return res.status(400).json({ error: 'transaction required' });
-    const result = await rpc.submitTransaction(transaction);
-    res.json({ success: true, transactionId: result.transactionId || result });
-  } catch (e) { res.status(400).json({ error: e.message }); }
-});
-
-
 async function start() {
   console.log('╔══════════════════════════════════════════╗');
   console.log('║   HIGH TABLE PROTOCOL v8.0               ║');
