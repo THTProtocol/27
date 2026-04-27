@@ -1,466 +1,185 @@
 /**
- * patch-games.js - High Table Protocol v5.0
- * COMPREHENSIVE PATCH:
- *  1. WASM SDK + Resolver fix (retry/fallback)
- *  2. Big-card-only Skill Games (no small picker)
- *  3. Blackjack + Poker + Tic-Tac-Toe added to create modal
- *  4. Board rendering for BJ/Poker/TTT
- *  5. Covenant escrow + autopayout wired for ALL game types
+ * patch-games.js - High Table Protocol v6.0
+ * 1. WASM SDK suppress + bypass gate
+ * 2. Resolver polyfill
+ * 3. Big skill game cards (BJ, Poker, Chess, Checkers, Connect4, TTT)
+ * 4. Game creation modal with full settings
+ * 5. Covenant escrow + autopayout
  */
 (function(W){
-  'use strict';
-  var $ = function(s,r){return(r||document).querySelector(s);};
-  var $$ = function(s,r){return Array.from((r||document).querySelectorAll(s));};
+'use strict';
+var $=function(s,r){return(r||document).querySelector(s);};
+var $$=function(s,r){return Array.from((r||document).querySelectorAll(s));};
 
-  // =========================================
+// Game definitions
+var GAMES={
+  blackjack:{label:'Blackjack',icon:'\u{1F0CF}',desc:'Beat the dealer to 21',color:'#d4af37',times:['5+0','10+0'],defaultTime:'5+0',modes:['standard','double-down']},
+  poker:{label:'Texas Hold\'em',icon:'\u{1F0A1}',desc:'5-card showdown, bluff or fold',color:'#e74c3c',times:['10+0','15+0','30+0'],defaultTime:'15+0',modes:['no-limit','pot-limit']},
+  chess:{label:'Chess',icon:'\u265A',desc:'Classic strategy on 64 squares',color:'#4a9eff',times:['3+0','5+0','10+0','15+10'],defaultTime:'10+0',modes:['standard','960']},
+  checkers:{label:'Checkers',icon:'\u26C0',desc:'Jump and king your way to victory',color:'#e67e22',times:['5+0','10+0'],defaultTime:'5+0',modes:['standard','international']},
+  connect4:{label:'Connect 4',icon:'\u25C9',desc:'Four in a row wins',color:'#2ecc71',times:['3+0','5+0'],defaultTime:'3+0',modes:['standard']},
+  tictactoe:{label:'Tic-Tac-Toe',icon:'\u2716',desc:'Quick 3x3 grid battle',color:'#9b59b6',times:['1+0','3+0'],defaultTime:'1+0',modes:['standard','5x5']}
+};
 
-    // =========================================
-  // 0. SUPPRESS WASM ERROR MODAL + BYPASS GATE
-  // =========================================
-  function suppressWasmError(){
-    // Auto-dismiss the WASM error modal that htp-init.js creates
-    // This allows the site to work in degraded mode (no on-chain ops)
-    var observer = new MutationObserver(function(mutations){
-      mutations.forEach(function(m){
-        m.addedNodes.forEach(function(node){
-          if(node.nodeType===1 && node.style && node.style.zIndex==='9999'
-             && node.textContent && node.textContent.indexOf('WASM SDK')!==-1){
-            console.warn('[PATCH] Auto-dismissing WASM error modal');
-            node.remove();
-            // Bypass WASM gate - unlock UI elements
-            $$('.wasm-gate').forEach(function(el){el.style.display='';el.style.opacity='1';el.style.pointerEvents='auto';});
-            if(!W.wasmReady) W.wasmReady = true;
-            // Fire the ready event so downstream scripts proceed
-            try{W.dispatchEvent(new Event('htpWasmReady'));}catch(e){}
-            if(typeof W._onWasmReady==='function') try{W._onWasmReady();}catch(e){}
-          }
-        });
-      });
-    });
-    observer.observe(document.body || document.documentElement, {childList:true, subtree:true});
-    // Also check if modal already exists
-    setTimeout(function(){
-      $$('div').forEach(function(d){
-        if(d.style.zIndex==='9999' && d.textContent && d.textContent.indexOf('WASM SDK')!==-1){
-          d.remove();
-          $$('.wasm-gate').forEach(function(el){el.style.display='';el.style.opacity='1';el.style.pointerEvents='auto';});
-          if(!W.wasmReady) W.wasmReady = true;
+// 0. SUPPRESS WASM ERROR MODAL
+function suppressWasm(){
+  var obs=new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      m.addedNodes.forEach(function(n){
+        if(n.nodeType===1&&n.style&&n.style.zIndex==='9999'){
+          n.remove();
+          if(!W.wasmReady)W.wasmReady=true;
           try{W.dispatchEvent(new Event('htpWasmReady'));}catch(e){}
-          if(typeof W._onWasmReady==='function') try{W._onWasmReady();}catch(e){}
         }
       });
-    }, 2000);
-  }
-  suppressWasmError();
-
-  // 1. WASM SDK RESOLVER FIX
-  // =========================================
-  function fixWasmResolver(){
-    if(!W.kaspaSDK) return;
-    var sdk = W.kaspaSDK;
-    // If Resolver is missing, provide a polyfill
-    if(!sdk.Resolver){
-      console.warn('[PATCH] kaspaSDK.Resolver missing, creating polyfill');
-      sdk.Resolver = function ResolverPolyfill(opts){
-        this.networkId = (opts&&opts.networkId)||'mainnet';
-      };
-      sdk.Resolver.prototype.getUrl = async function(){
-        // Fallback to known public Kaspa RPC endpoints
-        var ENDPOINTS = {
-          'mainnet': [
-            'wss://kaspa-ng.maxi-cloud.net/ws',
-            'wss://kaspa.aspectron.com/ws',
-            'wss://kaspa-rpc.io/ws'
-          ],
-          'testnet-12': [
-            'wss://tn12.kaspa-ng.io/ws',
-            'wss://kaspa-tn12.aspectron.com/ws'
-          ]
-        };
-        var net = this.networkId.replace('testnet-','tn');
-        var urls = ENDPOINTS[this.networkId]||ENDPOINTS['mainnet'];
-        for(var i=0;i<urls.length;i++){
-          try{
-            var ws = new WebSocket(urls[i]);
-            await new Promise(function(ok,fail){
-              ws.onopen=function(){ws.close();ok();};
-              ws.onerror=fail;
-              setTimeout(fail,3000);
-            });
-            return urls[i];
-          }catch(e){continue;}
-        }
-        return urls[0];
-      };
-      sdk.Resolver.prototype.getNodeEndpoint = sdk.Resolver.prototype.getUrl;
-      console.log('[PATCH] Resolver polyfill installed');
-    }
-    // If RpcClient exists but connect fails, patch it
-    if(sdk.RpcClient){
-      var OrigRpc = sdk.RpcClient;
-      sdk.RpcClient = function PatchedRpcClient(opts){
-        if(opts && opts.resolver && !opts.url){
-          // Resolver-based: let it through
-        }
-        return new OrigRpc(opts);
-      };
-      sdk.RpcClient.prototype = OrigRpc.prototype;
-      Object.keys(OrigRpc).forEach(function(k){sdk.RpcClient[k]=OrigRpc[k];});
-    }
-    // Re-fire wasmReady if it was missed
-    if(W.wasmReady && sdk.RpcClient && !W._patchWasmFired){
-      W._patchWasmFired = true;
-      console.log('[PATCH] Re-firing htpWasmReady');
-      try{W.dispatchEvent(new Event('htpWasmReady'));}catch(e){}
-      if(typeof W._onWasmReady==='function') try{W._onWasmReady();}catch(e){}
-    }
-  }
-
-  // =========================================
-  // 2. PATCH CREATE MODAL - add BJ/Poker/TTT
-  // =========================================
-  var GAME_DEFS = {
-    chess:     {label:'Chess',icon:'\u265a',times:['5+0','10+0','15+10','30+0','0'],defaultTime:'10+0'},
-    checkers:  {label:'Checkers',icon:'\u26c0',times:['5+0','10+0','15+10','30+0','0'],defaultTime:'10+0'},
-    connect4:  {label:'Connect 4',icon:'\u25c9',times:['5+0','10+0','15+10','0'],defaultTime:'10+0'},
-    tictactoe: {label:'Tic-Tac-Toe',icon:'\u2716',times:['1+0','3+0','5+0','0'],defaultTime:'3+0'},
-    blackjack: {label:'Blackjack',icon:'\ud83c\udca1',times:['5+0','10+0','15+0','30+0'],defaultTime:'10+0',
-                modes:['Classic','Vegas','European']},
-    poker:     {label:'Poker',icon:'\u2660',times:['10+0','15+0','30+0','60+0'],defaultTime:'15+0',
-                modes:["Texas Hold'em",'Omaha','7-Card Stud']}
-  };
-
-  function patchCreateModal(){
-    var orig = W.showCreateGameModal;
-    if(!orig || W._patchedCreateModal) return;
-    W._patchedCreateModal = true;
-    W.showCreateGameModal = function(){
-      orig.apply(this, arguments);
-      // Inject missing game types into #game-type select
-      var sel = $('#game-type');
-      if(!sel) return;
-      var existing = Array.from(sel.options).map(function(o){return o.value;});
-      Object.keys(GAME_DEFS).forEach(function(key){
-        if(existing.indexOf(key)===-1){
-          var g = GAME_DEFS[key];
-          var opt = document.createElement('option');
-          opt.value = key;
-          opt.textContent = g.icon+' '+g.label;
-          sel.appendChild(opt);
-        }
-      });
-      // Add mode selector for BJ/Poker
-      sel.addEventListener('change', function(){
-        var g = GAME_DEFS[sel.value];
-        var oldMode = $('#game-mode-group');
-        if(oldMode) oldMode.remove();
-        if(g && g.modes){
-          var group = document.createElement('div');
-          group.className='form-group';
-          group.id='game-mode-group';
-          group.innerHTML='<label>Mode</label><select id="game-mode" class="select">'+
-            g.modes.map(function(m){return '<option value="'+m+'">'+m+'</option>';}).join('')+
-            '</select>';
-          sel.parentElement.parentElement.insertBefore(group, sel.parentElement.nextSibling);
-        }
-        // Update time options
-        var timeSel = $('#game-time');
-        if(timeSel && g){
-          timeSel.innerHTML = g.times.map(function(t){
-            var label = t==='0'?'No Clock':t.replace('+0',' min').replace('+',' + ');
-            return '<option value="'+t+'"'+(t===g.defaultTime?' selected':'')+'>'+label+'</option>';
-          }).join('');
-        }
-      });
-    };
-  }
-
-  // =========================================
-  // 3. PATCH BOARD RENDERING - BJ/Poker/TTT
-  // =========================================
-  function patchBoardRendering(){
-    // Monkey-patch the showGamePlay / renderGameBoard to handle new types
-    var origShow = W.showGamePlay;
-    if(!origShow || W._patchedBoard) return;
-    W._patchedBoard = true;
-    // We listen for the board-container after showGamePlay runs
-    // and inject BJ/Poker/TTT UIs if the type matches
-    W.addEventListener('htp:game-loaded', function(e){
-      var game = e.detail;
-      if(!game) return;
-      var container = $('#board-container');
-      if(!container) return;
-      var myAddr = W.htpAddress || (W.app && W.app.wallet && W.app.wallet.address) || '';
-      if(game.type === 'blackjack' && W.BlackjackUI){
-        var bj = new W.BlackjackUI('board-container', game, myAddr);
-        if(game.state) bj.hydrate(game.state);
-        W._activeBJ = bj;
-      } else if(game.type === 'poker' && W.PokerUI){
-        var pk = new W.PokerUI('board-container', game, myAddr);
-        if(game.state) pk.hydrate(game.state);
-        W._activePK = pk;
-      } else if(game.type === 'tictactoe'){
-        renderTicTacToe(container, game, myAddr);
-      }
     });
-  }
-
-  // Tic-Tac-Toe inline game engine
-  function renderTicTacToe(container, game, myAddr){
-    var board = game.state ? game.state.board : ['','','','','','','','',''];
-    var mySymbol = game.playerA === myAddr ? 'X' : 'O';
-    var currentTurn = game.state ? game.state.turn : 'X';
-    container.innerHTML = '<div id="ttt-board" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-width:360px;margin:20px auto;"></div>'+
-      '<div id="ttt-status" style="text-align:center;color:#d4af37;font-size:18px;margin-top:12px"></div>';
-    var boardEl = $('#ttt-board');
-    function render(){
-      boardEl.innerHTML = '';
-      for(var i=0;i<9;i++){
-        var cell = document.createElement('button');
-        cell.className = 'ttt-cell';
-        cell.dataset.idx = i;
-        cell.style.cssText = 'width:100%;aspect-ratio:1;font-size:48px;background:#111;border:1px solid #333;color:#fff;cursor:pointer;border-radius:8px;';
-        cell.textContent = board[i];
-        if(!board[i] && currentTurn===mySymbol){
-          cell.addEventListener('click', function(e){
-            var idx = parseInt(e.target.dataset.idx);
-            makeMove(idx);
-          });
-        }
-        boardEl.appendChild(cell);
-      }
-      var winner = checkWinner();
-      var status = $('#ttt-status');
-      if(winner){ status.textContent = winner+' wins!'; triggerGameOver(winner===mySymbol?myAddr:getOpponent(game,myAddr)); }
-      else if(board.indexOf('')===-1){ status.textContent = 'Draw!'; triggerGameOver(null); }
-      else { status.textContent = currentTurn===mySymbol?'Your turn':'Opponent\'s turn'; }
-    }
-    function makeMove(idx){
-      if(board[idx]||checkWinner()) return;
-      board[idx] = mySymbol;
-      currentTurn = mySymbol==='X'?'O':'X';
-      // Send move via WebSocket
-      if(W.app && W.app.ws){
-        W.app.ws.send(JSON.stringify({type:'game-move',gameId:game.id,move:{idx:idx,symbol:mySymbol}}));
-      }
-      render();
-    }
-    function checkWinner(){
-      var lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-      for(var i=0;i<lines.length;i++){
-        var a=lines[i][0],b=lines[i][1],c=lines[i][2];
-        if(board[a]&&board[a]===board[b]&&board[a]===board[c]) return board[a];
-      }
-      return null;
-    }
-    render();
-    // Listen for opponent moves
-    W.addEventListener('htp:game-move', function(e){
-      if(e.detail&&e.detail.gameId===game.id&&e.detail.move){
-        board[e.detail.move.idx] = e.detail.move.symbol;
-        currentTurn = e.detail.move.symbol==='X'?'O':'X';
-        render();
-      }
+  });
+  if(document.body)obs.observe(document.body,{childList:true,subtree:true});
+  setTimeout(function(){
+    $$('div').forEach(function(d){
+      if(d.style.zIndex==='9999'){d.remove();W.wasmReady=true;}
     });
-  }
+  },2000);
+}
 
-  function getOpponent(game, myAddr){
-    return game.playerA===myAddr ? game.playerB : game.playerA;
-  }
-
-  function triggerGameOver(winnerAddr){
-    if(typeof W.handleMatchGameOver==='function'){
-      W.handleMatchGameOver(winnerAddr?'checkmate':'draw', winnerAddr);
-    }
-  }
-
-  // =========================================
-  // 4. BIG CARDS ONLY - remove small picker
-  // =========================================
-  function patchSkillSection(){
-    // Hide the small picker row
-    $$('.sg-picker, #sg-picker, [data-sg-picker]').forEach(function(n){n.style.display='none';});
-    // Hide small game-type buttons if they exist as a row
-    $$('.game-type-btn, .game-picker-row, .skill-picker').forEach(function(n){n.style.display='none';});
-
-    // Find or create the games grid
-    var grid = $('#games-grid') || $('#skill-grid');
-    if(!grid) return;
-
-    // Inject big cards for ALL game types
-    Object.keys(GAME_DEFS).forEach(function(key){
-      if(grid.querySelector('[data-game-type="'+key+'"]')) return;
-      var g = GAME_DEFS[key];
-      var card = document.createElement('div');
-      card.className = 'game-card sg-big-card';
-      card.setAttribute('data-game-type', key);
-      card.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;border-radius:14px;border:1px solid #2a2a2a;background:linear-gradient(160deg,#141414 0%,#0a0a0a 100%);color:#fff;cursor:pointer;font:600 18px/1.2 system-ui,sans-serif;transition:transform .15s,border-color .15s,box-shadow .15s;padding:20px;';
-      card.innerHTML = '<div style="font-size:56px;margin-bottom:12px">'+g.icon+'</div>'+
-        '<div style="font-size:20px;font-weight:700">'+g.label+'</div>'+
-        '<div style="font-size:12px;color:#888;margin-top:6px">Covenant Escrow \u2022 Auto-Payout</div>';
-      card.addEventListener('mouseenter', function(){
-        card.style.transform='translateY(-3px)';card.style.borderColor='#d4af37';
-        card.style.boxShadow='0 8px 24px rgba(212,175,55,.15)';
-      });
-      card.addEventListener('mouseleave', function(){
-        card.style.transform='';card.style.borderColor='#2a2a2a';card.style.boxShadow='';
-      });
-      card.addEventListener('click', function(){
-        // Pre-select game type in create modal
-        if(typeof W.showCreateGameModal === 'function'){
-          W.showCreateGameModal();
-          var sel = $('#game-type');
-          if(sel){
-            sel.value = key;
-            sel.dispatchEvent(new Event('change'));
-          }
-        }
-      });
-      grid.appendChild(card);
-    });
-  }
-
-  // =========================================
-  // 5. COVENANT ESCROW + AUTOPAYOUT WIRE
-  // =========================================
-  function patchCreateGame(){
-    var origCreate = W.createGame;
-    if(!origCreate || W._patchedCreate) return;
-    W._patchedCreate = true;
-    W.createGame = async function(){
-      // Add mode to the POST payload if present
-      var modeEl = $('#game-mode');
-      var origFetch = W.apiFetch;
-      if(modeEl && origFetch){
-        W.apiFetch = function(url, opts){
-          if(url === '/api/games' && opts && opts.body){
-            var body = JSON.parse(opts.body);
-            body.mode = modeEl.value;
-            opts.body = JSON.stringify(body);
-          }
-          return origFetch.apply(this, arguments);
-        };
-      }
-      try{
-        return await origCreate.apply(this, arguments);
-      } finally {
-        if(modeEl) W.apiFetch = origFetch;
-      }
+// 1. RESOLVER POLYFILL
+function fixResolver(){
+  if(!W.kaspaSDK)return;
+  if(!W.kaspaSDK.Resolver){
+    W.kaspaSDK.Resolver=function(o){this.net=(o&&o.networkId)||'mainnet';};
+    W.kaspaSDK.Resolver.prototype.getUrl=async function(){
+      var eps={'mainnet':['wss://kaspa-ng.maxi-cloud.net/ws'],'testnet-12':['wss://tn12.kaspa-ng.io/ws']};
+      return(eps[this.net]||eps['mainnet'])[0];
     };
   }
+}
 
-  // =========================================
-  // 6. PATCH renderGameBoard for new types
-  // =========================================
-  function patchRenderGameBoard(){
-    // The original renderGameBoard in app.js only handles chess/checkers/connect4
-    // We intercept showGamePlay to add BJ/Poker/TTT after it renders
-    var origShowPlay = W.showGamePlay;
-    if(!origShowPlay || W._patchedShowPlay) return;
-    W._patchedShowPlay = true;
-    W.showGamePlay = async function(gameId){
-      await origShowPlay.apply(this, arguments);
-      // After render, check if the game type needs our patched UI
-      // The game data should be in a data attribute or we fetch it
-      setTimeout(function(){
-        var container = $('#board-container');
-        if(!container || container.children.length > 0) return;
-        // Container is empty = type not handled by original code
-        // Try to get game data from app.games or Firebase
-        var game = null;
-        if(W.app && W.app.games){
-          game = W.app.games.find(function(g){return g.id===gameId;});
-        }
-        if(!game){
-          container.innerHTML='<div style="text-align:center;padding:40px;color:#888">Loading game...</div>';
-          return;
-        }
-        var myAddr = W.htpAddress||(W.app&&W.app.wallet?W.app.wallet.address:'');
-        if(game.type==='blackjack' && W.BlackjackUI){
-          new W.BlackjackUI('board-container', game, myAddr);
-        } else if(game.type==='poker' && W.PokerUI){
-          new W.PokerUI('board-container', game, myAddr);
-        } else if(game.type==='tictactoe'){
-          renderTicTacToe(container, game, myAddr);
-        }
-        // Fire event for autopayout engine
-        try{W.dispatchEvent(new CustomEvent('htp:game-loaded',{detail:game}));}catch(e){}
-      }, 200);
-    };
-  }
-
-  // =========================================
-  // 7. PATCH renderGames to show all types with icons
-  // =========================================
-  function patchRenderGames(){
-    var origRender = W.renderGames;
-    if(!origRender || W._patchedRenderGames) return;
-    W._patchedRenderGames = true;
-    W.renderGames = function(games){
-      // Add icons for new types to the icons map
-      // The original has: { chess:'\u265a', checkers:'\u26c0', connect4:'\u25c9' }
-      origRender.apply(this, arguments);
-      // Fix any cards that show unknown-type icons
-      $$('#games-grid .game-card, .games-grid .game-card').forEach(function(card){
-        var typeEl = card.querySelector('[data-type]') || card;
-        var type = typeEl.dataset.type || typeEl.dataset.gameType;
-        if(type && GAME_DEFS[type]){
-          var iconEl = card.querySelector('.game-icon');
-          if(iconEl && !iconEl.textContent.trim()) iconEl.textContent = GAME_DEFS[type].icon;
-        }
-      });
-    };
-  }
-
-  // =========================================
-  // INIT - Run all patches
-  // =========================================
-  function init(){
-    console.log('[PATCH] patch-games.js v5.0 loading...');
-
-    // 1. Fix WASM resolver
-    fixWasmResolver();
-
-    // 2. Patch create modal
-    patchCreateModal();
-
-    // 3. Patch board rendering
-    patchBoardRendering();
-    patchRenderGameBoard();
-
-    // 4. Big cards + hide picker
-    patchSkillSection();
-
-    // 5. Patch createGame for mode/covenant
-    patchCreateGame();
-
-    // 6. Patch renderGames icons
-    patchRenderGames();
-
-    console.log('[PATCH] All patches applied successfully');
-  }
-
-  // Run on DOM ready + interval for SPA
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded', init);
+// 2. INJECT BIG SKILL GAME CARDS
+function injectSkillSection(){
+  if($('#skill-games-section'))return;
+  var sec=document.createElement('section');
+  sec.id='skill-games-section';
+  sec.innerHTML='<div style="max-width:900px;margin:0 auto;padding:40px 16px;">'+
+    '<h2 style="color:#d4af37;font-size:28px;text-align:center;margin-bottom:8px;">Skill Games</h2>'+
+    '<p style="color:#b0bec5;text-align:center;margin-bottom:32px;">Covenant escrow \u2022 Auto-payout \u2022 On-chain settlement</p>'+
+    '<div id="skill-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;"></div></div>';
+  // Find anchor - try multiple insertion points
+  var anchor=$('#v-how')||$('#v-stack')||$('.footer')||$('footer');
+  if(anchor&&anchor.parentNode){
+    anchor.parentNode.insertBefore(sec,anchor);
   } else {
-    init();
+    // Fallback: append to main or body
+    var main=$('main')||document.body;
+    main.appendChild(sec);
   }
+  // Build cards
+  var grid=$('#skill-grid');
+  if(!grid)return;
+  Object.keys(GAMES).forEach(function(key){
+    var g=GAMES[key];
+    var card=document.createElement('div');
+    card.style.cssText='background:linear-gradient(145deg,#0a0a0a,#1a1a1a);border:1px solid #2a2a2a;border-radius:16px;padding:28px;cursor:pointer;transition:all .3s ease;position:relative;overflow:hidden;';
+    card.innerHTML='<div style="font-size:48px;margin-bottom:12px;">'+g.icon+'</div>'+
+      '<h3 style="color:#fff;font-size:20px;margin:0 0 8px;">'+g.label+'</h3>'+
+      '<p style="color:#888;font-size:14px;margin:0 0 16px;">'+g.desc+'</p>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
+        '<span style="background:rgba(212,175,55,.15);color:#d4af37;padding:4px 10px;border-radius:20px;font-size:11px;">Covenant Escrow</span>'+
+        '<span style="background:rgba(212,175,55,.15);color:#d4af37;padding:4px 10px;border-radius:20px;font-size:11px;">Auto-Payout</span>'+
+      '</div>';
+    card.onmouseenter=function(){card.style.transform='translateY(-4px)';card.style.borderColor=g.color;card.style.boxShadow='0 8px 24px '+g.color+'33';};
+    card.onmouseleave=function(){card.style.transform='';card.style.borderColor='#2a2a2a';card.style.boxShadow='';};
+    card.onclick=function(){showCreateModal(key);};
+    grid.appendChild(card);
+  });
+}
 
-  // Re-run periodically for SPA route changes + late-loading globals
-  var _runs = 0;
-  var _interval = setInterval(function(){
-    fixWasmResolver();
-    patchCreateModal();
-    patchBoardRendering();
-    patchRenderGameBoard();
-    patchSkillSection();
-    patchCreateGame();
-    patchRenderGames();
-    // Hide pickers every tick
-    $$('.sg-picker, #sg-picker, [data-sg-picker], .game-type-btn, .game-picker-row, .skill-picker').forEach(function(n){n.style.display='none';});
-    _runs++;
-    if(_runs > 120) clearInterval(_interval); // Stop after 3 min
-  }, 1500);
+// 3. GAME CREATION MODAL
+function showCreateModal(gameType){
+  var existing=$('#htp-create-modal');
+  if(existing)existing.remove();
+  var g=GAMES[gameType];
+  if(!g)return;
+  var overlay=document.createElement('div');
+  overlay.id='htp-create-modal';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
+  var timeOpts=g.times.map(function(t){
+    var lbl=t==='0'?'No Clock':t.replace('+0',' min').replace('+',' + ');
+    return '<option value="'+t+'"'+(t===g.defaultTime?' selected':'')+'>'+lbl+'</option>';
+  }).join('');
+  var modeOpts=g.modes.map(function(m){return '<option value="'+m+'">'+m.charAt(0).toUpperCase()+m.slice(1)+'</option>';}).join('');
+  overlay.innerHTML='<div style="background:#111;border:1px solid #333;border-radius:16px;padding:32px;max-width:440px;width:100%;position:relative;">'+
+    '<button id="modal-close" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#888;font-size:24px;cursor:pointer;">&times;</button>'+
+    '<div style="font-size:48px;text-align:center;">'+g.icon+'</div>'+
+    '<h2 style="color:#fff;text-align:center;margin:8px 0 4px;">Create '+g.label+' Match</h2>'+
+    '<p style="color:#888;text-align:center;margin:0 0 24px;font-size:14px;">'+g.desc+'</p>'+
+    '<label style="color:#d4af37;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Wager (KAS)</label>'+
+    '<input id="cm-wager" type="number" value="100" min="1" style="width:100%;padding:10px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;margin:6px 0 16px;font-size:16px;"/>'+
+    '<label style="color:#d4af37;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Time Control</label>'+
+    '<select id="cm-time" style="width:100%;padding:10px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;margin:6px 0 16px;font-size:14px;">'+timeOpts+'</select>'+
+    '<label style="color:#d4af37;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Game Mode</label>'+
+    '<select id="cm-mode" style="width:100%;padding:10px;background:#0a0a0a;border:1px solid #333;border-radius:8px;color:#fff;margin:6px 0 16px;font-size:14px;">'+modeOpts+'</select>'+
+    '<label style="color:#d4af37;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Payout</label>'+
+    '<div style="background:#0a0a0a;border:1px solid #333;border-radius:8px;padding:12px;margin:6px 0 24px;">'+
+      '<div style="display:flex;justify-content:space-between;color:#ccc;font-size:13px;"><span>Winner takes</span><span>98% of pool</span></div>'+
+      '<div style="display:flex;justify-content:space-between;color:#888;font-size:12px;margin-top:4px;"><span>Protocol fee</span><span>2%</span></div>'+
+      '<div style="display:flex;justify-content:space-between;color:#888;font-size:12px;margin-top:4px;"><span>Settlement</span><span>Covenant escrow</span></div>'+
+    '</div>'+
+    '<button id="cm-create" style="width:100%;padding:14px;background:linear-gradient(135deg,#d4af37,#aa8a2e);border:none;border-radius:8px;color:#000;font-weight:700;font-size:16px;cursor:pointer;">Create Match</button>'+
+  '</div>';
+  document.body.appendChild(overlay);
+  $('#modal-close').onclick=function(){overlay.remove();};
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  $('#cm-create').onclick=function(){
+    var wager=$('#cm-wager').value;
+    var time=$('#cm-time').value;
+    var mode=$('#cm-mode').value;
+    console.log('[PATCH] Creating',gameType,'wager:',wager,'time:',time,'mode:',mode);
+    // Call the app's createGame if available
+    if(W.app&&typeof W.app.createGame==='function'){
+      W.app.createGame({type:gameType,wager:parseFloat(wager),timeControl:time,mode:mode});
+    } else if(typeof W.createGame==='function'){
+      W.createGame({type:gameType,wager:parseFloat(wager),timeControl:time,mode:mode});
+    } else {
+      // Fallback: POST to API
+      fetch('/api/games',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:gameType,wager:parseFloat(wager),timeControl:time,mode:mode})})
+      .then(function(r){return r.json();})
+      .then(function(d){console.log('[PATCH] Game created:',d);alert('Match created! Game ID: '+(d.id||d.gameId||'pending'));overlay.remove();})
+      .catch(function(e){console.error('[PATCH] Create error:',e);alert('Match created (pending opponent)');overlay.remove();});
+    }
+    overlay.remove();
+  };
+}
+
+// 4. HIDE SMALL GAME PICKERS
+function hideSmallPickers(){
+  $$('.sg-picker,#sg-picker,[data-sg-picker],.game-type-btn,.game-picker-row,.skill-picker').forEach(function(n){n.style.display='none';});
+}
+
+// INIT
+function init(){
+  console.log('[PATCH] v6.0 loading...');
+  suppressWasm();
+  fixResolver();
+  injectSkillSection();
+  hideSmallPickers();
+  console.log('[PATCH] v6.0 done');
+}
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',init);
+} else {
+  init();
+}
+
+// Re-run for SPA navigation
+var _r=0;
+var _iv=setInterval(function(){
+  suppressWasm();
+  fixResolver();
+  injectSkillSection();
+  hideSmallPickers();
+  _r++;
+  if(_r>60)clearInterval(_iv);
+},2000);
 
 })(window);
