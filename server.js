@@ -485,6 +485,39 @@ app.post('/api/games/:id/join', async (req, res) => {
   }
 });
 
+
+// ─── REST API: Game Claim / Payout ─────────────────────
+app.post('/api/games/:id/claim', async (req, res) => {
+  try {
+    const game = db.getGame(req.params.id);
+    if (!game) return res.status(404).json({ error: 'Game not found' });
+    if (game.status !== 'finished') return res.status(400).json({ error: 'Game not finished' });
+    if (game.settleTxId) return res.json({ txId: game.settleTxId, message: 'Already settled' });
+    if (!game.winner) return res.status(400).json({ error: 'No winner determined' });
+    const result = await settlement.settleGame(game.id, game.winner);
+    res.json({ txId: result.txId, message: 'Payout sent to wallet' });
+  } catch (e) {
+    console.error('[API] Claim error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/games/:id/payout', (req, res) => {
+  const game = db.getGame(req.params.id);
+  if (!game) return res.status(404).json({ error: 'Game not found' });
+  const stakeSompi = game.stakeSompi || 0;
+  const pool = stakeSompi * 2;
+  const fee = Math.floor(pool * 200 / 10000);
+  const winnerPayout = pool - fee - 30000;
+  res.json({
+    gameId: game.id, status: game.status, winner: game.winner,
+    pool: pool, poolKas: pool / 1e8,
+    fee: fee, feeKas: fee / 1e8,
+    winnerPayout: winnerPayout, winnerPayoutKas: winnerPayout / 1e8,
+    settled: !!game.settleTxId, settleTxId: game.settleTxId || null,
+  });
+});
+
 // ─── REST API: Users / Stats ────────────────────────────
 app.get('/api/users/:addr', (req, res) => {
   const user = db.getOrCreateUser(req.params.addr);
