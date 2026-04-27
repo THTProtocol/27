@@ -9,7 +9,9 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
-      - KASPA_WRPC_URL=ws://kaspa-node:17210
+      # Port 17210 = borsh wRPC (binary). Use 16210 for JSON-RPC if kaspa-rpc.js uses raw WS JSON.
+      # Current kaspa-rpc.js uses JSON-RPC over WS — connect to 16210 (JSON-RPC listen port).
+      - KASPA_WRPC_URL=ws://kaspa-node:16210
       - MAINNET_API=https://api.kaspa.org
       - AUTO_RESOLVE=true
       - ORACLE_CHECK_MS=10000
