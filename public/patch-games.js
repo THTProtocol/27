@@ -6,7 +6,7 @@
  * 4. Game settings apply to actual game (wager, time, mode)
  * 5. Auto-payout to wallet + manual claim fallback
  * 6. P2P Blackjack (no dealer), Poker, Chess, Checkers, Connect4, TTT
- * 7. Node attestation: users verify outcomes by running HTP script
+ * 7. Node attestation: users verify outcomes by running High Table script
  */
 (function(W){
 'use strict';
@@ -50,7 +50,7 @@ function fixResolver(){
   if(!W.kaspaSDK||W.kaspaSDK.Resolver)return;
   W.kaspaSDK.Resolver=function(o){this.net=(o&&o.networkId)||'mainnet';};
   W.kaspaSDK.Resolver.prototype.getUrl=async function(){
-    var eps={'mainnet':['wss://kaspa-ng.maxi-cloud.net/ws'],'testnet-12':['wss://tn12.kaspa-ng.io/ws']};
+    var eps={'mainnet':['wss://wrpc.kaspa.org/wrpc'],'testnet-12':['wss://tn12.kaspa-ng.io/ws']};
     return(eps[this.net]||eps['mainnet'])[0];
   };
 }
@@ -129,13 +129,13 @@ function showCreateModal(gameType){
       '<div style="display:flex;justify-content:space-between;color:#888;font-size:12px;margin-top:4px;"><span>Protocol fee</span><span>2%</span></div>'+
       '<div style="display:flex;justify-content:space-between;color:#888;font-size:12px;margin-top:4px;"><span>Escrow</span><span>KIP-10 Covenant</span></div>'+
       '<div style="display:flex;justify-content:space-between;color:#4a9eff;font-size:12px;margin-top:4px;"><span>Payout</span><span>Auto-sent to wallet</span></div>'+
-      '<div style="display:flex;justify-content:space-between;color:#4a9eff;font-size:12px;margin-top:4px;"><span>Verification</span><span>Run node + HTP script</span></div>'+
+      '<div style="display:flex;justify-content:space-between;color:#4a9eff;font-size:12px;margin-top:4px;"><span>Verification</span><span>Run node + High Table script</span></div>'+
     '</div>'+
     '<button id="cm-create" style="width:100%;padding:14px;background:linear-gradient(135deg,#d4af37,#aa8a2e);border:none;border-radius:8px;color:#000;font-weight:700;font-size:16px;cursor:pointer;">Create Match &amp; Lock Escrow</button>'+
-    '<p style="color:#555;font-size:11px;text-align:center;margin-top:12px;">Wager is locked in a covenant escrow. Winner receives payout automatically. Verify with: <code style="color:#4a9eff;">node htp-attest.js --game-id &lt;ID&gt;</code></p>'+
+    '<p style="color:#555;font-size:11px;text-align:center;margin-top:12px;">Wager is locked in a covenant escrow. Winner receives payout automatically. Verify with: <code style="color:#4a9eff;">node high-table-attest.js --game-id &lt;ID&gt;</code></p>'+
   '</div>';
   document.body.appendChild(overlay);
-  $('#modal-close').onclick=function(){overlay.remove();};
+  overlay.querySelector('#modal-close').onclick=function(){overlay.remove();};
   overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
   $('#cm-create').onclick=function(){
     var btn=$('#cm-create');
@@ -185,7 +185,7 @@ function showGameLobby(game){
       '<button id="lobby-share" style="flex:1;padding:12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;cursor:pointer;">Share Link</button>'+
       '<button id="lobby-cancel" style="flex:1;padding:12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#e74c3c;cursor:pointer;">Cancel</button>'+
     '</div>'+
-    '<p style="color:#555;font-size:11px;margin-top:12px;">Attest: <code style="color:#4a9eff;">node htp-attest.js --game-id '+game.id+'</code></p>'+
+    '<p style="color:#555;font-size:11px;margin-top:12px;">Attest: <code style="color:#4a9eff;">node high-table-attest.js --game-id '+game.id+'</code></p>'+
   '</div>';
   document.body.appendChild(overlay);
   $('#lobby-share').onclick=function(){navigator.clipboard.writeText(location.origin+'/?join='+game.id);$('#lobby-share').textContent='Copied!';};
@@ -242,7 +242,7 @@ function showGameResult(game){
     overlay.innerHTML+='<div style="text-align:center;color:#2ecc71;font-size:14px;margin-top:16px;">\u2713 '+winnings.toFixed(2)+' KAS sent to your wallet</div>';
   }
   overlay.innerHTML+='<button id="result-close" style="width:100%;padding:12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;cursor:pointer;margin-top:10px;">Close</button>';
-  overlay.innerHTML+='<p style="color:#555;font-size:11px;text-align:center;margin-top:12px;">Verify: <code style="color:#4a9eff;">node htp-attest.js --game-id '+game.id+'</code></p>';
+  overlay.innerHTML+='<p style="color:#555;font-size:11px;text-align:center;margin-top:12px;">Verify: <code style="color:#4a9eff;">node high-table-attest.js --game-id '+game.id+'</code></p>';
   overlay.innerHTML+='</div>';
   document.body.appendChild(overlay);
   var closeBtn=$('#result-close');
