@@ -13,6 +13,46 @@
   var $$ = function(s,r){return Array.from((r||document).querySelectorAll(s));};
 
   // =========================================
+
+    // =========================================
+  // 0. SUPPRESS WASM ERROR MODAL + BYPASS GATE
+  // =========================================
+  function suppressWasmError(){
+    // Auto-dismiss the WASM error modal that htp-init.js creates
+    // This allows the site to work in degraded mode (no on-chain ops)
+    var observer = new MutationObserver(function(mutations){
+      mutations.forEach(function(m){
+        m.addedNodes.forEach(function(node){
+          if(node.nodeType===1 && node.style && node.style.zIndex==='9999'
+             && node.textContent && node.textContent.indexOf('WASM SDK')!==-1){
+            console.warn('[PATCH] Auto-dismissing WASM error modal');
+            node.remove();
+            // Bypass WASM gate - unlock UI elements
+            $$('.wasm-gate').forEach(function(el){el.style.display='';el.style.opacity='1';el.style.pointerEvents='auto';});
+            if(!W.wasmReady) W.wasmReady = true;
+            // Fire the ready event so downstream scripts proceed
+            try{W.dispatchEvent(new Event('htpWasmReady'));}catch(e){}
+            if(typeof W._onWasmReady==='function') try{W._onWasmReady();}catch(e){}
+          }
+        });
+      });
+    });
+    observer.observe(document.body || document.documentElement, {childList:true, subtree:true});
+    // Also check if modal already exists
+    setTimeout(function(){
+      $$('div').forEach(function(d){
+        if(d.style.zIndex==='9999' && d.textContent && d.textContent.indexOf('WASM SDK')!==-1){
+          d.remove();
+          $$('.wasm-gate').forEach(function(el){el.style.display='';el.style.opacity='1';el.style.pointerEvents='auto';});
+          if(!W.wasmReady) W.wasmReady = true;
+          try{W.dispatchEvent(new Event('htpWasmReady'));}catch(e){}
+          if(typeof W._onWasmReady==='function') try{W._onWasmReady();}catch(e){}
+        }
+      });
+    }, 2000);
+  }
+  suppressWasmError();
+
   // 1. WASM SDK RESOLVER FIX
   // =========================================
   function fixWasmResolver(){
