@@ -22229,12 +22229,12 @@ document.querySelectorAll('button').forEach(function(b){
       var _orig2 = window.settleMatchPayout;
       if (typeof _orig2 !== "function") return;
       window.settleMatchPayout = wrapSettle(_orig2);
-      console.log("[HTP Fix2] Race guard patched (deferred)");
+      console.log("[High Table Fix2] Race guard patched (deferred)");
     }, 3000);
     return;
   }
   window.settleMatchPayout = wrapSettle(_origSettle);
-  console.log("[HTP Fix2] Race guard patched");
+  console.log("[High Table Fix2] Race guard patched");
 
   function wrapSettle(orig) {
     return async function(matchId, winnerAddress, isDraw, playerAAddr, playerBAddr) {
@@ -22273,7 +22273,7 @@ document.querySelectorAll('button').forEach(function(b){
                 return s + Number((u.utxoEntry || u.entry || u).amount || 0);
               }, 0);
               if (total >= expectedMin) break;
-              console.warn("[HTP Fix2] Escrow underfunded:", (total/SOMPI).toFixed(4), "KAS, need", stakeKas*2, "KAS — attempt", attempt+1, "of 3");
+              console.warn("[High Table Fix2] Escrow underfunded:", (total/SOMPI).toFixed(4), "KAS, need", stakeKas*2, "KAS — attempt", attempt+1, "of 3");
               if (typeof showToast === "function") showToast("Waiting for escrow funding... (" + (attempt+1) + "/3)", "info");
               if (attempt < 2) await new Promise(function(r) { setTimeout(r, 8000); });
             } catch(e) { break; }
@@ -22293,16 +22293,16 @@ window.addEventListener('load', async function() {
   if (window.htpWalletV3 && window.htpWalletV3.init) {
     try {
       await window.htpWalletV3.init();
-      console.log('[HTP Bootstrap] Wallet V3 initialized');
+      console.log('[High Table Bootstrap] Wallet V3 initialized');
     } catch(e) {
-      console.warn('[HTP Bootstrap] Wallet V3 init error:', e);
+      console.warn('[High Table Bootstrap] Wallet V3 init error:', e);
     }
   }
   
   // Also ensure WASM ready is called if not already fired
   if (window.whenWasmReady && !window.wasmReady) {
     window.whenWasmReady(function() {
-      console.log('[HTP Bootstrap] WASM confirmed ready via bootstrap');
+      console.log('[High Table Bootstrap] WASM confirmed ready via bootstrap');
     });
   }
 });
