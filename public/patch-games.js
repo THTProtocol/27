@@ -1,62 +1,85 @@
-// patch-games.js - Adds Blackjack and Poker to skill games dynamically
+// patch-games.js - Big-card-only Skill Games entry point with per-game settings
 (function(){
-  function injectGames(){
-    var sel = document.getElementById('sgGame');
-    if (sel && !sel.querySelector('option[value="blackjack"]')) {
-      var oBJ = document.createElement('option');
-      oBJ.value = 'blackjack';
-      oBJ.setAttribute('data-times','0|0');
-      oBJ.setAttribute('data-series','1,3,5,7');
-      oBJ.textContent = 'BJ Blackjack';
-      sel.appendChild(oBJ);
-      var oPK = document.createElement('option');
-      oPK.value = 'poker';
-      oPK.setAttribute('data-times','0|0');
-      oPK.setAttribute('data-series','1,3,5');
-      oPK.textContent = 'Poker';
-      sel.appendChild(oPK);
-    }
-    var picker = document.getElementById('sgGamePicker');
-    if (picker && !picker.querySelector('[data-game="blackjack"]')) {
-      var mkBtn = function(game,icon,label){
-        var b = document.createElement('button');
-        b.type='button'; b.className='sg-gbtn'; b.setAttribute('data-game',game);
-        b.style.cssText='padding:14px 8px;border-radius:10px;border:1px solid var(--border);background:rgba(10,15,30,0.6);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.2s;';
-        b.innerHTML='<span class="sg-ico" style="color:#49e8c2;font-size:32px;font-weight:700">'+icon+'</span><span class="sg-lbl" style="font-size:11px">'+label+'</span>';
-        b.addEventListener('click',function(){
-          if(sel){sel.value=game; sel.dispatchEvent(new Event('change'));}
-          picker.querySelectorAll('.sg-gbtn').forEach(function(x){x.classList.toggle('act',x===b);});
-        });
-        return b;
-      };
-      picker.appendChild(mkBtn('blackjack','BJ','Blackjack'));
-      picker.appendChild(mkBtn('poker','PK','Poker'));
-    }
-    var grid = document.querySelector('.sg-grid');
-    if (grid && !grid.querySelector('[data-sg="blackjack"]')) {
-      var mkCard = function(game,icon,title,desc){
-        var c = document.createElement('div');
-        c.className='sg-card'; c.setAttribute('data-sg',game);
-        c.innerHTML='<div style="font-size:32px;margin-bottom:10px;color:#49e8c2;font-weight:700">'+icon+'</div><h3>'+title+'</h3><p>'+desc+'</p>';
-        c.addEventListener('click',function(){
-          var btn = picker && picker.querySelector('[data-game="'+game+'"]');
-          if (btn) btn.click();
-          var form = document.querySelector('.match-form, #sgGamePicker');
-          if (form) form.scrollIntoView({behavior:'smooth',block:'center'});
-        });
-        return c;
-      };
-      grid.appendChild(mkCard('blackjack','BJ','Blackjack','Player vs Dealer or P2P. Provably fair shuffle via on-chain commit-reveal. Hit, stand, double, split. Settled by Kaspa covenant.'));
-      grid.appendChild(mkCard('poker','PK','Poker','Texas Holdem heads-up. Mental poker protocol with threshold ZK encryption. Bets escrowed by covenant. Showdown verified on-chain.'));
-    }
+  function $(s, r){ return (r||document).querySelector(s); }
+  function $all(s, r){ return Array.from((r||document).querySelectorAll(s)); }
+
+  var GAMES = {
+    chess:      { label:'Chess',       icon:'♞', times:[1,3,5,10,15,30], modes:['Standard','Blitz','Bullet','Rapid'], stake:[1,5,10,25,50,100] },
+    connect4:   { label:'Connect 4',   icon:'●', times:[1,3,5,10],         modes:['Standard','Speed'],                    stake:[1,5,10,25,50] },
+    checkers:   { label:'Checkers',    icon:'⛂', times:[3,5,10,15],        modes:['Standard','Flying Kings'],              stake:[1,5,10,25,50] },
+    tictactoe:  { label:'Tic-Tac-Toe', icon:'✕',  times:[1,3,5],            modes:['Classic','Ultimate'],                   stake:[1,5,10] },
+    blackjack:  { label:'Blackjack',   icon:'BJ', times:[5,10,15,30],  modes:['Classic','Vegas','European'],           stake:[5,10,25,50,100,250] },
+    poker:      { label:'Poker',       icon:'♠',  times:[10,15,30,60],     modes:["Texas Hold em",'Omaha','7-Card Stud'],  stake:[5,10,25,50,100,250,500] }
+  };
+
+  function hidePicker(){
+    $all('.sg-picker, #sg-picker, [data-sg-picker]').forEach(function(n){ n.style.display='none'; });
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', injectGames);
-  else injectGames();
-  setTimeout(injectGames, 1500);
-  setTimeout(injectGames, 4000);
-  // Re-run when navigating to skill view
-  document.addEventListener('click', function(e){
-    var t = e.target.closest && e.target.closest('[onclick*="skill"], [data-view="skill"], .nav-btn');
-    if (t) setTimeout(injectGames, 250);
-  });
+
+  function ensureBigCards(){
+    var grid = $('#skill-grid') || $('.skill-grid') || $('.sg-grid') || $('#sg-grid');
+    if (!grid){
+      var section = $('#skill') || $('#skill-games') || $('[data-section="skill"]');
+      if (!section) return null;
+      grid = document.createElement('div');
+      grid.id = 'skill-grid';
+      grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;padding:16px;';
+      section.appendChild(grid);
+    }
+    Object.keys(GAMES).forEach(function(key){
+      if (grid.querySelector('[data-game="'+key+'"]')) return;
+      var g = GAMES[key];
+      var card = document.createElement('button');
+      card.type='button';
+      card.className='sg-card';
+      card.setAttribute('data-game', key);
+      card.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;border-radius:14px;border:1px solid #2a2a2a;background:linear-gradient(160deg,#141414,#0a0a0a);color:#fff;cursor:pointer;font:600 16px/1.2 system-ui,sans-serif;transition:transform .15s,border-color .15s;';
+      card.innerHTML='<div style="font-size:48px;margin-bottom:10px">'+g.icon+'</div><div>'+g.label+'</div>';
+      card.addEventListener('mouseenter',function(){card.style.transform='translateY(-2px)';card.style.borderColor='#d4af37';});
+      card.addEventListener('mouseleave',function(){card.style.transform='';card.style.borderColor='#2a2a2a';});
+      card.addEventListener('click',function(){ openCreate(key); });
+      grid.appendChild(card);
+    });
+    return grid;
+  }
+
+  function openCreate(key){
+    var g = GAMES[key]; if(!g) return;
+    var old = $('#sg-modal'); if (old) old.remove();
+    var modal = document.createElement('div');
+    modal.id='sg-modal';
+    modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    var card = document.createElement('div');
+    card.style.cssText='background:#0d0d0d;border:1px solid #d4af37;border-radius:14px;padding:24px;min-width:340px;max-width:480px;color:#fff;font:14px system-ui,sans-serif;';
+    function opts(arr){ return arr.map(function(v){return '<option value="'+v+'">'+v+'</option>';}).join(''); }
+    card.innerHTML =
+      '<h2 style="margin:0 0 12px;font-size:22px;color:#d4af37">Create '+g.label+' Match</h2>'+
+      '<label style="display:block;margin:10px 0 4px">Time (minutes)</label>'+
+      '<select id="sg-time" style="width:100%;padding:8px;background:#111;color:#fff;border:1px solid #333;border-radius:8px">'+opts(g.times)+'</select>'+
+      '<label style="display:block;margin:10px 0 4px">Mode</label>'+
+      '<select id="sg-mode" style="width:100%;padding:8px;background:#111;color:#fff;border:1px solid #333;border-radius:8px">'+opts(g.modes)+'</select>'+
+      '<label style="display:block;margin:10px 0 4px">Stake (USD)</label>'+
+      '<select id="sg-stake" style="width:100%;padding:8px;background:#111;color:#fff;border:1px solid #333;border-radius:8px">'+opts(g.stake)+'</select>'+
+      '<label style="display:block;margin:10px 0 4px">Visibility</label>'+
+      '<select id="sg-vis" style="width:100%;padding:8px;background:#111;color:#fff;border:1px solid #333;border-radius:8px"><option>Public</option><option>Private</option></select>'+
+      '<div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">'+
+        '<button id="sg-cancel" style="padding:10px 16px;border-radius:8px;border:1px solid #333;background:#1a1a1a;color:#fff;cursor:pointer">Cancel</button>'+
+        '<button id="sg-create" style="padding:10px 16px;border-radius:8px;border:1px solid #d4af37;background:#d4af37;color:#000;font-weight:700;cursor:pointer">Create Match</button>'+
+      '</div>';
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+    $('#sg-cancel').onclick = function(){ modal.remove(); };
+    modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+    $('#sg-create').onclick = function(){
+      var payload = { game:key, time:$('#sg-time').value, mode:$('#sg-mode').value, stake:$('#sg-stake').value, visibility:$('#sg-vis').value };
+      try { window.dispatchEvent(new CustomEvent('sg:create', { detail: payload })); } catch(e){}
+      console.log('[SG] create', payload);
+      modal.remove();
+    };
+  }
+
+  function run(){ hidePicker(); ensureBigCards(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
+  setInterval(function(){ hidePicker(); ensureBigCards(); }, 1500);
 })();
