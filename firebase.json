@@ -3,6 +3,17 @@
     "site": "hightable420",
     "public": "public",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "rewrites": [{ "source": "**", "destination": "/index.html" }]
+    "headers": [
+      {
+        "source": "**/*.wasm",
+        "headers": [{ "key": "Content-Type", "value": "application/wasm" }]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "!/**/*.@(wasm|js|css|json|map|png|jpg|jpeg|svg|ico|gif|webp|woff|woff2|ttf)",
+        "destination": "/index.html"
+      }
+    ]
   }
 }

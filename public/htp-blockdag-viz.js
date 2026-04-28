@@ -183,14 +183,36 @@
     _bgSpawnNext = Math.max(_bgSpawnNext, _bgSpawnNext + _SPAWN_GAP);
   }
 
-  // Write live Kaspa data to Firebase Realtime DB
+  // Write live Kaspa data to Firebase Realtime DB.
+  // Once we observe a permission_denied (anonymous client without write rules),
+  // stop retrying to avoid the 5s log spam. Reads/listens are unaffected.
+  var _fbWriteDisabled = false;
+  var _fbWarnedOnce = false;
+  function _disableFbWrites(reason) {
+    if (_fbWriteDisabled) return;
+    _fbWriteDisabled = true;
+    if (!_fbWarnedOnce) {
+      _fbWarnedOnce = true;
+      console.warn('[HTP BlockDAG] Firebase stats writes disabled:', reason || 'permission_denied');
+    }
+  }
+  function _safeSet(ref, val) {
+    try {
+      var p = ref.set(val);
+      if (p && typeof p.catch === 'function') p.catch(function(err){
+        var msg = (err && (err.code || err.message)) || '';
+        if (/permission_denied|PERMISSION_DENIED/i.test(String(msg))) _disableFbWrites(msg);
+      });
+    } catch(e) {}
+  }
   function _syncFirebase(stats, blocks) {
+    if (_fbWriteDisabled) return;
     try {
       var fb = window.firebase;
       if (!fb || !fb.apps || !fb.apps.length) return;
       var db = fb.database();
       if (stats) {
-        db.ref('kaspa/stats').set({
+        _safeSet(db.ref('kaspa/stats'), {
           blockCount:  stats.blockCount  || 0,
           daaScore:    stats.virtualDaaScore || 0,
           difficulty:  stats.difficulty  || 0,
@@ -202,8 +224,8 @@
         var recent = blocks.slice(-15).map(function(b) {
           return { hash: b.hash, blueScore: b.blueScore || 0, parents: (b.parents||[]).slice(0,3), ts: b.timestamp || 0 };
         });
-        db.ref('kaspa/latestBlocks').set(recent);
-        db.ref('kaspa/latestHash').set(blocks[blocks.length - 1].hash);
+        _safeSet(db.ref('kaspa/latestBlocks'), recent);
+        _safeSet(db.ref('kaspa/latestHash'), blocks[blocks.length - 1].hash);
       }
     } catch(e) { /* firebase not ready yet */ }
   }

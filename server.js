@@ -24,7 +24,22 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws' });
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.wasm')) {
+      res.setHeader('Content-Type', 'application/wasm');
+    }
+  }
+}));
+
+// Refuse to serve HTML SPA fallback for asset-typed paths (wasm, js, css, json, map, png, jpg, ico).
+// Without this, missing /kaspa_bg.wasm returns index.html and breaks WebAssembly.instantiate.
+app.use((req, res, next) => {
+  if (/\.(wasm|js|css|json|map|png|jpe?g|svg|ico|gif|webp)$/i.test(req.path)) {
+    return res.status(404).send('Not found: ' + req.path);
+  }
+  next();
+});
 
 // ─── Initialize Services ────────────────────────────────
 const db = new Database();
