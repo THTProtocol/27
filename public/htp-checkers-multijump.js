@@ -1,5 +1,5 @@
 /**
- * htp-checkers-multijump.js — HTP Checkers v2
+ * htp-checkers-multijump.js , HTP Checkers v2
  *
  * Renders 8x8 checkers board into #checkers-board with full multi-jump chains,
  * mandatory capture enforcement, king promotion, and Firebase sync.
@@ -23,8 +23,9 @@
   const LOG = (...a) => console.log('[HTP Checkers v2]', ...a);
 
   const SIZE = 8;
-  const DARK_SQ  = '#1a2235';
-  const LIGHT_SQ = '#0f1623';
+  // Premium checkers palette: deep walnut dark, warm cream light. High contrast for skill play.
+  const DARK_SQ  = '#5d4034';
+  const LIGHT_SQ = '#f3e2c4';
   const TEAL     = 'var(--primary)';
   const RED      = 'var(--red)';
 

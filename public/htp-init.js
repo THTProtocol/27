@@ -1,9 +1,9 @@
 /**
- * htp-init.js  —  High Table Protocol  —  v3.0
+ * htp-init.js  ,  High Table Protocol  ,  v3.0
  *
  * RESPONSIBILITIES:
  *  1. Detect TN12 vs mainnet → set window.HTP_NETWORK + window.activeNet  (ONE place, done first)
- *  2. WASM boot gate  —  unlock all .wasm-gate elements + fire _onWasmReady() callbacks
+ *  2. WASM boot gate  ,  unlock all .wasm-gate elements + fire _onWasmReady() callbacks
  *  3. Identity / seat resolution
  *  4. Wallet auto-connect (KasWare → KaspaWallet → localStorage)
  *  5. Board CSS injection
@@ -66,7 +66,7 @@
     var key = (param || stored || 'tn12').toLowerCase();
     if (!NETWORK_MAP[key]) key = 'tn12';
     var net = NETWORK_MAP[key];
-    // Expose globally — every other module reads these
+    // Expose globally , every other module reads these
     window.HTP_NETWORK       = key;                   // 'tn12' | 'mainnet'
     window.activeNet         = net;                   // full config object
     window.HTP_RESOLVER_ALIAS= net.resolverAlias;     // 'tn12' or 'mainnet' for Kaspa Resolver
@@ -79,7 +79,7 @@
     return net;
   }
 
-  // Run immediately — synchronous
+  // Run immediately , synchronous
   detectNetwork();
 
   /* ═══════════════════════════════════════════════════════════════════════════
@@ -124,7 +124,7 @@
     }
     var oldBanner = document.getElementById('htp-wasm-warning');
     if (oldBanner) oldBanner.remove();
-    console.log('[HTP Init] WASM ready — gates unlocked ✓');
+    console.log('[HTP Init] WASM ready , gates unlocked ✓');
     _wasmReadyCallbacks.forEach(function (cb) {
       try { cb(); } catch (e) { console.warn('[HTP Init] wasmReady callback error', e); }
     });
@@ -212,7 +212,7 @@
   // Primary timeout: 30 seconds
   var _wasmTimeoutHandle = setTimeout(function () {
     if (_wasmReadyFired) return; // Already loaded
-    console.warn('[HTP Init] Primary WASM timeout at 30s — attempting recovery');
+    console.warn('[HTP Init] Primary WASM timeout at 30s , attempting recovery');
     _retryWasmLoad();
   }, 30000);
 

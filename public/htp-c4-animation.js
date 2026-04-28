@@ -1,5 +1,5 @@
 /**
- * htp-c4-animation.js — HTP Connect 4 v2
+ * htp-c4-animation.js , HTP Connect 4 v2
  *
  * Renders a 7x6 Connect 4 grid into #c4-board.
  * Features: gravity drop animation, column hover preview, win detection,

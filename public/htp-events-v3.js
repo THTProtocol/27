@@ -1,5 +1,5 @@
 // =============================================================================
-// htp-events-v3.js — Prediction Market Listing & Display
+// htp-events-v3.js , Prediction Market Listing & Display
 // Listens to Firebase /markets, renders event cards, handles position taking
 // =============================================================================
 (function() {
@@ -236,7 +236,7 @@
     console.log('[HTP Events v3] New market detected');
   });
 
-  // Initialize — wait for Firebase to be ready
+  // Initialize , wait for Firebase to be ready
   function init() {
     // Guard: if Firebase app not yet initialized, wait for it
     if (!window.firebase || !window.firebase.apps || !window.firebase.apps.length) {

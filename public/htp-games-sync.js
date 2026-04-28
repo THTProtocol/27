@@ -1,5 +1,5 @@
 // =============================================================
-// htp-games-sync.js  — HTP All-Games Sync Patch v1
+// htp-games-sync.js  , HTP All-Games Sync Patch v1
 // Fixes Connect4 + Checkers:
 //   • Firebase-synced side assignment (creator=1, joiner=2/3)
 //   • Firebase-synced clocks (replaces local interval)
@@ -13,7 +13,10 @@
 (function () {
   'use strict';
 
-  // ── helpers ──────────────────────────────────────────────
+  if (window.__htpGamesSyncInstalled) return;
+  window.__htpGamesSyncInstalled = true;
+
+  // helpers
   function fdb() {
     return (typeof firebase !== 'undefined' && firebase.database)
       ? firebase.database() : null;
@@ -190,7 +193,7 @@
         var patchedOpts = Object.assign({}, opts, { side: side });
         orig.call(this, patchedOpts);
 
-        // Kill the local timer C4 just started — we replace it
+        // Kill the local timer C4 just started , we replace it
         if (typeof C4 !== 'undefined' && C4.timerInterval) {
           clearInterval(C4.timerInterval);
           C4.timerInterval = null;
@@ -220,7 +223,7 @@
           window.dropC4._clockPatched = true;
         }
 
-        console.log('[HTP Games Sync] Connect4 started — side:', side);
+        console.log('[HTP Games Sync] Connect4 started , side:', side);
       }
 
       if (isCreator) {
@@ -287,7 +290,7 @@
           window.ckClick._clockPatched = true;
         }
 
-        console.log('[HTP Games Sync] Checkers started — side:', side);
+        console.log('[HTP Games Sync] Checkers started , side:', side);
       }
 
       if (isCreator) {
@@ -305,7 +308,7 @@
     console.log('[HTP Games Sync] startCheckersGame patched');
   }
 
-  // ── 5. PAYOUT — idempotent for all games ─────────────────
+  // ── 5. PAYOUT , idempotent for all games ─────────────────
   // The existing handleMatchGameOver in htp-events.js uses a seed-based
   // local color check. We override it with a Firebase idempotent lock so
   // only the WINNER's browser fires sendFromEscrow, for ALL games.
@@ -338,7 +341,7 @@
         } else if (game === 'ck' || game === 'checkers') {
           iWon = (winnerSideOrColor === window._htpMySide);
         } else {
-          // Chess — handled by htp-chess-sync.js, but fall through
+          // Chess , handled by htp-chess-sync.js, but fall through
           var myChessColor = window._htpMyColor || 'white';
           var winStr = (winnerSideOrColor === 'w' || winnerSideOrColor === 1 || winnerSideOrColor === 'white') ? 'white' : 'black';
           iWon = (winStr === myChessColor);
@@ -352,7 +355,7 @@
             var resultRef = fdb().ref('relay/' + matchId + '/result');
             var snap = await resultRef.once('value');
             if (snap.exists()) {
-              console.log('[HTP Games Sync] Result already locked — no duplicate payout');
+              console.log('[HTP Games Sync] Result already locked , no duplicate payout');
               // Still show game over overlay via original
               return orig.call(this, reason, winnerSideOrColor);
             }
@@ -369,11 +372,11 @@
 
         // Only winner fires payout
         if (!iWon && reason !== 'draw' && reason !== 'stalemate') {
-          console.log('[HTP Games Sync] I lost (' + game + ') — skipping payout');
+          console.log('[HTP Games Sync] I lost (' + game + ') , skipping payout');
           return orig.call(this, reason, winnerSideOrColor);
         }
 
-        console.log('[HTP Games Sync] I won (' + game + ') — firing payout');
+        console.log('[HTP Games Sync] I won (' + game + ') , firing payout');
         return orig.call(this, reason, winnerSideOrColor);
       };
 

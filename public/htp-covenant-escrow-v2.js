@@ -1,5 +1,5 @@
 /**
- * htp-covenant-escrow-v2.js  —  High Table Protocol  —  v3.0
+ * htp-covenant-escrow-v2.js  ,  High Table Protocol  ,  v3.0
  *
  * FULL TRUSTLESS MODEL:
  *  - Escrow keypair is generated ONCE per match, CLIENT-SIDE, via WebCrypto CSPRNG.
@@ -7,7 +7,7 @@
  *  - Both players deposit to the same P2SH address derived from the redeem script.
  *  - Settlement is triggered by the oracle attestation written to Firebase.
  *  - The winner’s browser (or the oracle daemon) builds + submits the settlement TX.
- *  - Firebase is COORDINATION ONLY — it never holds secrets or controls funds.
+ *  - Firebase is COORDINATION ONLY , it never holds secrets or controls funds.
  *
  * P2SH REDEEM SCRIPT (KIP-10, TN12 + mainnet compatible):
  *
@@ -166,7 +166,7 @@
       return SDK.addressFromScriptPublicKey(spk, networkId).toString();
     }
 
-    throw new Error('[HTP Escrow] kaspa-wasm too old — upgrade to >= 0.15 for P2SH support');
+    throw new Error('[HTP Escrow] kaspa-wasm too old , upgrade to >= 0.15 for P2SH support');
   }
 
   /* ══ Escrow keypair ════════════════════════════════════════════════════════════ */
@@ -184,7 +184,7 @@
   /* ══ Fee / treasury helpers ══════════════════════════════════════════════════ */
   function getFee() {
     if (W.HTPFee) return W.HTPFee;
-    console.error('[HTP Escrow] HTPFee not loaded — using 2% emergency fallback');
+    console.error('[HTP Escrow] HTPFee not loaded , using 2% emergency fallback');
     var isMain = (W.HTP_NETWORK === 'mainnet');
     return {
       treasuryAddress: function () {
@@ -305,7 +305,7 @@
    * Called by the match creator on the browser.
    *
    * @param {string} matchId
-   * @param {string} creatorAddress  — Kaspa address of the match creator
+   * @param {string} creatorAddress  , Kaspa address of the match creator
    * @returns {object} escrow entry (address, redeemScript, pubkeys, etc.)
    */
   async function generateMatchEscrow(matchId, creatorAddress) {
@@ -322,9 +322,9 @@
     // 2. Creator pubkey from address
     var creatorPubHex = getPubkeyHexFromAddr(creatorAddress);
     if (!creatorPubHex) {
-      // Cannot derive pubkey — use escrow pub as placeholder (cancel path disabled)
+      // Cannot derive pubkey , use escrow pub as placeholder (cancel path disabled)
       creatorPubHex = escrowPubHex;
-      console.warn('[HTP Escrow] Could not derive creator pubkey from address — cancel path disabled');
+      console.warn('[HTP Escrow] Could not derive creator pubkey from address , cancel path disabled');
     }
 
     // 3. Treasury fee SPK
@@ -334,7 +334,7 @@
     var redeemScript = buildRedeemScript(escrowPubHex, creatorPubHex, feeSpkHex);
 
     // 5. Derive P2PK address (standard keypair escrow)
-    // P2SH covenants (KIP-10) are future — use P2PK for reliable TN12 + mainnet compat
+    // P2SH covenants (KIP-10) are future , use P2PK for reliable TN12 + mainnet compat
     var escrowAddress = escrowPriv.toPublicKey().toAddress(networkId).toString();
 
     // 6. Build + store escrow entry
@@ -385,9 +385,9 @@
    * Build a raw settlement transaction from the escrow UTXOs.
    * Correctly injects scriptSig with redeemScript push.
    *
-   * @param {object}  escrow   — escrow entry from getEscrow()
-   * @param {Array}   outputs  — [{address, amount: BigInt}]
-   * @param {string}  branch   — 'settle' | 'cancel'
+   * @param {object}  escrow   , escrow entry from getEscrow()
+   * @param {Array}   outputs  , [{address, amount: BigInt}]
+   * @param {string}  branch   , 'settle' | 'cancel'
    */
   async function buildSettleTx(escrow, outputs, branch) {
     var SDK = W.kaspaSDK;
@@ -396,7 +396,7 @@
     var utxos = await fetchUtxos(escrow.address);
     if (!utxos || !utxos.length) throw new Error('[HTP Escrow] Escrow address has no UTXOs: ' + escrow.address);
 
-    // Normalise UTXO entries across REST and RPC formats (P2PK — version 0)
+    // Normalise UTXO entries across REST and RPC formats (P2PK , version 0)
     var totalSompi = 0n;
     var entries = utxos.map(function (u) {
       var e   = u.utxoEntry || u.entry || u;
@@ -526,10 +526,10 @@
    * - Draw: each player gets (pool/2 - networkFee/2)
    *
    * @param {string}  matchId
-   * @param {string}  winnerAddr  — null if draw
+   * @param {string}  winnerAddr  , null if draw
    * @param {boolean} isDraw
-   * @param {string}  playerAAddr — required for draw
-   * @param {string}  playerBAddr — required for draw
+   * @param {string}  playerAAddr , required for draw
+   * @param {string}  playerBAddr , required for draw
    */
   W.settleMatchPayout = async function (matchId, winnerAddr, isDraw, playerAAddr, playerBAddr) {
     var esc = getEscrow(matchId);
@@ -689,7 +689,7 @@
     OPC:                  OPC,
   };
 
-  console.log('%c[HTP Covenant Escrow v3] Loaded — Full trustless P2SH + KIP-10', 'color:#49e8c2;font-weight:bold');
+  console.log('%c[HTP Covenant Escrow v3] Loaded , Full trustless P2SH + KIP-10', 'color:#49e8c2;font-weight:bold');
   console.log('  KIP-10: OP_TXOUTPUTCOUNT(0xb4)  OP_TXOUTPUTSPK(0xc3)');
   console.log('  ScriptSig: <sig> <branch-selector> <redeemScript>');
   console.log('  Net:', W.HTP_NETWORK || '(pending init)');

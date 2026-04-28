@@ -25,10 +25,10 @@
 
   // ── KASPA BLOCKDAG BACKGROUND ─────────────────────────────────────────
   // Three-layer deep-space DAG:
-  //   Layer 1 — Starfield  : tiny pale dots moving at 20% of DAG speed (parallax)
-  //   Layer 2 — DAG network: organic circles + bezier edges, slow scroll
-  //   Layer 3 — Real blocks: brighter nodes from live TN12 API with real edges
-  // Edge fade done per-node with smoothstep() — no CSS mask needed, zero hard lines.
+  //   Layer 1 , Starfield  : tiny pale dots moving at 20% of DAG speed (parallax)
+  //   Layer 2 , DAG network: organic circles + bezier edges, slow scroll
+  //   Layer 3 , Real blocks: brighter nodes from live TN12 API with real edges
+  // Edge fade done per-node with smoothstep() , no CSS mask needed, zero hard lines.
   var _bgScrollX  = 0;
   var _bgNodes    = [];   // { id, absX, y, alpha, isChain, isReal, parentIds[] }
   var _bgNodeById = {};
@@ -47,12 +47,12 @@
 
   function _bgRand(a, b) { return a + Math.random() * (b - a); }
 
-  // Cubic smoothstep — produces a perfectly seamless S-curve fade, no hard line
+  // Cubic smoothstep , produces a perfectly seamless S-curve fade, no hard line
   function _bgSmooth(x, lo, hi) {
     var t = Math.max(0, Math.min(1, (x - lo) / (hi - lo)));
     return t * t * (3 - 2 * t);
   }
-  // Edge fade: 5% hair-thin zone at each edge — eliminates visible density gradient
+  // Edge fade: 5% hair-thin zone at each edge , eliminates visible density gradient
   function _bgFade(bx, w) {
     var z = w * 0.05;
     return _bgSmooth(bx, 0, z) * _bgSmooth(w - bx, 0, z);
@@ -148,7 +148,7 @@
     newBlocks.forEach(function(b) {
       var scoreFrac = (b.blueScore - minScore) / scoreRange;
       var absX = _bgSpawnNext - span + scoreFrac * span;
-      // Y from hash bits — stable and organic
+      // Y from hash bits , stable and organic
       var hashBits = parseInt(b.hash.substring(0, 6), 16) || 0;
       var y = h * 0.08 + (hashBits % 1000) / 1000 * h * 0.84;
 
@@ -184,10 +184,11 @@
   }
 
   // Write live Kaspa data to Firebase Realtime DB.
-  // Once we observe a permission_denied (anonymous client without write rules),
-  // stop retrying to avoid the 5s log spam. Reads/listens are unaffected.
-  var _fbWriteDisabled = false;
+  // Disabled by default for anonymous clients to avoid permission_denied SDK log spam.
+  // Set window.HTP_FB_STATS_WRITES = true to opt in (requires database rules to allow).
+  var _fbWriteDisabled = (typeof window !== 'undefined' && window.HTP_FB_STATS_WRITES === true) ? false : true;
   var _fbWarnedOnce = false;
+  var _fbWriteFailures = 0;
   function _disableFbWrites(reason) {
     if (_fbWriteDisabled) return;
     _fbWriteDisabled = true;
@@ -197,13 +198,14 @@
     }
   }
   function _safeSet(ref, val) {
+    if (_fbWriteDisabled) return;
     try {
       var p = ref.set(val);
       if (p && typeof p.catch === 'function') p.catch(function(err){
         var msg = (err && (err.code || err.message)) || '';
-        if (/permission_denied|PERMISSION_DENIED/i.test(String(msg))) _disableFbWrites(msg);
+        if (/permission_denied|PERMISSION_DENIED/i.test(String(msg)) || ++_fbWriteFailures > 2) _disableFbWrites(msg);
       });
-    } catch(e) {}
+    } catch(e) { _disableFbWrites('exception'); }
   }
   function _syncFirebase(stats, blocks) {
     if (_fbWriteDisabled) return;
@@ -712,7 +714,7 @@
     // dagCanvas background is fully managed by inline script in index.html
     // This module only handles stats/block polling and optional panel canvases
 
-    // Panel canvases — solid dark background with DAG detail
+    // Panel canvases , solid dark background with DAG detail
     var mainCanvas = document.getElementById('dagCanvasFull') || document.getElementById('blockdag-canvas');
     var miniCanvas = document.getElementById('dagCanvasMini') || document.getElementById('overview-dag-canvas');
 

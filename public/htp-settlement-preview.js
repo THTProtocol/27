@@ -1,7 +1,7 @@
 /**
  * htp-settlement-preview.js
  * Pre-TX confirmation modal: shows winner, fee, treasury before any TX fires.
- * Intercepts settleMatchPayout and settleSkillMatch — wraps them with preview gate.
+ * Intercepts settleMatchPayout and settleSkillMatch , wraps them with preview gate.
  * Depends on: htp-fee-engine.js, htp-covenant-escrow-v2.js, htp-settlement-overlay.js
  */
 (function(W) {
@@ -16,7 +16,7 @@
    */
   function install() {
     if (!W.settleMatchPayout) {
-      console.warn('[HTPSettlementPreview] settleMatchPayout not found — will retry on htp:wallet:connected');
+      console.warn('[HTPSettlementPreview] settleMatchPayout not found , will retry on htp:wallet:connected');
       window.addEventListener('htp:wallet:connected', install, { once: true });
       return;
     }
@@ -46,7 +46,7 @@
 
       return new Promise((resolve) => {
         if (!W.HTPSettlementOverlay) {
-          // No overlay — fire immediately
+          // No overlay , fire immediately
           _originalSettle(matchId, winnerAddr, isDraw, pA, pB).then(resolve);
           return;
         }

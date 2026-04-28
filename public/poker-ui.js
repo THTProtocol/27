@@ -65,10 +65,10 @@ class PokerUI {
 
     let html = '<div class="poker-table">';
 
-    // — Stage badge
+    // , Stage badge
     html += `<div class="poker-stage-badge">${(s.stageName||'').toUpperCase()}</div>`;
 
-    // — Community cards
+    // , Community cards
     html += '<div class="poker-community">';
     html += '<div class="poker-community-label">Community Cards</div>';
     const comm = s.community || [];
@@ -80,7 +80,7 @@ class PokerUI {
     html += `<div class="poker-pot">Pot: <strong>${(pot/1e8).toFixed(2)} KAS</strong></div>`;
     html += '</div>';
 
-    // — Other players
+    // , Other players
     html += '<div class="poker-opponents">';
     for (const p of s.players) {
       if (p.addr === this.myAddr) continue;
@@ -98,7 +98,7 @@ class PokerUI {
     }
     html += '</div>';
 
-    // — My seat
+    // , My seat
     if (me) {
       html += `<div class="poker-my-seat ${isMyTurn ? 'seat-active' : ''}">`;
       html += `<div class="my-seat-top">` +
@@ -110,7 +110,7 @@ class PokerUI {
       html += '</div>';
     }
 
-    // — Action controls
+    // , Action controls
     html += '<div class="poker-actions">';
     if (s.finished) {
       const winner = s.winner === 'draw' ? 'Split Pot' : (s.winner === this.myAddr ? '🏆 You Win!' : s.winner?.slice(-6) + ' Wins');
@@ -137,7 +137,7 @@ class PokerUI {
     }
     html += '</div>';
 
-    // — Move log (last 6 moves)
+    // , Move log (last 6 moves)
     html += '<div class="poker-log">';
     const moves = this.game.moves || [];
     for (const m of moves.slice(-6).reverse()) {

@@ -1,4 +1,4 @@
-// HTP Phase 4 — ZK Proof Pipeline
+// HTP Phase 4 , ZK Proof Pipeline
 // 1. Replace fake setTimeout ZK confirmation with real proof commit to Firebase
 // 2. Wire daemon pollCycle to auto-attest markets using oracle API config
 // 3. Register htpZkOracle verifierUrl from Firebase so ZK path fires
@@ -68,7 +68,7 @@
           });
           console.log('%cHTP ZK: proof committed to Firebase ' + proofHash.substring(0, 16), 'color:#49e8c2');
 
-          // Update UI lifecycle to step 3 (ZK verified) — real, not simulated
+          // Update UI lifecycle to step 3 (ZK verified) , real, not simulated
           if (typeof updateResLifecycle === 'function') updateResLifecycle(3);
           var statusEl = document.getElementById('attestStatus');
           if (statusEl) {
@@ -98,7 +98,7 @@
       }
     };
 
-    console.log('%cHTP ZK: submitAttestation — fake timeout replaced with real proof commit', 'color:#49e8c2;font-weight:bold');
+    console.log('%cHTP ZK: submitAttestation , fake timeout replaced with real proof commit', 'color:#49e8c2;font-weight:bold');
   }, 2000);
 
   // ── 2. PATCH pollCycle TO AUTO-ATTEST ──────────────────────────
@@ -107,8 +107,8 @@
   setTimeout(function () {
     var _origPollCycle = window.pollCycle;
     if (typeof _origPollCycle !== 'function') {
-      // pollCycle is inline — access via OD object
-      console.warn('HTP ZK: pollCycle not on window — daemon auto-attest will use event listener');
+      // pollCycle is inline , access via OD object
+      console.warn('HTP ZK: pollCycle not on window , daemon auto-attest will use event listener');
       return;
     }
 
@@ -211,7 +211,7 @@
       }
     };
 
-    console.log('%cHTP ZK: pollCycle patched — daemon auto-attest active', 'color:#49e8c2;font-weight:bold');
+    console.log('%cHTP ZK: pollCycle patched , daemon auto-attest active', 'color:#49e8c2;font-weight:bold');
   }, 3000);
 
   // ── 3. WIRE htpSettleWithProof INTO handleMatchGameOver ────────

@@ -1,5 +1,5 @@
 /**
- * htp-cancel-flow.js — Skill Game Creator Cancel Flow
+ * htp-cancel-flow.js , Skill Game Creator Cancel Flow
  * Checks HTPFee.skillGameCanCreatorCancel() before firing refund TX.
  * Depends on: htp-fee-engine.js, htp-covenant-escrow-v2.js
  * No Firebase required for the cancel TX itself.
@@ -79,7 +79,7 @@
   /**
    * Mount a cancel button into a container element.
    * @param {string} containerId
-   * @param {object} opts — { matchId, stakeKas, opponentJoined, creatorAddress }
+   * @param {object} opts , { matchId, stakeKas, opponentJoined, creatorAddress }
    */
   function mount(containerId, opts) {
     injectStyles();
@@ -181,7 +181,7 @@
           if (btn) { btn.textContent = '✓ Cancelled'; btn.style.opacity = '0.5'; }
           window.dispatchEvent(new CustomEvent('htp:match:cancelled', { detail: { matchId, txId } }));
         } else {
-          setStatus(matchId, 'err', 'Refund failed — check console');
+          setStatus(matchId, 'err', 'Refund failed , check console');
           if (btn) { btn.classList.remove('loading'); btn.disabled = false; btn.textContent = '✕ Cancel Game'; }
         }
       } catch(e) {

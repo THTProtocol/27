@@ -1,4 +1,4 @@
-// HTP Oracle Sync v1 — wires all oracle UI to live data
+// HTP Oracle Sync v1 , wires all oracle UI to live data
 (function() {
 'use strict';
 
@@ -129,5 +129,5 @@ setTimeout(function() {
   }
 }, 3000);
 
-console.log('[HTP Oracle Sync v1] Loaded — stats, mode, attestation panel wired');
+console.log('[HTP Oracle Sync v1] Loaded , stats, mode, attestation panel wired');
 })();

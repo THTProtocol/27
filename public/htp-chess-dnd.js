@@ -1,5 +1,5 @@
 /**
- * htp-chess-dnd.js — HTP Chess Drag & Drop v2
+ * htp-chess-dnd.js , HTP Chess Drag & Drop v2
  *
  * Clean drag and drop for chess pieces. Handles both mouse and touch events.
  * Works with the #chess-board container rendered by htp-chess-ui.js.
