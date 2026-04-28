@@ -256,8 +256,16 @@ writeWalletStat: function(address, matchId, record) {
     });
   }
 
-  loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js', function() {
-    loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js', initFirebase);
-  });
+  // Only load gstatic compat scripts if firebase was not already loaded locally.
+  // The local <script src="firebase-app-compat.js"></script> tag in index.html already
+  // defines window.firebase; loading the gstatic copy a second time triggers the
+  // "Firebase is already defined in the global scope" warning.
+  if (typeof firebase !== 'undefined' && firebase.database) {
+    initFirebase();
+  } else {
+    loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js', function() {
+      loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js', initFirebase);
+    });
+  }
 
 })();

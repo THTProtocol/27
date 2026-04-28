@@ -408,12 +408,16 @@
   }
 
   // ── 7. INSTALL ───────────────────────────────────────────
+  var _installLogged = false;
   function install() {
     patchConnect4();
     patchCheckers();
     patchGameOver();
     patchRelayMoves();
-    console.log('[HTP Games Sync v1] Loaded — C4 ✓ | Checkers ✓ | Firebase clock ✓ | idempotent payout ✓');
+    if (!_installLogged) {
+      _installLogged = true;
+      console.log('[HTP Games Sync v1] Loaded, C4, Checkers, Firebase clock, idempotent payout');
+    }
   }
 
   if (document.readyState === 'loading') {

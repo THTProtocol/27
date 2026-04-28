@@ -14912,7 +14912,31 @@ async function __wbg_init(module_or_path) {
 // Auto-initialize WASM and export SDK to window
 (async function() {
     try {
-        await __wbg_init({ module_or_path: '/kaspa_bg.wasm' });
+        // Probe wasm asset first. If it 404s or returns HTML (SPA fallback), skip init silently
+        // and let the lite-mode loader kick in. Avoids the magic-word/instantiate error.
+        var wasmUrl = (window.HTP_WASM_URL || '/kaspa_bg.wasm');
+        try {
+            var head = await fetch(wasmUrl, { method: 'GET', cache: 'no-store' });
+            var ct = (head.headers.get('content-type') || '').toLowerCase();
+            if (!head.ok || ct.indexOf('application/wasm') === -1) {
+                // Try peeking magic bytes; if not 0x00 0x61 0x73 0x6d, abort cleanly.
+                var buf = new Uint8Array(await head.arrayBuffer());
+                var ok = buf.length >= 4 && buf[0] === 0x00 && buf[1] === 0x61 && buf[2] === 0x73 && buf[3] === 0x6d;
+                if (!ok) {
+                    console.warn('[HTP] Kaspa WASM binary unavailable at ' + wasmUrl + '; running in lite mode.');
+                    window.wasmLoadError = new Error('wasm binary unavailable');
+                    return;
+                }
+                // Has correct magic bytes; instantiate from buffer to avoid streaming MIME issues.
+                await __wbg_init({ module_or_path: buf });
+            } else {
+                await __wbg_init({ module_or_path: wasmUrl });
+            }
+        } catch (probeErr) {
+            console.warn('[HTP] Kaspa WASM probe failed:', probeErr && probeErr.message ? probeErr.message : probeErr);
+            window.wasmLoadError = probeErr;
+            return;
+        }
 
         // Export IIFE-scoped classes/functions to window directly (no eval)
         window.kaspaSDK = window.kaspaSDK || {};

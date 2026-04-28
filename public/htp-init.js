@@ -23,22 +23,40 @@
    * 1.  NETWORK DETECTION  (runs synchronously, before anything else)
    * ═══════════════════════════════════════════════════════════════════════════ */
 
+  // Toccata TN12 resolver abstraction.
+  // When Toccata mainnet activates (after audits/rehearsal), flip useResolver=true on toccata
+  // and update resolverAlias / endpoints. UI feature flags (covenants, ZK) can probe HTP_TOCCATA_LIVE.
+  var TOCCATA_LIVE = false; // mainnet covenants not yet live per kaspa.org/toccata-hard-fork-kaspa-covenants
   var NETWORK_MAP = {
     mainnet: {
       prefix:      'kaspa',
       networkId:   'mainnet',
-      resolverAlias: 'mainnet',  // Use Kaspa Resolver for load-balancing
+      resolverAlias: 'mainnet',
       useResolver: true,
       explorerTx:  'https://explorer.kaspa.org/txs/',
+      covenants:   TOCCATA_LIVE, // Silverscript / KIP-16/17/20/21 only when activated on mainnet
     },
     tn12: {
       prefix:      'kaspatest',
       networkId:   'testnet-12',
-      resolverAlias: 'tn12',  // Use Kaspa Resolver for TN12 load-balancing
+      resolverAlias: 'tn12',
       useResolver: true,
+      // Public TN12 wRPC fallbacks when Resolver is unreachable
+      directWrpc:  ['wss://tn12.kaspa.stream/wrpc/borsh','wss://tn12-1.kaspa.stream/wrpc/borsh'],
       explorerTx:  'https://tn12.kaspa.stream/txs/',
+      covenants:   true, // Toccata feature freeze branch on TN12
+    },
+    // Forward-compat alias: post-Toccata mainnet. One-flag flip when the hard fork goes live.
+    toccata: {
+      prefix:      'kaspa',
+      networkId:   'mainnet',
+      resolverAlias: 'mainnet',
+      useResolver: true,
+      explorerTx:  'https://explorer.kaspa.org/txs/',
+      covenants:   TOCCATA_LIVE,
     },
   };
+  window.HTP_TOCCATA_LIVE = TOCCATA_LIVE;
 
   function detectNetwork() {
     // Priority order: URL param → localStorage override → default (tn12 for now)
@@ -160,30 +178,35 @@
     document.body.appendChild(modal);
   }
 
+  function _showLiteBanner() {
+    if (document.getElementById('htp-wasm-warning')) return;
+    var banner = document.createElement('div');
+    banner.id = 'htp-wasm-warning';
+    banner.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:9000;background:#1a2235;color:#cbd5e1;border:1px solid rgba(79,152,163,0.35);border-radius:8px;padding:8px 14px;font:500 12px/1.4 Inter,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.25);max-width:90vw';
+    banner.innerHTML = '<span style="color:#4f98a3">Lite Mode</span> active. Kaspa WASM SDK unavailable, on-chain actions are disabled. <button id="htp-wasm-retry" style="margin-left:10px;background:#4f98a3;color:#fff;border:0;border-radius:4px;padding:3px 10px;cursor:pointer;font-weight:600">Retry</button>';
+    document.body.appendChild(banner);
+    var btn = document.getElementById('htp-wasm-retry');
+    if (btn) btn.onclick = function () { window.location.reload(); };
+  }
+
   function _retryWasmLoad() {
-    if (_wasmRetried) {
-      _showWasmError(
-        'Kaspa WASM SDK failed to initialize after retry. ' +
-        'Verify you can reach the network and /kaspa_bg.wasm is accessible. ' +
-        'If this persists, restart your browser and clear cache.'
-      );
+    if (window.wasmLoadError) {
+      // Inline SDK already reported an unrecoverable failure (missing binary, wrong MIME).
+      // Surface lite-mode banner instead of a blocking modal; user has no node requirement.
+      _showLiteBanner();
       window.dispatchEvent(new CustomEvent('htp:wasm:fatal'));
       return;
     }
-    
-    _wasmRetried = true;
-    console.warn('[HTP Init] WASM retry attempt — reloading module');
-    // Attempt to reload kaspaSDK initialization
-    if (window.location.href.includes('localhost') || window.location.href.includes('127.0.0.1')) {
-      console.log('[HTP Init] Development mode detected — waiting another 20s');
-      setTimeout(_retryWasmLoad, 20000);
-    } else {
-      _showWasmError(
-        'Kaspa WASM SDK failed to load. The blockchain integration is unavailable. ' +
-        'Please try again in a moment or check your internet connection.'
-      );
+    if (_wasmRetried) {
+      _showLiteBanner();
       window.dispatchEvent(new CustomEvent('htp:wasm:fatal'));
+      return;
     }
+    _wasmRetried = true;
+    console.warn('[HTP Init] WASM retry attempt');
+    setTimeout(function () {
+      if (!_wasmReadyFired) _showLiteBanner();
+    }, 8000);
   }
 
   // Primary timeout: 30 seconds

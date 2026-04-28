@@ -695,13 +695,14 @@
   // BOOT — install patches once dependencies are ready
   // ─────────────────────────────────────────────────────────────────────────
 
+  var _bootLogged = false;
   function boot() {
     patchJoinAmount();
     patchSendTxAmount();
     patchCreateForCreatorBoard();
     patchJoinForBoard();
     patchRelayHandler();
-    LOG('All patches installed');
+    if (!_bootLogged) { _bootLogged = true; LOG('All patches installed'); }
   }
 
   let attempts = 0;

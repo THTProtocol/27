@@ -388,12 +388,16 @@
   }
 
   // ── 7. INSTALL ───────────────────────────────────────────
+  var _installLogged = false;
   function install() {
     patchPlayMatch();
     patchJoinLobbyMatch();
     patchHandleMatchGameOver();
     hookRelaySend();
-    console.log('[HTP Sync v1] Loaded — orientation ✓ | Firebase clock ✓ | color assign ✓ | idempotent payout ✓');
+    if (!_installLogged) {
+      _installLogged = true;
+      console.log('[HTP Sync v1] Loaded, orientation, Firebase clock, color assign, idempotent payout');
+    }
   }
 
   // Wait for DOM + window functions to be ready
