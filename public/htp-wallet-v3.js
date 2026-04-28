@@ -371,7 +371,7 @@
     html += '<h3 style="font-size:14px;font-weight:600;margin:0 0 12px">Network</h3>';
     html += '<div style="display:flex;gap:8px">';
     html += '<button id="network-tn12" class="chip chip-a" onclick="htpWalletV3.setNetwork(\'tn12\')">TN12 Testnet</button>';
-    html += '<button id="network-mainnet" class="chip" onclick="htpWalletV3.setNetwork(\'mainnet\')" style="opacity:0.5;cursor:not-allowed" title="Coming Q2 2026">Mainnet (Q2 2026)</button>';
+    html += '<button id="network-mainnet" class="chip" onclick="htpWalletV3.setNetwork(\'mainnet\')" title="Switch to Kaspa mainnet">Mainnet</button>';
     html += '</div>';
     html += '</div>';
 
@@ -413,24 +413,34 @@
     },
 
     async connectWallet(type) {
+      // Map wallet name to global provider object + install URL
+      var WALLETS = {
+        'KasWare':  { provider: window.kasware,  install: 'https://kasware.xyz' },
+        'Kastle':   { provider: window.kastle,   install: 'https://kastle.cc' },
+        'Kasanova': { provider: window.kasanova, install: 'https://kasanova.app' },
+        'Kaspium':  { provider: window.kaspium,  install: 'https://kaspium.io' },
+        'KaspaCom': { provider: window.kaspacom, install: 'https://wallet.kaspa.com' },
+        'DEX.cc':   { provider: window.dexcc,    install: 'https://dex.cc' }
+      };
+      var entry = WALLETS[type];
+      if (!entry || !entry.provider) {
+        var msg = type + ' extension not detected. Install it from ' + (entry ? entry.install : 'the wallet vendor') +
+                  ', then reload. You can also use Mnemonic or Hex Private Key import below.';
+        console.warn('[HTP Wallet V3]', msg);
+        if (window.showToast) window.showToast(msg, 'warn');
+        else alert(msg);
+        return false;
+      }
       try {
         var address = null;
-
-        if (type === 'KasWare' && window.kasware) {
-          var accounts = await window.kasware.requestAccounts();
+        var p = entry.provider;
+        if (typeof p.requestAccounts === 'function') {
+          var accounts = await p.requestAccounts();
           address = accounts && accounts[0];
-        } else if (type === 'Kastle' && window.kastle) {
-          address = await window.kastle.connect();
-        } else if (type === 'Kasanova' && window.kasanova) {
-          address = await window.kasanova.connect();
-        } else if (type === 'Kaspium' && window.kaspium) {
-          address = await window.kaspium.connect();
-        } else if (type === 'KaspaCom' && window.kaspacom) {
-          address = await window.kaspacom.connect();
-        } else if (type === 'DEX.cc' && window.dexcc) {
-          address = await window.dexcc.connect();
+        } else if (typeof p.connect === 'function') {
+          var r = await p.connect();
+          address = (typeof r === 'string') ? r : (r && r.address);
         }
-
         if (address) {
           window.connectedAddress = address;
           window.htpAddress = address;
@@ -439,12 +449,12 @@
           window.dispatchEvent(new CustomEvent('htp:wallet:connected', { detail: { address: address } }));
           console.log('[HTP Wallet V3] Connected:', type, address);
           return true;
-        } else {
-          console.warn('[HTP Wallet V3]', type, 'not available or connection denied');
-          return false;
         }
+        if (window.showToast) window.showToast(type + ' connection rejected or returned no account', 'error');
+        return false;
       } catch(e) {
         console.error('[HTP Wallet V3] Connection error:', e);
+        if (window.showToast) window.showToast(type + ' connect error: ' + (e.message || e), 'error');
         return false;
       }
     },
@@ -512,13 +522,21 @@
     setManualAddress() {
       var addr = document.getElementById('manual-address-input').value.trim();
       if (!addr) {
-        window.showToast('Enter an address', 'error');
+        if (window.showToast) window.showToast('Enter an address', 'error');
+        return;
+      }
+      // Bech32 envelope check: kaspa: (mainnet) or kaspatest: (TN10/TN11/TN12)
+      var KASPA_RE = /^(kaspa|kaspatest):[0-9a-z]{55,90}$/;
+      if (!KASPA_RE.test(addr)) {
+        if (window.showToast) window.showToast('Invalid address. Must start with kaspa: or kaspatest:', 'error');
         return;
       }
       window.connectedAddress = addr;
       window.htpAddress = addr;
+      try { localStorage.setItem('htpPlayerId', addr); } catch(e) {}
       this.updateUI();
       window.dispatchEvent(new CustomEvent('htp:wallet:connected', { detail: { address: addr } }));
+      if (window.showToast) window.showToast('Address registered (read-only): ' + formatAddress(addr), 'success');
     },
 
     disconnect() {
@@ -531,7 +549,7 @@
     },
 
     setNetwork(net) {
-      if (net === 'mainnet') return; // Disable until Q2 2026
+      if (net !== 'mainnet' && net !== 'tn12') return;
       try { localStorage.setItem('htp_network', net); } catch(e) {}
       window.HTP_NETWORK = net;
       window.location.reload();

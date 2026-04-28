@@ -55,8 +55,12 @@ function fixResolver(){
   };
 }
 
-// 2. BIG SKILL GAME CARDS
+// 2. BIG SKILL GAME CARDS - DISABLED (v8.1): main #v-skill panel now hosts all 6 games.
+// Kept as a no-op so existing references don't break. Use showCreateModal() directly
+// from the main panel cards which dispatch via createMatchWithLobby/sgGamePicker.
 function injectSkillSection(){
+  return;
+  // legacy code path retained below for reference but unreachable
   if($('#skill-games-section'))return;
   var sec=document.createElement('section');
   sec.id='skill-games-section';
