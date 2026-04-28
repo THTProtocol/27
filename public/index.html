@@ -295,7 +295,7 @@
             border-radius: 50%;
             background: var(--accent);
             box-shadow: 0 0 8px var(--accent);
-            animation: pulse 2s ease-in-out infinite
+            
         }
 
         @keyframes pulse {
@@ -551,7 +551,7 @@
             height: 8px;
             border-radius: 50%;
             background: var(--accent);
-            animation: pulse 2s ease-in-out infinite;
+            ;
             box-shadow: 0 0 10px var(--accent)
         }
         .hero h1 {
@@ -4916,7 +4916,7 @@ event MyMarket {
                         <div class="sgv2-lobby-hdr" style="margin-bottom:14px">
                             <span style="display:flex;align-items:center;gap:8px">
                                 <span style="font-size:15px;font-weight:800;color:#e8e8e8;text-transform:uppercase;letter-spacing:.04em">Open Matches</span>
-                                <span style="width:8px;height:8px;border-radius:50%;background:#49e8c2;box-shadow:0 0 8px #49e8c2;animation:pulse 2s infinite"></span>
+                                <span style="width:8px;height:8px;border-radius:50%;background:#49e8c2;box-shadow:0 0 8px #49e8c2;"></span>
                             </span>
                             <span class="sgv2-lobby-badge" id="lobbyCount" style="font-size:11px;padding:4px 12px;border-radius:20px">0 matches</span>
                         </div>
@@ -6957,7 +6957,7 @@ event MyMarket {
             if (window.kaspaWasmReady && window.kaspaWasmReady()) {
                 if ($('wasmStatus')) $('wasmStatus').innerHTML = '<span style="color:var(--accent)">-- Kaspa SDK loaded</span>';
             } else {
-                if ($('wasmStatus')) $('wasmStatus').innerHTML = '<span style="color:#f59e0b;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;border:1.5px solid #f59e0b;display:inline-block;animation:pulse 2s infinite"></span> Initializing Kaspa SDK...</span>';
+                if ($('wasmStatus')) $('wasmStatus').innerHTML = '<span style="color:#f59e0b;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;border:1.5px solid #f59e0b;display:inline-block;"></span> Initializing Kaspa SDK...</span>';
             }
 
         }
@@ -12465,7 +12465,7 @@ function renderLobby() {
         html += '</div>';
         html += '<div style="text-align:right;flex-shrink:0">';
         if (isMine) {
-            html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><div style="width:6px;height:6px;border-radius:50%;background:#f59e0b;animation:pulse 2s infinite"></div><span style="font-size:11px;color:#f59e0b">Waiting...</span></div>';
+            html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><div style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></div><span style="font-size:11px;color:#f59e0b">Waiting...</span></div>';
             html += '<button class="chess-btn chess-btn-danger" style="font-size:10px;padding:4px 14px" onclick="event.stopPropagation();cancelLobbyMatch(\'' + m.id + '\')">Cancel</button>';
         } else {
             html += '<button class="chess-btn" style="padding:10px 24px;font-size:13px;font-weight:700" onclick="event.stopPropagation();joinLobbyMatch(\'' + m.id + '\')">Join</button>';
@@ -12824,7 +12824,7 @@ function showShareLink(matchId, url) {
     var wd = document.createElement("div");
     wd.style.cssText = "display:flex;align-items:center;gap:6px;justify-content:center;margin-bottom:20px";
     var dot = document.createElement("div");
-    dot.style.cssText = "width:6px;height:6px;border-radius:50%;background:#f59e0b;animation:pulse 2s infinite";
+    dot.style.cssText = "width:6px;height:6px;border-radius:50%;background:#f59e0b;";
     var wt = document.createElement("span");
     wt.style.cssText = "font-size:12px;color:#f59e0b";
     wt.textContent = "Waiting for opponent...";
