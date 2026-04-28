@@ -424,11 +424,13 @@
       };
       var entry = WALLETS[type];
       if (!entry || !entry.provider) {
-        var msg = type + ' extension not detected. Install it from ' + (entry ? entry.install : 'the wallet vendor') +
-                  ', then reload. You can also use Mnemonic or Hex Private Key import below.';
-        console.warn('[HTP Wallet V3]', msg);
-        if (window.showToast) window.showToast(msg, 'warn');
-        else alert(msg);
+        var shortMsg = type + ' extension not detected. Install the wallet or use mnemonic/key import.';
+        var longMsg  = type + ' extension not detected. Install it from ' + (entry ? entry.install : 'the wallet vendor') +
+                       ', then reload. You can also use mnemonic or hex private key import below.';
+        console.warn('[HTP Wallet V3]', longMsg);
+        if (window.showToast) window.showToast(shortMsg, 'error');
+        else if (typeof showToast === 'function') showToast(shortMsg, 'error');
+        else alert(longMsg);
         return false;
       }
       try {

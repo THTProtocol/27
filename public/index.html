@@ -7625,7 +7625,21 @@ event MyMarket {
             statusEl.innerHTML = '<span style="color:var(--muted)">Detecting ' + name + '...</span>';
             const provider = await waitForProvider(name);
             if (!provider) {
-                statusEl.innerHTML = '<span style="color:#ef4444">' + name + ' not found. Install it, unlock it, then retry.</span>';
+                var INSTALL_URLS = {
+                    'KasWare':'https://kasware.xyz', 'Kastle':'https://kastle.cc',
+                    'Kasanova':'https://kasanova.app', 'Kaspium':'https://kaspium.io',
+                    'KaspaCom':'https://wallet.kaspa.com', 'DEX.cc':'https://dex.cc'
+                };
+                var url = INSTALL_URLS[name] || '';
+                statusEl.innerHTML =
+                    '<div style="color:#ef4444;font-weight:600;margin-bottom:6px">' + name + ' extension not detected.</div>' +
+                    '<div style="color:var(--text);font-size:12px;line-height:1.55">' +
+                    'Install the wallet' + (url ? ' from <a href="' + url + '" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">' + url.replace(/^https?:\/\//,'') + '</a>' : '') +
+                    ', unlock it, then retry. You can also use mnemonic or hex private key import below.' +
+                    '</div>';
+                if (typeof showToast === 'function') {
+                    showToast(name + ' extension not detected. Install the wallet or use mnemonic/key import.', 'error');
+                }
                 return;
             }
 
