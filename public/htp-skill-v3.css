@@ -49,6 +49,18 @@
 /* Stop any bottom-corner LIVE badge inside DAG iframe from flashing too. */
 @keyframes dotPulse{ 0%,100%{opacity:1} 50%{opacity:1} } /* freeze legacy pulse */
 
+/* ---------- BlockDAG iframe: hide kgi.kaspad.net right-edge circular control ----------
+ * The embedded visualizer renders a circular pan/zoom control near its right edge;
+ * inside our rounded card it lands on the border and reads as clipped. Extend the
+ * iframe ~44px past the right edge so the parent card's overflow:hidden cleanly
+ * hides that control. The DAG canvas continues to render full-width — the right
+ * 44px of the iframe is mostly the control plus empty viewport. */
+iframe[src*="kgi.kaspad.net"]{
+  width: calc(100% + 44px) !important;
+  right: -44px !important;
+  left: auto !important;
+}
+
 /* ---------- Skill Games V3 panel ---------- */
 #sgv3-panel{
   --neon: #49e8c2;
