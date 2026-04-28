@@ -349,7 +349,7 @@
     // Mnemonic import section (expandable)
     html += '<div class="w-sec" style="border-top:1px solid var(--border);padding-top:24px">';
     html += '<button onclick="htpWalletV3.toggleMnemonicPanel()" style="width:100%;padding:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;text-align:left;display:flex;justify-content:space-between;align-items:center">';
-    html += '<span>🔐 Import with Mnemonic (12 or 24 words)</span>';
+    html += '<span>Import with Mnemonic (12 or 24 words)</span>';
     html += '<span id="mnemonic-toggle-arrow">▼</span>';
     html += '</button>';
 

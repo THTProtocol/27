@@ -126,7 +126,7 @@ class WalletUI {
       btn.onclick = () => this._showWalletMenu();
     } else {
       btn.className = 'wallet-btn';
-      btn.innerHTML = '🔌 Connect Wallet';
+      btn.innerHTML = 'Connect Wallet';
       btn.onclick = () => this.connect();
     }
     const dot = document.getElementById('net-dot');
@@ -145,10 +145,10 @@ class WalletUI {
     menu.innerHTML =
       '<div style="padding:8px;font-size:11px;color:var(--text-muted);font-family:var(--font-mono);word-break:break-all">' + this.address + '</div>' +
       '<div style="border-top:1px solid var(--border);margin:4px 0"></div>' +
-      '<div class="link" style="padding:8px;font-size:13px" onclick="navigator.clipboard.writeText(\'' + this.address + '\');showToast(\'Address copied\',\'success\');document.getElementById(\'wallet-menu\').remove()">📋 Copy Address</div>' +
-      '<div class="link" style="padding:8px;font-size:13px" onclick="app.wallet.refreshBalance();document.getElementById(\'wallet-menu\').remove()">🔄 Refresh Balance</div>' +
+      '<div class="link" style="padding:8px;font-size:13px" onclick="navigator.clipboard.writeText(\'' + this.address + '\');showToast(\'Address copied\',\'success\');document.getElementById(\'wallet-menu\').remove()">Copy Address</div>' +
+      '<div class="link" style="padding:8px;font-size:13px" onclick="app.wallet.refreshBalance();document.getElementById(\'wallet-menu\').remove()">Refresh Balance</div>' +
       '<div style="border-top:1px solid var(--border);margin:4px 0"></div>' +
-      '<div class="link" style="padding:8px;font-size:13px;color:var(--red)" onclick="app.wallet.disconnect();document.getElementById(\'wallet-menu\').remove()">⏏ Disconnect</div>';
+      '<div class="link" style="padding:8px;font-size:13px;color:var(--red)" onclick="app.wallet.disconnect();document.getElementById(\'wallet-menu\').remove()">Disconnect</div>';
     document.body.appendChild(menu);
     setTimeout(() => {
       const close = (e) => { if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', close); } };
@@ -166,12 +166,12 @@ class WalletUI {
     overlay.classList.add('active');
     modal.classList.add('active');
     modal.innerHTML =
-      '<div class="modal-header"><h2>🔌 KasWare Wallet Required</h2>' +
+      '<div class="modal-header"><h2>KasWare Wallet Required</h2>' +
       '<button class="modal-close" onclick="closeModal()">&times;</button></div>' +
       '<p style="color:var(--text-secondary);line-height:1.7;margin-bottom:16px">' +
       'High Table requires the KasWare browser extension to sign transactions on Kaspa.</p>' +
       '<a href="https://kasware.xyz" target="_blank" class="btn btn-primary btn-lg" style="text-decoration:none">' +
-      '⬇ Install KasWare Wallet</a>' +
+      'Install KasWare Wallet</a>' +
       '<p style="color:var(--text-muted);font-size:12px;margin-top:12px">' +
       'After installing, refresh this page and click Connect Wallet.</p>';
   }

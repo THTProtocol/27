@@ -4000,6 +4000,7 @@ html,body{background:#010806!important;}
 .sh{background:transparent!important;}
 </style>
 <link rel="stylesheet" href="htp-skill-v3.css">
+<link rel="stylesheet" href="htp-buttons-v2.css">
 </head>
 <body>
     <div class="shell">
@@ -5147,7 +5148,7 @@ event MyMarket {
                 <!-- Create Match Form -->
                 <div class="sgv2-mform" style="margin:0 auto;max-width:1200px;padding-left:24px;padding-right:24px">
                     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative;z-index:1">
-                        <h3 style="font-size:22px">⚔ Create a Challenge</h3>
+                        <h3 style="font-size:22px">Create a Challenge</h3>
                         <div style="font-size:10px;color:var(--accent);background:rgba(73,232,194,.08);border:1px solid rgba(73,232,194,.25);border-radius:20px;padding:4px 12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:inline-flex;align-items:center;gap:5px">
                             <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#49e8c2;box-shadow:0 0 6px #49e8c2"></span>
                             On-Chain Escrow
@@ -5159,11 +5160,11 @@ event MyMarket {
                     <select id="sgGame" onchange="updGameOpts()" style="display:none">
                         <option value="" disabled selected>Select a game…</option>
                         <option value="chess" data-times="1|0,1|1,2|1,3|0,3|2,5|0,5|3,5|5,10|0,10|5,15|10,20|0,30|0,45|45,60|0,60|30,90|30" data-series="1,3,5,7,9,11">♘ Chess</option>
-                        <option value="connect4" data-times="1|0,2|0,3|0,5|0,10|0" data-series="1,3,5,7">🔴 Connect 4</option>
-                        <option value="checkers" data-times="3|0,5|0,5|3,10|0,10|5,15|0" data-series="1,3,5,7">⚪ Checkers</option>
+                        <option value="connect4" data-times="1|0,2|0,3|0,5|0,10|0" data-series="1,3,5,7">Connect 4</option>
+                        <option value="checkers" data-times="3|0,5|0,5|3,10|0,10|5,15|0" data-series="1,3,5,7">Checkers</option>
                         <option value="tictactoe" data-times="0|5,0|10,0|15,0|30,1|0,2|0,3|0,5|0" data-series="1,3,5,7,9">✕ Tic-Tac-Toe</option>
-                        <option value="poker" data-times="5|0,10|0,15|0" data-series="1,3,5">🂡 Texas Hold'em</option>
-                        <option value="blackjack" data-times="1|0,3|0,5|0" data-series="1,3,5">🂠 Blackjack</option>
+                        <option value="poker" data-times="5|0,10|0,15|0" data-series="1,3,5">Texas Hold'em</option>
+                        <option value="blackjack" data-times="1|0,3|0,5|0" data-series="1,3,5">Blackjack</option>
                     </select>
 
                     <div style="position:relative;z-index:1;margin-bottom:6px">
@@ -5176,11 +5177,11 @@ event MyMarket {
                             <span class="sg-lbl" style="font-size:11px">Chess</span>
                         </button>
                         <button type="button" class="sg-gbtn" data-game="connect4" style="padding:20px 10px 16px;gap:10px">
-                            <span class="sg-ico" style="font-size:40px">🔴</span>
+                            <span class="sg-ico" style="font-size:40px"></span>
                             <span class="sg-lbl" style="font-size:11px">Connect 4</span>
                         </button>
                         <button type="button" class="sg-gbtn" data-game="checkers" style="padding:20px 10px 16px;gap:10px">
-                            <span class="sg-ico" style="font-size:40px">⚪</span>
+                            <span class="sg-ico" style="font-size:40px"></span>
                             <span class="sg-lbl" style="font-size:11px">Checkers</span>
                         </button>
                         <button type="button" class="sg-gbtn" data-game="tictactoe" style="padding:20px 10px 16px;gap:10px">
@@ -5788,7 +5789,7 @@ event MyMarket {
                         <div id="pTabPositions">
                             <div id="positionsList" style="display:grid;gap:10px">
                                 <div style="border:1px dashed rgba(73,232,194,0.12);border-radius:12px;padding:28px;text-align:center">
-                                    <div style="font-size:24px;margin-bottom:10px;opacity:.4">📊</div>
+                                    <div style="font-size:24px;margin-bottom:10px;opacity:.4"></div>
                                     <p style="margin:0;font-size:13px;color:var(--dim)">No active event positions.</p>
                                     <a href="javascript:void(0)" onclick="go('markets');return false"
                                         style="display:inline-block;margin-top:12px;font-size:12px;font-weight:600;color:#49e8c2;text-decoration:none;padding:6px 16px;border:1px solid rgba(73,232,194,0.25);border-radius:8px">
@@ -9506,7 +9507,7 @@ function go(v) {
                 return;
             }
 
-            var gameEmoji = { chess:'♟', connect4:'🔴', checkers:'⚪', tictactoe:'✕' };
+            var gameEmoji = { chess:'', connect4:'', checkers:'', tictactoe:'✕' };
             listEl.innerHTML = mine.map(function(e, i) {
                 var kas   = (parseInt(e.amount || e.escrowAmount || 0) / 1e8).toFixed(4);
                 var isWon = e.status === 'won';
@@ -9515,7 +9516,7 @@ function go(v) {
                 var statusBg  = isWon ? 'rgba(52,211,153,0.1)' : isCancelled ? 'rgba(245,158,11,0.1)' : 'rgba(99,102,241,0.1)';
                 var statusClr = isWon ? '#34d399' : isCancelled ? '#f59e0b' : '#818cf8';
                 var canClaim  = (isWon || isCancelled) && (e.escrowTxid || e.fundTxid);
-                var emoji     = gameEmoji[e.game] || '⚖';
+                var emoji     = gameEmoji[e.game] || '';
                 var shortId   = (e.matchId || '--').substring(0,20) + '...';
                 return '<div style="background:rgba(7,14,27,0.7);border:1px solid ' + (canClaim ? 'rgba(73,232,194,0.25)' : 'rgba(73,232,194,0.08)') + ';border-radius:14px;padding:16px 18px">' +
                     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
@@ -20060,7 +20061,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
    HTP MEGAPATCH v6
    Fixes:
      1. Cross-browser lobby sync (null guard + retry)
-     2. Game name display: "CH" -> "Chess ♟️", "CK" -> "Checkers ⚪", "C4" -> "Connect 4 "
+     2. Game name display: "CH" -> "Chess ", "CK" -> "Checkers ", "C4" -> "Connect 4 "
      3. Per-wallet portfolio (history + rewards keyed by wallet address)
      4. Lobby card UI refresh with proper names + emoji
      5. Firebase lobby listener hardened

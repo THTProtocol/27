@@ -34,7 +34,7 @@
         gap: 8px;
       }
       .htp-maximizer-panel h3::before {
-        content: '⚡';
+        content: '';
       }
       .htp-bet-input-row {
         display: flex;
@@ -311,7 +311,7 @@
         statusEl.textContent = '✓ ' + check.reason;
       } else {
         statusEl.className = 'htp-maximizer-status blocked';
-        statusEl.textContent = '✗ ' + check.reason;
+        statusEl.textContent = ' ' + check.reason;
       }
 
       // Payout preview
