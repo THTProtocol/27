@@ -4651,7 +4651,14 @@ html,body{background:#010806!important;}
                                 </div>
                             </div>
                             <div class="fg"><label>Expected Volume (KAS)</label><input type="number" id="cExpVol"
-                                    placeholder="e.g. 50000" value="50000" oninput="updPrev()" /></div>
+                                    placeholder="e.g. 50000" value="50000" oninput="updPrev()" />
+                                <div style="margin-top:6px;font-size:11px;color:var(--dim);line-height:1.5">
+                                    <strong>Maximizer cap = max(expected, actual) × cap%.</strong>
+                                    Soft floor only — once actual volume exceeds expected, the cap scales with it.
+                                    Example: 10% cap, 100K expected → 10K maximizer pool. When actual reaches 200K, cap auto-grows to 20K.
+                                    Set cap to 0% to fully disable maximizers.
+                                </div>
+                            </div>
                             <div class="fg"><label>Market Image</label>
                                 <div class="img-up">Click or drag to upload<input type="file" id="cImg" accept="image/*"
                                         onchange="handleImg(event)" /><img id="imgPrev"
@@ -4858,8 +4865,9 @@ event MyMarket {
             <!-- ••• SKILL ••• -->
             <section class="view" id="v-skill">
                 <style>
-                .sgv2-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:28px}
-                @media(max-width:900px){.sgv2-grid{grid-template-columns:1fr}}
+                .sgv2-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:28px}
+                @media(max-width:1100px){.sgv2-grid{grid-template-columns:repeat(2,1fr)}}
+                @media(max-width:700px){.sgv2-grid{grid-template-columns:1fr}}
                 .sgv2-card{background:rgba(6,12,22,0.78);border:1px solid rgba(73,232,194,0.1);border-radius:16px;overflow:hidden;cursor:pointer;transition:all .25s ease;position:relative;display:flex;flex-direction:column;backdrop-filter:blur(8px)}
                 .sgv2-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 10%,rgba(73,232,194,0.25) 50%,transparent 90%)}
                 .sgv2-card:hover{border-color:rgba(73,232,194,0.45);transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,0.5),0 0 30px rgba(73,232,194,0.1)}
@@ -4882,7 +4890,8 @@ event MyMarket {
                 .sgv2-mform::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(73,232,194,0.008) 2px,rgba(73,232,194,0.008) 4px);pointer-events:none}
                 .sgv2-mform h3{margin:0 0 4px;font-size:20px;font-weight:800;letter-spacing:-0.02em;color:#e8f0f0;position:relative;z-index:1}
                 .sgv2-mform .sgv2-sub{font-size:12px;color:var(--dim);margin:0 0 22px;position:relative;z-index:1;line-height:1.6}
-                .sgv2-gpick{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;position:relative;z-index:1}
+                .sgv2-gpick{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;position:relative;z-index:1}
+                @media(max-width:1100px){.sgv2-gpick{grid-template-columns:repeat(3,1fr)}}
                 @media(max-width:600px){.sgv2-gpick{grid-template-columns:repeat(2,1fr)}}
                 .sgv2-gpick button{background:rgba(1,8,6,0.5);border:1.5px solid rgba(73,232,194,0.08);border-radius:12px;padding:18px 10px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .2s;position:relative;z-index:1}
                 .sgv2-gpick button:hover{border-color:rgba(73,232,194,0.3);background:rgba(73,232,194,0.06);box-shadow:0 0 16px rgba(73,232,194,0.06)}
@@ -5048,6 +5057,79 @@ event MyMarket {
                             </div>
                         </div>
 
+                        <!-- POKER -->
+                        <div class="sgv2-card" onclick="document.querySelector('.sgv2-gpick button[data-game=poker]').click()">
+                            <div class="sgv2-board">
+                                <svg viewBox="0 0 220 200" xmlns="http://www.w3.org/2000/svg">
+                                  <rect width="220" height="200" rx="10" fill="rgba(73,232,194,0.04)" stroke="rgba(73,232,194,0.15)" stroke-width="1"/>
+                                  <!-- Felt center -->
+                                  <ellipse cx="110" cy="100" rx="86" ry="48" fill="rgba(231,76,60,0.10)" stroke="rgba(231,76,60,0.4)" stroke-width="1.2"/>
+                                  <!-- Hand of 5 cards -->
+                                  <g transform="translate(38,108)">
+                                    <rect x="0" y="0" width="28" height="40" rx="4" fill="#fff" stroke="#222" stroke-width="0.8" transform="rotate(-12 14 20)"/>
+                                    <text x="14" y="24" text-anchor="middle" font-size="11" font-weight="700" fill="#e74c3c" transform="rotate(-12 14 20)">A♥</text>
+                                    <rect x="22" y="-3" width="28" height="40" rx="4" fill="#fff" stroke="#222" stroke-width="0.8" transform="rotate(-6 36 17)"/>
+                                    <text x="36" y="21" text-anchor="middle" font-size="11" font-weight="700" fill="#222" transform="rotate(-6 36 17)">K♠</text>
+                                    <rect x="44" y="-5" width="28" height="40" rx="4" fill="#fff" stroke="#222" stroke-width="0.8"/>
+                                    <text x="58" y="19" text-anchor="middle" font-size="11" font-weight="700" fill="#e74c3c">Q♦</text>
+                                    <rect x="66" y="-3" width="28" height="40" rx="4" fill="#fff" stroke="#222" stroke-width="0.8" transform="rotate(6 80 17)"/>
+                                    <text x="80" y="21" text-anchor="middle" font-size="11" font-weight="700" fill="#222" transform="rotate(6 80 17)">J♣</text>
+                                    <rect x="88" y="0" width="28" height="40" rx="4" fill="#fff" stroke="#222" stroke-width="0.8" transform="rotate(12 102 20)"/>
+                                    <text x="102" y="24" text-anchor="middle" font-size="11" font-weight="700" fill="#e74c3c" transform="rotate(12 102 20)">10♥</text>
+                                  </g>
+                                  <!-- Chips stack -->
+                                  <g transform="translate(168,140)">
+                                    <ellipse cx="0" cy="0" rx="14" ry="4" fill="#49e8c2" opacity="0.85"/>
+                                    <ellipse cx="0" cy="-5" rx="14" ry="4" fill="#3b82f6" opacity="0.85"/>
+                                    <ellipse cx="0" cy="-10" rx="14" ry="4" fill="#e74c3c" opacity="0.85"/>
+                                    <ellipse cx="0" cy="-15" rx="14" ry="4" fill="#f59e0b" opacity="0.85"/>
+                                  </g>
+                                </svg>
+                            </div>
+                            <div class="sgv2-info">
+                                <div class="sgv2-name"><span class="sgv2-live"></span> Texas Hold'em</div>
+                                <p class="sgv2-desc">Heads-up Texas Hold'em with covenant escrow. Hidden hands committed via hash; reveal on showdown. Winner takes pool minus 2% fee.</p>
+                                <div class="sgv2-tags"><span class="sgv2-tag">Covenant Enforced</span><span class="sgv2-tag">Heads-Up</span><span class="sgv2-tag">Commit-Reveal</span></div>
+                            </div>
+                        </div>
+
+                        <!-- BLACKJACK -->
+                        <div class="sgv2-card" onclick="document.querySelector('.sgv2-gpick button[data-game=blackjack]').click()">
+                            <div class="sgv2-board">
+                                <svg viewBox="0 0 220 200" xmlns="http://www.w3.org/2000/svg">
+                                  <rect width="220" height="200" rx="10" fill="rgba(73,232,194,0.04)" stroke="rgba(73,232,194,0.15)" stroke-width="1"/>
+                                  <!-- Arch -->
+                                  <path d="M30 130 Q110 30 190 130" fill="none" stroke="rgba(212,175,55,0.4)" stroke-width="1.5" stroke-dasharray="4 4"/>
+                                  <text x="110" y="50" text-anchor="middle" font-size="14" font-weight="800" fill="#d4af37" letter-spacing="2">BLACKJACK · 21</text>
+                                  <!-- Player hand: A + K = 21 -->
+                                  <g transform="translate(54,108)">
+                                    <rect x="0" y="0" width="34" height="48" rx="5" fill="#fff" stroke="#222" stroke-width="0.8" transform="rotate(-8 17 24)"/>
+                                    <text x="17" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="#222" transform="rotate(-8 17 24)">A</text>
+                                    <text x="17" y="34" text-anchor="middle" font-size="12" font-weight="700" fill="#222" transform="rotate(-8 17 24)">♠</text>
+                                    <rect x="26" y="-2" width="34" height="48" rx="5" fill="#fff" stroke="#222" stroke-width="0.8" transform="rotate(6 43 22)"/>
+                                    <text x="43" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#e74c3c" transform="rotate(6 43 22)">K</text>
+                                    <text x="43" y="32" text-anchor="middle" font-size="12" font-weight="700" fill="#e74c3c" transform="rotate(6 43 22)">♥</text>
+                                  </g>
+                                  <!-- Opponent hand: bust 22 -->
+                                  <g transform="translate(126,108)">
+                                    <rect x="0" y="0" width="34" height="48" rx="5" fill="#fff" stroke="#222" stroke-width="0.8" transform="rotate(-6 17 24)"/>
+                                    <text x="17" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="#222" transform="rotate(-6 17 24)">10</text>
+                                    <text x="17" y="34" text-anchor="middle" font-size="12" font-weight="700" fill="#222" transform="rotate(-6 17 24)">♣</text>
+                                    <rect x="26" y="-2" width="34" height="48" rx="5" fill="#fff" stroke="#222" stroke-width="0.8" transform="rotate(8 43 22)"/>
+                                    <text x="43" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#e74c3c" transform="rotate(8 43 22)">5</text>
+                                    <text x="43" y="32" text-anchor="middle" font-size="12" font-weight="700" fill="#e74c3c" transform="rotate(8 43 22)">♦</text>
+                                  </g>
+                                  <text x="68" y="180" text-anchor="middle" font-size="11" font-weight="700" fill="#49e8c2">21</text>
+                                  <text x="148" y="180" text-anchor="middle" font-size="11" font-weight="700" fill="#ef4444">BUST</text>
+                                </svg>
+                            </div>
+                            <div class="sgv2-info">
+                                <div class="sgv2-name"><span class="sgv2-live"></span> Blackjack</div>
+                                <p class="sgv2-desc">P2P heads-up — closest to 21 without busting wins. No house, no dealer. Card draws committed on-chain via shared seed.</p>
+                                <div class="sgv2-tags"><span class="sgv2-tag">Covenant Enforced</span><span class="sgv2-tag">No House</span><span class="sgv2-tag">P2P</span></div>
+                            </div>
+                        </div>
+
                     </div><!-- /sgv2-grid -->
                 </div>
 
@@ -5069,6 +5151,8 @@ event MyMarket {
                         <option value="connect4" data-times="1|0,2|0,3|0,5|0,10|0" data-series="1,3,5,7">🔴 Connect 4</option>
                         <option value="checkers" data-times="3|0,5|0,5|3,10|0,10|5,15|0" data-series="1,3,5,7">⚪ Checkers</option>
                         <option value="tictactoe" data-times="0|5,0|10,0|15,0|30,1|0,2|0,3|0,5|0" data-series="1,3,5,7,9">✕ Tic-Tac-Toe</option>
+                        <option value="poker" data-times="5|0,10|0,15|0" data-series="1,3,5">🂡 Texas Hold'em</option>
+                        <option value="blackjack" data-times="1|0,3|0,5|0" data-series="1,3,5">🂠 Blackjack</option>
                     </select>
 
                     <div style="position:relative;z-index:1;margin-bottom:6px">
@@ -5091,6 +5175,14 @@ event MyMarket {
                         <button type="button" class="sg-gbtn" data-game="tictactoe" style="padding:20px 10px 16px;gap:10px">
                             <span class="sg-ico" style="color:#49e8c2;font-size:40px">✕</span>
                             <span class="sg-lbl" style="font-size:11px">Tic-Tac-Toe</span>
+                        </button>
+                        <button type="button" class="sg-gbtn" data-game="poker" style="padding:20px 10px 16px;gap:10px">
+                            <span class="sg-ico" style="color:#e74c3c;font-size:40px">♠</span>
+                            <span class="sg-lbl" style="font-size:11px">Texas Hold'em</span>
+                        </button>
+                        <button type="button" class="sg-gbtn" data-game="blackjack" style="padding:20px 10px 16px;gap:10px">
+                            <span class="sg-ico" style="color:#d4af37;font-size:40px">♣</span>
+                            <span class="sg-lbl" style="font-size:11px">Blackjack</span>
                         </button>
                     </div>
                     <script>(function(){var btns=document.querySelectorAll('#sgGamePicker .sg-gbtn'),sel=document.getElementById('sgGame');function act(g){btns.forEach(function(b){var on=b.getAttribute('data-game')===g;b.classList.toggle('act',on);});}btns.forEach(function(b){b.addEventListener('click',function(){sel.value=b.getAttribute('data-game');sel.dispatchEvent(new Event('change'));act(sel.value);});});})();</script>
@@ -8510,14 +8602,36 @@ function go(v) {
                 else mult = selMkt.nM || 2.0;
             }
 
-            var payout = amt * mult;
-            var profit = payout - amt;
-            var fee = profit > 0 ? profit * 0.02 : 0;
-            var netPayout = payout - fee;
+            // Use shared HTPFee engine when available so spot vs maximizer math is consistent
+            var Fee = window.HTPFee;
+            var fee, netPayout, label;
+            if (typeof tMode !== 'undefined' && tMode === 'maximizer' && Fee && typeof Fee.maximizerWinSettle === 'function') {
+                // Maximizer WIN: full bet * odds, 2% fee on winnings (pool=50%, hedge=50%)
+                var w = Fee.maximizerWinSettle(amt, mult);
+                netPayout = w.netPayout;
+                fee       = w.protocolFee;
+                var l     = Fee.maximizerLoseSettle(amt);
+                label     = "Maximizer · win " + netPayout.toFixed(2) + " KAS / lose claim " + l.claimable.toFixed(2) + " KAS hedge";
+            } else if (Fee && typeof Fee.standardEventWinSettle === 'function') {
+                var s = Fee.standardEventWinSettle(amt, mult);
+                netPayout = s.netPayout;
+                fee       = s.protocolFee;
+                label     = "Standard · 2% fee on winnings";
+            } else {
+                var payout = amt * mult;
+                var profit = payout - amt;
+                fee = profit > 0 ? profit * 0.02 : 0;
+                netPayout = payout - fee;
+                label = "2% fee on winnings";
+            }
 
             if (eP) eP.textContent = netPayout.toFixed(2) + " KAS";
             if (fV) fV.textContent = fee.toFixed(2) + " KAS";
             if (betBtn) betBtn.textContent = "Place Bet · " + amt + " KAS on " + (tOut || "YES").toUpperCase();
+
+            // Show explanatory copy under the trade card if present
+            var disclosure = document.querySelector('.fee-disclosure');
+            if (disclosure) disclosure.textContent = label;
         }
 
 
@@ -8525,7 +8639,7 @@ function go(v) {
             var g = $('sgGame');
             if (!g) return;
             var tSel = $('sgTime'), sSel = $('sgSeries');
-            var gNames = { chess:'Chess', connect4:'Connect 4', checkers:'Checkers', tictactoe:'Tic-Tac-Toe' };
+            var gNames = { chess:'Chess', connect4:'Connect 4', checkers:'Checkers', tictactoe:'Tic-Tac-Toe', poker:"Texas Hold'em", blackjack:'Blackjack' };
             var pGame = document.getElementById('matchPreviewGame');
             var pStake = document.getElementById('matchPreviewStake');
             var pTime = document.getElementById('matchPreviewTime');
@@ -8566,6 +8680,8 @@ function go(v) {
                 else if (g.value === 'connect4') hint.textContent = 'Minutes + increment per move';
                 else if (g.value === 'checkers') hint.textContent = 'Minutes + increment per move';
                 else if (g.value === 'tictactoe') hint.textContent = 'Seconds or minutes per move';
+                else if (g.value === 'poker') hint.textContent = 'Hand timer (minutes)';
+                else if (g.value === 'blackjack') hint.textContent = 'Round timer (minutes)';
             }
             updPreview();
         }
