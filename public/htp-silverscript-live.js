@@ -1,5 +1,5 @@
 // =============================================================================
-// htp-silverscript-live.js — Real-time SilverScript Compiler
+// htp-silverscript-live.js , Real-time SilverScript Compiler
 // Watches prediction event form fields and generates syntax-highlighted preview
 // =============================================================================
 (function() {
@@ -113,7 +113,7 @@
         statusText.style.color = 'var(--success)';
       } else {
         dot.className = 'dot dot-grey';
-        statusText.textContent = 'Incomplete — ' + missing.join(', ');
+        statusText.textContent = 'Incomplete , ' + missing.join(', ');
         statusText.style.color = 'var(--text-faint)';
       }
     }

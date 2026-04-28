@@ -1,6 +1,9 @@
-// firebase-config.js — HTP hightable420
+// firebase-config.js, HTP hightable420
 (function () {
   'use strict';
+
+  if (window.__htpFirebaseConfigInstalled) return;
+  window.__htpFirebaseConfigInstalled = true;
 
   var firebaseConfig = {
     apiKey:            "AIzaSyA9n5AMFgmCL861rmqE_6ajBBEC5BboPd8",
@@ -14,17 +17,25 @@
   };
 
   function loadScript(src, cb) {
-    if (document.querySelector('script[src="' + src + '"]')) { cb && cb(); return; }
-    var s = document.createElement('script');
-    s.src = src; s.onload = cb;
-    document.head.appendChild(s);
+    // Match by ending segment, not exact src, so we never double-load app/database compat
+    // even if a previous tag used a different host (gstatic vs local).
+    var existing = document.querySelectorAll('script');
+    for (var i = 0; i < existing.length; i++) {
+      var s = existing[i].src || '';
+      if (s && (s === src || s.indexOf(src.split('/').slice(-1)[0]) !== -1)) { cb && cb(); return; }
+    }
+    var sc = document.createElement('script');
+    sc.src = src; sc.onload = cb;
+    document.head.appendChild(sc);
   }
 
   function initFirebase() {
     if (typeof firebase === 'undefined') { setTimeout(initFirebase, 200); return; }
+    if (window.__htpFirebaseInitialized) return;
+    window.__htpFirebaseInitialized = true;
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     var db = firebase.database();
-    console.log('%cHTP Firebase ready — hightable420', 'color:#49e8c2;font-weight:bold');
+    console.log('%cHTP Firebase ready , hightable420', 'color:#49e8c2;font-weight:bold');
     window.dispatchEvent(new CustomEvent('htp:firebase:ready'));
 
     window.htpFirebase = {
@@ -228,7 +239,7 @@ writeWalletStat: function(address, matchId, record) {
 
     };
 
-    // Lobby sync — pushes Firebase matches to index via custom event
+    // Lobby sync , pushes Firebase matches to index via custom event
     db.ref('matches').on('value', function(snap) {
       var val = snap.val();
       if (!val) return;

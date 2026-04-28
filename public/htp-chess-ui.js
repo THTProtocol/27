@@ -1,5 +1,5 @@
 /**
- * htp-chess-ui.js — HTP Chess Board Renderer v4
+ * htp-chess-ui.js , HTP Chess Board Renderer v4
  *
  * Renders a clean 8x8 chess board into #chess-board using the new DOM structure.
  * Uses Lichess SVG pieces from https://lichess1.org/assets/piece/cburnett/.
@@ -21,7 +21,7 @@
   const LOG = (...a) => console.log('[HTP Chess UI v4]', ...a);
 
   // ─────────────────────────────────────────────────────────────────────────
-  // PIECE SVG URLS — Lichess cburnett set
+  // PIECE SVG URLS , Lichess cburnett set
   // color: "w" or "b", piece: K/Q/R/B/N/P (uppercase)
   // ─────────────────────────────────────────────────────────────────────────
 

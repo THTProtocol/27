@@ -38,7 +38,7 @@ class BlackjackUI {
 
     let html = '<div class="bj-table">';
 
-    // — Dealer
+    // , Dealer
     const dealerTotal = s.finished || s.phase === 'dealer-turn' || s.phase === 'payout'
       ? this._total(s.dealerHand)
       : null;
@@ -47,7 +47,7 @@ class BlackjackUI {
     html += this._renderBJHand(s.dealerHand, { size: 'md' });
     html += '</div>';
 
-    // — Other players (if multiplayer)
+    // , Other players (if multiplayer)
     if (s.players.length > 1) {
       html += '<div class="bj-other-players">';
       for (const p of s.players) {
@@ -70,7 +70,7 @@ class BlackjackUI {
       html += '</div>';
     }
 
-    // — My hands
+    // , My hands
     if (me) {
       html += '<div class="bj-my-hands">';
       html += `<div class="bj-section-label">You · <span style="color:var(--green)">${((me.chips||0)/1e8).toFixed(2)} KAS</span></div>`;
@@ -100,7 +100,7 @@ class BlackjackUI {
       html += '</div>';
     }
 
-    // — Results
+    // , Results
     if (s.finished && s.results) {
       const myResult = s.results.find(r => r.addr === this.myAddr);
       if (myResult) {
@@ -112,17 +112,17 @@ class BlackjackUI {
       }
     }
 
-    // — Insurance phase
+    // , Insurance phase
     if (!s.finished && s.phase === 'insurance') {
       html += '<div class="bj-insurance-prompt">';
-      html += '<div style="color:var(--yellow);font-weight:600">Dealer shows Ace — Take Insurance?</div>';
+      html += '<div style="color:var(--yellow);font-weight:600">Dealer shows Ace , Take Insurance?</div>';
       html += '<div class="action-buttons" style="margin-top:8px">';
       html += '<button class="btn btn-secondary bj-action" data-action="insurance">Take Insurance</button>';
       html += '<button class="btn btn-outline bj-action" data-action="skip-insurance">No Thanks</button>';
       html += '</div></div>';
     }
 
-    // — Action buttons
+    // , Action buttons
     if (isMyTurn) {
       const me2 = s.players[s.activePlayerIdx];
       const hand = me2.hands[me2.activeHandIdx];
@@ -144,7 +144,7 @@ class BlackjackUI {
       html += '<div class="bj-waiting" style="color:var(--yellow)">Dealer playing...</div>';
     }
 
-    // — Shoe remaining
+    // , Shoe remaining
     html += `<div class="bj-shoe-info">🂠 ${s.shoeRemaining||'?'} cards remaining</div>`;
 
     html += '</div>'; // bj-table

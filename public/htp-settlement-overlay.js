@@ -1,5 +1,5 @@
 /**
- * htp-settlement-overlay.js — Settlement Preview + Result Overlay
+ * htp-settlement-overlay.js , Settlement Preview + Result Overlay
  * Shows exact payout breakdown before TX fires, and win/loss/draw result.
  * Depends on: htp-fee-engine.js (HTPFee)
  * No Firebase required.
@@ -171,7 +171,7 @@
           { label: 'Claimable',      value: calc.claimable.toFixed(2) + ' KAS', cls: 'yellow' },
         ];
         payoutBig = 'Claim ' + (betKas||stakeKas) * 0.35 |0 + ' KAS'; payoutClass = 'draw';
-        titleText = 'You Lost — Claim Hedge';
+        titleText = 'You Lost , Claim Hedge';
       }
       primaryLabel = isMaximizer ? 'Claim Hedge' : 'Close';
       secondaryLabel = 'Close';
@@ -179,7 +179,7 @@
     } else if (type === 'draw') {
       icon = '🤝'; titleClass = 'draw'; titleText = 'Draw';
       const half = stakeKas; // each gets their stake back
-      subtitle = `Match ${matchId || ''} — stakes returned`;
+      subtitle = `Match ${matchId || ''} , stakes returned`;
       payoutBig = half.toFixed(2) + ' KAS each'; payoutClass = 'draw';
       rows = [
         { label: 'Each player gets', value: half.toFixed(2) + ' KAS', cls: 'yellow' },
@@ -188,7 +188,7 @@
       primaryLabel = 'Claim Refund'; secondaryLabel = 'Close';
 
     } else {
-      // preview — before TX fires
+      // preview , before TX fires
       icon = '📋'; titleClass = 'preview'; titleText = 'Settlement Preview';
       subtitle = 'Review before signing';
       const calc = Fee.skillGameSettle(stakeKas);

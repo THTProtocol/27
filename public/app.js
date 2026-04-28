@@ -1,7 +1,7 @@
 'use strict';
 
 // ============================================================
-// HIGH TABLE PROTOCOL v8.0 — Frontend Application
+// HIGH TABLE PROTOCOL v8.0 , Frontend Application
 // ============================================================
 
 const API = '';
@@ -1075,26 +1075,26 @@ function loadVault() {
 function renderVaultContent() {
   document.getElementById('vault-what-is-kaspa').innerHTML =
     '<p><strong>Kaspa</strong> is a proof-of-work cryptocurrency built on the <strong>blockDAG</strong> (Directed Acyclic Graph) paradigm. ' +
-    'Unlike traditional blockchains that produce one block at a time, Kaspa produces multiple parallel blocks per second — currently 10 BPS.</p>' +
-    '<p>This means near-instant confirmations, high throughput, and the security guarantees of Nakamoto consensus — all without sacrificing decentralization.</p>' +
+    'Unlike traditional blockchains that produce one block at a time, Kaspa produces multiple parallel blocks per second , currently 10 BPS.</p>' +
+    '<p>This means near-instant confirmations, high throughput, and the security guarantees of Nakamoto consensus , all without sacrificing decentralization.</p>' +
     '<p>The core protocol is called <strong>PHANTOM/GhostDAG</strong>, a generalization of Bitcoin\'s longest-chain rule to a DAG structure. ' +
     'Blocks reference multiple parents, allowing the network to process blocks concurrently while still establishing total ordering.</p>' +
     '<p><strong>Key properties:</strong> 10 blocks per second · 1-second visual confirmations · 10-second statistical finality · ' +
     'Optical-speed mining (kHeavyHash) · Fair launched (no premine) · Pure PoW</p>';
 
   document.getElementById('vault-covenants').innerHTML =
-    '<p><strong>Covenants</strong> arrived in Kaspa via the Crescendo hard fork (May 2025). They enable transaction outputs to carry spending conditions — ' +
+    '<p><strong>Covenants</strong> arrived in Kaspa via the Crescendo hard fork (May 2025). They enable transaction outputs to carry spending conditions , ' +
     'rules that constrain how funds can move, verified by every node.</p>' +
     '<p>Kaspa\'s covenant model uses <strong>introspection opcodes</strong> that let scripts examine their own transaction: ' +
     'input amounts, output amounts, script public keys, DAA scores, and more. This is the foundation for smart contracts on Kaspa.</p>' +
     '<p><strong>SilverScript</strong> is the scripting language (an extended Bitcoin Script). High Table uses these opcodes to build:</p>' +
     '<ul style="margin:8px 0 12px 20px;color:var(--text-secondary)">' +
-      '<li><strong>Market Pool covenants</strong> — lock funds with oracle-verified outcomes</li>' +
-      '<li><strong>Position Receipts</strong> — on-chain proof of your bet (side, amount, risk mode)</li>' +
-      '<li><strong>Creator Bonds</strong> — skin-in-the-game for market creators</li>' +
-      '<li><strong>Game Escrows</strong> — 2-of-3 multisig with oracle + timeout protection</li>' +
+      '<li><strong>Market Pool covenants</strong> , lock funds with oracle-verified outcomes</li>' +
+      '<li><strong>Position Receipts</strong> , on-chain proof of your bet (side, amount, risk mode)</li>' +
+      '<li><strong>Creator Bonds</strong> , skin-in-the-game for market creators</li>' +
+      '<li><strong>Game Escrows</strong> , 2-of-3 multisig with oracle + timeout protection</li>' +
     '</ul>' +
-    '<p>Every market and game on High Table is a <strong>real on-chain covenant</strong> — not an IOU, not a database entry. Your funds are locked in scripts that only release under mathematically verified conditions.</p>';
+    '<p>Every market and game on High Table is a <strong>real on-chain covenant</strong> , not an IOU, not a database entry. Your funds are locked in scripts that only release under mathematically verified conditions.</p>';
 
   document.getElementById('vault-markets').innerHTML =
     '<p><strong>Prediction markets</strong> aggregate information through incentives. Participants stake real value on outcomes, creating price signals that reflect collective belief.</p>' +
@@ -1109,8 +1109,8 @@ function renderVaultContent() {
     '</ol>' +
     '<p><strong>Two risk modes:</strong></p>' +
     '<ul style="margin:8px 0 12px 20px;color:var(--text-secondary)">' +
-      '<li><strong>Spot</strong> — winner takes all (minus 2% protocol fee). High risk, high reward.</li>' +
-      '<li><strong>Maximizer</strong> — losers get 50% back (minus 30% hedge fee). Lower risk, lower reward.</li>' +
+      '<li><strong>Spot</strong> , winner takes all (minus 2% protocol fee). High risk, high reward.</li>' +
+      '<li><strong>Maximizer</strong> , losers get 50% back (minus 30% hedge fee). Lower risk, lower reward.</li>' +
     '</ul>';
 
   document.getElementById('vault-games').innerHTML =
@@ -1120,7 +1120,7 @@ function renderVaultContent() {
       '<li>Player A creates a game and stakes KAS into an escrow covenant</li>' +
       '<li>Player B joins and matches the stake</li>' +
       '<li>The game plays out in real-time via WebSocket</li>' +
-      '<li>On checkmate, resignation, or draw — the oracle verifies and settles</li>' +
+      '<li>On checkmate, resignation, or draw , the oracle verifies and settles</li>' +
       '<li>Winner receives the pot minus 2% protocol fee</li>' +
       '<li>If a player abandons, timeout protection kicks in</li>' +
     '</ol>' +

@@ -16,7 +16,7 @@
   var SOMPI_PER_KAS = 100000000;
 
   /* ═══════════════════════════════════════════════════════════════════════════
-   * 1. CRYPTO UTILITIES — AES-256-GCM Encryption
+   * 1. CRYPTO UTILITIES , AES-256-GCM Encryption
    * ═══════════════════════════════════════════════════════════════════════
  */
 
@@ -75,7 +75,7 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════════════════
-   * 2. MNEMONIC DERIVATION — Using WASM SDK
+   * 2. MNEMONIC DERIVATION , Using WASM SDK
    * ═══════════════════════════════════════════════════════════════════════════ */
 
   async function deriveCaspaAddressFromMnemonic(mnemonicPhrase) {
@@ -292,7 +292,7 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════════════════
-   * 7. UI BUILDER — Create wallet section HTML
+   * 7. UI BUILDER , Create wallet section HTML
    * ═══════════════════════════════════════════════════════════════════════════ */
 
   function buildWalletSectionHTML() {
@@ -330,7 +330,7 @@
     html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px">';
     html += '<div>';
     html += '<div id="connected-address" style="font-family:\'JetBrains Mono\',monospace;font-size:13px;color:var(--text);word-break:break-all;margin-bottom:8px"></div>';
-    html += '<div style="font-size:12px;color:var(--text-muted)">Balance: <span id="connected-balance">—</span> KAS</div>';
+    html += '<div style="font-size:12px;color:var(--text-muted)">Balance: <span id="connected-balance">,</span> KAS</div>';
     html += '</div>';
     html += '<button onclick="htpWalletV3.disconnect()" style="padding:8px 12px;background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.3);border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">Disconnect</button>';
     html += '</div>';

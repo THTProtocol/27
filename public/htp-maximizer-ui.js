@@ -1,5 +1,5 @@
 /**
- * htp-maximizer-ui.js — Maximizer Bet UI Component
+ * htp-maximizer-ui.js , Maximizer Bet UI Component
  * Renders live 50/50 split preview + cap checker
  * Depends on: htp-fee-engine.js (HTPFee)
  * No Firebase required.
@@ -222,7 +222,7 @@
         <div class="htp-cap-bar-wrap" id="htp-mx-capwrap" style="display:none">
           <div class="htp-cap-bar-label">
             <span>Maximizer capacity</span>
-            <span id="htp-mx-cap-text">— / —</span>
+            <span id="htp-mx-cap-text">, / ,</span>
           </div>
           <div class="htp-cap-bar-track">
             <div class="htp-cap-bar-fill" id="htp-mx-capfill" style="width:0%"></div>

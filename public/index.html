@@ -5,8 +5,18 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="2026.04.10.v3">
+<meta name="version" content="2026.04.28.v4">
 <title>HIGH TABLE PROTOCOL</title>
+<script>
+  // Early global network resolver. Prevents ReferenceError for `net` in nested handlers.
+  (function(){
+    try {
+      if (typeof window.HTP_NETWORK === 'undefined' || !window.HTP_NETWORK) window.HTP_NETWORK = 'tn12';
+      if (typeof window.net === 'undefined') window.net = window.HTP_NETWORK;
+      if (typeof window.activeNet === 'undefined') window.activeNet = window.HTP_NETWORK;
+    } catch(e) {}
+  })();
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="Trustless, non-custodial prediction markets and skill gaming on Kaspa blockchain">
 <link rel="icon" type="image/jpeg" href="">
@@ -98,7 +108,7 @@
         }
 
         /* ── DAG canvas ── */
-        /* Edge fade is handled per-node in JS via smoothstep() — no CSS mask needed */
+        /* Edge fade is handled per-node in JS via smoothstep() , no CSS mask needed */
         #dagCanvas{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:0!important;pointer-events:none!important;opacity:.82!important;display:block!important;}
 
         .bg-glow {
@@ -133,7 +143,7 @@
             animation: glowDrift2 28s ease-in-out infinite alternate-reverse, glowPulse 12s ease-in-out infinite alternate-reverse;
         }
 
-        /* Third glow — center accent */
+        /* Third glow , center accent */
         .bg-glow3 {
             position: fixed;
             top: 40%;
@@ -3967,7 +3977,7 @@ body #dagCanvas, body.on-overview #dagCanvas { opacity:1!important; }
 /* DAG panels height */
 .dag-mini,#dagMiniWrap,#liveDagContainer,#dagMiniContainer{height:480px!important;min-height:480px!important;max-height:480px!important}
 
-/* Body/html: let canvas be the bg — body color matches canvas fill */
+/* Body/html: let canvas be the bg , body color matches canvas fill */
 html,body{background:#010806!important;}
 
 /* Shell wrappers: fully transparent so canvas shows through */
@@ -3996,7 +4006,7 @@ html,body{background:#010806!important;}
         <!-- animated BlockDAG background -->
         <canvas id="dagCanvas"></canvas>
         <script>
-/* HTP DAG BACKGROUND v2 — bold, unmistakable animated BlockDAG */
+/* HTP DAG BACKGROUND v2 , bold, unmistakable animated BlockDAG */
 (function(){
   var pc=document.getElementById('dagCanvas');
   if(!pc)return;
@@ -4029,7 +4039,7 @@ html,body{background:#010806!important;}
     cx.arcTo(x,y,x+r,y,r);cx.closePath();
   }
   function draw(){
-    /* solid background — canvas IS the background */
+    /* solid background , canvas IS the background */
     cx.fillStyle='#010806';cx.fillRect(0,0,W,H);
     /* faint grid lanes */
     cx.strokeStyle='rgba(73,232,194,0.04)';cx.lineWidth=0.5;
@@ -4118,7 +4128,7 @@ html,body{background:#010806!important;}
                              transition:border-color .2s"
                      onmouseenter="this.style.borderColor='rgba(73,232,194,0.7)'"
                      onmouseleave="this.style.borderColor='rgba(73,232,194,0.35)'">
-                        <!-- Status dot — fully inside the pill, no clipping -->
+                        <!-- Status dot , fully inside the pill, no clipping -->
                         <span id="netStatusDot"
                               style="width:7px;height:7px;min-width:7px;min-height:7px;
                                      border-radius:50%;background:#f59e0b;
@@ -4141,7 +4151,7 @@ html,body{background:#010806!important;}
                             <option value="mainnet">Mainnet</option>
                         </select>
                     </div>
-                    <div id="htp-nav-balance" style="display:none;align-items:center;gap:6px;background:rgba(73,232,194,0.08);border:1px solid rgba(73,232,194,0.3);border-radius:20px;padding:4px 14px 4px 10px;font-size:13px;font-weight:600;color:#fff;white-space:nowrap;margin-right:2px"><svg width="18" height="18" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;vertical-align:middle"><circle cx="100" cy="100" r="100" fill="#49e8c2"/><path d="M140 40 L140 160 M140 100 L60 40 M140 100 L60 160" stroke="#0d1117" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/></svg> <span id="htp-nav-bal-amt">—</span> <span style="color:#49e8c2;font-size:11px">KAS</span></div>
+                    <div id="htp-nav-balance" style="display:none;align-items:center;gap:6px;background:rgba(73,232,194,0.08);border:1px solid rgba(73,232,194,0.3);border-radius:20px;padding:4px 14px 4px 10px;font-size:13px;font-weight:600;color:#fff;white-space:nowrap;margin-right:2px"><svg width="18" height="18" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;vertical-align:middle"><circle cx="100" cy="100" r="100" fill="#49e8c2"/><path d="M140 40 L140 160 M140 100 L60 40 M140 100 L60 160" stroke="#0d1117" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/></svg> <span id="htp-nav-bal-amt">0.00</span> <span style="color:#49e8c2;font-size:11px">KAS</span></div>
                     <button class="btn-c" id="cBtn" onclick="
   if(window.walletAddress){
     var bal=window.walletBalance&&window.walletBalance.total?((window.walletBalance.total/1e8).toFixed(2)+' KAS'):(window.htpBalance?window.htpBalance+' KAS':'Loading...');
@@ -4677,13 +4687,13 @@ html,body{background:#010806!important;}
 
                                     <!-- DEFAULT image: the attached superhero art (TEMPORARY PLACEHOLDER) -->
                                     <!-- The user will replace this by clicking and uploading their own image -->
-                                    <!-- Do NOT treat this image as permanent — it is just a starting visual -->
+                                    <!-- Do NOT treat this image as permanent , it is just a starting visual -->
                                     <img id="eventBannerImg"
                                         src="event-default.jpg"
                                         style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;border-radius:12px 12px 0 0;transition:opacity 0.3s;"
                                         alt="Click to upload your event image" />
 
-                                    <!-- Upload overlay — appears on hover -->
+                                    <!-- Upload overlay , appears on hover -->
                                     <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:rgba(0,0,0,0);transition:background 0.25s;border-radius:12px 12px 0 0;z-index:2;"
                                         onmouseover="this.style.background='rgba(0,0,0,0.52)';this.querySelector('.upload-hint').style.opacity='1'"
                                         onmouseout="this.style.background='rgba(0,0,0,0)';this.querySelector('.upload-hint').style.opacity='0'">
@@ -5289,13 +5299,13 @@ event MyMarket {
 
                     <!-- Preview summary -->
                     <div id="matchPreviewSummary" style="position:relative;z-index:1;margin-top:20px;padding:12px 16px;border-radius:10px;background:rgba(73,232,194,0.03);border:1px solid rgba(73,232,194,0.08);display:none;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-                        <span style="color:var(--accent);font-weight:700" id="matchPreviewGame">—</span>
+                        <span style="color:var(--accent);font-weight:700" id="matchPreviewGame">-</span>
                         <span style="width:1px;height:14px;background:rgba(73,232,194,0.15)"></span>
-                        <span id="matchPreviewStake">— KAS</span>
+                        <span id="matchPreviewStake">- KAS</span>
                         <span style="width:1px;height:14px;background:rgba(73,232,194,0.15)"></span>
-                        <span id="matchPreviewTime">—</span>
+                        <span id="matchPreviewTime">-</span>
                         <span style="width:1px;height:14px;background:rgba(73,232,194,0.15)"></span>
-                        <span id="matchPreviewSeries">Bo —</span>
+                        <span id="matchPreviewSeries">Bo -</span>
                         <span style="margin-left:auto;font-size:10px;color:rgba(73,232,194,.5);font-weight:600">TRUSTLESS ESCROW</span>
                     </div>
 
@@ -5808,11 +5818,11 @@ event MyMarket {
                             <div style="display:flex;gap:16px">
                                 <div style="text-align:right">
                                     <div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">Claimable</div>
-                                    <div id="claimOpenCount" style="font-size:20px;font-weight:800;color:#49e8c2">—</div>
+                                    <div id="claimOpenCount" style="font-size:20px;font-weight:800;color:#49e8c2">0</div>
                                 </div>
                                 <div style="text-align:right">
                                     <div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">Total KAS</div>
-                                    <div id="claimTotalKAS" style="font-size:20px;font-weight:800;color:#49e8c2">—</div>
+                                    <div id="claimTotalKAS" style="font-size:20px;font-weight:800;color:#49e8c2">0</div>
                                 </div>
                             </div>
                         </div>
@@ -6479,31 +6489,68 @@ event MyMarket {
 
         /* Solid live-dag dot, no pulse, never clipped. */
         .live-dag-label {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-size: 13px;
-          font-weight: 700;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          line-height: 1.4;
-          margin: 0 0 12px 0;
-          padding: 2px 0;
-          overflow: visible;
+          display: inline-flex !important;
+          align-items: center !important;
+          gap: 10px !important;
+          font-size: 13px !important;
+          font-weight: 700 !important;
+          letter-spacing: 0.12em !important;
+          text-transform: uppercase !important;
+          line-height: 1.6 !important;
+          margin: 0 0 12px 0 !important;
+          padding: 4px 4px 4px 4px !important;
+          overflow: visible !important;
+          color: #d8fff5 !important;
         }
 
         .live-dag-dot {
-          display: inline-block;
-          width: 10px;
-          height: 10px;
-          min-width: 10px;
-          min-height: 10px;
+          display: inline-block !important;
+          width: 10px !important;
+          height: 10px !important;
+          min-width: 10px !important;
+          min-height: 10px !important;
+          border-radius: 50% !important;
+          background: #49e8c2 !important;
+          box-shadow: 0 0 8px rgba(73,232,194,0.65) !important;
+          flex-shrink: 0 !important;
+          vertical-align: middle !important;
+          animation: none !important;
+          margin: 0 !important;
+          transform: none !important;
+        }
+        .live-dag-label, .live-dag-label * { overflow: visible !important; }
+
+        /* Checkers board polish: classic high-contrast cream/walnut, glossy pieces. */
+        #checkers-board { background: #2a1810; padding: 8px; border-radius: 12px;
+          box-shadow: 0 12px 36px rgba(0,0,0,0.55), inset 0 0 0 2px #1a0e08; }
+        .checkers-square { transition: box-shadow .12s ease, filter .12s ease; }
+        .checkers-square.dark { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18); }
+        .checkers-square:hover { filter: brightness(1.06); }
+        .checker-piece {
+          position: absolute; inset: 9%;
           border-radius: 50%;
-          background: #49e8c2;
-          box-shadow: 0 0 6px rgba(73,232,194,0.55);
-          flex-shrink: 0;
-          vertical-align: middle;
-          animation: none;
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.5), inset 0 -3px 6px rgba(0,0,0,0.35), inset 0 3px 6px rgba(255,255,255,0.18);
+          transition: transform .12s ease, box-shadow .12s ease;
+        }
+        .checker-piece.red, .checker-piece.teal {
+          background: radial-gradient(circle at 35% 30%, #ff7d6b 0%, #e74c3c 45%, #a02718 100%);
+          border: 1.5px solid rgba(0,0,0,0.35);
+        }
+        .checker-piece.red { background: radial-gradient(circle at 35% 30%, #ff7d6b 0%, #e74c3c 45%, #a02718 100%); }
+        .checker-piece.teal { background: radial-gradient(circle at 35% 30%, #7df0d2 0%, #49e8c2 45%, #1a8c75 100%); border-color: rgba(0,0,0,0.4); }
+        .checker-piece.mandatory { box-shadow: 0 0 0 3px #facc15, 0 4px 8px rgba(0,0,0,0.5); }
+        .checker-piece:hover { transform: scale(1.04); }
+
+        /* Connect4 board polish */
+        #c4-board { background: linear-gradient(180deg, #1a3559 0%, #0f2342 100%); border-radius: 14px;
+          padding: 10px; box-shadow: 0 12px 36px rgba(0,0,0,0.5), inset 0 0 0 2px rgba(255,255,255,0.04); }
+
+        /* Chess board polish: enhance hover/selected without breaking overlay */
+        .chess-square { transition: box-shadow .1s ease, background-color .1s ease; }
+        .chess-square.legal-move::after, .chess-square.legal-target::after {
+          content: ''; position: absolute; inset: 38%; border-radius: 50%;
+          background: rgba(73,232,194,0.55); pointer-events: none;
         }
     </style>
 
@@ -6657,10 +6704,17 @@ event MyMarket {
         };
 
         var activeNet = 'tn12';
-        // Safe network resolver for market filter/UI: 'both' shows mainnet+tn12 markets.
-        // Read from window.HTP_NETWORK / activeNet if previously set; default to 'both' so filter does not crash.
-        var net = (typeof window !== 'undefined' && window.HTP_NETWORK) ? window.HTP_NETWORK : (typeof activeNet !== 'undefined' ? activeNet : 'both');
-        try { window.HTP_NETWORK = net; } catch(_) {}
+        // Safe network resolver. 'both' shows mainnet+tn12 markets.
+        // Order: window.HTP_NETWORK, activeNet, fallback 'tn12'. Never undefined.
+        function htpResolveNet() {
+            try {
+                if (typeof window !== 'undefined' && window.HTP_NETWORK) return window.HTP_NETWORK;
+            } catch(_) {}
+            try { if (typeof activeNet !== 'undefined' && activeNet) return activeNet; } catch(_) {}
+            return 'tn12';
+        }
+        var net = htpResolveNet();
+        try { window.HTP_NETWORK = net; window.htpResolveNet = htpResolveNet; } catch(_) {}
         var lobbySubscribed = false;
         var rpcConnected = false;
         var rpcWs = null;
@@ -7529,7 +7583,7 @@ event MyMarket {
 
         // --- Wallet Provider Detection ---
         function getProvider(name) {
-            // Extensions may inject AFTER DOMContentLoaded — always check window fresh
+            // Extensions may inject AFTER DOMContentLoaded , always check window fresh
             var w = window;
             switch (name) {
                 case 'KasWare':  return w.kasware  || w.kasWare  || null;
@@ -7867,7 +7921,7 @@ function go(v) {
             if (sel) sel.value = n;
             renderM();
             kaspa.connect();
-            // Sync global network switcher — guard prevents circular call
+            // Sync global network switcher , guard prevents circular call
             if (typeof window.htpSetNetwork === 'function' && !window._htpSettingNet) { window._htpSettingNet=true; window.htpSetNetwork(n); window._htpSettingNet=false; }
         }
 
@@ -7891,10 +7945,13 @@ function go(v) {
         function renderM() {
             var g = $('mG');
             if (!g) return;
+            var _net;
+            try { _net = (typeof net !== 'undefined' && net) ? net : (window.HTP_NETWORK || (typeof activeNet !== 'undefined' ? activeNet : 'tn12')); }
+            catch(_e) { _net = (window.HTP_NETWORK || 'tn12'); }
             var f = mkts.filter(function (m) {
                 if (fCat !== 'All' && m.cat !== fCat) return false;
                 if (m.st !== fSt) return false;
-                if (net !== 'both' && m.net !== 'both' && m.net !== net) return false;
+                if (_net !== 'both' && m.net !== 'both' && m.net !== _net) return false;
                 if (fSr && !m.title.toLowerCase().includes(fSr.toLowerCase())) return false;
                 return true;
             });
@@ -8103,7 +8160,7 @@ function go(v) {
             }
             if (typeof amountSompi === 'number' && amountSompi > 0 && amountSompi < 1e4) { amountSompi = Math.round(amountSompi * 1e8); } // fixed threshold
             if (typeof amountSompi === 'string') { amountSompi = parseInt(amountSompi, 10); }
-            if (!amountSompi || isNaN(Number(amountSompi))) { throw new Error('[HTP] amount undefined — got: ' + amountSompi); }
+            if (!amountSompi || isNaN(Number(amountSompi))) { throw new Error('[HTP] amount undefined , got: ' + amountSompi); }
 // [KILL-SIM] simId removed
 
             // === MNEMONIC: Real on-chain transaction ===
@@ -8764,6 +8821,8 @@ function go(v) {
                 else if (g.value === 'poker') hint.textContent = 'Hand timer (minutes)';
                 else if (g.value === 'blackjack') hint.textContent = 'Round timer (minutes)';
             }
+            // Show per-game extra settings panel
+            try { if (g.value && typeof window.htpRenderGameExtras === 'function') window.htpRenderGameExtras(g.value); } catch(e){}
             updPreview();
         }
 
@@ -14082,7 +14141,7 @@ function showGameOverOverlay(title, amountText, color, match) {
     if (existingEsc && existingEsc.address) return existingEsc;
 
     try {
-      // Phase 2: deterministic derivation — recoverable if localStorage wiped
+      // Phase 2: deterministic derivation , recoverable if localStorage wiped
       var _creatorAddr = window.walletAddress || window.htpAddress || 'unknown';
       var _derivedHex = window.deriveEscrowKey
         ? await window.deriveEscrowKey(matchId, _creatorAddr)
@@ -14258,7 +14317,7 @@ function showGameOverOverlay(title, amountText, color, match) {
     if (existing) return existing;
 
     try {
-      // Phase 2: deterministic derivation — recoverable if localStorage wiped
+      // Phase 2: deterministic derivation , recoverable if localStorage wiped
       var _creatorAddr = window.walletAddress || window.htpAddress || 'unknown';
       var _derivedHex = window.deriveEscrowKey
         ? await window.deriveEscrowKey(matchId, _creatorAddr)
@@ -14424,7 +14483,7 @@ function showGameOverOverlay(title, amountText, color, match) {
     bondKAS = bondKAS || ORACLE_MIN_BOND_KAS;
 
     try {
-      // Phase 2: deterministic derivation — recoverable if localStorage wiped
+      // Phase 2: deterministic derivation , recoverable if localStorage wiped
       var _creatorAddr = window.walletAddress || window.htpAddress || 'unknown';
       var _derivedHex = window.deriveEscrowKey
         ? await window.deriveEscrowKey(matchId, _creatorAddr)
@@ -21465,7 +21524,7 @@ W.htpOracleDaemon=OD;
     }
     fetchDaa(net); // fetch fresh for this network
     if (typeof showToast==='function') showToast('Network: '+cfg.label, 'success');
-    // Sync setNet if available (handles markets renderM) — guard prevents circular call
+    // Sync setNet if available (handles markets renderM) , guard prevents circular call
     if (typeof setNet==='function' && !W._htpSettingNet) { W._htpSettingNet=true; try { setNet(net); } catch(e){} W._htpSettingNet=false; }
     console.log('[HTP] Network:', net, cfg.wrpc);
   };
@@ -21810,7 +21869,7 @@ window.htpConnectManual = function(addr) {
 
         // ── LIVE BLOCKDAG SUBSCRIPTION ──────────────────────────────────
         try {
-          // Stop simulated canvas — we'll drive it with real events
+          // Stop simulated canvas , we'll drive it with real events
           W._htpLiveNode = true;
           var dagLabel = document.querySelector('.sg-card h3, h3');
           // Update BLOCKDAG heading to show live
@@ -21894,7 +21953,7 @@ window.htpConnectManual = function(addr) {
 
 
 
-        // KGI iframe fallback — detect X-Frame-Options block
+        // KGI iframe fallback , detect X-Frame-Options block
         (function() {
             var iframe = document.getElementById('kgiFrame');
             var fallback = document.getElementById('kgiFallback');
@@ -21904,7 +21963,7 @@ window.htpConnectManual = function(addr) {
                 iframe.style.display = 'none';
                 if (fallback) fallback.style.display = 'flex';
             });
-            // Timeout fallback — if blank after 4s, likely blocked
+            // Timeout fallback , if blank after 4s, likely blocked
             setTimeout(function() {
                 try {
                     var doc = iframe.contentDocument || iframe.contentWindow.document;
@@ -21915,7 +21974,7 @@ window.htpConnectManual = function(addr) {
                 } catch(e) {
                     // Cross-origin means it LOADED (same-origin block would have empty doc)
                     // So if we get a cross-origin error, the iframe is actually working fine
-                    console.log('[KGI] iframe cross-origin — loaded OK');
+                    console.log('[KGI] iframe cross-origin , loaded OK');
                 }
             }, 4000);
         })();
@@ -22101,7 +22160,7 @@ document.querySelectorAll('button').forEach(function(b){
           const disc = document.createElement('div');
           const d = Math.floor(SIZE * 0.76);
           if (piece === 1) {
-            // Red disc — flat circular, gloss highlight
+            // Red disc , flat circular, gloss highlight
             disc.style.cssText = `width:${d}px;height:${d}px;border-radius:50%;background:radial-gradient(circle at 38% 36%, #ef6666, #8b1a1a);border:2px solid #991b1b;box-shadow:inset 0 -2px 4px rgba(0,0,0,0.4),inset 0 2px 4px rgba(255,100,100,0.3),0 0 7px rgba(73,232,194,0.7),0 0 18px rgba(73,232,194,0.3);flex-shrink:0;`;
           } else {
             // Black disc
@@ -22161,7 +22220,7 @@ document.querySelectorAll('button').forEach(function(b){
   };
 
   /* ───────────────────────────────────────────────────
-     CSS INJECTION — piece sizing & board aesthetics
+     CSS INJECTION , piece sizing & board aesthetics
   ─────────────────────────────────────────────────── */
   const style = document.createElement('style');
   style.textContent = `
@@ -22275,7 +22334,7 @@ document.querySelectorAll('button').forEach(function(b){
     var orig = window.htpSendTx;
     window.htpSendTx = function(toAddr, amountSompi, opts) {
       opts = opts || {};
-      // Strip any payload — payload in createTransaction corrupts Schnorr sighash
+      // Strip any payload , payload in createTransaction corrupts Schnorr sighash
       delete opts.payload;
       delete opts.payloadData;
       const resolvedAmount = amountSompi ?? (opts && opts.amount);
@@ -22473,7 +22532,7 @@ document.querySelectorAll('button').forEach(function(b){
                 return s + Number((u.utxoEntry || u.entry || u).amount || 0);
               }, 0);
               if (total >= expectedMin) break;
-              console.warn("[High Table Fix2] Escrow underfunded:", (total/SOMPI).toFixed(4), "KAS, need", stakeKas*2, "KAS — attempt", attempt+1, "of 3");
+              console.warn("[High Table Fix2] Escrow underfunded:", (total/SOMPI).toFixed(4), "KAS, need", stakeKas*2, "KAS , attempt", attempt+1, "of 3");
               if (typeof showToast === "function") showToast("Waiting for escrow funding... (" + (attempt+1) + "/3)", "info");
               if (attempt < 2) await new Promise(function(r) { setTimeout(r, 8000); });
             } catch(e) { break; }

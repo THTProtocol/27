@@ -1,5 +1,5 @@
 /**
- * htp-autopayout-engine.js  —  High Table Protocol  —  v4.0
+ * htp-autopayout-engine.js  ,  High Table Protocol  ,  v4.0
  *
  * THE COMPLETE LAYER:
  *
@@ -10,18 +10,18 @@
  *     → winner browser fires the on-chain TX automatically, NO BUTTON NEEDED
  *     → Firebase settlement lock prevents double-spend across both browsers
  *
- *  2. GAME UI — CHESS (Chess.com aesthetic, full)
+ *  2. GAME UI , CHESS (Chess.com aesthetic, full)
  *     Board colors: #ebecd0 / #779556
  *     Pieces: unicode, white=bright, black=dark, no teal tint
  *     Clocks: both players, active clock highlighted, Firebase-synced
  *     Coord labels on every square
  *     Last-move highlight, check highlight, legal-move dots
  *
- *  3. GAME UI — CONNECT4
+ *  3. GAME UI , CONNECT4
  *     6×7 grid, drop animation, gravity, win-line highlight
  *     Red vs Yellow, turn indicator, Firebase-synced clock
  *
- *  4. GAME UI — CHECKERS
+ *  4. GAME UI , CHECKERS
  *     8×8 board, dark squares only, multi-jump support
  *     Red vs Black, king promotion glow, Firebase-synced clock
  *
@@ -33,11 +33,14 @@
  *     mainnet:    kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel
  *     testnet-12: kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m
  *
- *  LOAD ORDER: LAST — after all other htp-*.js files
+ *  LOAD ORDER: LAST , after all other htp-*.js files
  */
 
 ;(function(W) {
   'use strict';
+
+  if (W.__htpAutoPayoutInstalled) return;
+  W.__htpAutoPayoutInstalled = true;
 
   const LOG  = (...a) => console.log('%c[HTP AutoPayout v4]', 'color:#49e8c2;font-weight:bold', ...a);
   const WARN = (...a) => console.warn('[HTP AutoPayout v4]', ...a);
@@ -81,13 +84,13 @@
     const script = escrow.redeemScript.toLowerCase();
     const spk    = expectedSpk.toLowerCase();
     if (!script.includes(spk)) {
-      ERR('COVENANT INTEGRITY FAIL — redeemScript fee SPK mismatch!');
+      ERR('COVENANT INTEGRITY FAIL , redeemScript fee SPK mismatch!');
       ERR('Expected SPK:', expectedSpk);
       ERR('RedeemScript:', escrow.redeemScript);
-      if (W.showToast) W.showToast('⚠️ Covenant integrity check failed — settlement blocked', 'error');
+      if (W.showToast) W.showToast('⚠️ Covenant integrity check failed , settlement blocked', 'error');
       return false;
     }
-    LOG('Covenant integrity ✓ — fee SPK verified in redeemScript');
+    LOG('Covenant integrity ✓ , fee SPK verified in redeemScript');
     return true;
   }
 
@@ -162,13 +165,13 @@
         if (hasKey && !covenantIntegrityCheck(escrow)) {
           ERR('Payout blocked by covenant integrity check');
         } else if (hasKey && (iWon || isDraw)) {
-          LOG('Auto-payout triggered — building settlement TX…');
+          LOG('Auto-payout triggered , building settlement TX…');
           setTimeout(() => triggerAutoPayout(matchId, winnerStr, isDraw, match, escrow), 400);
         } else if (!hasKey && (iWon || isDraw)) {
-          LOG('No local escrow key — listening for partner settlement…');
+          LOG('No local escrow key , listening for partner settlement…');
           listenForSettlement(matchId);
         } else {
-          LOG('I lost (' + game + ') — settlement will fire from winner\'s browser');
+          LOG('I lost (' + game + ') , settlement will fire from winner\'s browser');
           listenForSettlement(matchId);
         }
       }
@@ -563,7 +566,7 @@
 
     renderChessBoardV4();
     startChessClocksV4(opts.matchId);
-    LOG('Chess board opened — you are', opts.myColor === 'w' ? 'White' : 'Black');
+    LOG('Chess board opened , you are', opts.myColor === 'w' ? 'White' : 'Black');
   }
 
   function renderChessBoardV4() {
@@ -850,7 +853,7 @@
 
     renderC4Board();
     startC4Clock(opts.matchId, opts.timeSec || 200);
-    LOG('Connect4 board opened — side', opts.mySide, isRed?'(Red)':'(Yellow)');
+    LOG('Connect4 board opened , side', opts.mySide, isRed?'(Red)':'(Yellow)');
   }
 
   function renderC4Board() {
@@ -1025,7 +1028,7 @@
     document.body.appendChild(wrap);
     renderCheckersBoard();
     startCkClock(opts.matchId,opts.timeSec||300);
-    LOG('Checkers board opened — side',opts.mySide,isRed?'(Red)':'(Black)');
+    LOG('Checkers board opened , side',opts.mySide,isRed?'(Red)':'(Black)');
   }
 
   function initCheckersBoard(){
@@ -1166,7 +1169,7 @@
         updateTTTClockDisplay();W.TTT._clk._localTick();
       });
     }
-    LOG('TicTacToe board opened — side',mySide===1?'X':'O');
+    LOG('TicTacToe board opened , side',mySide===1?'X':'O');
   }
 
   function renderTTTBoard(){

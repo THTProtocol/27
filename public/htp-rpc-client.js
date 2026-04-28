@@ -1,5 +1,5 @@
 /**
- * htp-rpc-client.js  —  High Table Protocol  —  v3.0
+ * htp-rpc-client.js  ,  High Table Protocol  ,  v3.0
  *
  * RESPONSIBILITIES:
  *  - Connect to window.HTP_RPC_URL (set by htp-init.js, TN12 or mainnet)
@@ -118,7 +118,7 @@
 
   /* ══ Core connect ══════════════════════════════════════════════════════════ */
 
-  // Known stable TN12 wRPC endpoints — tried in order before falling back to Resolver
+  // Known stable TN12 wRPC endpoints , tried in order before falling back to Resolver
   var TN12_ENDPOINTS = [
     'wss://tn12.kaspa.stream/wrpc/borsh',
     'wss://tn12-1.kaspa.stream/wrpc/borsh',
@@ -128,7 +128,7 @@
   async function initRpc() {
     var sdk = await waitForWasm();
     if (!sdk || !sdk.RpcClient) {
-      console.error('[HTPRpc] WASM SDK unavailable — RPC not started');
+      console.error('[HTPRpc] WASM SDK unavailable , RPC not started');
       return;
     }
 
@@ -170,7 +170,7 @@
       }
     });
 
-    // Disconnected — exponential backoff retry
+    // Disconnected , exponential backoff retry
     _rpc.addEventListener('disconnect', function () {
       _connected = false;
       console.warn('[HTPRpc] Disconnected');
@@ -239,7 +239,7 @@
 
     /**
      * Submit a signed transaction to the network.
-     * @param {Transaction} tx  — Kaspa WASM Transaction object (already signed)
+     * @param {Transaction} tx  , Kaspa WASM Transaction object (already signed)
      * @returns {string} txId
      */
     async submitTransaction(tx) {
@@ -321,7 +321,7 @@
   if (window.whenWasmReady) {
     window.whenWasmReady(initRpc);
   } else {
-    // htp-init.js not loaded yet — wait for event
+    // htp-init.js not loaded yet , wait for event
     window.addEventListener('htp:wasm:ready', function () { initRpc(); }, { once: true });
   }
 

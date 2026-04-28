@@ -1,5 +1,5 @@
 /**
- * htp-board-engine.js  — HTP Board Engine v2
+ * htp-board-engine.js  , HTP Board Engine v2
  * Game Engine Coordinator: detects game type, initializes the correct board,
  * manages turn switching, clocks, move relay, and game-end detection.
  *
@@ -13,6 +13,9 @@
  */
 ;(function () {
   'use strict';
+
+  if (window.__htpBoardEngineInstalled) return;
+  window.__htpBoardEngineInstalled = true;
 
   const LOG = (...a) => console.log('[HTP Board Engine v2]', ...a);
   const ERR = (...a) => console.error('[HTP Board Engine v2]', ...a);
@@ -38,7 +41,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 0. STAKE PATCHES — fix hard-coded 5 KAS from htp-multi-fix.js
+  // 0. STAKE PATCHES , fix hard-coded 5 KAS from htp-multi-fix.js
   // ─────────────────────────────────────────────────────────────────────────
 
   function patchJoinAmount() {
@@ -123,7 +126,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 1. BOARD-OPEN PATCHES — optimistic board for creator + joiner
+  // 1. BOARD-OPEN PATCHES , optimistic board for creator + joiner
   // ─────────────────────────────────────────────────────────────────────────
 
   function patchCreateForCreatorBoard() {
@@ -173,7 +176,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 2. MATCH RESOLVER — find match object from any available store
+  // 2. MATCH RESOLVER , find match object from any available store
   // ─────────────────────────────────────────────────────────────────────────
 
   function resolveMatch(matchId) {
@@ -197,7 +200,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 3. CORE: openGameBoard — unified board launcher
+  // 3. CORE: openGameBoard , unified board launcher
   // ─────────────────────────────────────────────────────────────────────────
 
   async function openGameBoard(matchId, role) {
@@ -288,7 +291,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 4. COLOR ASSIGNMENT — deterministic + Firebase-confirmed
+  // 4. COLOR ASSIGNMENT , deterministic + Firebase-confirmed
   // ─────────────────────────────────────────────────────────────────────────
 
   async function resolveColorAssignment(matchId, m, isCreator) {
@@ -363,7 +366,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 6. CLOCK MANAGER — shared across all games
+  // 6. CLOCK MANAGER , shared across all games
   // ─────────────────────────────────────────────────────────────────────────
 
   // Global clock state
@@ -547,7 +550,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 8. RELAY HANDLER PATCH — clock sync + board refresh on opponent moves
+  // 8. RELAY HANDLER PATCH , clock sync + board refresh on opponent moves
   // ─────────────────────────────────────────────────────────────────────────
 
   function patchRelayHandler() {
@@ -673,7 +676,7 @@
   };
 
   // ─────────────────────────────────────────────────────────────────────────
-  // EXPORTS — functions available to other modules
+  // EXPORTS , functions available to other modules
   // ─────────────────────────────────────────────────────────────────────────
 
   window.htpBoardEngine = {
@@ -692,7 +695,7 @@
   };
 
   // ─────────────────────────────────────────────────────────────────────────
-  // BOOT — install patches once dependencies are ready
+  // BOOT , install patches once dependencies are ready
   // ─────────────────────────────────────────────────────────────────────────
 
   var _bootLogged = false;

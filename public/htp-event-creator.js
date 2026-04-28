@@ -1,5 +1,5 @@
 // =============================================================================
-// htp-event-creator.js — Prediction Market Event Creation
+// htp-event-creator.js , Prediction Market Event Creation
 // Validates form, constructs escrow TX, writes to Firebase /markets/{marketId}
 // =============================================================================
 (function(W) {

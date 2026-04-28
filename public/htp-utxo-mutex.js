@@ -1,5 +1,5 @@
 /**
- * htp-utxo-mutex.js — HTP UTXO Concurrency Guard v2.0
+ * htp-utxo-mutex.js , HTP UTXO Concurrency Guard v2.0
  *
  * PROBLEM:
  *   Two browser tabs (both players) can race to call settleMatchPayout() for
@@ -8,7 +8,7 @@
  *   double-spend. This wastes fees and causes confusing errors.
  *
  * SOLUTION:
- *   1. Per-matchId async mutex — only one settlement runs at a time per match.
+ *   1. Per-matchId async mutex , only one settlement runs at a time per match.
  *      A second caller waits and then short-circuits if the first already settled.
  *   2. Firebase settlement lock (in escrow module) provides the cross-browser guard.
  *   3. This module provides the in-process guard (same browser, multiple calls).
@@ -19,7 +19,7 @@
 (function (W) {
   'use strict';
 
-  var MUTEX_TIMEOUT_MS = 30000;  // 30s max hold time — release on hang
+  var MUTEX_TIMEOUT_MS = 30000;  // 30s max hold time , release on hang
 
   // Per-matchId lock state
   // { [matchId]: { locked: bool, queue: Promise, timer: timeout } }
@@ -33,7 +33,7 @@
 
   /**
    * Acquire the mutex for a given matchId.
-   * Returns a release function — MUST be called in a finally block.
+   * Returns a release function , MUST be called in a finally block.
    * Auto-releases after MUTEX_TIMEOUT_MS if caller hangs.
    *
    * @param {string} matchId
@@ -60,7 +60,7 @@
     return new Promise(function (outerResolve) {
       lock.queue = lock.queue.then(function () {
         var timeoutId = setTimeout(function () {
-          console.warn('[HTP-MUTEX] Lock timeout for match', matchId, '— force releasing');
+          console.warn('[HTP-MUTEX] Lock timeout for match', matchId, ', force releasing');
           if (releaseFn) releaseFn();
         }, MUTEX_TIMEOUT_MS);
 
@@ -78,7 +78,7 @@
    * this call queues behind it.
    *
    * @param {string}   matchId
-   * @param {function} asyncFn  — async () => result
+   * @param {function} asyncFn  , async () => result
    * @returns {Promise}
    */
   async function withMatchLock(matchId, asyncFn) {
@@ -143,7 +143,7 @@
     W.htpSendTx    = serialise(original);
     W.htpSendTx._mutexWrapped = true;
     W.htpSendTx._original     = original;
-    console.log('[HTP-MUTEX] htpSendTx serialised — global UTXO queue active');
+    console.log('[HTP-MUTEX] htpSendTx serialised , global UTXO queue active');
     return true;
   }
 
@@ -183,6 +183,6 @@
     configurable: true,
   });
 
-  console.log('[HTP-MUTEX] v2.0 loaded — per-matchId lock + global serial queue');
+  console.log('[HTP-MUTEX] v2.0 loaded , per-matchId lock + global serial queue');
 
 })(window);

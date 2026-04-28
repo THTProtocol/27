@@ -10,6 +10,8 @@
  */
 (function(W){
 'use strict';
+if (W.__htpPatchGamesInstalled) return;
+W.__htpPatchGamesInstalled = true;
 var $=function(s,r){return(r||document).querySelector(s);};
 var $$=function(s,r){return Array.from((r||document).querySelectorAll(s));};
 

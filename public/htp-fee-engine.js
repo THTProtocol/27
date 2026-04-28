@@ -1,5 +1,5 @@
 /**
- * htp-fee-engine.js v2.1 — HTP Protocol Fee & Maximizer Engine
+ * htp-fee-engine.js v2.1 , HTP Protocol Fee & Maximizer Engine
  *
  * FEE RULES:
  *   Skill games (1v1, winner-takes-all):
@@ -13,7 +13,7 @@
  *       WIN:  payout as if 100% was in pool × odds, then 2% fee on winnings
  *       LOSE: can claim 50% hedge back, but pays 30% of hedge as protocol fee
  *              → net hedge recovery = 50% × 0.70 = 35% of original bet
- *     - Maximizers are parasitic (lower odds for everyone) — event creators can
+ *     - Maximizers are parasitic (lower odds for everyone) , event creators can
  *       limit them via maxMaximizerPct + expectedVolume
  *
  * TREASURY:
@@ -44,7 +44,7 @@
 
   // ── Network helper ─────────────────────────────────────────────────────
   // Reads window.HTP_NETWORK set by htp-init.js.
-  // Default: 'tn12' (matches htp-init.js default — NOT mainnet).
+  // Default: 'tn12' (matches htp-init.js default , NOT mainnet).
   function networkKey() {
     return W.HTP_NETWORK || 'tn12';
   }
@@ -64,7 +64,7 @@
 
   /**
    * Calculate skill game settlement amounts.
-   * @param {number} stakeKas — stake per player (each player puts in this amount)
+   * @param {number} stakeKas , stake per player (each player puts in this amount)
    * @returns {{ totalPool, protocolFee, winnerPayout, protocolFeeSompi,
    *             winnerPayoutSompi, treasuryAddress, feeBreakdown }}
    */
@@ -86,16 +86,16 @@
 
   /**
    * Can the skill game creator cancel?
-   * @param {object} game — { status, joinerId, opponentJoined }
+   * @param {object} game , { status, joinerId, opponentJoined }
    */
   function skillGameCanCreatorCancel(game) {
     var started = game.opponentJoined
                || (game.joinerId && game.joinerId !== '')
                || (game.status && game.status !== 'waiting' && game.status !== 'open');
     if (started) {
-      return { allowed: false, reason: 'Game already started — leaving counts as forfeit' };
+      return { allowed: false, reason: 'Game already started , leaving counts as forfeit' };
     }
-    return { allowed: true, reason: 'No opponent yet — full refund available' };
+    return { allowed: true, reason: 'No opponent yet , full refund available' };
   }
 
   // ══════════════════════════════════════════════════════════════════════
@@ -165,7 +165,7 @@
       used:      curMaxi,
       available: avail,
       newUsed:   curMaxi + contrib,
-      reason:    'OK — ' + avail.toFixed(2) + ' KAS maximizer capacity remaining',
+      reason:    'OK , ' + avail.toFixed(2) + ' KAS maximizer capacity remaining',
     };
   }
 
@@ -221,14 +221,14 @@
     skillGameSettle:          skillGameSettle,
     skillGameCanCreatorCancel: skillGameCanCreatorCancel,
 
-    // Events — maximizer
+    // Events , maximizer
     maximizerSplit:            maximizerSplit,
     maximizerWinSettle:        maximizerWinSettle,
     maximizerLoseSettle:       maximizerLoseSettle,
     checkMaximizerAllowance:   checkMaximizerAllowance,
     maximizerCapRemaining:     maximizerCapRemaining,
 
-    // Events — standard
+    // Events , standard
     standardEventWinSettle:    standardEventWinSettle,
 
     // Generic

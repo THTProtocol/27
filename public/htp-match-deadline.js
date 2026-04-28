@@ -1,10 +1,10 @@
 /**
- * htp-match-deadline.js — DAA-score based match timing (replaces wall-clock)
+ * htp-match-deadline.js , DAA-score based match timing (replaces wall-clock)
  *
  * Why DAA score instead of Date.now():
  *   - DAA score increments ~10x/sec on Kaspa mainnet
- *   - It is chain-verified — no client can fake it
- *   - A DAA delta is fully reproducible by any node — safe for covenant expiry
+ *   - It is chain-verified , no client can fake it
+ *   - A DAA delta is fully reproducible by any node , safe for covenant expiry
  *   - Disconnected clients can't cheat time by pausing system clock
  *
  * API:
@@ -42,9 +42,9 @@
    * Create a deadline for a match.
    * @param {string} matchId
    * @param {object} opts
-   *   opts.seconds     — duration from now in seconds  (mutually exclusive with opts.daaScore)
-   *   opts.daaScore    — absolute target DAA score     (use for covenant-anchored deadlines)
-   *   opts.label       — human label (e.g. 'move', 'match', 'stake')
+   *   opts.seconds     , duration from now in seconds  (mutually exclusive with opts.daaScore)
+   *   opts.daaScore    , absolute target DAA score     (use for covenant-anchored deadlines)
+   *   opts.label       , human label (e.g. 'move', 'match', 'stake')
    */
   function create(matchId, opts = {}) {
     const currentDaa = nowDaa();
@@ -153,9 +153,9 @@
           }));
         }
       });
-      console.log(`[HTPDeadline] Restored ${data.matchId} — ${daaToSeconds(deadlineDaa - currentDaa).toFixed(1)}s remaining`);
+      console.log(`[HTPDeadline] Restored ${data.matchId} , ${daaToSeconds(deadlineDaa - currentDaa).toFixed(1)}s remaining`);
     } else {
-      console.warn(`[HTPDeadline] Restored ${data.matchId} — already expired`);
+      console.warn(`[HTPDeadline] Restored ${data.matchId} , already expired`);
     }
   }
 

@@ -1,5 +1,5 @@
 // =============================================================
-// htp-chess-sync.js  —  HTP Chess Sync Patch v1
+// htp-chess-sync.js  ,  HTP Chess Sync Patch v1
 // Fixes: board orientation, synchronized Firebase clock,
 //        color persistence, payout trigger
 // Drop into project root. Add ONE line to index.html:
@@ -9,7 +9,10 @@
 (function () {
   'use strict';
 
-  // ── helpers ──────────────────────────────────────────────
+  if (window.__htpChessSyncInstalled) return;
+  window.__htpChessSyncInstalled = true;
+
+  // helpers
   function db() { return (typeof firebase !== 'undefined') ? firebase.database() : null; }
   function fmt(ms) {
     if (ms < 0) ms = 0;
@@ -35,7 +38,7 @@
     var oppColor = myColor === 'white' ? 'black' : 'white';
     var ref = d.ref('relay/' + matchId + '/colors');
     ref.transaction(function (cur) {
-      if (cur && cur.assigned) return; // already set — abort
+      if (cur && cur.assigned) return; // already set , abort
       var obj = { assigned: true };
       obj[myColor]  = myPlayerId();
       obj[oppColor] = 'TBD';
@@ -51,11 +54,11 @@
     var d = db(); if (!d) { cb('black'); return; }
     var ref = d.ref('relay/' + matchId + '/colors');
     ref.transaction(function (cur) {
-      if (!cur || !cur.assigned) return; // creator hasn't written yet — abort
+      if (!cur || !cur.assigned) return; // creator hasn't written yet , abort
       var color;
       if (cur.white === 'TBD') { cur.white = myPlayerId(); color = 'white'; }
       else if (cur.black === 'TBD') { cur.black = myPlayerId(); color = 'black'; }
-      else return; // both slots filled — abort
+      else return; // both slots filled , abort
       cur._joinerColor = color; // piggyback so we can read it after transaction
       return cur;
     }, function (err, committed, snap) {
@@ -90,7 +93,7 @@
     if (inner) boards.push(inner);
 
     if (!boards.length) {
-      // Board not in DOM yet — retry after render
+      // Board not in DOM yet , retry after render
       setTimeout(function () { applyOrientation(color); }, 300);
       return;
     }
@@ -147,7 +150,7 @@
       if (initialMs) { this.whiteMs = initialMs; this.blackMs = initialMs; }
       this._subscribe();
       this._startTick();
-      console.log('[HTP Sync] Clock started for', matchId, '— initial', initialMs / 60000 | 0, 'min');
+      console.log('[HTP Sync] Clock started for', matchId, ', initial', initialMs / 60000 | 0, 'min');
     },
 
     _subscribe: function () {
@@ -300,7 +303,7 @@
         var timeSec = match ? parseFloat(match.timeControl) || 600 : 600;
         syncClock.start(matchId, color, timeSec * 1000);
       } else {
-        // Joiner path — read color from Firebase
+        // Joiner path , read color from Firebase
         assignColorsAsJoiner(matchId, function (color) {
           applyOrientation(color);
           setTimeout(function () { applyOrientation(color); }, 600);
@@ -340,7 +343,7 @@
     console.log('[HTP Sync] joinLobbyMatch patched');
   }
 
-  // ── 6. PAYOUT — wire handleMatchGameOver to settlement ────
+  // ── 6. PAYOUT , wire handleMatchGameOver to settlement ────
   // The existing handleMatchGameOver in htp-events.js already calls
   // sendFromEscrow(matchId, walletAddress) for the winner.
   // The issue is it uses a local-only color check. We override it to
@@ -358,14 +361,14 @@
       // Convert winnerColor from the engine ('w'/'b' or 'white'/'black') to our format
       var winnerStr = (winnerColor === 'w' || winnerColor === 1 || winnerColor === 'white') ? 'white' : 'black';
 
-      // Write result to Firebase idempotently (first write wins — prevents double payout)
+      // Write result to Firebase idempotently (first write wins , prevents double payout)
       var match = (typeof matchLobby !== 'undefined') ? matchLobby.activeMatch : null;
       var matchId = match ? match.id : window._htpCurrentMatchId;
       if (matchId && db()) {
         var resultRef = db().ref('relay/' + matchId + '/result');
         var snap = await resultRef.once('value');
         if (snap.exists()) {
-          console.log('[HTP Sync] Result already recorded — skipping duplicate settlement');
+          console.log('[HTP Sync] Result already recorded , skipping duplicate settlement');
           return;
         }
         await resultRef.set({ winner: winnerStr, reason: reason, ts: Date.now() });
@@ -375,7 +378,7 @@
       var iWon = (winnerStr === myColor);
       if (!iWon && reason !== 'draw' && reason !== 'stalemate') {
         // Call original for UI (game over overlay) but skip payout
-        console.log('[HTP Sync] I lost — no payout from my client');
+        console.log('[HTP Sync] I lost , no payout from my client');
         if (orig) orig.call(this, reason, winnerColor);
         return;
       }
@@ -384,7 +387,7 @@
       if (orig) return orig.call(this, reason, winnerColor);
     };
     window.handleMatchGameOver._syncPatched = true;
-    console.log('[HTP Sync] handleMatchGameOver patched — idempotent payout');
+    console.log('[HTP Sync] handleMatchGameOver patched , idempotent payout');
   }
 
   // ── 7. INSTALL ───────────────────────────────────────────
