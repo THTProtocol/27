@@ -1,7 +1,7 @@
 {
   "name": "high-table-protocol",
   "version": "8.0.0",
-  "description": "Prediction Markets & Skill Games on Kaspa — Covenant-powered protocol",
+  "description": "Prediction Markets and Skill Games on Kaspa, covenant-powered protocol",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -15,7 +15,9 @@
     "validate": "node -e \"const v = new (require('./lib/script-validator'))(); console.log(v.validate(process.argv[1]))\"",
     "disassemble": "node -e \"const v = new (require('./lib/script-validator'))(); console.log(v.disassemble(process.argv[1]))\"",
     "stats": "node -e \"const db = new (require('./lib/db'))(); console.log(db.getStats())\"",
-    "reset": "rm -rf data/*.json && echo 'Data reset.'"
+    "reset": "rm -rf data/*.json && echo 'Data reset.'",
+    "attestor": "node scripts/run-attestor-node.mjs",
+    "attestor:once": "node scripts/run-attestor-node.mjs --once"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
