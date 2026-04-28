@@ -4992,11 +4992,11 @@ event MyMarket {
                                     <circle cx="15" cy="165" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="45" cy="165" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="75" cy="165" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="105" cy="165" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="135" cy="165" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="165" cy="165" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/><circle cx="195" cy="165" r="10" fill="none" stroke="rgba(73,232,194,0.12)" stroke-width="1"/>
                                   </g>
                                   <!-- Placed pieces (mid-game) -->
-                                  <circle cx="75" cy="165" r="10" fill="#ef4444" opacity="0.8"/><circle cx="105" cy="165" r="10" fill="#49e8c2" opacity="0.8"/>
-                                  <circle cx="75" cy="135" r="10" fill="#49e8c2" opacity="0.8"/><circle cx="105" cy="135" r="10" fill="#ef4444" opacity="0.8"/>
-                                  <circle cx="135" cy="165" r="10" fill="#ef4444" opacity="0.8"/><circle cx="135" cy="135" r="10" fill="#49e8c2" opacity="0.8"/>
-                                  <circle cx="75" cy="105" r="10" fill="#ef4444" opacity="0.8"/><circle cx="165" cy="165" r="10" fill="#49e8c2" opacity="0.8"/>
-                                  <circle cx="45" cy="165" r="10" fill="#49e8c2" opacity="0.65"/><circle cx="105" cy="105" r="10" fill="#ef4444" opacity="0.65"/>
+                                  <circle cx="75" cy="165" r="10" fill="#49e8c2" opacity="0.8"/><circle cx="105" cy="165" r="10" fill="#49e8c2" opacity="0.8"/>
+                                  <circle cx="75" cy="135" r="10" fill="#49e8c2" opacity="0.8"/><circle cx="105" cy="135" r="10" fill="#49e8c2" opacity="0.8"/>
+                                  <circle cx="135" cy="165" r="10" fill="#49e8c2" opacity="0.8"/><circle cx="135" cy="135" r="10" fill="#49e8c2" opacity="0.8"/>
+                                  <circle cx="75" cy="105" r="10" fill="#49e8c2" opacity="0.8"/><circle cx="165" cy="165" r="10" fill="#49e8c2" opacity="0.8"/>
+                                  <circle cx="45" cy="165" r="10" fill="#49e8c2" opacity="0.65"/><circle cx="105" cy="105" r="10" fill="#49e8c2" opacity="0.65"/>
                                 </svg>
                             </div>
                             <div class="sgv2-info">
@@ -5132,7 +5132,7 @@ event MyMarket {
                                     <text x="43" y="32" text-anchor="middle" font-size="12" font-weight="700" fill="#e74c3c" transform="rotate(8 43 22)">♦</text>
                                   </g>
                                   <text x="68" y="180" text-anchor="middle" font-size="11" font-weight="700" fill="#49e8c2">21</text>
-                                  <text x="148" y="180" text-anchor="middle" font-size="11" font-weight="700" fill="#ef4444">BUST</text>
+                                  <text x="148" y="180" text-anchor="middle" font-size="11" font-weight="700" fill="#49e8c2">BUST</text>
                                 </svg>
                             </div>
                             <div class="sgv2-info">
@@ -5146,7 +5146,7 @@ event MyMarket {
                 </div>
 
                 <!-- Create Match Form -->
-                <div class="sgv2-mform" style="margin:0 auto;max-width:1200px;padding-left:24px;padding-right:24px">
+                <div class="sgv2-mform" style="display:none" style="margin:0 auto;max-width:1200px;padding-left:24px;padding-right:24px">
                     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative;z-index:1">
                         <h3 style="font-size:22px">Create a Challenge</h3>
                         <div style="font-size:10px;color:var(--accent);background:rgba(73,232,194,.08);border:1px solid rgba(73,232,194,.25);border-radius:20px;padding:4px 12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:inline-flex;align-items:center;gap:5px">
@@ -6523,7 +6523,7 @@ event MyMarket {
         .live-dag-label, .live-dag-label * { overflow: visible !important; }
 
         /* Checkers board polish: classic high-contrast cream/walnut, glossy pieces. */
-        #checkers-board { background: #2a1810; padding: 8px; border-radius: 12px;
+        #checkers-board { background: #0a1a1a; padding: 8px; border-radius: 12px;
           box-shadow: 0 12px 36px rgba(0,0,0,0.55), inset 0 0 0 2px #1a0e08; }
         .checkers-square { transition: box-shadow .12s ease, filter .12s ease; }
         .checkers-square.dark { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18); }
