@@ -17,7 +17,8 @@
     "stats": "node -e \"const db = new (require('./lib/db'))(); console.log(db.getStats())\"",
     "reset": "rm -rf data/*.json && echo 'Data reset.'",
     "attestor": "node scripts/run-attestor-node.mjs",
-    "attestor:once": "node scripts/run-attestor-node.mjs --once"
+    "attestor:once": "node scripts/run-attestor-node.mjs --once",
+    "stress:games": "node scripts/stress-skill-games.mjs"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
