@@ -355,3 +355,45 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else init();
 var _r=0,_iv=setInterval(function(){suppressWasm();fixResolver();injectSkillSection();hideSmallPickers();_r++;if(_r>60)clearInterval(_iv);},2000);
 })(window);
+// === Skill Games Cosmetic Enhancements ===
+(function() {
+  if (!document.getElementById('skill-cosmetic-css')) {
+    var style = document.createElement('style');
+    style.id = 'skill-cosmetic-css';
+    style.textContent = [
+      // Game cards: glassmorphism + hover effects
+      '.game-card, [onclick*="Game"] { transition: transform 0.3s ease, box-shadow 0.3s ease !important; }',
+      '.game-card:hover, [onclick*="Game"]:hover { transform: translateY(-4px) !important; box-shadow: 0 8px 32px rgba(79,209,159,0.18) !important; }',
+      // Game title glow
+      '.game-card h3, .game-card h2 { text-shadow: 0 0 20px rgba(79,209,159,0.3); }',
+      // Badge pills: improved styling
+      '.game-card .badge, .game-card span[style*="border-radius"] { backdrop-filter: blur(4px); transition: background 0.2s ease; }',
+      // Board preview images: subtle border glow
+      '.game-card img, .game-card canvas { border-radius: 8px; box-shadow: 0 2px 16px rgba(79,209,159,0.10); }',
+      // Open matches counter: pulsing glow
+      '[class*="match"] .badge, .match-count { animation: matchGlow 2s ease-in-out infinite; }',
+      '@keyframes matchGlow { 0%,100%{ box-shadow: 0 0 8px rgba(79,209,159,0.2); } 50%{ box-shadow: 0 0 16px rgba(79,209,159,0.4); } }',
+      // Skill Games header: gradient underline
+      'h1:first-of-type, h2:first-of-type { position: relative; }',
+      // Game grid: better spacing
+      '.games-grid, [style*="grid-template-columns"] { gap: 24px !important; }',
+      // Chess/Connect4 board previews: rounded corners
+      'table[style*="border-collapse"] { border-radius: 8px; overflow: hidden; }',
+    ].join('\n');
+    document.head.appendChild(style);
+  }
+
+  // Add subtle entrance animation to game cards
+  setTimeout(function() {
+    var cards = document.querySelectorAll('.game-card, [style*="border-radius"][style*="padding"][style*="background"]');
+    cards.forEach(function(card, i) {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      card.style.transition = 'opacity 0.5s ease ' + (i * 0.1) + 's, transform 0.5s ease ' + (i * 0.1) + 's';
+      requestAnimationFrame(function() {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      });
+    });
+  }, 100);
+})();
