@@ -1,4 +1,8 @@
-// Kaspa WASM SDK v1.2.3 (@vue-kaspa/kaspa-wasm) - IIFE wrapper for HTP
+// Kaspa WASM SDK - IIFE wrapper for HTP
+// JS glue is wbindgen output; binary kaspa_bg.wasm is the OFFICIAL Rusty Kaspa
+// v1.1.0 web build from https://github.com/kaspanet/rusty-kaspa/releases/tag/v1.1.0
+// (kaspa-wasm32-sdk-v1.1.0.zip -> web/kaspa/kaspa_bg.wasm).
+// Glue and binary share the same wbindgen ABI (verified: identical export & import sets).
 (function () {
 'use strict';
 // ===== KASPA SDK INLINE START =====
@@ -15068,7 +15072,7 @@ async function __wbg_init(module_or_path) {
 
         if (window._onWasmReady) window._onWasmReady();
         window.dispatchEvent(new Event('htpWasmReady'));
-        console.log('[HTP] WASM SDK v1.2.3 ready — RpcClient:', !!window.kaspaSDK.RpcClient, 'Resolver:', !!window.kaspaSDK.Resolver);
+        console.log('[HTP] WASM SDK v1.1.0 (official Rusty Kaspa) ready — RpcClient:', !!window.kaspaSDK.RpcClient, 'Resolver:', !!window.kaspaSDK.Resolver);
     } catch(e) {
         console.error('[HTP] WASM load error:', e);
         window.wasmLoadError = e;
