@@ -113,7 +113,7 @@ class PokerUI {
     // , Action controls
     html += '<div class="poker-actions">';
     if (s.finished) {
-      const winner = s.winner === 'draw' ? 'Split Pot' : (s.winner === this.myAddr ? '🏆 You Win!' : s.winner?.slice(-6) + ' Wins');
+      const winner = s.winner === 'draw' ? 'Split Pot' : (s.winner === this.myAddr ? 'You Win!' : s.winner?.slice(-6) + ' Wins');
       html += `<div class="poker-result ${s.winner === this.myAddr ? 'result-win' : 'result-lose'}">` +
         `${winner}${s.winReason ? ' · ' + s.winReason : ''}</div>`;
     } else if (isMyTurn && me && !me.folded) {

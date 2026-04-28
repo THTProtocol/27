@@ -1,0 +1,366 @@
+/*
+ * htp-buttons-v2.css, High Table Protocol cypherpunk button system
+ * Loaded after style.css, htp-skill-v3.css, and the inline <style> block in index.html.
+ * Targets all major button classes plus raw <button> in the app shell.
+ * Tokens stay aligned with the rest of the app (var(--accent), var(--bg-card), etc).
+ */
+
+:root {
+  --htp-btn-bg:        #0a1f1c;
+  --htp-btn-bg-hover:  #0e2c28;
+  --htp-btn-border:    rgba(73,232,194,0.32);
+  --htp-btn-border-h:  rgba(73,232,194,0.62);
+  --htp-btn-text:      #d8fff5;
+  --htp-btn-accent:    #49e8c2;
+  --htp-btn-accent-d:  #26c9a0;
+  --htp-btn-gold:      #f5c46c;
+  --htp-btn-danger:    #ef4444;
+  --htp-btn-danger-d:  #b91c1c;
+  --htp-btn-shadow:    0 6px 18px rgba(0,0,0,0.45), 0 0 0 1px rgba(73,232,194,0.06);
+  --htp-btn-glow:      0 0 0 1px rgba(73,232,194,0.55), 0 0 22px rgba(73,232,194,0.18), 0 8px 26px rgba(0,0,0,0.55);
+  --htp-btn-focus:     0 0 0 2px #000, 0 0 0 4px rgba(73,232,194,0.85);
+  --htp-btn-radius:    10px;
+  --htp-btn-h:         42px;
+  --htp-btn-h-sm:      32px;
+  --htp-btn-h-lg:      52px;
+}
+
+/* Base button reset and shell, applied to common HTP button classes
+   plus a generic <button> rule that does not break in-DOM functional buttons. */
+.btn,
+.cta1, .cta2,
+.chess-btn,
+.risk-btn,
+.sgv3-btn,
+.sg-btn,
+.htp-btn,
+button.btn-c,
+.modal-btn,
+.wallet-btn,
+.market-btn,
+.join-btn,
+.create-btn {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: var(--htp-btn-h);
+  padding: 0 18px;
+  margin: 0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--htp-btn-text);
+  background: linear-gradient(180deg, var(--htp-btn-bg) 0%, #061613 100%);
+  border: 1px solid var(--htp-btn-border);
+  border-radius: var(--htp-btn-radius);
+  box-shadow: var(--htp-btn-shadow);
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    box-shadow 160ms ease,
+    transform 100ms ease,
+    color 120ms ease;
+}
+
+/* 1px gradient top scanline highlight, gives the cypherpunk panel feel. */
+.btn::before,
+.cta1::before, .cta2::before,
+.chess-btn::before,
+.sgv3-btn::before,
+.sg-btn::before,
+.htp-btn::before,
+button.btn-c::before,
+.modal-btn::before,
+.wallet-btn::before,
+.market-btn::before,
+.join-btn::before,
+.create-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(73,232,194,0.55) 50%, transparent 100%);
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Hover */
+.btn:hover:not(:disabled):not([aria-disabled="true"]),
+.cta1:hover:not(:disabled),
+.cta2:hover:not(:disabled),
+.chess-btn:hover:not(:disabled),
+.sgv3-btn:hover:not(:disabled),
+.sg-btn:hover:not(:disabled),
+.htp-btn:hover:not(:disabled),
+button.btn-c:hover:not(:disabled),
+.modal-btn:hover:not(:disabled),
+.wallet-btn:hover:not(:disabled),
+.market-btn:hover:not(:disabled),
+.join-btn:hover:not(:disabled),
+.create-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--htp-btn-bg-hover) 0%, #0a201d 100%);
+  border-color: var(--htp-btn-border-h);
+  color: var(--htp-btn-accent);
+  box-shadow: var(--htp-btn-glow);
+  transform: translateY(-1px);
+}
+
+/* Active */
+.btn:active:not(:disabled),
+.cta1:active:not(:disabled),
+.cta2:active:not(:disabled),
+.chess-btn:active:not(:disabled),
+.sgv3-btn:active:not(:disabled),
+.sg-btn:active:not(:disabled),
+.htp-btn:active:not(:disabled),
+button.btn-c:active:not(:disabled),
+.modal-btn:active:not(:disabled),
+.wallet-btn:active:not(:disabled),
+.market-btn:active:not(:disabled),
+.join-btn:active:not(:disabled),
+.create-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 0 1px rgba(73,232,194,0.45);
+}
+
+/* Keyboard focus, visible only when focused via keyboard. */
+.btn:focus-visible,
+.cta1:focus-visible,
+.cta2:focus-visible,
+.chess-btn:focus-visible,
+.sgv3-btn:focus-visible,
+.sg-btn:focus-visible,
+.htp-btn:focus-visible,
+button.btn-c:focus-visible,
+.modal-btn:focus-visible,
+.wallet-btn:focus-visible,
+.market-btn:focus-visible,
+.join-btn:focus-visible,
+.create-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--htp-btn-focus), var(--htp-btn-glow);
+}
+
+/* Disabled, intentionally muted with crosshatch hint. */
+.btn:disabled,
+.btn[aria-disabled="true"],
+.cta1:disabled,
+.cta2:disabled,
+.chess-btn:disabled,
+.sgv3-btn:disabled,
+.sg-btn:disabled,
+.htp-btn:disabled,
+button.btn-c:disabled,
+.modal-btn:disabled,
+.wallet-btn:disabled,
+.market-btn:disabled,
+.join-btn:disabled,
+.create-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  filter: grayscale(0.35);
+  transform: none;
+  background:
+    repeating-linear-gradient(135deg, rgba(73,232,194,0.04) 0 6px, rgba(73,232,194,0) 6px 12px),
+    linear-gradient(180deg, #0a141a 0%, #06090c 100%);
+  color: rgba(216,255,245,0.55);
+  border-color: rgba(255,255,255,0.08);
+  box-shadow: none;
+}
+
+/* Primary, the action that gets value moved or signed. */
+.btn-primary,
+.cta1,
+.htp-btn-primary,
+.create-btn,
+.market-btn-buy {
+  background: linear-gradient(180deg, var(--htp-btn-accent) 0%, var(--htp-btn-accent-d) 100%);
+  color: #051310;
+  border-color: rgba(38,201,160,0.7);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.18);
+}
+.btn-primary:hover:not(:disabled),
+.cta1:hover:not(:disabled),
+.htp-btn-primary:hover:not(:disabled),
+.create-btn:hover:not(:disabled),
+.market-btn-buy:hover:not(:disabled) {
+  background: linear-gradient(180deg, #6ff5d6 0%, var(--htp-btn-accent) 100%);
+  color: #03100d;
+  border-color: var(--htp-btn-accent);
+  box-shadow: 0 0 0 1px var(--htp-btn-accent), 0 0 28px rgba(73,232,194,0.45), 0 10px 28px rgba(0,0,0,0.55);
+}
+
+/* Secondary / ghost / outline. */
+.btn-secondary,
+.btn-outline,
+.btn-ghost,
+.cta2,
+.htp-btn-ghost {
+  background: transparent;
+  color: var(--htp-btn-text);
+  border-color: rgba(255,255,255,0.10);
+}
+.btn-secondary:hover:not(:disabled),
+.btn-outline:hover:not(:disabled),
+.btn-ghost:hover:not(:disabled),
+.cta2:hover:not(:disabled),
+.htp-btn-ghost:hover:not(:disabled) {
+  background: rgba(73,232,194,0.06);
+  border-color: var(--htp-btn-border-h);
+  color: var(--htp-btn-accent);
+}
+
+/* Danger. */
+.btn-danger,
+.chess-btn-danger,
+.htp-btn-danger {
+  background: linear-gradient(180deg, var(--htp-btn-danger) 0%, var(--htp-btn-danger-d) 100%);
+  color: #fff;
+  border-color: rgba(185,28,28,0.7);
+  text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+}
+.btn-danger:hover:not(:disabled),
+.chess-btn-danger:hover:not(:disabled),
+.htp-btn-danger:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ff6b6b 0%, var(--htp-btn-danger) 100%);
+  border-color: var(--htp-btn-danger);
+  box-shadow: 0 0 0 1px var(--htp-btn-danger), 0 0 28px rgba(239,68,68,0.45), 0 10px 28px rgba(0,0,0,0.55);
+}
+
+/* Gold (settlement/winner highlights). */
+.btn-gold,
+.htp-btn-gold {
+  background: linear-gradient(180deg, var(--htp-btn-gold) 0%, #c89436 100%);
+  color: #1a1106;
+  border-color: rgba(245,196,108,0.7);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.18);
+}
+.btn-gold:hover:not(:disabled),
+.htp-btn-gold:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffd98a 0%, var(--htp-btn-gold) 100%);
+  box-shadow: 0 0 0 1px var(--htp-btn-gold), 0 0 26px rgba(245,196,108,0.4), 0 10px 28px rgba(0,0,0,0.55);
+}
+
+/* Sizes. */
+.btn-sm,
+.htp-btn-sm { height: var(--htp-btn-h-sm); padding: 0 12px; font-size: 11px; letter-spacing: 0.06em; }
+.btn-lg,
+.htp-btn-lg, .cta1.cta-lg, .cta2.cta-lg { height: var(--htp-btn-h-lg); padding: 0 26px; font-size: 14px; }
+
+.btn-block,
+.htp-btn-block { width: 100%; }
+
+/* Pill nav buttons (top nav). */
+.nav-btn {
+  border-radius: 999px !important;
+  letter-spacing: 0.06em;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  height: 34px !important;
+}
+
+/* Risk toggle buttons. */
+.risk-btn {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  background: linear-gradient(180deg, #0c1a17 0%, #060c0a 100%);
+  color: var(--htp-btn-text);
+  border-color: rgba(255,255,255,0.10);
+  text-transform: uppercase;
+}
+.risk-btn.active {
+  background: linear-gradient(180deg, rgba(73,232,194,0.18) 0%, rgba(38,201,160,0.10) 100%);
+  border-color: var(--htp-btn-accent);
+  color: var(--htp-btn-accent);
+  box-shadow: 0 0 0 1px var(--htp-btn-accent), 0 0 18px rgba(73,232,194,0.3);
+}
+
+/* Skill v3 buttons. */
+.sgv3-btn,
+.sgv3-tab,
+.sgv3-action {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.sgv3-tab[aria-selected="true"],
+.sgv3-tab.active {
+  background: linear-gradient(180deg, rgba(73,232,194,0.18) 0%, rgba(38,201,160,0.08) 100%) !important;
+  color: var(--htp-btn-accent) !important;
+  border-color: var(--htp-btn-accent) !important;
+}
+
+/* Modal close button (the small X). */
+.sgv3-close,
+.modal-close,
+.htp-modal-close {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.12);
+  color: var(--htp-btn-text);
+}
+.sgv3-close:hover:not(:disabled),
+.modal-close:hover:not(:disabled),
+.htp-modal-close:hover:not(:disabled) {
+  background: rgba(239,68,68,0.18);
+  border-color: rgba(239,68,68,0.6);
+  color: #ff8c8c;
+  box-shadow: 0 0 0 1px rgba(239,68,68,0.6), 0 0 22px rgba(239,68,68,0.3);
+}
+
+/* Inline tag buttons (chips), keep them quieter. */
+.chip,
+.market-chip {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--htp-btn-text);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.chip:hover, .market-chip:hover {
+  background: rgba(73,232,194,0.10);
+  color: var(--htp-btn-accent);
+  border-color: rgba(73,232,194,0.4);
+}
+.chip.act, .chip.chip-a, .market-chip.act {
+  background: rgba(73,232,194,0.16);
+  color: var(--htp-btn-accent);
+  border-color: var(--htp-btn-accent);
+}
+
+/* High Table accent for any plain button inside the v-skill / .sgv3 / .panel containers,
+   without breaking developer-set inline backgrounds. */
+.sgv3-panel button:not(.sg-gbtn):not(.sgv3-tab):not([style*="background"]):not(.chip):not(.no-htp) {
+  height: var(--htp-btn-h);
+  padding: 0 16px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}

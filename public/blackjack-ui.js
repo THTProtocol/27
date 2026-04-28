@@ -106,7 +106,7 @@ class BlackjackUI {
       if (myResult) {
         const net = myResult.netChips || 0;
         html += `<div class="bj-final-result ${net > 0 ? 'result-win' : net < 0 ? 'result-lose' : 'result-push'}">`;
-        html += net > 0 ? `🏆 +${(net/1e8).toFixed(2)} KAS` : net < 0 ? `❌ ${(net/1e8).toFixed(2)} KAS` : `🤝 Push · Bet Returned`;
+        html += net > 0 ? ` +${(net/1e8).toFixed(2)} KAS` : net < 0 ? ` ${(net/1e8).toFixed(2)} KAS` : `Push · Bet Returned`;
         html += '</div>';
         html += `<div style="text-align:center;margin-top:8px"><button class="btn btn-primary" id="bj-next-round">Next Round</button></div>`;
       }
@@ -145,7 +145,7 @@ class BlackjackUI {
     }
 
     // , Shoe remaining
-    html += `<div class="bj-shoe-info">🂠 ${s.shoeRemaining||'?'} cards remaining</div>`;
+    html += `<div class="bj-shoe-info"> ${s.shoeRemaining||'?'} cards remaining</div>`;
 
     html += '</div>'; // bj-table
     return html;

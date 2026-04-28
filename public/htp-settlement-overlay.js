@@ -141,7 +141,7 @@
     let icon, titleText, titleClass, payoutBig, payoutClass, subtitle, rows = [], primaryLabel, secondaryLabel;
 
     if (type === 'win') {
-      icon = '🏆'; titleClass = 'win'; titleText = 'You Won!';
+      icon = ''; titleClass = 'win'; titleText = 'You Won!';
       const calc = Fee.skillGameSettle(stakeKas);
       subtitle = `Match ${matchId || ''} settled on-chain`;
       payoutBig = '+' + calc.winnerPayout.toFixed(2) + ' KAS'; payoutClass = '';
@@ -155,7 +155,7 @@
       secondaryLabel = 'Close';
 
     } else if (type === 'lose') {
-      icon = '💀'; titleClass = 'lose'; titleText = 'You Lost';
+      icon = ''; titleClass = 'lose'; titleText = 'You Lost';
       subtitle = `Match ${matchId || ''} settled`;
       payoutBig = '0 KAS'; payoutClass = 'lose';
       rows = [
@@ -177,7 +177,7 @@
       secondaryLabel = 'Close';
 
     } else if (type === 'draw') {
-      icon = '🤝'; titleClass = 'draw'; titleText = 'Draw';
+      icon = ''; titleClass = 'draw'; titleText = 'Draw';
       const half = stakeKas; // each gets their stake back
       subtitle = `Match ${matchId || ''} , stakes returned`;
       payoutBig = half.toFixed(2) + ' KAS each'; payoutClass = 'draw';
@@ -189,7 +189,7 @@
 
     } else {
       // preview , before TX fires
-      icon = '📋'; titleClass = 'preview'; titleText = 'Settlement Preview';
+      icon = ''; titleClass = 'preview'; titleText = 'Settlement Preview';
       subtitle = 'Review before signing';
       const calc = Fee.skillGameSettle(stakeKas);
       payoutBig = calc.winnerPayout.toFixed(2) + ' KAS'; payoutClass = '';

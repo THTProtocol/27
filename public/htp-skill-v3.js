@@ -24,7 +24,7 @@
   var GAME_ICONS = {
     chess:'♞',
     connect4:'●',
-    checkers:'⚪',
+    checkers:'',
     tictactoe:'✕',
     poker:'♠',
     blackjack:'♣'

@@ -138,34 +138,34 @@ function wsSend(type, data) {
 function handleWsEvent(event, data) {
   switch (event) {
     case 'market-created':
-      addFeedItem('📊 New market: ' + (data.market?.title || ''));
+      addFeedItem('New market: ' + (data.market?.title || ''));
       if (app.currentView === 'dashboard') loadDashboard();
       if (app.currentView === 'markets') loadMarkets();
       break;
     case 'position-taken':
-      addFeedItem('💰 Position taken on market');
+      addFeedItem('Position taken on market');
       break;
     case 'pool-updated':
       break;
     case 'market-resolved':
-      addFeedItem('✅ Market resolved: ' + data.marketId);
+      addFeedItem('Market resolved: ' + data.marketId);
       if (app.currentView === 'dashboard') loadDashboard();
       if (app.currentView === 'markets') loadMarkets();
       break;
     case 'game-created':
-      addFeedItem('♟️ New game: ' + (data.game?.type || ''));
+      addFeedItem('New game: ' + (data.game?.type || ''));
       if (app.currentView === 'games') loadGames();
       break;
     case 'game-started':
-      addFeedItem('🎮 Game started');
+      addFeedItem('Game started');
       break;
     case 'game-over':
-      addFeedItem('🏆 Game over: ' + (data.reason || ''));
+      addFeedItem('Game over: ' + (data.reason || ''));
       break;
     case 'game-move':
       break;
     case 'game-settled':
-      addFeedItem('💸 Game settled on-chain');
+      addFeedItem('Game settled on-chain');
       break;
   }
 }
@@ -231,10 +231,10 @@ function renderOpenGames(games) {
   const icons = { chess: '♚', checkers: '⛀', connect4: '◉' };
   el.innerHTML = games.map(g => {
     return '<div class="game-card" onclick="navigateTo(\'game\',\'' + g.id + '\')">' +
-      '<div class="game-type-icon">' + (icons[g.type] || '🎮') + '</div>' +
+      '<div class="game-type-icon">' + (icons[g.type] || '') + '</div>' +
       '<div class="game-stake">' + formatKas(g.stakeSompi) + ' KAS</div>' +
       '<div class="game-players">' + shortAddr(g.playerA) + ' vs ???</div>' +
-      '<div class="game-time-control">⏱ ' + (g.timeControl || '10+0') + ' · ' + g.type + '</div>' +
+      '<div class="game-time-control"> ' + (g.timeControl || '10+0') + ' · ' + g.type + '</div>' +
     '</div>';
   }).join('');
 }
@@ -244,7 +244,7 @@ function renderLeaderboard(users) {
   if (!users.length) { el.innerHTML = '<div class="empty-state">No data yet</div>'; return; }
   el.innerHTML = users.map((u, i) => {
     return '<div class="lb-row">' +
-      '<span class="lb-rank">' + (i < 3 ? ['🥇','🥈','🥉'][i] : '#' + (i+1)) + '</span>' +
+      '<span class="lb-rank">' + (i < 3 ? ['','',''][i] : '#' + (i+1)) + '</span>' +
       '<span class="lb-addr">' + shortAddr(u.addr) + '</span>' +
       '<span class="lb-won">+' + formatKas(u.totalWon) + '</span>' +
     '</div>';
@@ -361,7 +361,7 @@ function renderMarkets(markets) {
         '<span>' + m.positionCount + ' positions · ' + timeAgo(m.createdAt) + '</span>' +
         '<span class="market-volume">' + formatKas(m.poolAmountSompi) + ' KAS</span>' +
       '</div>' +
-      (m.customScript ? '<div style="margin-top:8px"><span class="market-badge badge-custom">⚡ CUSTOM SCRIPT</span></div>' : '') +
+      (m.customScript ? '<div style="margin-top:8px"><span class="market-badge badge-custom">CUSTOM SCRIPT</span></div>' : '') +
     '</div>';
   }).join('');
 }
@@ -414,7 +414,7 @@ async function showMarketDetail(marketId) {
           '<span class="market-category cat-' + m.category + '">' + m.category + '</span>' +
           '<span>' + (modeLabels[m.marketMode] || 'Open') + '</span>' +
           '<span>Created ' + timeAgo(m.createdAt) + '</span>' +
-          (m.customScript ? '<span class="market-badge badge-custom">⚡ CUSTOM SCRIPT</span>' : '') +
+          (m.customScript ? '<span class="market-badge badge-custom">CUSTOM SCRIPT</span>' : '') +
         '</div>' +
       '</div>' +
 
@@ -445,7 +445,7 @@ async function showMarketDetail(marketId) {
               m.positions.map(p => {
                 const sideLabel = p.side === 1 ? m.outcomeA : m.outcomeB;
                 const sideColor = p.side === 1 ? 'var(--green)' : 'var(--red)';
-                const riskLabel = p.riskMode === 1 ? '⚡MAX' : 'SPOT';
+                const riskLabel = p.riskMode === 1 ? 'MAX' : 'SPOT';
                 return '<div class="feed-item">' +
                   '<span><span style="color:' + sideColor + ';font-weight:600">' + sideLabel + '</span> · ' +
                     formatKas(p.amountSompi) + ' KAS · ' + riskLabel + ' · ' + shortAddr(p.userAddr) + '</span>' +
@@ -470,7 +470,7 @@ async function showMarketDetail(marketId) {
 function renderResolutionCard(m) {
   const winSide = m.outcome === 1 ? m.outcomeA : m.outcomeB;
   return '<div class="card" style="margin-top:20px;border-color:var(--green)">' +
-    '<h3 style="margin-bottom:12px;color:var(--green)">✅ Resolved</h3>' +
+    '<h3 style="margin-bottom:12px;color:var(--green)">Resolved</h3>' +
     '<p style="color:var(--text-secondary)">Winner: <strong style="color:var(--green)">' + esc(winSide) + '</strong></p>' +
     (m.resolutionTxId ? '<p style="margin-top:8px;font-size:12px;color:var(--text-muted)">TX: ' + m.resolutionTxId.slice(0, 16) + '...</p>' : '') +
   '</div>';
@@ -487,8 +487,8 @@ function renderPositionPanel(m) {
     (showRisk ?
       '<label style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;display:block">Risk Mode</label>' +
       '<div class="risk-selector">' +
-        '<button class="risk-btn active" id="risk-spot-btn" onclick="selectRisk(0)">🎯 Spot</button>' +
-        '<button class="risk-btn" id="risk-max-btn" onclick="selectRisk(1)">⚡ Maximizer</button>' +
+        '<button class="risk-btn active" id="risk-spot-btn" onclick="selectRisk(0)">Spot</button>' +
+        '<button class="risk-btn" id="risk-max-btn" onclick="selectRisk(1)">Maximizer</button>' +
       '</div>' : '') +
     '<div class="form-group">' +
       '<label>Amount (KAS)</label>' +
@@ -614,13 +614,13 @@ function renderGames(games) {
     const playerB = g.playerB ? shortAddr(g.playerB) : 'Waiting...';
     return '<div class="game-card" onclick="navigateTo(\'game\',\'' + g.id + '\')">' +
       '<div style="display:flex;justify-content:space-between;align-items:center">' +
-        '<div class="game-type-icon">' + (icons[g.type] || '🎮') + '</div>' +
+        '<div class="game-type-icon">' + (icons[g.type] || '') + '</div>' +
         '<span class="market-badge ' + (statusColors[g.status] || '') + '">' + g.status.toUpperCase() + '</span>' +
       '</div>' +
       '<div class="game-stake">' + formatKas(g.stakeSompi) + ' KAS</div>' +
       '<div class="game-players">' + shortAddr(g.playerA) + ' vs ' + playerB + '</div>' +
-      '<div class="game-time-control">⏱ ' + (g.timeControl || '10+0') + ' · ' + g.type + '</div>' +
-      (g.status === 'finished' && g.winner ? '<div style="margin-top:8px;font-size:12px;color:var(--green)">🏆 ' + (g.winner === 'draw' ? 'Draw' : shortAddr(g.winner)) + '</div>' : '') +
+      '<div class="game-time-control"> ' + (g.timeControl || '10+0') + ' · ' + g.type + '</div>' +
+      (g.status === 'finished' && g.winner ? '<div style="margin-top:8px;font-size:12px;color:var(--green)"> ' + (g.winner === 'draw' ? 'Draw' : shortAddr(g.winner)) + '</div>' : '') +
     '</div>';
   }).join('');
 }
@@ -745,9 +745,9 @@ function renderWaitingRoom(el, game) {
 
   el.innerHTML =
     '<div style="max-width:500px;margin:60px auto;text-align:center">' +
-      '<div style="font-size:64px;margin-bottom:20px">' + (icons[game.type] || '🎮') + '</div>' +
+      '<div style="font-size:64px;margin-bottom:20px">' + (icons[game.type] || '') + '</div>' +
       '<h2>Waiting for Opponent</h2>' +
-      '<p style="color:var(--text-secondary);margin:12px 0">Game: ' + game.type + ' · Stake: ' + formatKas(game.stakeSompi) + ' KAS · ⏱ ' + game.timeControl + '</p>' +
+      '<p style="color:var(--text-secondary);margin:12px 0">Game: ' + game.type + ' · Stake: ' + formatKas(game.stakeSompi) + ' KAS ·  ' + game.timeControl + '</p>' +
       '<p style="color:var(--text-muted);font-size:12px">Created by ' + shortAddr(game.playerA) + '</p>' +
       '<div style="margin:24px 0;padding:16px;background:var(--bg-secondary);border-radius:var(--radius);font-family:var(--font-mono);font-size:11px;word-break:break-all;color:var(--text-muted)">' +
         'Share link: ' + location.origin + '/#game/' + game.id +
@@ -783,10 +783,10 @@ function renderGameBoard(el, game) {
         '</div>' +
         (game.status === 'playing' ? '<div class="game-actions">' +
           '<button class="btn btn-secondary" style="flex:1" onclick="offerDraw(\'' + game.id + '\')">½ Draw</button>' +
-          '<button class="btn btn-danger" style="flex:1" onclick="resignGame(\'' + game.id + '\')">⚐ Resign</button>' +
+          '<button class="btn btn-danger" style="flex:1" onclick="resignGame(\'' + game.id + '\')">Resign</button>' +
         '</div>' : '') +
         (game.status === 'finished' ? '<div style="text-align:center;padding:12px;background:var(--green-bg);border-radius:var(--radius);color:var(--green);font-weight:600">' +
-          (game.winner === 'draw' ? '½ Draw' : '🏆 Winner: ' + shortAddr(game.winner)) +
+          (game.winner === 'draw' ? '½ Draw' : 'Winner: ' + shortAddr(game.winner)) +
         '</div>' : '') +
       '</div>' +
     '</div>';
@@ -1021,14 +1021,14 @@ async function validateScript() {
     const el = document.getElementById('script-validation-result');
     if (result.valid) {
       el.innerHTML = '<div style="padding:12px;background:var(--green-bg);border-radius:var(--radius);margin-top:12px;color:var(--green)">' +
-        '✅ Script valid · ' + result.analysis.size + ' bytes · ' + result.analysis.opsCount + ' ops' +
-        (result.analysis.hasTimeLock ? ' · ⏱ Time-lock' : '') +
-        (result.analysis.hasMultisig ? ' · 🔐 Multisig' : '') +
-        (result.warnings.length ? '<br><span style="color:var(--yellow)">⚠️ ' + result.warnings.join('; ') + '</span>' : '') +
+        'Script valid · ' + result.analysis.size + ' bytes · ' + result.analysis.opsCount + ' ops' +
+        (result.analysis.hasTimeLock ? ' · Time-lock' : '') +
+        (result.analysis.hasMultisig ? ' · Multisig' : '') +
+        (result.warnings.length ? '<br><span style="color:var(--yellow)"> ' + result.warnings.join('; ') + '</span>' : '') +
       '</div>';
     } else {
       el.innerHTML = '<div style="padding:12px;background:var(--red-bg);border-radius:var(--radius);margin-top:12px;color:var(--red)">' +
-        '❌ Invalid: ' + result.errors.join('; ') +
+        'Invalid: ' + result.errors.join('; ') +
       '</div>';
     }
   } catch (e) {

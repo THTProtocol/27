@@ -87,7 +87,7 @@
       ERR('COVENANT INTEGRITY FAIL , redeemScript fee SPK mismatch!');
       ERR('Expected SPK:', expectedSpk);
       ERR('RedeemScript:', escrow.redeemScript);
-      if (W.showToast) W.showToast('⚠️ Covenant integrity check failed , settlement blocked', 'error');
+      if (W.showToast) W.showToast('Covenant integrity check failed , settlement blocked', 'error');
       return false;
     }
     LOG('Covenant integrity ✓ , fee SPK verified in redeemScript');
@@ -209,7 +209,7 @@
 
     const overlayEl = document.getElementById('htp-gameover-overlay');
     const statusEl  = overlayEl && overlayEl.querySelector('.htp-go-settle-status');
-    if (statusEl) { statusEl.textContent = '⏳ Settling on-chain…'; statusEl.style.color = '#f59e0b'; }
+    if (statusEl) { statusEl.textContent = 'Settling on-chain…'; statusEl.style.color = '#f59e0b'; }
 
     try {
       let txId;
@@ -228,7 +228,7 @@
       }
     } catch(e) {
       ERR('Auto-payout failed:', e.message);
-      if (statusEl) { statusEl.textContent = '⚠️ Settlement failed: ' + e.message; statusEl.style.color = '#ef4444'; }
+      if (statusEl) { statusEl.textContent = 'Settlement failed: ' + e.message; statusEl.style.color = '#ef4444'; }
     }
   }
 
@@ -344,7 +344,7 @@
     };
 
     if (isDraw) {
-      icon='🤝'; titleCls='draw'; titleText='Draw';
+      icon=''; titleCls='draw'; titleText='Draw';
       payoutAmount = stakeKas.toFixed(2)+' KAS'; payoutCls='draw';
       reasonText = reason === 'stalemate' ? 'Stalemate' : 'Draw by ' + reason;
       rows=[
@@ -352,7 +352,7 @@
         {lbl:'Protocol fee',val:'None (draw)',cls:''},
       ];
     } else if (iWon) {
-      icon='🏆'; titleCls='win'; titleText='You Won!';
+      icon=''; titleCls='win'; titleText='You Won!';
       payoutAmount = '+'+calc.winnerPayout.toFixed(2)+' KAS'; payoutCls='win';
       reasonText = reason === 'checkmate' ? 'Checkmate' : reason === 'timeout' ? 'Timeout' : reason === 'resign' ? 'Opponent resigned' : 'Victory';
       rows=[
@@ -362,7 +362,7 @@
         {lbl:'Treasury',      val:(W.HTPFee?W.HTPFee.treasuryAddress():'').slice(0,16)+'…',cls:''},
       ];
     } else {
-      icon='💀'; titleCls='lose'; titleText='You Lost';
+      icon=''; titleCls='lose'; titleText='You Lost';
       payoutAmount='0 KAS'; payoutCls='lose';
       reasonText = reason === 'checkmate' ? 'Checkmate' : reason === 'timeout' ? 'Timeout' : reason === 'resign' ? 'You resigned' : 'Defeat';
       rows=[
@@ -386,7 +386,7 @@
           <div class="htp-go-payout-amount ${payoutCls}">${payoutAmount}</div>
           ${rowsHtml}
         </div>
-        <div class="htp-go-settle-status">${(iWon||isDraw)?'⏳ Settling on-chain…':'⏳ Waiting for settlement…'}</div>
+        <div class="htp-go-settle-status">${(iWon||isDraw)?'Settling on-chain…':'Waiting for settlement…'}</div>
         <div class="htp-go-tx" id="htp-go-tx-link"></div>
         <div class="htp-go-btns">
           <button class="htp-go-btn secondary" onclick="document.getElementById('htp-gameover-overlay').remove()">Close</button>
@@ -402,7 +402,7 @@
     const explorer = (W.HTP_NETWORK === 'mainnet')
       ? 'https://explorer.kaspa.org/txs/'
       : 'https://explorer-tn12.kaspa.org/txs/';
-    if (statusEl) { statusEl.textContent = '✅ Settled on-chain'; statusEl.style.color = '#49e8c2'; }
+    if (statusEl) { statusEl.textContent = 'Settled on-chain'; statusEl.style.color = '#49e8c2'; }
     if (txEl) txEl.innerHTML = `TX: <a href="${explorer}${txId}" target="_blank">${String(txId).slice(0,20)}…</a>`;
   }
 
@@ -412,7 +412,7 @@
 
   const PIECES = {
     wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',
-    bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'
+    bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:''
   };
 
   function injectChessStyles() {
@@ -521,8 +521,8 @@
     const timeSec   = opts.timeSec || 300;
     const myName    = (opts.myColor === 'w' ? opts.creatorName : opts.joinerName) || 'You';
     const oppName   = (opts.myColor === 'w' ? opts.joinerName : opts.creatorName) || 'Opponent';
-    const myLabel   = opts.myColor === 'w' ? 'White ♙' : 'Black ♟';
-    const oppLabel  = opts.myColor === 'w' ? 'Black ♟' : 'White ♙';
+    const myLabel   = opts.myColor === 'w' ? 'White ♙' : 'Black ';
+    const oppLabel  = opts.myColor === 'w' ? 'Black ' : 'White ♙';
     const topLabel  = isFlipped ? myLabel : oppLabel;
     const botLabel  = isFlipped ? oppLabel : myLabel;
     const topName   = isFlipped ? myName  : oppName;
@@ -533,13 +533,13 @@
     wrap.innerHTML = `
       <div class="htp-chess-wrap">
         <div class="htp-chess-playerbar">
-          <div class="avatar">${isFlipped ? '♙' : '♟'}</div>
+          <div class="avatar">${isFlipped ? '♙' : ''}</div>
           <div class="name">${topName} <span style="color:#64748b;font-size:11px">(${topLabel})</span></div>
           <div class="htp-chess-clock inactive" id="htpClockTop">${fmtSec(timeSec)}</div>
         </div>
         <div id="htpChessBoardEl"></div>
         <div class="htp-chess-playerbar" style="margin-top:3px">
-          <div class="avatar">${isFlipped ? '♟' : '♙'}</div>
+          <div class="avatar">${isFlipped ? '' : '♙'}</div>
           <div class="name">${botName} <span style="color:#64748b;font-size:11px">(${botLabel})</span></div>
           <div class="htp-chess-clock active" id="htpClockBot">${fmtSec(timeSec)}</div>
         </div>
@@ -642,9 +642,9 @@
     const game = W.chessGame;
     const ui   = W.chessUI || {};
     if (!el || !game) return;
-    if (game.isCheckmate()) { el.textContent='♟ Checkmate!'; el.className='htp-chess-status-txt your-turn'; return; }
-    if (game.isCheck())     { el.textContent='⚠️ Check!';     el.className='htp-chess-status-txt'; return; }
-    if (game.isDraw() || game.isStalemate()) { el.textContent='🤝 Draw'; el.className='htp-chess-status-txt'; return; }
+    if (game.isCheckmate()) { el.textContent='Checkmate!'; el.className='htp-chess-status-txt your-turn'; return; }
+    if (game.isCheck())     { el.textContent='Check!';     el.className='htp-chess-status-txt'; return; }
+    if (game.isDraw() || game.isStalemate()) { el.textContent='Draw'; el.className='htp-chess-status-txt'; return; }
     const myTurn = game.turn() === ui.playerColor;
     el.textContent = myTurn ? '● Your turn' : '○ Opponent\'s turn';
     el.className   = 'htp-chess-status-txt' + (myTurn ? ' your-turn' : '');

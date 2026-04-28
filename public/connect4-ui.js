@@ -50,7 +50,7 @@ class Connect4UI {
       const canDrop = this.board[0][c] === null && !this.winner;
       html += '<div style="text-align:center;font-size:18px;cursor:' + (canDrop && isMyTurn ? 'pointer' : 'default') +
         ';opacity:' + (canDrop && isMyTurn ? '0.7' : '0.2') + '" data-drop="' + c + '">' +
-        (isMyTurn && myTurn === 'red' ? '🔴' : isMyTurn && myTurn === 'yellow' ? '🟡' : '⬇') + '</div>';
+        (isMyTurn && myTurn === 'red' ? '' : isMyTurn && myTurn === 'yellow' ? '' : '') + '</div>';
     }
     html += '</div>';
 
@@ -61,7 +61,7 @@ class Connect4UI {
         ' · <span style="color:' + (this.turn === 'red' ? '#ef4444' : '#eab308') + '">' + this.turn + '</span>' +
       '</div>';
     } else {
-      html += '<div style="text-align:center;margin-top:8px;font-size:15px;font-weight:700;color:var(--green)">🏆 ' +
+      html += '<div style="text-align:center;margin-top:8px;font-size:15px;font-weight:700;color:var(--green)"> ' +
         this.winner + ' wins!</div>';
     }
 
