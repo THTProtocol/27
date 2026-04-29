@@ -23,11 +23,20 @@
   };
   var GAME_ICONS = {
     chess:'♞',
-    connect4:'●',
-    checkers:'',
+    connect4:'⬡',
+    checkers:'◉',
     tictactoe:'✕',
     poker:'♠',
     blackjack:'♣'
+  };
+
+  var GAME_COLORS = {
+    chess:     '#4a9eff',
+    connect4:  '#2ecc71',
+    checkers:  '#e67e22',
+    tictactoe: '#9b59b6',
+    poker:     '#e74c3c',
+    blackjack: '#d4af37'
   };
 
   // ----- DOM helpers -----
@@ -36,7 +45,6 @@
   function qsa(sel, root){ return Array.prototype.slice.call((root||document).querySelectorAll(sel)); }
 
   function cleanEmDashes(){
-    // Replace U+2014 / U+2013 in visible text nodes only (skip code, script, style).
     try {
       var skip = {SCRIPT:1, STYLE:1, CODE:1, PRE:1, INPUT:1, TEXTAREA:1};
       var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
@@ -44,8 +52,8 @@
       while ((n = w.nextNode())) {
         if (!n.parentNode || skip[n.parentNode.nodeName]) continue;
         var t = n.nodeValue;
-        if (!t || (t.indexOf('—') < 0 && t.indexOf('–') < 0)) continue;
-        n.nodeValue = t.replace(/—/g, ', ').replace(/–/g, ', ');
+        if (!t || (t.indexOf('\u2014') < 0 && t.indexOf('\u2013') < 0)) continue;
+        n.nodeValue = t.replace(/\u2014/g, ', ').replace(/\u2013/g, ', ');
       }
     } catch(e) { console.warn('[HTP-Skill-v3] em dash scrub failed', e); }
   }
@@ -131,8 +139,8 @@
       ]; }
     },
     poker: {
-      hint: 'Heads-up / multi-seat hold\'em. Per-decision action clock, plus optional blind interval.',
-      time: ['15s','20s','30s','45s','60s'], // action clock seconds
+      hint: "Heads-up / multi-seat hold'em. Per-decision action clock, plus optional blind interval.",
+      time: ['15s','20s','30s','45s','60s'],
       series: [1],
       extras: function(){ return [
         opt('pkSeats','Seats', sel('sgv3PkSeats', [
@@ -184,7 +192,6 @@
     return '<select id="'+id+'">'+o+'</select>';
   }
 
-  // Time control labelling per game type
   function timeLabel(game, raw){
     if (game === 'poker') return 'Action clock ' + raw;
     if (raw.indexOf('|') >= 0) {
@@ -204,13 +211,10 @@
   }
 
   function injectPanel(){
-    // Find Skill Games section
     var section = document.getElementById('v-skill');
     if (!section) return;
-    // Check if already injected
     if (document.getElementById('sgv3-panel')) return;
 
-    // Insert panel right after game preview grid
     var grid = section.querySelector('.sgv2-grid');
     if (!grid) return;
 
@@ -224,7 +228,7 @@
               '<span class="sgv3-name" id="sgv3GameName">Chess</span>'+
             '</span>'+
           '</div>'+
-          '<button type="button" class="sgv3-close" id="sgv3Close" aria-label="Close">✕</button>'+
+          '<button type="button" class="sgv3-close" id="sgv3Close" aria-label="Close">&#x2715;</button>'+
         '</div>'+
 
         '<div class="sgv3-tabs" role="tablist">'+
@@ -317,7 +321,15 @@
     var nm = $('sgv3GameName');
     if (nm) nm.textContent = GAME_LABELS[game] || game;
     var ic = $('sgv3IconBig');
-    if (ic) ic.textContent = GAME_ICONS[game] || '?';
+    if (ic) {
+      ic.textContent = GAME_ICONS[game] || '?';
+      var col = GAME_COLORS[game] || '#49e8c2';
+      ic.style.color = col;
+      ic.style.borderColor = col;
+      ic.style.boxShadow = 'inset 0 0 18px ' + col + '22';
+    }
+    var panel = $('sgv3-panel');
+    if (panel) panel.setAttribute('data-game', game);
   }
 
   function fillTimeOptions(game){
@@ -363,7 +375,7 @@
       checkers: 'American checkers. Forced captures by default. Multi-jumps chain in one turn. Promotion to king on the back row.',
       connect4: 'First to align four in a row, column, or diagonal wins. Red drops first by default.',
       tictactoe: 'Three in a row wins. Tied boards are draws. Side alternates each round in series.',
-      poker: 'Heads-up Texas Hold\'em. Each decision has an action clock; if it expires, the player auto-checks or auto-folds depending on context. Cards committed via hash, revealed at showdown. The covenant only verifies the final hand and pot allocation.',
+      poker: "Heads-up Texas Hold'em. Each decision has an action clock; if it expires, the player auto-checks or auto-folds depending on context. Cards committed via hash, revealed at showdown. The covenant only verifies the final hand and pot allocation.",
       blackjack: 'No-house heads-up blackjack. Closest to 21 wins; bust auto-loses. Shoe is committed via shared hashed seed. Soft 17 rule selectable.'
     };
     box.innerHTML =
@@ -397,102 +409,80 @@
     var myId = getMyId();
     var html = '';
     matches.forEach(function(m){
-      var p = payout(m.stake);
-      var mine = (m.creator === myId) || (m.opponent === myId);
-      var waiting = m.status === 'waiting';
-      var age = m.created ? Math.max(0, Math.floor((Date.now()-m.created)/60000)) : 0;
-      var ageText = age < 1 ? 'just now' : age + 'm ago';
-      var creator = (m.creatorAddr || (m.creatorAddrFull||'').substring(0,14)+'...') || (m.creator||'').substring(0,8);
-      var actionBtn;
-      if (waiting && mine) {
-        actionBtn = '<button class="sgv3-btn sgv3-btn-danger" data-cancel="'+m.id+'">Cancel</button>'+
-                    '<button class="sgv3-btn sgv3-btn-ghost" data-preview="'+m.id+'">Preview</button>';
-      } else if (waiting) {
-        actionBtn = '<button class="sgv3-btn sgv3-btn-primary" data-join="'+m.id+'">Join, Lock '+ fmt(p.stake) +' KAS</button>';
-      } else {
-        actionBtn = '<button class="sgv3-btn sgv3-btn-ghost" data-play="'+m.id+'">'+ (mine?'Play':'Spectate') +'</button>';
-      }
+      var isMe = m.creatorId === myId;
+      var tc   = m.timeControl || m.time || '?';
+      var ser  = m.series > 1 ? 'Best of ' + m.series : 'Single';
       html +=
-        '<div class="sgv3-mcard sgv3-mcard-'+(waiting?'wait':'active')+'">'+
+        '<div class="sgv3-mcard'+(isMe?' sgv3-mcard-active':'')+'">'+
           '<div class="sgv3-mcard-side">'+
-            '<div class="sgv3-mcard-icon">'+ (GAME_ICONS[m.game]||'?') +'</div>'+
+            '<div class="sgv3-mcard-icon">'+(GAME_ICONS[game]||'?')+'</div>'+
             '<div class="sgv3-mcard-meta">'+
-              '<div class="sgv3-mcard-title">'+ (GAME_LABELS[m.game]||m.game) +' <span class="sgv3-mcard-id">#'+ (m.id||'').slice(-6) +'</span></div>'+
+              '<div class="sgv3-mcard-title">'+(GAME_LABELS[game]||game)+' <span class="sgv3-mcard-id">#'+m.matchId+'</span></div>'+
               '<div class="sgv3-mcard-row">'+
-                '<span>Stake <strong>'+ fmt(m.stake) +' KAS</strong></span>'+
-                '<span>Pot <strong>'+ fmt(p.pot) +' KAS</strong></span>'+
-                '<span>Winner <strong>'+ fmt(p.winner) +' KAS</strong></span>'+
+                '<span>&#9651; '+ fmt(m.stakeKas||0) +' KAS each</span>'+
+                '<span>&#9650; '+ fmt((m.stakeKas||0)*2*0.98) +' KAS winner</span>'+
+                '<span>&#x23F1; '+ tc +'</span>'+
+                '<span>&#9776; '+ ser +'</span>'+
               '</div>'+
-              '<div class="sgv3-mcard-row sgv3-mcard-sub">'+
-                '<span>Time '+ timeLabel(m.game, m.timeControl||'-') +'</span>'+
-                '<span>Series Bo'+ (m.seriesLen||1) +'</span>'+
-                '<span>Creator '+ creator +'</span>'+
-                '<span>'+ ageText +'</span>'+
-              '</div>'+
-              '<div class="sgv3-mcard-row sgv3-mcard-sub">'+
-                '<span class="sgv3-pill '+(m.escrowAddress?'sgv3-pill-on':'sgv3-pill-warn')+'">'+ (m.escrowAddress?'Escrow address ready':'Escrow pending') +'</span>'+
-                '<span class="sgv3-pill sgv3-pill-warn">Covenant: TN12 dry-run until activation</span>'+
+              '<div class="sgv3-mcard-row">'+
+                '<span class="sgv3-badge '+(m.status==='active'?'sgv3-badge-active':'sgv3-badge-open')+'">'+
+                  (m.status === 'active' ? 'In Progress' : 'Open')+
+                '</span>'+
+                (isMe ? '<span class="sgv3-badge sgv3-badge-mine">Your Match</span>' : '')+
               '</div>'+
             '</div>'+
           '</div>'+
-          '<div class="sgv3-mcard-actions">'+ actionBtn +'</div>'+
+          '<div class="sgv3-mcard-actions">'+
+            ((!isMe && m.status === 'waiting') ?
+              '<button type="button" class="sgv3-btn sgv3-btn-primary" data-join="'+m.matchId+'">Join &amp; Stake</button>' : '')+
+            (isMe ?
+              '<button type="button" class="sgv3-btn sgv3-btn-danger" data-cancel="'+m.matchId+'">Cancel</button>' : '')+
+          '</div>'+
         '</div>';
     });
     list.innerHTML = html;
-    qsa('[data-cancel]', list).forEach(function(b){
+    list.querySelectorAll('[data-join]').forEach(function(b){
       b.addEventListener('click', function(){
-        if (typeof window.cancelLobbyMatch === 'function') window.cancelLobbyMatch(b.getAttribute('data-cancel'));
+        var mid = b.getAttribute('data-join');
+        if (typeof window.joinMatchWithLobby === 'function') window.joinMatchWithLobby(mid);
+        else if (typeof window.showToast === 'function') window.showToast('Join flow not loaded yet', 'warn');
       });
     });
-    qsa('[data-join]', list).forEach(function(b){
+    list.querySelectorAll('[data-cancel]').forEach(function(b){
       b.addEventListener('click', function(){
-        if (typeof window.joinLobbyMatch === 'function') window.joinLobbyMatch(b.getAttribute('data-join'));
+        var mid = b.getAttribute('data-cancel');
+        if (typeof window.cancelMatchEscrow === 'function') window.cancelMatchEscrow(mid);
+        else if (typeof window.showToast === 'function') window.showToast('Cancel flow not loaded yet', 'warn');
       });
     });
-    qsa('[data-preview]', list).forEach(function(b){
-      b.addEventListener('click', function(){
-        if (typeof window.previewMatch === 'function') window.previewMatch(b.getAttribute('data-preview'));
-      });
-    });
-    qsa('[data-play]', list).forEach(function(b){
-      b.addEventListener('click', function(){
-        if (typeof window.playMatch === 'function') window.playMatch(b.getAttribute('data-play'));
-      });
-    });
-  }
-
-  function readExtras(){
-    var box = $('sgv3Extras');
-    if (!box) return {};
-    var data = {};
-    qsa('select,input', box).forEach(function(s){ if (s.id) data[s.id] = s.value; });
-    return data;
   }
 
   function handleCreate(){
     var game = window.__htpSkillCurrentGame;
-    if (!game) return;
-    var stake = parseFloat(($('sgv3Stake')||{}).value);
-    if (!isFinite(stake) || stake < 1) {
-      if (typeof window.showToast === 'function') window.showToast('Minimum stake is 1 KAS', 'warn');
-      else alert('Minimum stake is 1 KAS');
-      return;
-    }
-    var time = ($('sgv3Time')||{}).value;
-    var series = parseInt(($('sgv3Series')||{}).value, 10) || 1;
-    var visibility = ($('sgv3Visibility')||{}).value || 'public';
-    var extras = readExtras();
-    extras._visibility = visibility;
+    if (!game) { if (window.showToast) window.showToast('Select a game first', 'warn'); return; }
 
-    // Mirror values into the legacy form so existing createMatchWithLobby works without breaking.
-    var sgGame = $('sgGame');
-    if (sgGame) {
+    var stakeEl  = $('sgv3Stake'),  timeEl = $('sgv3Time'),  seriesEl = $('sgv3Series');
+    var visEl    = $('sgv3Visibility');
+    if (!stakeEl || !timeEl || !seriesEl) return;
+
+    var stake    = parseFloat(stakeEl.value)  || 5;
+    var time     = timeEl.value               || '5|0';
+    var series   = parseInt(seriesEl.value,10) || 1;
+    var vis      = visEl ? visEl.value : 'public';
+
+    var extras = {};
+    qsa('[data-extra]', $('sgv3Extras')).forEach(function(fg){
+      var name = fg.getAttribute('data-extra');
+      var inp  = fg.querySelector('input, select');
+      if (inp) extras[name] = inp.value;
+    });
+
+    var sgGame = document.getElementById('sgGame');
+    if (sgGame && sgGame.value !== game) {
       sgGame.value = game;
-      // Don't call updGameOpts because that would wipe our chosen time. Patch sgTime/sgSeries/sgEsc instead.
     }
     var sgTime = $('sgTime');
     if (sgTime) {
-      // Ensure option exists then select it
       var has = false;
       for (var i=0;i<sgTime.options.length;i++) if (sgTime.options[i].value===time) { has=true; break; }
       if (!has) {
@@ -514,7 +504,6 @@
     var sgEsc = $('sgEsc');
     if (sgEsc) sgEsc.value = stake;
 
-    // Save extras into a known place so legacy createLobbyMatch can pick them up
     window.__htpSkillExtras = { game: game, settings: extras };
 
     if (typeof window.createMatchWithLobby === 'function') {
@@ -541,21 +530,36 @@
     try { panel.scrollIntoView({behavior:'smooth', block:'start'}); } catch(e){}
   }
 
-  // Override the global pick hook
   var _origPick = window.__htpPickGame;
   window.__htpPickGame = function(game){
     try { if (typeof _origPick === 'function') _origPick(game); } catch(e){}
     renderForGame(game);
   };
 
-  // Add visible "active" indicator when card pressed.
-  function decorateCards(){
-    qsa('#v-skill .sgv2-card').forEach(function(c){
-      c.classList.add('sgv3-pressable');
+  // Fix empty sg-ico spans in the game picker (index.html has empty spans for connect4/checkers).
+  function fixPickerIcons(){
+    var iconMap = {chess:'♞',connect4:'⬡',checkers:'◉',tictactoe:'✕',poker:'♠',blackjack:'♣'};
+    qsa('#sgGamePicker .sg-gbtn, #v-skill .sgv2-gpick button').forEach(function(btn){
+      var game = btn.getAttribute('data-game'); if (!game) return;
+      var ico  = btn.querySelector('.sg-ico');
+      if (ico && !ico.textContent.trim()) ico.textContent = iconMap[game] || '?';
+      if (ico && GAME_COLORS[game]) ico.style.color = GAME_COLORS[game];
     });
   }
 
-  // Periodic refresh of open list (lobby is local broadcast / firebase merge)
+  // Tag each sgv2-card with its game and set --card-accent CSS variable.
+  function decorateCards(){
+    var gameOrder = ['chess','connect4','checkers','tictactoe','poker','blackjack'];
+    qsa('#v-skill .sgv2-card').forEach(function(c, i){
+      c.classList.add('sgv3-pressable');
+      var g = gameOrder[i] || '';
+      if (!g) return;
+      c.setAttribute('data-game', g);
+      if (GAME_COLORS[g]) c.style.setProperty('--card-accent', GAME_COLORS[g]);
+    });
+    fixPickerIcons();
+  }
+
   function startTicker(){
     if (window.__htpSkillTicker) return;
     window.__htpSkillTicker = setInterval(function(){
@@ -585,7 +589,6 @@
     init();
   }
 
-  // Expose for debugging / programmatic access
   window.htpSkillV3 = {
     payout: payout,
     open: function(g){ renderForGame(g); },
