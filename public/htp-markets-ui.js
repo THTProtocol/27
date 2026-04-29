@@ -1,5 +1,5 @@
 // =============================================================================
-// htp-markets-ui.js  v4 - single square dot / no lobby circle / robust tabs
+// htp-markets-ui.js  v5 - blinking block pill + hide stale wallet claim context
 // =============================================================================
 (function(W) {
   'use strict';
@@ -19,24 +19,30 @@
   function catCol(c) { return (CAT_META[c] || { col: '#94a3b8' }).col; }
 
   function injectCSS() {
-    if (document.getElementById('htp-ui4-css')) return;
+    if (document.getElementById('htp-ui5-css')) return;
     var s = document.createElement('style');
-    s.id = 'htp-ui4-css';
+    s.id = 'htp-ui5-css';
     s.textContent = [
       '.view{opacity:0;transform:translateY(6px)}',
       '.view.show{display:block;opacity:1;transform:translateY(0);animation:htpFade .2s ease}',
       '@keyframes htpFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}',
-      /* NAV underline - no nodeStatus CSS here, handled by MutationObserver */
       '.nav-btn{position:relative}',
       '.nav-btn.act::after{content:"";position:absolute;left:10px;right:10px;bottom:6px;height:2px;border-radius:2px;background:rgba(73,232,194,.95);box-shadow:0 0 10px rgba(73,232,194,.24)}',
       '.nav-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;margin-left:6px;padding:0 5px;border-radius:999px;font-size:10px;font-weight:800;background:rgba(73,232,194,.12);color:#49e8c2;border:1px solid rgba(73,232,194,.22);vertical-align:middle}',
-      /* Hide Open Matches circle dot */
       '.sgv2-lobby-hdr span>span[style*="border-radius:50%"],.sgv2-lobby-hdr span>span[style*="border-radius: 50%"]{display:none!important}',
-      /* Portfolio tabs */
+      '#nodeStatus{display:flex;align-items:center;gap:8px;padding:4px 10px;border:1px solid rgba(73,232,194,.12);border-radius:999px;background:linear-gradient(135deg,rgba(73,232,194,.08),rgba(73,232,194,.03));box-shadow:inset 0 0 0 1px rgba(255,255,255,.02)}',
+      '#nodeStatus .htp-node-dot{width:8px;height:8px;border-radius:2px;display:inline-block;flex-shrink:0;position:relative}',
+      '#nodeStatus .htp-node-dot.connected,#nodeStatus .htp-node-dot.rest{background:#49e8c2;box-shadow:0 0 0 0 rgba(73,232,194,.55);animation:htpPulse 1.35s ease-in-out infinite}',
+      '#nodeStatus .htp-node-dot.connecting{background:#f59e0b;box-shadow:0 0 0 0 rgba(245,158,11,.45);animation:htpPulseAmber 1s ease-in-out infinite}',
+      '#nodeStatus .htp-node-dot.error{background:#ef4444;box-shadow:0 0 0 0 rgba(239,68,68,.45);animation:htpPulseRed 1.2s ease-in-out infinite}',
+      '#nodeStatus .htp-node-dot.disconnected{background:transparent;border:1.5px solid #6b7280;box-shadow:none;animation:none}',
+      '#nodeStatus .htp-node-text{font-size:11px;color:var(--muted);letter-spacing:.02em}',
+      '@keyframes htpPulse{0%{transform:scale(.92);box-shadow:0 0 0 0 rgba(73,232,194,.55)}50%{transform:scale(1.08);box-shadow:0 0 0 6px rgba(73,232,194,0)}100%{transform:scale(.92);box-shadow:0 0 0 0 rgba(73,232,194,0)}}',
+      '@keyframes htpPulseAmber{0%{transform:scale(.92);box-shadow:0 0 0 0 rgba(245,158,11,.5)}50%{transform:scale(1.08);box-shadow:0 0 0 6px rgba(245,158,11,0)}100%{transform:scale(.92);box-shadow:0 0 0 0 rgba(245,158,11,0)}}',
+      '@keyframes htpPulseRed{0%{transform:scale(.92);box-shadow:0 0 0 0 rgba(239,68,68,.45)}50%{transform:scale(1.08);box-shadow:0 0 0 6px rgba(239,68,68,0)}100%{transform:scale(.92);box-shadow:0 0 0 0 rgba(239,68,68,0)}}',
       '#ptSwitchSkill,#ptSwitchEvent,#ptSwitchClaim{padding:9px 20px!important;border-radius:999px!important;border:1px solid rgba(73,232,194,.14)!important;background:rgba(255,255,255,.03)!important;color:#64748b!important;font-size:12px!important;font-weight:700!important;letter-spacing:.04em!important;cursor:pointer!important;transition:all .18s!important;white-space:nowrap}',
       '#ptSwitchSkill:hover,#ptSwitchEvent:hover,#ptSwitchClaim:hover{background:rgba(73,232,194,.08)!important;color:#94a3b8!important}',
       '#ptSwitchSkill.pt-act,#ptSwitchEvent.pt-act,#ptSwitchClaim.pt-act{background:rgba(73,232,194,.12)!important;border-color:#49e8c2!important;color:#49e8c2!important;box-shadow:0 0 14px rgba(73,232,194,.14)!important}',
-      /* Markets page */
       '#v-markets .mkt-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:12px;flex-wrap:wrap}',
       '#v-markets .mkt-hdr-left h2{font-size:28px;font-weight:900;color:#f1f5f9;margin:0 0 4px;letter-spacing:-.02em}',
       '#v-markets .mkt-hdr-left p{font-size:12px;color:#475569;margin:0}',
@@ -104,28 +110,22 @@
     document.head.appendChild(s);
   }
 
-  // --- SQUARE DOT: MutationObserver replaces any circle in nodeStatus -----------
-  function squareSpan(col) {
-    return '<span style="display:inline-block;width:7px;height:7px;background:' + col + ';border-radius:2px;vertical-align:middle;margin-right:4px;flex-shrink:0"></span>';
+  function nodeDot(state) {
+    return '<span class="htp-node-dot ' + (state || 'disconnected') + '"></span>';
   }
 
   function fixNodeStatus(ns) {
     if (!ns) return;
-    var html = ns.innerHTML;
-    var hasCircle = html.indexOf('\u25cf') !== -1 || html.indexOf('&#9679;') !== -1 ||
-                    html.indexOf('border-radius:50%') !== -1 || html.indexOf('border-radius: 50%') !== -1;
-    // Also fix if first child is a bare colored character span wrapping bullet
-    if (!hasCircle && html.indexOf('\u25cf') === -1) return;
-    var colMatch = html.match(/color\s*:\s*(#[0-9a-fA-F]{3,6})/);
-    var col = colMatch ? colMatch[1] : '#22c55e';
+    var txtEl = ns.querySelector('.htp-node-text');
+    var existingTxt = txtEl ? txtEl.textContent.trim() : '';
+    var html = ns.innerHTML || '';
     var txtMatch = html.match(/<span[^>]*font-size[^>]*>([^<]+)<\/span>/);
-    var txt = txtMatch ? txtMatch[1].trim() : '';
-    if (txt) {
-      ns.innerHTML = squareSpan(col) + '<span style="font-size:11px;color:var(--muted)">' + txt + '</span>';
-    } else {
-      var clean = html.replace(/&#9679;|\u25cf/g, '').replace(/<span[^>]*border-radius:\s*50%[^>]*>\s*<\/span>/g, '');
-      ns.innerHTML = squareSpan(col) + clean;
-    }
+    var txt = existingTxt || (txtMatch ? txtMatch[1].trim() : 'Not connected');
+    var state = 'disconnected';
+    if (/block\s+\d+/i.test(txt) || /connected/i.test(txt)) state = 'connected';
+    else if (/connecting/i.test(txt)) state = 'connecting';
+    else if (/error|failed/i.test(txt)) state = 'error';
+    ns.innerHTML = nodeDot(state) + '<span class="htp-node-text">' + txt + '</span>';
   }
 
   function patchNodeStatus() {
@@ -136,7 +136,6 @@
     mo.observe(ns, { childList: true, subtree: false });
   }
 
-  // --- HELPERS -------------------------------------------------------------------
   function getMkts() { return (W.mkts && W.mkts.length) ? W.mkts : []; }
 
   var kaspaIconSVG = '<svg width="28" height="28" viewBox="0 0 40 40" fill="none"><path d="M28 4L28 36M28 20L10 4M28 20L10 36" stroke="#49e8c2" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -194,7 +193,6 @@
       + '<button class="htp-empty-cta" onclick="go(\'create\')">+ Create the first event</button></div>';
   }
 
-  // --- LAYOUT -------------------------------------------------------------------
   function ensureMarketsLayout() {
     var sec = document.querySelector('#v-markets .mx.sec-pad');
     if (!sec || sec.dataset.htpLayout) return;
@@ -227,7 +225,6 @@
     }
   }
 
-  // --- SLIDER -------------------------------------------------------------------
   function buildSlider() {
     var sl = document.getElementById('htpSlider'); if (!sl) return;
     var mkts = getMkts(), fCat = W.fCat || 'All', counts = {};
@@ -261,7 +258,6 @@
       : 'Showing <strong>' + shown + '</strong> of <strong>' + total + '</strong>';
   }
 
-  // --- BACK TO TOP --------------------------------------------------------------
   function ensureBackTop() {
     if (document.getElementById('htp-btt')) return;
     var b = document.createElement('button');
@@ -272,7 +268,6 @@
     window.addEventListener('scroll', function() { b.style.display = window.scrollY > 300 ? 'flex' : 'none'; }, { passive: true });
   }
 
-  // --- PORTFOLIO TABS (robust with retry) ----------------------------------------
   var TAB_LABELS = { ptSwitchSkill: 'Games', ptSwitchEvent: 'Markets', ptSwitchClaim: 'Rewards' };
 
   function applyTabLabels() {
@@ -307,10 +302,65 @@
     setTimeout(applyTabLabels, 3000);
   }
 
-  // --- MAIN OVERRIDES -----------------------------------------------------------
+  function isActuallyConnected() {
+    return !!(W.walletAddress && W.conn);
+  }
+
+  function patchClaimPanel() {
+    var addrEl = document.getElementById('claimWalletAddr');
+    var ctx = document.getElementById('claimWalletCtx');
+    var claimAddrEl = document.getElementById('claimToAddr');
+    var list = document.getElementById('claimEscrowList');
+    var openCount = document.getElementById('claimOpenCount');
+    var totalKas = document.getElementById('claimTotalKAS');
+
+    if (!addrEl) return;
+
+    if (!isActuallyConnected()) {
+      addrEl.textContent = 'No wallet connected';
+      addrEl.style.color = 'var(--muted)';
+      if (claimAddrEl) claimAddrEl.value = '';
+      if (list) list.innerHTML = '';
+      if (openCount) openCount.textContent = '0';
+      if (totalKas) totalKas.textContent = '0';
+      if (ctx) ctx.style.opacity = '0.72';
+      return;
+    }
+
+    var myAddr = W.walletAddress || '';
+    addrEl.textContent = myAddr ? (myAddr.substring(0,16) + '...' + myAddr.slice(-8)) : 'No wallet connected';
+    addrEl.style.color = '#49e8c2';
+    if (ctx) ctx.style.opacity = '1';
+    if (claimAddrEl && !claimAddrEl.value) claimAddrEl.value = myAddr;
+  }
+
+  function patchInitClaimPanel() {
+    var _orig = W.initClaimPanel;
+    if (!_orig || _orig._htpPatched) return;
+    W.initClaimPanel = function() {
+      _orig();
+      patchClaimPanel();
+    };
+    W.initClaimPanel._htpPatched = true;
+  }
+
+  function watchWalletState() {
+    var last = '';
+    setInterval(function() {
+      var sig = JSON.stringify({
+        walletAddress: W.walletAddress || '',
+        conn: !!W.conn,
+        htpWalletAddress: W.htpWalletAddress || ''
+      });
+      if (sig !== last) {
+        last = sig;
+        patchClaimPanel();
+      }
+    }, 800);
+  }
+
   W._htpCat = function(c) { W.fCat = c; buildSlider(); W.renderM(); };
   W.setCat = W._htpCat;
-
   W.buildF = function() { ensureMarketsLayout(); buildSlider(); updateNavBadge(); updateCount(); };
 
   var _origRenderM = W.renderM;
@@ -343,22 +393,33 @@
     }, 1500);
   }
 
-  // --- BOOT ---------------------------------------------------------------------
   function boot() {
     injectCSS();
     ensureBackTop();
-    patchNodeStatus();  // watch nodeStatus immediately, replace circles with squares
+    patchNodeStatus();
 
     function tryInit() {
       if (document.getElementById('mG')) {
-        ensureMarketsLayout(); W.buildF(); W.renderM();
-        patchPortfolioTabs(); watchMkts();
+        ensureMarketsLayout();
+        W.buildF();
+        W.renderM();
+        patchPortfolioTabs();
+        patchInitClaimPanel();
+        patchClaimPanel();
+        watchMkts();
+        watchWalletState();
         var _go = W.go;
         if (typeof _go === 'function' && !_go._htpW) {
-          W.go = function(v) { _go(v); if (v === 'markets') setTimeout(function() { W.buildF(); W.renderM(); }, 120); };
+          W.go = function(v) {
+            _go(v);
+            if (v === 'markets') setTimeout(function(){ W.buildF(); W.renderM(); }, 120);
+            if (v === 'portfolio') setTimeout(function(){ patchClaimPanel(); }, 120);
+          };
           W.go._htpW = true;
         }
-      } else { setTimeout(tryInit, 200); }
+      } else {
+        setTimeout(tryInit, 200);
+      }
     }
     tryInit();
   }
