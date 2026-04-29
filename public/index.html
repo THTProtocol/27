@@ -5880,20 +5880,20 @@ event MyMarket {
                     </div>
 
 
-                    <div class="w-grid" style="display:flex;flex-direction:column;gap:8px;">
-                        <div class="card w-card" onclick="selWallet('KasWare')">
-                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=kaspa.org&sz=64" alt="KasWare" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'" /></div>
-                            <h3>KasWare</h3>
+                    <div class="w-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+                        <div class="card w-card" onclick="selWallet('KasWare')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;cursor:pointer;border-radius:12px;border:1px solid var(--border);background:rgba(10,15,30,.6);transition:border-color .2s,box-shadow .2s" onmouseenter="this.style.borderColor='#49e8c2';this.style.boxShadow='0 0 16px rgba(73,232,194,.15)'" onmouseleave="this.style.borderColor='var(--border)';this.style.boxShadow=''">
+                            <img src="https://raw.githubusercontent.com/kasware-wallet/extension/main/public/logo.png" alt="KasWare" style="width:36px;height:36px;border-radius:8px" onerror="this.src='https://www.google.com/s2/favicons?domain=kasware.xyz&sz=64'" />
+                            <span style="font-size:12px;font-weight:600;color:var(--text)">KasWare</span>
                         </div>
-                        <div class="card w-card" onclick="selWallet('Kastle')">
-                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=kastle.cc&sz=64" alt="Kastle" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'" /></div>
-                            <h3>Kastle</h3>
+                        <div class="card w-card" onclick="selWallet('Kastle')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;cursor:pointer;border-radius:12px;border:1px solid var(--border);background:rgba(10,15,30,.6);transition:border-color .2s,box-shadow .2s" onmouseenter="this.style.borderColor='#49e8c2';this.style.boxShadow='0 0 16px rgba(73,232,194,.15)'" onmouseleave="this.style.borderColor='var(--border)';this.style.boxShadow=''">
+                            <img src="https://kastle.cc/favicon.ico" alt="Kastle" style="width:36px;height:36px;border-radius:8px" onerror="this.src='https://www.google.com/s2/favicons?domain=kastle.cc&sz=64'" />
+                            <span style="font-size:12px;font-weight:600;color:var(--text)">Kastle</span>
                         </div>
-                        <div class="card w-card" onclick="selWallet('Kasperia')">
-                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=kasperia.app&sz=64" alt="Kasperia" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'" /></div>
-                            <h3>Kasperia</h3>
+                        <div class="card w-card" onclick="selWallet('Kasperia')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;cursor:pointer;border-radius:12px;border:1px solid var(--border);background:rgba(10,15,30,.6);transition:border-color .2s,box-shadow .2s" onmouseenter="this.style.borderColor='#49e8c2';this.style.boxShadow='0 0 16px rgba(73,232,194,.15)'" onmouseleave="this.style.borderColor='var(--border)';this.style.boxShadow=''">
+                            <img src="https://kasperia-doc.github.io/logo.png" alt="Kasperia" style="width:36px;height:36px;border-radius:8px" onerror="this.src='https://www.google.com/s2/favicons?domain=kasperia.app&sz=64'" />
+                            <span style="font-size:12px;font-weight:600;color:var(--text)">Kasperia</span>
                         </div>
-                        
+                    </div>
                 <div id="walletStatus"
                     style="margin-top:14px;padding:12px;border-radius:10px;border:1px solid var(--border);background:rgba(10,15,30,.5);font-size:13px;display:none">
                 </div>
