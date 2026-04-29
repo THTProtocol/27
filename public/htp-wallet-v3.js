@@ -2,7 +2,7 @@
  * htp-wallet-v3.js - Complete wallet management with mnemonic import, encryption, and persistence
  *
  * FEATURES:
- *  1. 6 wallet extension auto-detection + connection (mainnet)
+ *  1. 8 wallet extension auto-detection + connection (mainnet)
  *  2. Install CTA for wallets not detected in browser
  *  3. accountsChanged / networkChanged event listeners (fixes session-drop bug)
  *  4. signMessage nonce authentication for verified sessions
@@ -11,6 +11,16 @@
  *  7. Manual address entry for portfolio viewing
  *  8. Network switcher (TN12 / Mainnet)
  *  9. Live balance fetching via RPC, displayed in KAS with 4 decimals
+ *
+ * WALLET REGISTRY (8 wallets):
+ *  - KasWare    : window.kasware           (browser extension, most popular)
+ *  - Kastle     : window.kastle            (browser extension, forbole)
+ *  - Kasperia   : window.kasperia          (browser extension, Kaspa↔Kasplex bridge)
+ *  - OKX        : window.okxwallet.kaspa   (browser extension, 30M+ users)
+ *  - KasNG      : window.kasng             (desktop app / browser mode, aspectron)
+ *  - Kasanova   : window.kasanova.kasware  (mobile dApp browser)
+ *  - Kaspium    : window.kaspium           (mobile wallet)
+ *  - KaspaCom   : window.kaspacom          (web wallet)
  */
 
 (function(window) {
@@ -36,12 +46,21 @@
     'Kastle': {
       label: 'Kastle',
       type: 'Browser extension',
-      installUrl: 'https://docs.kastle.cc',
+      installUrl: 'https://chromewebstore.google.com/detail/kastle/oambclflhjfppdmkghokjmpppmaebego',
       detect: function() { return window.kastle || null; },
       connect: async function(provider) {
-        // Kastle uses connect() returning address directly
         var result = await provider.connect();
         return result && (result.address || result);
+      }
+    },
+    'Kasperia': {
+      label: 'Kasperia',
+      type: 'Browser extension',
+      installUrl: 'https://chromewebstore.google.com/detail/kasperia/ffalcabgggegkejjlknofllbaledgcob',
+      detect: function() { return window.kasperia || null; },
+      connect: async function(provider) {
+        var accounts = await provider.requestAccounts();
+        return accounts && accounts[0];
       }
     },
     'OKX': {
@@ -52,6 +71,16 @@
       connect: async function(provider) {
         var accounts = await provider.requestAccounts();
         return accounts && accounts[0];
+      }
+    },
+    'KasNG': {
+      label: 'Kas NG',
+      type: 'Desktop / Browser',
+      installUrl: 'https://github.com/aspectron/kaspa-ng/releases',
+      detect: function() { return window.kasng || null; },
+      connect: async function(provider) {
+        var result = await provider.connect();
+        return result && (result.address || result.accounts && result.accounts[0] || result);
       }
     },
     'Kasanova': {
@@ -89,10 +118,9 @@
   /* ═══════════════════════════════════════════════════════════════════════════
    * 1. CRYPTO UTILITIES — AES-256-GCM Encryption
    * ═══════════════════════════════════════════════════════════════════════
- */
+*/
 
   async function deriveKeyFromString(secret) {
-    // Use subtle crypto to derive a key from a string (for session persistence)
     var enc = new TextEncoder();
     var data = enc.encode(secret);
     var hash = await crypto.subtle.digest('SHA-256', data);
@@ -102,17 +130,10 @@
   async function encryptMnemonic(mnemonic, sessionKey) {
     try {
       var key = await deriveKeyFromString(sessionKey);
-      var iv = crypto.getRandomValues(new Uint8Array(12)); // GCM IV
+      var iv = crypto.getRandomValues(new Uint8Array(12));
       var enc = new TextEncoder();
       var plaintext = enc.encode(mnemonic);
-
-      var ciphertext = await crypto.subtle.encrypt(
-        { name: 'AES-GCM', iv: iv },
-        key,
-        plaintext
-      );
-
-      // Return base64-encoded JSON with IV + ciphertext
+      var ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, plaintext);
       var data = {
         iv: Array.from(iv).map(b => String.fromCharCode(b)).join(''),
         ciphertext: Array.from(new Uint8Array(ciphertext)).map(b => String.fromCharCode(b)).join('')
@@ -129,14 +150,8 @@
       var data = JSON.parse(atob(encrypted));
       var iv = new Uint8Array(data.iv.split('').map(c => c.charCodeAt(0)));
       var ciphertext = new Uint8Array(data.ciphertext.split('').map(c => c.charCodeAt(0)));
-
       var key = await deriveKeyFromString(sessionKey);
-      var plaintext = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv: iv },
-        key,
-        ciphertext
-      );
-
+      var plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ciphertext);
       var dec = new TextDecoder();
       return dec.decode(plaintext);
     } catch(e) {
@@ -151,7 +166,6 @@
 
   async function deriveCaspaAddressFromMnemonic(mnemonicPhrase) {
     return new Promise(function(resolve) {
-      // Wait for WASM + Kaspa SDK to be ready
       if (window.whenWasmReady) {
         window.whenWasmReady(function() {
           try {
@@ -159,15 +173,12 @@
               console.error('[HTP Wallet] WASM SDK not ready');
               return resolve(null);
             }
-
-            // Use Kaspa WASM SDK to derive keypair from mnemonic
             var mnemonic = window.kaspaSDK.Mnemonic.new(mnemonicPhrase);
             var xPriv = mnemonic.toXPrv('');
             var derivationPath = window.kaspaSDK.DerivationPath.new("m/44'/111111'/0'/0/0'");
             var privateKey = xPriv.derivePrivateKey(derivationPath);
             var publicKey = privateKey.publicKey();
             var addr = window.kaspaSDK.Address.fromPublicKey(publicKey, window.HTP_PREFIX);
-
             console.log('[HTP Wallet] Mnemonic derived address:', addr.toString());
             resolve(addr.toString());
           } catch(e) {
@@ -191,12 +202,8 @@
       if (!window.htpRpc || !window.htpRpc.balance) {
         console.warn('[HTP Wallet] RPC not ready, attempting direct fetch');
         if (!window.HTP_RPC_URL) return null;
-
-        // Fallback: direct REST API call
         var apiUrl = window.HTP_RPC_URL.replace('wss://', 'https://').replace('ws://', 'http://');
-        apiUrl = apiUrl.replace(/\/$/, ''); // Remove trailing slash
-
-        // Try Kaspa REST API
+        apiUrl = apiUrl.replace(/\/$/, '');
         var resp = await fetch(apiUrl.replace('/rpc', '/api') + `/addresses/${address}`);
         if (resp.ok) {
           var data = await resp.json();
@@ -204,8 +211,6 @@
         }
         return null;
       }
-
-      // Use configured RPC client
       return await window.htpRpc.balance(address);
     } catch(e) {
       console.warn('[HTP Wallet] Balance fetch error:', e);
@@ -218,11 +223,10 @@
    * ═══════════════════════════════════════════════════════════════════════════ */
 
   var SESSION_KEY_NAME = 'htp_mnemonic_key';
-  var SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+  var SESSION_TTL_MS = 24 * 60 * 60 * 1000;
   var WALLET_SESSION_STORAGE = 'htp_wallet_session';
 
   function generateSessionKey() {
-    // Generate a random 32-byte key, store in memory (not persisted)
     var key = Array.from(crypto.getRandomValues(new Uint8Array(32)))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
@@ -232,9 +236,7 @@
 
   function getSessionKey() {
     if (window._htpSessionMnemonicKey) return window._htpSessionMnemonicKey;
-    var key = generateSessionKey();
-    console.log('[HTP Wallet] Generated session key for mnemonic encryption');
-    return key;
+    return generateSessionKey();
   }
 
   async function saveMnemonicSession(mnemonic, address) {
@@ -242,61 +244,30 @@
       var sessionKey = getSessionKey();
       var encrypted = await encryptMnemonic(mnemonic, sessionKey);
       if (!encrypted) return false;
-
-      var session = {
-        encrypted: encrypted,
-        address: address,
-        timestamp: Date.now(),
-        ttl: SESSION_TTL_MS
-      };
-
+      var session = { encrypted: encrypted, address: address, timestamp: Date.now(), ttl: SESSION_TTL_MS };
       try {
         sessionStorage.setItem(WALLET_SESSION_STORAGE, JSON.stringify(session));
-        console.log('[HTP Wallet] Mnemonic session saved, TTL 24h');
         return true;
-      } catch(e) {
-        console.warn('[HTP Wallet] sessionStorage not available:', e);
-        return false;
-      }
-    } catch(e) {
-      console.error('[HTP Wallet] Save session error:', e);
-      return false;
-    }
+      } catch(e) { return false; }
+    } catch(e) { return false; }
   }
 
   async function loadMnemonicSession() {
     try {
       var stored = sessionStorage.getItem(WALLET_SESSION_STORAGE);
       if (!stored) return null;
-
       var session = JSON.parse(stored);
-      var age = Date.now() - session.timestamp;
-
-      if (age > session.ttl) {
+      if (Date.now() - session.timestamp > session.ttl) {
         sessionStorage.removeItem(WALLET_SESSION_STORAGE);
-        console.log('[HTP Wallet] Mnemonic session expired');
         return null;
       }
-
-      var sessionKey = getSessionKey();
-      var mnemonic = await decryptMnemonic(session.encrypted, sessionKey);
-
-      if (mnemonic) {
-        console.log('[HTP Wallet] Mnemonic session restored (age:', Math.round(age / 1000), 's)');
-        return { mnemonic: mnemonic, address: session.address };
-      }
-      return null;
-    } catch(e) {
-      console.error('[HTP Wallet] Load session error:', e);
-      return null;
-    }
+      var mnemonic = await decryptMnemonic(session.encrypted, getSessionKey());
+      return mnemonic ? { mnemonic: mnemonic, address: session.address } : null;
+    } catch(e) { return null; }
   }
 
   function clearMnemonicSession() {
-    try {
-      sessionStorage.removeItem(WALLET_SESSION_STORAGE);
-      console.log('[HTP Wallet] Mnemonic session cleared');
-    } catch(e) {}
+    try { sessionStorage.removeItem(WALLET_SESSION_STORAGE); } catch(e) {}
   }
 
   /* ═══════════════════════════════════════════════════════════════════════════
@@ -304,40 +275,16 @@
    * ═══════════════════════════════════════════════════════════════════════════ */
 
   async function importMnemonicWallet(mnemonicPhrase) {
-    var trimmed = mnemonicPhrase.trim().toLowerCase();
-    var words = trimmed.split(/\s+/).filter(w => w.length > 0);
-
-    // Validate word count
+    var words = mnemonicPhrase.trim().toLowerCase().split(/\s+/).filter(w => w.length > 0);
     if (words.length !== 12 && words.length !== 24) {
       return { ok: false, error: 'Mnemonic must be 12 or 24 words' };
     }
-
-    // Derive address from mnemonic using WASM
     var address = await deriveCaspaAddressFromMnemonic(mnemonicPhrase);
-    if (!address) {
-      return { ok: false, error: 'Failed to derive address from mnemonic. Invalid phrase or WASM not ready.' };
-    }
-
-    // Fetch balance
+    if (!address) return { ok: false, error: 'Failed to derive address from mnemonic. Invalid phrase or WASM not ready.' };
     var balanceSompi = await fetchBalance(address);
-    if (balanceSompi === null) {
-      return { ok: false, error: 'Could not fetch balance. Network issue or RPC unavailable.' };
-    }
-
-    // Save to session storage with encryption
-    var saved = await saveMnemonicSession(mnemonicPhrase, address);
-    if (!saved) {
-      console.warn('[HTP Wallet] Session storage save failed, but continuing with memory-only');
-    }
-
-    // Return success with derived info
-    var kas = (balanceSompi / SOMPI_PER_KAS).toFixed(4);
-    return {
-      ok: true,
-      address: address,
-      balance: kas,
-      balanceSompi: balanceSompi
-    };
+    if (balanceSompi === null) return { ok: false, error: 'Could not fetch balance. Network issue or RPC unavailable.' };
+    await saveMnemonicSession(mnemonicPhrase, address);
+    return { ok: true, address: address, balance: (balanceSompi / SOMPI_PER_KAS).toFixed(4), balanceSompi: balanceSompi };
   }
 
   /* ═══════════════════════════════════════════════════════════════════════════
@@ -350,13 +297,14 @@
   }
 
   function createSVGLogo(type) {
-    // Return inline SVG logos for each wallet
     var logos = {
-      'KasWare': '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="8" width="48" height="48" fill="none" stroke="#4f98a3" stroke-width="2" rx="4"/><path d="M24 32 L32 20 L40 32 L32 42 Z" fill="none" stroke="#4f98a3" stroke-width="2" stroke-linejoin="miter"/></svg>',
-      'Kastle': '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path d="M16 48 L16 24 L20 20 L20 16 L28 16 L28 20 L32 20 L36 16 L36 20 L44 20 L48 24 L48 48 Z" fill="none" stroke="#4f98a3" stroke-width="2" stroke-linejoin="miter"/><line x1="28" y1="32" x2="36" y2="32" stroke="#4f98a3" stroke-width="1.5"/></svg>',
-      'OKX': '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="26" width="12" height="12" fill="#4f98a3" rx="2"/><rect x="26" y="26" width="12" height="12" fill="none" stroke="#4f98a3" stroke-width="2" rx="2"/><rect x="42" y="26" width="12" height="12" fill="#4f98a3" rx="2"/></svg>',
+      'KasWare':  '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="8" width="48" height="48" fill="none" stroke="#4f98a3" stroke-width="2" rx="4"/><path d="M24 32 L32 20 L40 32 L32 42 Z" fill="none" stroke="#4f98a3" stroke-width="2" stroke-linejoin="miter"/></svg>',
+      'Kastle':   '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path d="M16 48 L16 24 L20 20 L20 16 L28 16 L28 20 L32 20 L36 16 L36 20 L44 20 L48 24 L48 48 Z" fill="none" stroke="#4f98a3" stroke-width="2" stroke-linejoin="miter"/><line x1="28" y1="32" x2="36" y2="32" stroke="#4f98a3" stroke-width="1.5"/></svg>',
+      'Kasperia': '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="20" fill="none" stroke="#4f98a3" stroke-width="2"/><path d="M24 32 L32 24 L40 32 L32 40 Z" fill="#4f98a3" opacity="0.3"/><path d="M24 32 L32 24 L40 32 L32 40 Z" fill="none" stroke="#4f98a3" stroke-width="2"/></svg>',
+      'OKX':      '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="26" width="12" height="12" fill="#4f98a3" rx="2"/><rect x="26" y="26" width="12" height="12" fill="none" stroke="#4f98a3" stroke-width="2" rx="2"/><rect x="42" y="26" width="12" height="12" fill="#4f98a3" rx="2"/></svg>',
+      'KasNG':    '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><polygon points="32,10 54,22 54,42 32,54 10,42 10,22" fill="none" stroke="#4f98a3" stroke-width="2"/><text x="32" y="37" font-size="14" fill="#4f98a3" text-anchor="middle" font-family="monospace">NG</text></svg>',
       'Kasanova': '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="22" fill="none" stroke="#4f98a3" stroke-width="2"/><path d="M32 14 L38 26 L28 26 Z" fill="none" stroke="#4f98a3" stroke-width="2" stroke-linejoin="miter"/></svg>',
-      'Kaspium': '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path d="M32 12 L48 20 L48 36 C48 48 32 56 32 56 C32 56 16 48 16 36 L16 20 Z" fill="none" stroke="#4f98a3" stroke-width="2" stroke-linejoin="miter"/></svg>',
+      'Kaspium':  '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path d="M32 12 L48 20 L48 36 C48 48 32 56 32 56 C32 56 16 48 16 36 L16 20 Z" fill="none" stroke="#4f98a3" stroke-width="2" stroke-linejoin="miter"/></svg>',
       'KaspaCom': '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path d="M26 18 C26 18 32 22 32 28 C32 34 26 38 26 38" fill="none" stroke="#4f98a3" stroke-width="2" stroke-linecap="round"/><path d="M38 18 C38 18 32 22 32 28 C32 34 38 38 38 38" fill="none" stroke="#4f98a3" stroke-width="2" stroke-linecap="round"/><circle cx="32" cy="28" r="2" fill="#4f98a3"/></svg>'
     };
     return logos[type] || '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="20" fill="none" stroke="#4f98a3" stroke-width="2"/></svg>';
@@ -371,15 +319,12 @@
 
     var html = '<section class="view" id="v-wallet-v3" style="display:none">';
     html += '<div class="mx sec-pad">';
-
-    // Header
     html += '<div class="sh">';
     html += '<h2>Wallet & Address Book</h2>';
-    html += '<p>Connect your existing Kaspa wallet. Supports all major Kaspa extensions and mobile wallets.</p>';
+    html += '<p>Connect your existing Kaspa wallet. Supports all major Kaspa browser extensions and mobile wallets.</p>';
     html += '</div>';
 
-    // Wallet grid — detect at render time, show Connect vs Install
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px" class="wallet-extension-grid" id="wallet-grid">';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:32px" class="wallet-extension-grid" id="wallet-grid">';
 
     walletKeys.forEach(function(key) {
       var w = WALLET_REGISTRY[key];
@@ -390,8 +335,8 @@
         : 'padding:8px 16px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;width:100%;margin-top:10px';
 
       html += '<div class="card wallet-card" data-wallet="' + key + '" data-detected="' + detected + '" style="border:1px solid var(--border);padding:20px;text-align:center;transition:all 0.2s;border-radius:8px">';
-      html += '<div style="width:80px;height:80px;margin:0 auto 12px;background:var(--surface);border:1px solid rgba(79,152,163,' + (detected ? '0.4' : '0.1') + ');border-radius:8px;display:flex;align-items:center;justify-content:center;opacity:' + (detected ? '1' : '0.5') + '">' + createSVGLogo(key) + '</div>';
-      html += '<h3 style="font-size:14px;font-weight:600;margin:0 0 2px;color:var(--text)">' + w.label + '</h3>';
+      html += '<div style="width:72px;height:72px;margin:0 auto 12px;background:var(--surface);border:1px solid rgba(79,152,163,' + (detected ? '0.4' : '0.1') + ');border-radius:8px;display:flex;align-items:center;justify-content:center;opacity:' + (detected ? '1' : '0.5') + '">' + createSVGLogo(key) + '</div>';
+      html += '<h3 style="font-size:13px;font-weight:600;margin:0 0 2px;color:var(--text)">' + w.label + '</h3>';
       html += '<p style="font-size:11px;color:var(--text-muted);margin:0">' + w.type + '</p>';
       html += '<div class="wallet-status-indicator" style="margin-top:6px;display:none;align-items:center;gap:6px;justify-content:center;font-size:11px;color:#22c55e">';
       html += '<span style="width:6px;height:6px;background:#22c55e;border-radius:50%"></span>';
@@ -425,22 +370,19 @@
     html += '</div>';
     html += '</div>';
 
-    // Mnemonic import section (expandable) — unchanged
+    // Mnemonic import section
     html += '<div class="w-sec" style="border-top:1px solid var(--border);padding-top:24px">';
     html += '<button onclick="htpWalletV3.toggleMnemonicPanel()" style="width:100%;padding:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;text-align:left;display:flex;justify-content:space-between;align-items:center">';
     html += '<span>🔐 Import with Mnemonic (12 or 24 words)</span>';
     html += '<span id="mnemonic-toggle-arrow">▼</span>';
     html += '</button>';
-
     html += '<div id="mnemonic-import-panel" style="display:none;margin-top:12px;padding:16px;background:rgba(79,152,163,0.05);border:1px solid rgba(79,152,163,0.15);border-radius:8px">';
     html += '<p style="font-size:12px;color:var(--text-muted);margin:0 0 12px">Enter your BIP39 seed phrase. The private key is encrypted and stored only in this session.</p>';
     html += '<textarea id="mnemonic-input" placeholder="word1 word2 word3 ... word12 (or 24)" style="width:100%;height:80px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;font-family:\'JetBrains Mono\',monospace;font-size:12px;box-sizing:border-box;resize:vertical;margin-bottom:12px"></textarea>';
-
     html += '<div style="display:flex;gap:8px">';
     html += '<button onclick="htpWalletV3.importMnemonic()" style="flex:1;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px">Import Wallet</button>';
     html += '<button onclick="htpWalletV3.clearMnemonicInput()" style="padding:10px 16px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-weight:600;font-size:12px">Clear</button>';
     html += '</div>';
-
     html += '<div id="mnemonic-status" style="display:none;margin-top:12px;padding:10px;border-radius:6px;font-size:12px"></div>';
     html += '</div>';
     html += '</div>';
@@ -455,7 +397,6 @@
     html += '</div>';
 
     html += '</div></section>';
-
     return html;
   }
 
@@ -463,45 +404,36 @@
    * 8. PUBLIC API
    * ═══════════════════════════════════════════════════════════════════════════ */
 
-  // Track active extension provider so we can remove listeners on disconnect
   var _activeProvider = null;
   var _activeWalletType = null;
 
   function _onAccountsChanged(accounts) {
     if (accounts && accounts[0]) {
-      console.log('[HTP Wallet V3] accountsChanged ->', accounts[0]);
       window.connectedAddress = accounts[0];
       window.htpAddress = accounts[0];
       try { localStorage.setItem('htpPlayerId', accounts[0]); } catch(e) {}
       htpWalletV3.updateUI();
       window.dispatchEvent(new CustomEvent('htp:wallet:connected', { detail: { address: accounts[0] } }));
     } else {
-      console.log('[HTP Wallet V3] accountsChanged -> disconnected');
       htpWalletV3.disconnect();
     }
   }
 
   function _onNetworkChanged(network) {
     console.log('[HTP Wallet V3] networkChanged ->', network);
-    // Force reconnect on network switch — user must re-approve
     htpWalletV3.disconnect();
     if (window.showToast) window.showToast('Network changed. Please reconnect your wallet.', 'info');
   }
 
   window.htpWalletV3 = {
     async init() {
-      console.log('[HTP Wallet V3] Initializing...');
-
-      // Check for persisted mnemonic session (TN12 / dev)
+      console.log('[HTP Wallet V3] Initializing — 8 wallets registered');
       var session = await loadMnemonicSession();
       if (session) {
-        console.log('[HTP Wallet V3] Found persisted mnemonic session');
         window.connectedAddress = session.address;
         window.htpAddress = session.address;
         this.updateUI();
       }
-
-      // Wire connect buttons (delegated — works after dynamic DOM injection)
       this.setupExtensionListeners();
     },
 
@@ -509,20 +441,14 @@
       document.addEventListener('click', async (e) => {
         var btn = e.target.closest('.wallet-connect-btn');
         if (!btn) return;
-
         var walletType = btn.getAttribute('data-wallet');
         var w = WALLET_REGISTRY[walletType];
         if (!w) return;
-
         var provider = w.detect();
         if (!provider) {
-          // Not installed — open install page
-          console.log('[HTP Wallet V3]', walletType, 'not detected — opening install page');
           window.open(w.installUrl, '_blank');
           return;
         }
-
-        console.log('[HTP Wallet V3] Connecting', walletType);
         await this.connectWallet(walletType);
       });
     },
@@ -530,43 +456,26 @@
     async connectWallet(type) {
       try {
         var w = WALLET_REGISTRY[type];
-        if (!w) {
-          console.warn('[HTP Wallet V3] Unknown wallet type:', type);
-          return false;
-        }
-
+        if (!w) return false;
         var provider = w.detect();
-        if (!provider) {
-          console.warn('[HTP Wallet V3]', type, 'provider not found');
-          return false;
-        }
-
+        if (!provider) return false;
         var address = await w.connect(provider);
-
         if (address) {
-          // Store active provider ref for event listeners
           _activeProvider = provider;
           _activeWalletType = type;
-
-          // Subscribe to extension events — fixes session-drop-on-navigation bug
           if (typeof provider.on === 'function') {
             provider.on('accountsChanged', _onAccountsChanged);
             provider.on('networkChanged', _onNetworkChanged);
-            console.log('[HTP Wallet V3] Subscribed to', type, 'events');
           }
-
           window.connectedAddress = address;
           window.htpAddress = address;
           try { localStorage.setItem('htpPlayerId', address); } catch(e) {}
-
           this.updateUI();
           window.dispatchEvent(new CustomEvent('htp:wallet:connected', { detail: { address: address, wallet: type } }));
           console.log('[HTP Wallet V3] Connected:', type, address);
           return true;
-        } else {
-          console.warn('[HTP Wallet V3]', type, 'connection denied or returned no address');
-          return false;
         }
+        return false;
       } catch(e) {
         console.error('[HTP Wallet V3] Connection error:', e);
         if (window.showToast) window.showToast('Wallet connection failed: ' + e.message, 'error');
@@ -577,54 +486,32 @@
     toggleMnemonicPanel() {
       var panel = document.getElementById('mnemonic-import-panel');
       var arrow = document.getElementById('mnemonic-toggle-arrow');
-      if (panel.style.display === 'none') {
-        panel.style.display = 'block';
-        arrow.textContent = '▲';
-      } else {
-        panel.style.display = 'none';
-        arrow.textContent = '▼';
-      }
+      if (panel.style.display === 'none') { panel.style.display = 'block'; arrow.textContent = '▲'; }
+      else { panel.style.display = 'none'; arrow.textContent = '▼'; }
     },
 
     async importMnemonic() {
       var input = document.getElementById('mnemonic-input').value;
       var status = document.getElementById('mnemonic-status');
-
       if (!input.trim()) {
-        status.style.display = 'block';
-        status.style.background = 'rgba(239,68,68,0.1)';
-        status.style.color = '#ef4444';
-        status.style.borderLeft = '3px solid #ef4444';
+        status.style.cssText = 'display:block;background:rgba(239,68,68,0.1);color:#ef4444;border-left:3px solid #ef4444;padding:10px;border-radius:6px;font-size:12px';
         status.textContent = 'Enter a mnemonic phrase';
         return;
       }
-
+      status.style.cssText = 'display:block;background:rgba(79,152,163,0.1);color:var(--text);border-left:3px solid var(--accent);padding:10px;border-radius:6px;font-size:12px';
       status.textContent = 'Deriving address...';
-      status.style.display = 'block';
-      status.style.background = 'rgba(79,152,163,0.1)';
-      status.style.color = 'var(--text)';
-      status.style.borderLeft = '3px solid var(--accent)';
-
       var result = await importMnemonicWallet(input);
-
       if (result.ok) {
         window.connectedAddress = result.address;
         window.htpAddress = result.address;
         this.updateUI();
-
-        status.style.background = 'rgba(34,197,94,0.1)';
-        status.style.color = '#22c55e';
-        status.style.borderLeft = '3px solid #22c55e';
-        status.textContent = 'Wallet imported! Address: ' + formatAddress(result.address) + ' | Balance: ' + result.balance + ' KAS';
-
+        status.style.cssText = 'display:block;background:rgba(34,197,94,0.1);color:#22c55e;border-left:3px solid #22c55e;padding:10px;border-radius:6px;font-size:12px';
+        status.textContent = 'Imported! ' + formatAddress(result.address) + ' — ' + result.balance + ' KAS';
         document.getElementById('mnemonic-input').value = '';
         setTimeout(() => this.toggleMnemonicPanel(), 1000);
-
         window.dispatchEvent(new CustomEvent('htp:wallet:connected', { detail: { address: result.address } }));
       } else {
-        status.style.background = 'rgba(239,68,68,0.1)';
-        status.style.color = '#ef4444';
-        status.style.borderLeft = '3px solid #ef4444';
+        status.style.cssText = 'display:block;background:rgba(239,68,68,0.1);color:#ef4444;border-left:3px solid #ef4444;padding:10px;border-radius:6px;font-size:12px';
         status.textContent = result.error;
       }
     },
@@ -636,10 +523,7 @@
 
     setManualAddress() {
       var addr = document.getElementById('manual-address-input').value.trim();
-      if (!addr) {
-        window.showToast('Enter an address', 'error');
-        return;
-      }
+      if (!addr) { if (window.showToast) window.showToast('Enter an address', 'error'); return; }
       window.connectedAddress = addr;
       window.htpAddress = addr;
       this.updateUI();
@@ -647,17 +531,14 @@
     },
 
     disconnect() {
-      // Remove extension event listeners cleanly
       if (_activeProvider && typeof _activeProvider.removeListener === 'function') {
         try {
           _activeProvider.removeListener('accountsChanged', _onAccountsChanged);
           _activeProvider.removeListener('networkChanged', _onNetworkChanged);
-          console.log('[HTP Wallet V3] Removed event listeners from', _activeWalletType);
         } catch(e) {}
       }
       _activeProvider = null;
       _activeWalletType = null;
-
       window.connectedAddress = null;
       window.htpAddress = null;
       try { localStorage.removeItem('htpPlayerId'); } catch(e) {}
@@ -667,7 +548,7 @@
     },
 
     setNetwork(net) {
-      if (net === 'mainnet') return; // Disable until Q2 2026
+      if (net === 'mainnet') return;
       try { localStorage.setItem('htp_network', net); } catch(e) {}
       window.HTP_NETWORK = net;
       window.location.reload();
@@ -676,14 +557,11 @@
     updateUI() {
       var connectedDiv = document.getElementById('wallet-connected-status');
       if (!connectedDiv) return;
-
       if (window.connectedAddress) {
         connectedDiv.style.display = 'block';
         document.getElementById('connected-address').textContent = window.connectedAddress;
         var bal = window.htpBalance;
         document.getElementById('connected-balance').textContent = (typeof bal === 'number') ? bal.toFixed(4) : '—';
-
-        // Highlight active wallet card, show status dot
         document.querySelectorAll('.wallet-card').forEach(card => {
           var isActive = _activeWalletType && card.getAttribute('data-wallet') === _activeWalletType;
           card.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
@@ -700,10 +578,9 @@
       }
     },
 
-    // Expose build function for htp-init.js to call
     buildHTML: buildWalletSectionHTML
   };
 
-  console.log('[HTP Wallet V3] Module loaded');
+  console.log('[HTP Wallet V3] Module loaded — wallets:', Object.keys(WALLET_REGISTRY).join(', '));
 
 })(window);
