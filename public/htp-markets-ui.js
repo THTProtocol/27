@@ -1,5 +1,5 @@
 // =============================================================================
-// htp-markets-ui.js  v5 - blinking block pill + hide stale wallet claim context
+// htp-markets-ui.js  v6 - refined active pills + High Table logo mark
 // =============================================================================
 (function(W) {
   'use strict';
@@ -19,9 +19,9 @@
   function catCol(c) { return (CAT_META[c] || { col: '#94a3b8' }).col; }
 
   function injectCSS() {
-    if (document.getElementById('htp-ui5-css')) return;
+    if (document.getElementById('htp-ui6-css')) return;
     var s = document.createElement('style');
-    s.id = 'htp-ui5-css';
+    s.id = 'htp-ui6-css';
     s.textContent = [
       '.view{opacity:0;transform:translateY(6px)}',
       '.view.show{display:block;opacity:1;transform:translateY(0);animation:htpFade .2s ease}',
@@ -42,7 +42,7 @@
       '@keyframes htpPulseRed{0%{transform:scale(.92);box-shadow:0 0 0 0 rgba(239,68,68,.45)}50%{transform:scale(1.08);box-shadow:0 0 0 6px rgba(239,68,68,0)}100%{transform:scale(.92);box-shadow:0 0 0 0 rgba(239,68,68,0)}}',
       '#ptSwitchSkill,#ptSwitchEvent,#ptSwitchClaim{padding:9px 20px!important;border-radius:999px!important;border:1px solid rgba(73,232,194,.14)!important;background:rgba(255,255,255,.03)!important;color:#64748b!important;font-size:12px!important;font-weight:700!important;letter-spacing:.04em!important;cursor:pointer!important;transition:all .18s!important;white-space:nowrap}',
       '#ptSwitchSkill:hover,#ptSwitchEvent:hover,#ptSwitchClaim:hover{background:rgba(73,232,194,.08)!important;color:#94a3b8!important}',
-      '#ptSwitchSkill.pt-act,#ptSwitchEvent.pt-act,#ptSwitchClaim.pt-act{background:rgba(73,232,194,.12)!important;border-color:#49e8c2!important;color:#49e8c2!important;box-shadow:0 0 14px rgba(73,232,194,.14)!important}',
+      '#ptSwitchSkill.pt-act,#ptSwitchEvent.pt-act,#ptSwitchClaim.pt-act{background:linear-gradient(135deg,rgba(73,232,194,.14),rgba(73,232,194,.07))!important;border-color:rgba(73,232,194,.55)!important;color:#7ef5dc!important;box-shadow:0 0 0 1px rgba(73,232,194,.18) inset,0 0 18px rgba(73,232,194,.12)!important;transform:translateY(-1px)}',
       '#v-markets .mkt-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:12px;flex-wrap:wrap}',
       '#v-markets .mkt-hdr-left h2{font-size:28px;font-weight:900;color:#f1f5f9;margin:0 0 4px;letter-spacing:-.02em}',
       '#v-markets .mkt-hdr-left p{font-size:12px;color:#475569;margin:0}',
@@ -51,11 +51,12 @@
       '.mkt-fc{position:sticky;top:70px;z-index:14;padding:10px 0;margin-bottom:16px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);background:linear-gradient(180deg,rgba(6,10,18,.96),rgba(6,10,18,.82));border-bottom:1px solid rgba(73,232,194,.07)}',
       '.mkt-slider{display:flex;gap:8px;overflow-x:auto;scroll-behavior:smooth;padding-bottom:4px;scrollbar-width:none;-ms-overflow-style:none}',
       '.mkt-slider::-webkit-scrollbar{display:none}',
-      '.mkt-pill{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;border:1px solid rgba(73,232,194,.13);background:rgba(255,255,255,.025);color:#4b5563;font-size:12px;font-weight:700;cursor:pointer;transition:all .17s;white-space:nowrap;user-select:none;position:relative}',
-      '.mkt-pill:hover{background:rgba(73,232,194,.07);color:#94a3b8;transform:translateY(-1px)}',
-      '.mkt-pill.act{background:rgba(73,232,194,.11);border-color:#49e8c2;color:#49e8c2;box-shadow:0 0 12px rgba(73,232,194,.12)}',
-      '.mkt-pill.act::after{content:"";position:absolute;left:14px;right:14px;bottom:2px;height:2px;border-radius:2px;background:var(--pill-col,#49e8c2);opacity:.9}',
-      '.mkt-pill .pc{font-size:10px;font-weight:900;padding:0 5px;line-height:16px;border-radius:7px;background:rgba(73,232,194,.08);color:#49e8c2;min-width:18px;text-align:center}',
+      '.mkt-pill{flex-shrink:0;display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;border:1px solid rgba(73,232,194,.13);background:rgba(255,255,255,.025);color:#64748b;font-size:12px;font-weight:700;cursor:pointer;transition:all .17s;white-space:nowrap;user-select:none;position:relative}',
+      '.mkt-pill:hover{background:rgba(73,232,194,.07);color:#a7b6c8;transform:translateY(-1px);border-color:rgba(73,232,194,.24)}',
+      '.mkt-pill.act{background:linear-gradient(135deg,rgba(73,232,194,.16),rgba(73,232,194,.06));border-color:rgba(73,232,194,.52);color:#82f5dd;box-shadow:0 0 0 1px rgba(73,232,194,.16) inset,0 0 18px rgba(73,232,194,.14)}',
+      '.mkt-pill.act::after{display:none!important;content:none!important}',
+      '.mkt-pill .pc{font-size:10px;font-weight:900;padding:0 6px;line-height:18px;height:18px;border-radius:999px;background:rgba(73,232,194,.08);color:#49e8c2;min-width:18px;text-align:center;border:1px solid rgba(73,232,194,.12)}',
+      '.mkt-pill.act .pc{background:rgba(73,232,194,.14);color:#b6fff0;border-color:rgba(73,232,194,.24)}',
       '.mkt-sr{display:flex!important;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:nowrap}',
       '.mkt-fi{flex:1;min-width:0;padding:10px 14px 10px 36px;background:rgba(8,13,26,.85);border:1px solid rgba(73,232,194,.11);border-radius:12px;color:#e2e8f0;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s,box-shadow .18s;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'14\' height=\'14\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2349e8c2\' stroke-width=\'2.5\'%3E%3Ccircle cx=\'11\' cy=\'11\' r=\'8\'/%3E%3Cpath d=\'m21 21-4.35-4.35\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center}',
       '.mkt-fi:focus{border-color:rgba(73,232,194,.32);box-shadow:0 0 0 3px rgba(73,232,194,.07)}',
@@ -91,7 +92,7 @@
       '.htp-mc-pool-unit{font-size:11px;color:#2d3a50}',
       '.htp-mc-ent{font-size:11px;color:#2d3a50}',
       '.htp-empty{grid-column:1/-1;text-align:center;padding:72px 20px;border:1px solid rgba(73,232,194,.07);border-radius:22px;background:linear-gradient(180deg,rgba(8,13,26,.75),rgba(8,13,26,.42))}',
-      '.htp-empty-icon{width:64px;height:64px;margin:0 auto 18px;border-radius:18px;background:rgba(73,232,194,.06);border:1px solid rgba(73,232,194,.12);display:flex;align-items:center;justify-content:center}',
+      '.htp-empty-icon{width:64px;height:64px;margin:0 auto 18px;border-radius:18px;background:rgba(73,232,194,.06);border:1px solid rgba(73,232,194,.12);display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(73,232,194,.08) inset, 0 0 18px rgba(73,232,194,.06)}',
       '.htp-empty-title{font-size:17px;font-weight:800;color:#c8d3e0;margin-bottom:8px}',
       '.htp-empty-sub{font-size:12px;color:#475569;max-width:400px;margin:0 auto;line-height:1.6}',
       '.htp-empty-cta{display:inline-flex;align-items:center;gap:6px;margin-top:20px;padding:10px 20px;border-radius:12px;border:1px solid rgba(73,232,194,.28);background:rgba(73,232,194,.07);color:#49e8c2;font-size:12px;font-weight:800;cursor:pointer;transition:all .18s}',
@@ -138,7 +139,7 @@
 
   function getMkts() { return (W.mkts && W.mkts.length) ? W.mkts : []; }
 
-  var kaspaIconSVG = '<svg width="28" height="28" viewBox="0 0 40 40" fill="none"><path d="M28 4L28 36M28 20L10 4M28 20L10 36" stroke="#49e8c2" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var htpLogoSVG = '<svg width="30" height="30" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 10L23 20L13 30" stroke="#49e8c2" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M27 9V31" stroke="#49e8c2" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   function urgencyChip(m) {
     var raw = m.deadline || m.dead || m.expiresAt || m.resolutionDate || m.cl;
@@ -160,7 +161,7 @@
     var yW = Math.max(m.yP || 0, 2), nW = Math.max(m.nP || 0, 2);
     var cover = m.img
       ? '<div class="htp-mc-cover"><img class="htp-mc-cover-img" src="' + m.img + '" loading="lazy"/></div>'
-      : '<div class="htp-mc-cover htp-mc-cover-fallback" style="background:linear-gradient(135deg,' + col + '1a,#060a12 75%)"><svg width="36" height="36" viewBox="0 0 40 40" fill="none"><path d="M28 4L28 36M28 20L10 4M28 20L10 36" stroke="' + col + '" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".35"/></svg></div>';
+      : '<div class="htp-mc-cover htp-mc-cover-fallback" style="background:radial-gradient(circle at 30% 30%,rgba(73,232,194,.12),transparent 45%),linear-gradient(135deg,' + col + '14,#060a12 78%)">' + htpLogoSVG + '</div>';
     return '<div class="htp-mc" onclick="openM(\'' + m.id + '\')">'
       + '<div class="htp-mc-bar" style="background:linear-gradient(90deg,' + col + ',#6366f1)"></div>'
       + cover
@@ -187,7 +188,7 @@
     var isCat = fCat && fCat !== 'All';
     var title = isCat ? 'No ' + fCat + ' markets yet' : 'No markets yet';
     var sub = isCat ? 'Be the first to create a ' + fCat + ' prediction market on Kaspa.' : 'Prediction markets appear here once created.';
-    return '<div class="htp-empty"><div class="htp-empty-icon">' + kaspaIconSVG + '</div>'
+    return '<div class="htp-empty"><div class="htp-empty-icon">' + htpLogoSVG + '</div>'
       + '<div class="htp-empty-title">' + title + '</div>'
       + '<div class="htp-empty-sub">' + sub + '</div>'
       + '<button class="htp-empty-cta" onclick="go(\'create\')">+ Create the first event</button></div>';
