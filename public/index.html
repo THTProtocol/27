@@ -5889,23 +5889,11 @@ event MyMarket {
                             <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=kastle.cc&sz=64" alt="Kastle" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'" /></div>
                             <h3>Kastle</h3>
                         </div>
-                        <div class="card w-card" onclick="selWallet('Kasanova')">
-                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=kasanova.app&sz=64" alt="Kasanova" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'" /></div>
-                            <h3>Kasanova</h3>
+                        <div class="card w-card" onclick="selWallet('Kasperia')">
+                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=kasperia.app&sz=64" alt="Kasperia" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'" /></div>
+                            <h3>Kasperia</h3>
                         </div>
-                        <div class="card w-card" onclick="selWallet('Kaspium')">
-                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=kaspium.io&sz=64" alt="Kaspium" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'" /></div>
-                            <h3>Kaspium</h3>
-                        </div>
-                        <div class="card w-card" onclick="selWallet('KaspaCom')">
-                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=wallet.kaspa.com&sz=64" alt="KaspaCom" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'" /></div>
-                            <h3>KaspaCom</h3>
-                        </div>
-                        <div class="card w-card" onclick="selWallet('OKX')">
-                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=okx.com&sz=64" alt="OKX" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'" /></div>
-                            <h3>OKX Wallet</h3>
-                        </div>
-                    </div>
+                        
                 <div id="walletStatus"
                     style="margin-top:14px;padding:12px;border-radius:10px;border:1px solid var(--border);background:rgba(10,15,30,.5);font-size:13px;display:none">
                 </div>
@@ -7590,10 +7578,10 @@ event MyMarket {
             switch (name) {
                 case 'KasWare':  return w.kasware  || w.kasWare  || null;
                 case 'Kastle':   return w.kastle   || null;
-                case 'Kasanova': return w.kasanova || null;
-                case 'Kaspium':  return w.kaspium  || null;
-                case 'KaspaCom': return w.kaspacom || null;
-                case 'OKX':      return (w.okxwallet && w.okxwallet.kaspa) ? w.okxwallet.kaspa : null;
+                case 'Kasperia': return w.kasperia || null;
+                
+                
+                
                 case 'mnemonic': return mnemonicProvider;
                 default:         return w.kasware || w.kastle || w.kasanova || w.kaspium || null;
             }
@@ -7631,8 +7619,8 @@ event MyMarket {
             if (!provider) {
                 var INSTALL_URLS = {
                     'KasWare':'https://kasware.xyz', 'Kastle':'https://kastle.cc',
-                    'Kasanova':'https://kasanova.app', 'Kaspium':'https://kaspium.io',
-                    'KaspaCom':'https://wallet.kaspa.com', 'OKX':'https://www.okx.com/web3'
+                    'Kasperia':'https://kasperia.app',
+                    
                 };
                 var url = INSTALL_URLS[name] || '';
                 statusEl.innerHTML =
