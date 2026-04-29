@@ -10,13 +10,24 @@ h = re.sub(r'<style>\s*#mobileOverlay[\s\S]*?</style>\s*', '', h)
 h = re.sub(r'<div id="mobileOverlay">[\s\S]*?</div>\s*\n\s*<script>\s*\(function\(\)\{', '', h)
 h = re.sub(r'<!-- MOBILE OVERLAY -->[\s\S]*?</script>\s*(?=</body>)', '', h)
 
-# Inject toggle button before cBtn if not already there
+TOGGLE_BTN = '<button id="viewToggleBtn" onclick="toggleMobileView()" style="margin-right:8px;padding:6px 14px;background:rgba(73,232,194,.08);border:1px solid rgba(73,232,194,.25);color:#49e8c2;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.03em;display:inline-flex;align-items:center;gap:6px"><span id="viewToggleIcon">&#128241;</span><span id="viewToggleLabel">Mobile</span></button>'
+
+# Inject toggle button before cBtn — match actual format: class="btn-c" id="cBtn"
 if 'viewToggleBtn' not in h:
-    h = h.replace(
-        '<button id="cBtn"',
-        '<button id="viewToggleBtn" onclick="toggleMobileView()" style="margin-right:8px;padding:6px 14px;background:rgba(73,232,194,.08);border:1px solid rgba(73,232,194,.25);color:#49e8c2;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.03em;display:inline-flex;align-items:center;gap:6px"><span id="viewToggleIcon">&#128241;</span><span id="viewToggleLabel">Mobile</span></button><button id="cBtn"',
-        1
-    )
+    old = '<button class="btn-c" id="cBtn"'
+    if old in h:
+        h = h.replace(old, TOGGLE_BTN + old, 1)
+        print('Toggle button injected via class+id match')
+    else:
+        # fallback: find any button with id=cBtn
+        m = re.search(r'<button[^>]*id="cBtn"', h)
+        if m:
+            h = h[:m.start()] + TOGGLE_BTN + h[m.start():]
+            print('Toggle button injected via regex fallback')
+        else:
+            print('WARNING: cBtn not found — toggle button NOT injected')
+else:
+    print('Toggle button already present')
 
 css = """<style>
 #mobileOverlay{display:none;position:fixed;inset:0;background:#060a12;z-index:9999;overflow-y:auto;font-family:inherit}
