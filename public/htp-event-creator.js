@@ -1,5 +1,5 @@
 // =============================================================================
-// htp-event-creator.js , Prediction Market Event Creation
+// htp-event-creator.js – Prediction Market Event Creation
 // Validates form, constructs escrow TX, writes to Firebase /markets/{marketId}
 // =============================================================================
 (function(W) {
@@ -20,20 +20,18 @@
 
   function validate() {
     var errors = [];
-    var title = document.getElementById('event-title');
-    var desc = document.getElementById('event-description');
-    var date = document.getElementById('event-resolution-date');
-    var url = document.getElementById('event-source-url');
-    var minPos = document.getElementById('event-min-position');
+    var title  = document.getElementById('event-title');
+    var desc   = document.getElementById('event-description');
+    var date   = document.getElementById('event-resolution-date');
+    var url    = document.getElementById('event-source-url');
 
     if (!title || !title.value.trim()) errors.push('Event title is required');
-    if (!desc || !desc.value.trim()) errors.push('Description is required');
+    if (!desc  || !desc.value.trim())  errors.push('Description is required');
 
     if (!date || !date.value) {
       errors.push('Resolution date is required');
     } else {
-      var resDate = new Date(date.value);
-      if (resDate <= new Date()) errors.push('Resolution date must be in the future');
+      if (new Date(date.value) <= new Date()) errors.push('Resolution date must be in the future');
     }
 
     if (!url || !url.value.trim()) {
@@ -52,11 +50,8 @@
   }
 
   function showErrors(errors) {
-    if (W.showToast) {
-      errors.forEach(function(e) { W.showToast(e, 'error'); });
-    } else {
-      alert(errors.join('\n'));
-    }
+    if (W.showToast) errors.forEach(function(e) { W.showToast(e, 'error'); });
+    else alert(errors.join('\n'));
   }
 
   W.createPredictionEvent = function() {
@@ -68,40 +63,43 @@
     }
 
     var result = validate();
-    if (result.errors.length > 0) {
-      showErrors(result.errors);
-      return;
-    }
+    if (result.errors.length > 0) { showErrors(result.errors); return; }
 
-    var title = document.getElementById('event-title').value.trim();
-    var desc = document.getElementById('event-description').value.trim();
-    var dateVal = document.getElementById('event-resolution-date').value;
-    var url = document.getElementById('event-source-url').value.trim();
-    var minPos = parseFloat(document.getElementById('event-min-position').value) || 1;
-    var maxPEl = document.getElementById('event-max-participants');
-    var maxP = maxPEl && maxPEl.value ? parseInt(maxPEl.value) : null;
+    var title    = document.getElementById('event-title').value.trim();
+    var desc     = document.getElementById('event-description').value.trim();
+    var dateVal  = document.getElementById('event-resolution-date').value;
+    var url      = document.getElementById('event-source-url').value.trim();
+    var minPos   = parseFloat(document.getElementById('event-min-position').value) || 1;
+    var maxPEl   = document.getElementById('event-max-participants');
+    var maxP     = maxPEl && maxPEl.value ? parseInt(maxPEl.value) : null;
     var timestamp = Math.floor(new Date(dateVal).getTime() / 1000);
-    var marketId = generateId();
+    var marketId  = generateId();
+
+    // — Read category from form (select or data-* attribute fallback) —
+    var catEl = document.getElementById('event-category') ||
+                document.querySelector('select[name="category"]') ||
+                document.querySelector('[data-field="category"]');
+    var category = (catEl && catEl.value) ? catEl.value.trim() : 'Other';
 
     var market = {
-      marketId: marketId,
-      title: title,
-      description: desc,
-      outcomes: result.outcomes,
-      resolutionDate: timestamp,
-      sourceUrl: url,
-      minPosition: minPos,
+      marketId:        marketId,
+      title:           title,
+      description:     desc,
+      category:        category,          // ← now saved
+      outcomes:        result.outcomes,
+      resolutionDate:  timestamp,
+      sourceUrl:       url,
+      minPosition:     minPos,
       maxParticipants: maxP,
-      creatorAddress: addr,
-      status: 'active',
-      totalPool: 0,
-      positions: {},
-      createdAt: null // set by Firebase ServerValue
+      creatorAddress:  addr,
+      status:          'active',
+      totalPool:       0,
+      positions:       {},
+      createdAt:       null
     };
 
-    if (W.showToast) W.showToast('Creating prediction market...', 'info');
+    if (W.showToast) W.showToast('Creating prediction market…', 'info');
 
-    // Write to Firebase
     var db = W.firebase && W.firebase.database ? W.firebase.database() : null;
     if (!db) {
       console.warn('[HTP EventCreator] Firebase not available');
@@ -113,25 +111,22 @@
     market.createdAt = W.firebase.database.ServerValue.TIMESTAMP;
 
     db.ref('markets/' + marketId).set(market).then(function() {
-      console.log('[HTP EventCreator] Market created:', marketId);
+      console.log('[HTP EventCreator] Market created:', marketId, 'category:', category);
       if (W.showToast) W.showToast('Market created: ' + title, 'success');
       W.dispatchEvent(new CustomEvent('htp:market:created', { detail: market }));
 
       // Clear form
-      document.getElementById('event-title').value = '';
-      document.getElementById('event-description').value = '';
-      document.getElementById('event-resolution-date').value = '';
-      document.getElementById('event-source-url').value = '';
-      document.getElementById('event-min-position').value = '';
+      ['event-title','event-description','event-resolution-date','event-source-url','event-min-position'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+      });
       if (maxPEl) maxPEl.value = '';
+      if (catEl)  catEl.value = 'Other';
 
-      // Reset char counters
       if (W.updateCharCounter) {
         W.updateCharCounter('event-title', 120);
         W.updateCharCounter('event-description', 1000);
       }
-
-      // Recompile SilverScript
       if (W.compileSilverScript) W.compileSilverScript();
     }).catch(function(err) {
       console.error('[HTP EventCreator] Firebase error:', err);
@@ -139,5 +134,5 @@
     });
   };
 
-  console.log('[HTP EventCreator] loaded');
+  console.log('[HTP EventCreator] loaded (with category support)');
 })(window);
