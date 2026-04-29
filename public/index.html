@@ -5901,9 +5901,9 @@ event MyMarket {
                             <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=wallet.kaspa.com&sz=64" alt="KaspaCom" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'" /></div>
                             <h3>KaspaCom</h3>
                         </div>
-                        <div class="card w-card" onclick="selWallet('DEX.cc')">
-                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=dex.cc&sz=64" alt="DEX.cc" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'" /></div>
-                            <h3>DEX.cc</h3>
+                        <div class="card w-card" onclick="selWallet('OKX')">
+                            <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=okx.com&sz=64" alt="OKX" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'" /></div>
+                            <h3>OKX Wallet</h3>
                         </div>
                     </div>
                 <div id="walletStatus"
@@ -7593,7 +7593,7 @@ event MyMarket {
                 case 'Kasanova': return w.kasanova || null;
                 case 'Kaspium':  return w.kaspium  || null;
                 case 'KaspaCom': return w.kaspacom || null;
-                case 'DEX.cc':   return w.dexcc    || w.dex     || null;
+                case 'OKX':      return (w.okxwallet && w.okxwallet.kaspa) ? w.okxwallet.kaspa : null;
                 case 'mnemonic': return mnemonicProvider;
                 default:         return w.kasware || w.kastle || w.kasanova || w.kaspium || null;
             }
@@ -7628,7 +7628,7 @@ event MyMarket {
                 var INSTALL_URLS = {
                     'KasWare':'https://kasware.xyz', 'Kastle':'https://kastle.cc',
                     'Kasanova':'https://kasanova.app', 'Kaspium':'https://kaspium.io',
-                    'KaspaCom':'https://wallet.kaspa.com', 'DEX.cc':'https://dex.cc'
+                    'KaspaCom':'https://wallet.kaspa.com', 'OKX':'https://www.okx.com/web3'
                 };
                 var url = INSTALL_URLS[name] || '';
                 statusEl.innerHTML =
@@ -22233,6 +22233,155 @@ document.querySelectorAll('button').forEach(function(b){
 
     html += `</div></div>`;
     el.innerHTML = html;
+  };
+
+  /* ───────────────────────────────────────────────────
+     TIC-TAC-TOE PREVIEW
+  ─────────────────────────────────────────────────── */
+  window.htpGamePreviewBoard = function (game, container) {
+    if (!container || (game !== 'tictactoe' && game !== 'ttt')) return;
+    ensureGlowFilter();
+
+    container.innerHTML = '';
+    container.style.minHeight = 'auto';
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';
+    container.style.justifyContent = 'center';
+
+    const frame = document.createElement('div');
+    frame.style.cssText = `
+      width:min(360px,80vw);
+      max-width:380px;
+      aspect-ratio:1;
+      padding:18px;
+      background:linear-gradient(180deg,rgba(8,10,12,0.98),rgba(17,19,22,0.98));
+      border:1px solid rgba(73,232,194,0.15);
+      border-radius:28px;
+      box-shadow:0 0 36px rgba(0,0,0,0.35), inset 0 0 1px rgba(73,232,194,0.12);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+      overflow:hidden;
+    `;
+
+    const board = document.createElement('div');
+    board.style.cssText = `
+      width:100%;
+      height:100%;
+      border-radius:22px;
+      background:radial-gradient(circle at 10% 10%, rgba(73,232,194,0.08), transparent 24%),
+                  radial-gradient(circle at 90% 90%, rgba(73,232,194,0.06), transparent 20%),
+                  linear-gradient(180deg,#060708,#111417);
+      padding:14px;
+      box-sizing:border-box;
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      grid-template-rows:repeat(3,minmax(0,1fr));
+      gap:12px;
+      box-shadow: inset 0 0 0 1px rgba(73,232,194,0.08);
+    `;
+
+    const pattern = [
+      ['X', '', 'O'],
+      ['', 'O', ''],
+      ['X', '', '']
+    ];
+
+    for (let r = 0; r < 3; r += 1) {
+      for (let c = 0; c < 3; c += 1) {
+        const cell = document.createElement('div');
+        cell.style.cssText = `
+          background:rgba(255,255,255,0.04);
+          border:1px solid rgba(73,232,194,0.14);
+          border-radius:18px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          position:relative;
+          overflow:hidden;
+          box-shadow: inset 0 0 1px rgba(255,255,255,0.08), 0 0 14px rgba(0,0,0,0.16);
+        `;
+
+        const mark = pattern[r][c];
+        if (mark) {
+          if (mark === 'X') {
+            const cross = document.createElement('div');
+            cross.style.cssText = `
+              position:relative;
+              width:58%;
+              height:58%;
+            `;
+            const barBase = `
+              position:absolute;
+              left:50%;
+              top:0;
+              width:12%;
+              height:100%;
+              background:linear-gradient(180deg,#6bf2ff,#21d8ac);
+              border-radius:8px;
+              transform-origin:center;
+              box-shadow:0 0 18px rgba(73,232,194,0.9), inset 0 0 8px rgba(255,255,255,0.2);
+            `;
+            const bar1 = document.createElement('div');
+            bar1.style.cssText = barBase + 'transform: translateX(-50%) rotate(45deg);';
+            const bar2 = document.createElement('div');
+            bar2.style.cssText = barBase + 'transform: translateX(-50%) rotate(-45deg);';
+            cross.appendChild(bar1);
+            cross.appendChild(bar2);
+            cell.appendChild(cross);
+          } else {
+            const ring = document.createElement('div');
+            ring.style.cssText = `
+              width:62%;
+              height:62%;
+              border:6px solid rgba(142,255,157,0.85);
+              border-radius:50%;
+              box-shadow:0 0 20px rgba(73,232,194,0.6), inset 0 0 12px rgba(73,232,194,0.35);
+            `;
+            cell.appendChild(ring);
+          }
+        }
+
+        board.appendChild(cell);
+      }
+    }
+
+    const legend = document.createElement('div');
+    legend.style.cssText = `
+      position:absolute;
+      bottom:12px;
+      left:50%;
+      transform:translateX(-50%);
+      display:flex;
+      gap:12px;
+      font-family:Inter,system-ui,sans-serif;
+      font-size:11px;
+      color:#93ffdc;
+      text-transform:uppercase;
+      letter-spacing:0.18em;
+    `;
+    function legendItem(text, color) {
+      const item = document.createElement('span');
+      item.style.cssText = 'display:inline-flex;align-items:center;gap:8px;';
+      const dot = document.createElement('span');
+      dot.style.cssText = `
+        width:8px;
+        height:8px;
+        border-radius:50%;
+        background:${color};
+        box-shadow:0 0 12px ${color};
+      `;
+      item.appendChild(dot);
+      item.appendChild(document.createTextNode(text));
+      return item;
+    }
+    legend.appendChild(legendItem('X - First', '#6bf2ff'));
+    legend.appendChild(legendItem('O - Counter', '#8eff9d'));
+
+    frame.appendChild(board);
+    frame.appendChild(legend);
+    container.appendChild(frame);
   };
 
   /* ───────────────────────────────────────────────────
