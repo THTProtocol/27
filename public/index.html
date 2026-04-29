@@ -22798,6 +22798,57 @@ window.addEventListener('htp:balance:updated', function(e) {
 })();
 </script>
 
+
+  function toggleMobileView(){
+    var ov=document.getElementById('mobileOverlay');
+    var lbl=document.getElementById('viewToggleLabel');
+    var ico=document.getElementById('viewToggleIcon');
+    if(ov.classList.contains('active')){
+      ov.classList.remove('active');
+      if(lbl)lbl.textContent='Mobile';
+      if(ico)ico.innerHTML='&#128241;';
+    }else{
+      ov.classList.add('active');
+      if(lbl)lbl.textContent='Desktop';
+      if(ico)ico.innerHTML='&#128187;';
+      syncMobStats();
+    }
+  }
+  window.toggleMobileView=toggleMobileView;
+  window.mobTab=function(name){
+    document.querySelectorAll('.mob-section').forEach(function(s){s.classList.remove('mob-active');});
+    document.querySelectorAll('.mob-nav-btn').forEach(function(b){b.classList.remove('active');});
+    var sec=document.getElementById('mob-'+name);
+    var nav=document.getElementById('mnav-'+name);
+    if(sec)sec.classList.add('mob-active');
+    if(nav)nav.classList.add('active');
+  };
+  window.updateMobConnBtn=function(){
+    setTimeout(function(){
+      var btn=document.getElementById('mobConnBtn');
+      var ms=document.getElementById('mobWalletStatus');
+      var ds=document.getElementById('walletStatus');
+      if(window.walletAddress&&btn)btn.textContent=window.walletAddress.slice(0,8)+'...';
+      if(ds&&ms){ms.innerHTML=ds.innerHTML;ms.style.display=ds.innerHTML.trim()?'block':'none';}
+    },1500);
+  };
+  window.mobConnectMnemonic=function(){
+    var v=document.getElementById('mobMnInput').value.trim();
+    if(!v)return;
+    var di=document.querySelector('input[placeholder*="mnemonic"],textarea[placeholder*="mnemonic"],#htpMnemonicInput');
+    if(di){di.value=v;var btn=di.closest('div').querySelector('button');if(btn)btn.click();}
+    window.updateMobConnBtn();
+  };
+  function syncMobStats(){
+    [['mobTotalPool','[id*="totalPool"]'],['mobActiveMarkets','[id*="activeMarkets"]'],['mobPositions','[id*="positions"]']].forEach(function(m){
+      var src=document.querySelector(m[1]);
+      var dst=document.getElementById(m[0]);
+      if(src&&dst&&src.textContent.trim())dst.textContent=src.textContent.trim();
+    });
+  }
+})();
+</script>
+
 <style>
 #mobileOverlay{display:none;position:fixed;inset:0;background:#060a12;z-index:9999;overflow-y:auto;font-family:inherit}
 #mobileOverlay.active{display:flex;flex-direction:column}
@@ -22881,7 +22932,7 @@ window.addEventListener('htp:balance:updated', function(e) {
           <div class="mob-game-card" onclick="toggleMobileView()"><div class="gname">Connect 4</div><div class="gdesc">4-in-a-row, covenant escrow</div></div>
           <div class="mob-game-card" onclick="toggleMobileView()"><div class="gname">Checkers</div><div class="gdesc">Full replay proof on DAG</div></div>
           <div class="mob-game-card" onclick="toggleMobileView()"><div class="gname">Tic-Tac-Toe</div><div class="gdesc">Fast, provably fair</div></div>
-          <div class="mob-game-card" onclick="toggleMobileView()"><div class="gname">Texas Hold'em</div><div class="gdesc">Heads-up covenant escrow</div></div>
+          <div class="mob-game-card" onclick="toggleMobileView()"><div class="gname">Texas Hold em</div><div class="gdesc">Heads-up covenant escrow</div></div>
           <div class="mob-game-card" onclick="toggleMobileView()"><div class="gname">Blackjack</div><div class="gdesc">P2P, zero house edge</div></div>
         </div>
         <button class="mob-open-desktop" onclick="toggleMobileView()">Open Full App to Play</button>
@@ -22954,12 +23005,14 @@ window.addEventListener('htp:balance:updated', function(e) {
   window.mobConnectMnemonic=function(){
     var v=document.getElementById('mobMnInput').value.trim();
     if(!v)return;
-    var di=document.querySelector('input[placeholder*="mnemonic"],textarea[placeholder*="mnemonic"],#htpMnemonicInput');
+    var di=document.querySelector('#htpMnemonicInput');
+    if(!di)di=document.querySelector('textarea[placeholder*="mnemonic"]');
     if(di){di.value=v;var btn=di.closest('div').querySelector('button');if(btn)btn.click();}
     window.updateMobConnBtn();
   };
   function syncMobStats(){
-    [['mobTotalPool','[id*="totalPool"]'],['mobActiveMarkets','[id*="activeMarkets"]'],['mobPositions','[id*="positions"]']].forEach(function(m){
+    var maps=[['mobTotalPool','[id*="totalPool"]'],['mobActiveMarkets','[id*="activeMarkets"]'],['mobPositions','[id*="positions"]']];
+    maps.forEach(function(m){
       var src=document.querySelector(m[1]);
       var dst=document.getElementById(m[0]);
       if(src&&dst&&src.textContent.trim())dst.textContent=src.textContent.trim();
