@@ -93,7 +93,7 @@ css = """
 .mob-nav-btn{
   flex:1;display:flex;flex-direction:column;align-items:center;
   gap:3px;padding:8px 2px 6px;
-  background:none;border:none;color:#475569;
+  background:none;border:none;color:#94a3b8;
   cursor:pointer;font-size:8px;font-weight:800;
   text-transform:uppercase;letter-spacing:.06em;
   transition:color .15s;-webkit-tap-highlight-color:transparent;
@@ -131,7 +131,7 @@ css = """
   border-radius:10px;padding:10px 6px;text-align:center;
 }
 .mob-stat-val{font-size:18px;font-weight:900;color:#49e8c2;font-variant-numeric:tabular-nums}
-.mob-stat-lbl{font-size:8px;color:#475569;margin-top:2px;text-transform:uppercase;letter-spacing:.07em}
+.mob-stat-lbl{font-size:8px;color:#94a3b8;margin-top:2px;text-transform:uppercase;letter-spacing:.07em}
 
 /* Generic section header */
 .mob-sh{
@@ -141,7 +141,7 @@ css = """
 }
 .mob-sh-title{font-size:10px;font-weight:800;color:#49e8c2;text-transform:uppercase;letter-spacing:.1em}
 .mob-sh-badge{
-  font-size:8px;font-weight:700;color:#475569;
+  font-size:8px;font-weight:700;color:#94a3b8;
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
   padding:2px 8px;border-radius:10px;
 }
@@ -164,7 +164,7 @@ css = """
 .mob-mkt-row:active{border-color:rgba(73,232,194,.3)}
 .mob-mkt-info{flex:1;min-width:0}
 .mob-mkt-name{font-size:13px;font-weight:700;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mob-mkt-meta{font-size:10px;color:#475569;margin-top:2px}
+.mob-mkt-meta{font-size:10px;color:#94a3b8;margin-top:2px}
 .mob-mkt-right{text-align:right;flex-shrink:0;margin-left:10px}
 .mob-mkt-pool{font-size:13px;font-weight:800;color:#49e8c2}
 .mob-mkt-status{
@@ -207,9 +207,9 @@ select.mob-input-field{cursor:pointer}
 }
 .mob-game-card:active::before{opacity:1}
 .mob-game-card:active{border-color:#49e8c2;transform:scale(.98)}
-.mob-gc-cat{font-size:8px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
-.mob-gc-name{font-size:15px;font-weight:900;color:#e2e8f0;margin-bottom:3px}
-.mob-gc-desc{font-size:10px;color:#475569;line-height:1.45;margin-bottom:9px}
+.mob-gc-cat{font-size:9px;font-weight:800;color:#49e8c2;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.mob-gc-icon{font-size:28px;margin-bottom:6px;line-height:1}
+.mob-gc-name{font-size:16px;font-weight:900;color:#f1f5f9;margin-bottom:8px}
 .mob-gc-foot{display:flex;align-items:center;justify-content:space-between}
 .mob-gc-badge{
   font-size:8px;font-weight:700;color:#49e8c2;
@@ -253,7 +253,7 @@ select.mob-input-field{cursor:pointer}
 }
 .mob-wdl-logo img{width:38px;height:38px;border-radius:9px;object-fit:cover}
 .mob-wdl-name{font-size:11px;font-weight:800;color:#e2e8f0;text-align:center}
-.mob-wdl-sub{font-size:8px;color:#475569;text-align:center;line-height:1.3}
+.mob-wdl-sub{font-size:8px;color:#94a3b8;text-align:center;line-height:1.3}
 .mob-os-tags{display:flex;gap:3px;flex-wrap:wrap;justify-content:center}
 .mob-os-tag{
   font-size:7px;font-weight:700;color:#49e8c2;
@@ -283,14 +283,14 @@ select.mob-input-field{cursor:pointer}
   border-radius:10px;padding:12px 8px;text-align:center;
 }
 .mob-port-val{font-size:19px;font-weight:900;color:#49e8c2}
-.mob-port-lbl{font-size:8px;color:#475569;margin-top:2px;text-transform:uppercase;letter-spacing:.06em}
+.mob-port-lbl{font-size:8px;color:#94a3b8;margin-top:2px;text-transform:uppercase;letter-spacing:.06em}
 .mob-pos-row{
   display:flex;align-items:center;justify-content:space-between;
   padding:12px;background:rgba(10,15,30,.6);
   border:1px solid rgba(73,232,194,.08);border-radius:10px;margin-bottom:7px;
 }
 .mob-pos-name{font-size:12px;font-weight:700;color:#e2e8f0}
-.mob-pos-meta{font-size:10px;color:#475569;margin-top:2px}
+.mob-pos-meta{font-size:10px;color:#94a3b8;margin-top:2px}
 .mob-pos-val{font-size:13px;font-weight:800;color:#49e8c2}
 .mob-pos-claim{
   font-size:10px;font-weight:700;color:#49e8c2;
@@ -357,7 +357,7 @@ select.mob-input-field{cursor:pointer}
   font-size:12px;
 }
 .mob-info-row:last-child{border-bottom:none}
-.mob-info-key{color:#475569;font-weight:600}
+.mob-info-key{color:#94a3b8;font-weight:600}
 .mob-info-val{color:#e2e8f0;font-weight:700;font-family:monospace;font-size:11px}
 </style>
 """
@@ -384,7 +384,7 @@ html = """
 
     <!-- HERO (shown on markets + games tabs) -->
     <div class="mob-hero" id="mobHero" style="margin:12px 14px 0">
-      <div class="mob-hero-eyebrow">High Table Protocol &middot; Kaspa DAG</div>
+      <div class="mob-hero-eyebrow">High Table Protocol</div>
       <div class="mob-hero-h1">Challenge.<br>Settle on the <em>DAG.</em></div>
       <div class="mob-hero-sub">Provably fair skill games &amp; prediction markets.<br>On-chain covenant settlement.</div>
       <div class="mob-stats-row">
@@ -484,39 +484,39 @@ html = """
 
       <div class="mob-game-grid">
         <div class="mob-game-card" onclick="mobOpenGame('chess')">
+          <div class="mob-gc-icon" style="font-size:30px;margin-bottom:6px;line-height:1">♟️</div>
           <div class="mob-gc-cat">Strategy</div>
           <div class="mob-gc-name">Chess</div>
-          <div class="mob-gc-desc">FIDE rules. Covenant escrow. On-chain settlement.</div>
           <div class="mob-gc-foot"><span class="mob-gc-badge">Heads-up</span><span class="mob-gc-arrow">&#8250;</span></div>
         </div>
         <div class="mob-game-card" onclick="mobOpenGame('checkers')">
+          <div class="mob-gc-icon" style="font-size:30px;margin-bottom:6px;line-height:1">🔴</div>
           <div class="mob-gc-cat">Strategy</div>
           <div class="mob-gc-name">Checkers</div>
-          <div class="mob-gc-desc">Full replay proof committed to the DAG.</div>
           <div class="mob-gc-foot"><span class="mob-gc-badge">Heads-up</span><span class="mob-gc-arrow">&#8250;</span></div>
         </div>
         <div class="mob-game-card" onclick="mobOpenGame('connect4')">
+          <div class="mob-gc-icon" style="font-size:30px;margin-bottom:6px;line-height:1">🟡</div>
           <div class="mob-gc-cat">Casual</div>
           <div class="mob-gc-name">Connect 4</div>
-          <div class="mob-gc-desc">4-in-a-row wins the covenant escrow.</div>
           <div class="mob-gc-foot"><span class="mob-gc-badge">Fast</span><span class="mob-gc-arrow">&#8250;</span></div>
         </div>
         <div class="mob-game-card" onclick="mobOpenGame('tictactoe')">
+          <div class="mob-gc-icon" style="font-size:30px;margin-bottom:6px;line-height:1">✖️</div>
           <div class="mob-gc-cat">Casual</div>
           <div class="mob-gc-name">Tic-Tac-Toe</div>
-          <div class="mob-gc-desc">Provably fair. Instant on-chain result.</div>
           <div class="mob-gc-foot"><span class="mob-gc-badge">Fast</span><span class="mob-gc-arrow">&#8250;</span></div>
         </div>
         <div class="mob-game-card" onclick="mobOpenGame('holdem')">
+          <div class="mob-gc-icon" style="font-size:30px;margin-bottom:6px;line-height:1">🃏</div>
           <div class="mob-gc-cat">Cards</div>
           <div class="mob-gc-name">Texas Hold'em</div>
-          <div class="mob-gc-desc">Heads-up poker. Covenant escrow. No house edge.</div>
           <div class="mob-gc-foot"><span class="mob-gc-badge">P2P</span><span class="mob-gc-arrow">&#8250;</span></div>
         </div>
         <div class="mob-game-card" onclick="mobOpenGame('blackjack')">
+          <div class="mob-gc-icon" style="font-size:30px;margin-bottom:6px;line-height:1">🂡</div>
           <div class="mob-gc-cat">Cards</div>
           <div class="mob-gc-name">Blackjack</div>
-          <div class="mob-gc-desc">Peer-to-peer. Zero house edge. DAG settled.</div>
           <div class="mob-gc-foot"><span class="mob-gc-badge">P2P</span><span class="mob-gc-arrow">&#8250;</span></div>
         </div>
       </div>
@@ -582,7 +582,7 @@ html = """
           <div class="mob-os-tags"><span class="mob-os-tag">iOS</span><span class="mob-os-tag">Android</span></div>
         </a>
       </div>
-      <div style="font-size:10px;color:#334155;text-align:center;margin-bottom:14px">Tap to visit &mdash; install from your app store, then use mnemonic import below</div>
+      <div style="font-size:10px;color:#64748b;text-align:center;margin-bottom:14px">Tap to visit &mdash; install from your app store, then use mnemonic import below</div>
 
       <div class="mob-div"></div>
 
@@ -657,8 +657,8 @@ html = """
           <div style="width:44px;height:44px;border-radius:50%;background:rgba(73,232,194,.05);border:1px solid rgba(73,232,194,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#49e8c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
           </div>
-          <div style="font-size:12px;color:#475569">No open positions</div>
-          <div style="font-size:10px;color:#334155;margin-top:4px">Connect wallet to view portfolio</div>
+          <div style="font-size:12px;color:#94a3b8">No open positions</div>
+          <div style="font-size:10px;color:#64748b;margin-top:4px">Connect wallet to view portfolio</div>
         </div>
       </div>
 
@@ -676,7 +676,7 @@ html = """
         <button class="mob-sh-btn" onclick="mobRefreshMatches()">Refresh</button>
       </div>
       <div id="mobMatchList">
-        <div style="font-size:12px;color:#475569;text-align:center;padding:16px 0">No active matches</div>
+        <div style="font-size:12px;color:#94a3b8;text-align:center;padding:16px 0">No active matches</div>
       </div>
     </div>
 
@@ -707,7 +707,7 @@ html = """
       <div class="mob-form-card">
         <label class="mob-label">Escrow Wallet Seed (for match payouts)</label>
         <textarea class="mob-input-field" id="mobEscrowMn" placeholder="12 or 24-word escrow mnemonic..."></textarea>
-        <div style="font-size:10px;color:#334155;margin-top:6px">Stored in localStorage only. Never transmitted. Used to sign payout TXs.</div>
+        <div style="font-size:10px;color:#64748b;margin-top:6px">Stored in localStorage only. Never transmitted. Used to sign payout TXs.</div>
         <button class="mob-cta-btn" onclick="mobSaveEscrow()" style="margin-top:10px">Save Escrow Mnemonic</button>
       </div>
 
@@ -824,7 +824,7 @@ js = """
   };
 
   function mobUpdateWalletDetail(){
-    if(!window.walletAddress)return;
+    if(!window.walletAddress||!window.walletConnected)return;
     var d=document.getElementById('mobWalletDetail');
     if(d)d.style.display='block';
     var addr=document.getElementById('mobWalAddr');
