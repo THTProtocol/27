@@ -22251,7 +22251,11 @@ document.querySelectorAll('button').forEach(function(b){
      TIC-TAC-TOE PREVIEW
   ─────────────────────────────────────────────────── */
   window.htpGamePreviewBoard = function (game, container) {
-    if (!container || (game !== 'tictactoe' && game !== 'ttt')) return;
+    if (!container) return;
+    if (game !== 'tictactoe' && game !== 'ttt') {
+      container.innerHTML = '';
+      return;
+    }
     ensureGlowFilter();
 
     container.innerHTML = '';
