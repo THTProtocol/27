@@ -7611,8 +7611,12 @@ event MyMarket {
 
         function detectWallets() {
             const available = [];
-            if (window.kasware) available.push('KasWare');
+            if (window.kasware || window.kasWare) available.push('KasWare');
             if (window.kastle) available.push('Kastle');
+            if (window.kasanova) available.push('Kasanova');
+            if (window.kaspium) available.push('Kaspium');
+            if (window.kaspacom) available.push('KaspaCom');
+            if (window.okxwallet && window.okxwallet.kaspa) available.push('OKX');
             return available;
         }
 
@@ -7644,8 +7648,16 @@ event MyMarket {
             }
 
             try {
-                // Request account access
-                const accounts = await provider.requestAccounts();
+                // Request account access — handle both requestAccounts() and connect()
+                let accounts;
+                if (typeof provider.requestAccounts === 'function') {
+                    accounts = await provider.requestAccounts();
+                } else if (typeof provider.connect === 'function') {
+                    const result = await provider.connect();
+                    accounts = result ? [result.address || result] : [];
+                } else {
+                    accounts = [];
+                }
                 if (!accounts || accounts.length === 0) {
                     statusEl.innerHTML = '<span style="color:#ef4444">Connection rejected or no accounts found.</span>';
                     return;
