@@ -1,65 +1,75 @@
 // =============================================================================
-// htp-markets-ui.js  –  Dynamic Category Slider + Improved Market Cards
-// Replaces static filter pills with a live-data-driven horizontal slider.
-// Drop this file after htp-events-v3.js in index.html
+// htp-markets-ui.js  –  Dynamic Category Slider + Premium Market Cards
+// Overrides buildF() and renderM() defined in the inline <script> of index.html
+// Must be loaded AFTER the main inline script block.
 // =============================================================================
 (function(W) {
   'use strict';
 
-  // ─── State ────────────────────────────────────────────────────────────────
-  var allMarkets  = [];
-  var activeFilter = 'all';  // 'all' | category string | 'open'|'pending'|'closed'|'cancelled'
-  var activeStatus = 'all';
-  var searchQuery  = '';
-
-  // ─── Category metadata (icon + colour) ────────────────────────────────────
+  // ---- Category metadata: icon + accent colour --------------------------------
   var CAT_META = {
-    'Macro':    { icon: '🌐', color: '#6366f1' },
-    'Crypto':   { icon: '₿',  color: '#f59e0b' },
-    'Politics': { icon: '🏛️', color: '#ef4444' },
-    'Sports':   { icon: '⚽', color: '#10b981' },
-    'Kaspa':    { icon: '◈',  color: '#49e8c2' },
-    'Skill':    { icon: '🎯', color: '#8b5cf6' },
-    'Tech':     { icon: '💻', color: '#3b82f6' },
-    'Finance':  { icon: '📈', color: '#f97316' },
-    'Gaming':   { icon: '🎮', color: '#ec4899' },
-    'Other':    { icon: '📌', color: '#94a3b8' },
+    'Macro':    { icon: '🌐', col: '#0ea5e9' },
+    'Crypto':   { icon: '₿',  col: '#a855f7' },
+    'Politics': { icon: '🏛️', col: '#ef4444' },
+    'Sports':   { icon: '⚽', col: '#f59e0b' },
+    'Kaspa':    { icon: '◈',  col: '#22c55e' },
+    'Skill':    { icon: '🎯', col: '#06b6d4' },
+    'Tech':     { icon: '💻', col: '#3b82f6' },
+    'Finance':  { icon: '📈', col: '#f97316' },
+    'Gaming':   { icon: '🎮', col: '#ec4899' },
+    'Other':    { icon: '📌', col: '#94a3b8' },
   };
+  function catMeta(c) { return CAT_META[c] || { icon: '📌', col: '#94a3b8' }; }
 
-  // ─── Inject CSS ───────────────────────────────────────────────────────────
+  // ---- Inject CSS once -------------------------------------------------------
   function injectCSS() {
-    if (document.getElementById('htp-markets-ui-css')) return;
-    var style = document.createElement('style');
-    style.id = 'htp-markets-ui-css';
-    style.textContent = [
-      /* ── Wrapper ── */
-      '.htp-markets-wrap { padding: 0 0 40px; }',
+    if (document.getElementById('htp-mkt-ui-css')) return;
+    var s = document.createElement('style');
+    s.id = 'htp-mkt-ui-css';
+    s.textContent = [
+      /* === Markets section wrapper === */
+      '#v-markets .sh { margin-bottom: 24px; }',
+      '#v-markets .sh h2 { font-size: 28px; font-weight: 900; color: #f1f5f9; margin: 0 0 4px; }',
+      '#v-markets .sh p  { font-size: 13px; color: #64748b; margin: 0; }',
 
-      /* ── Category slider ── */
-      '.htp-cat-slider-wrap {',
-      '  position: relative;',
-      '  margin: 0 0 20px;',
+      /* === Create Event button === */
+      '#v-markets .cta1 {',
+      '  background: linear-gradient(135deg, rgba(73,232,194,.15), rgba(99,102,241,.1));',
+      '  border: 1px solid rgba(73,232,194,.35);',
+      '  color: #49e8c2;',
+      '  font-weight: 800;',
+      '  letter-spacing: .03em;',
+      '  border-radius: 10px;',
+      '  transition: all .18s;',
       '}',
-      '.htp-cat-slider {',
+      '#v-markets .cta1:hover { background: rgba(73,232,194,.22); box-shadow: 0 0 18px rgba(73,232,194,.18); }',
+
+      /* === Filter bar === */
+      '.fb { margin-bottom: 20px; display: flex; flex-direction: column; gap: 14px; }',
+      '.fc { position: relative; }',
+
+      /* === Category Slider === */
+      '.htp-slider {',
       '  display: flex;',
       '  gap: 8px;',
       '  overflow-x: auto;',
       '  scroll-behavior: smooth;',
-      '  padding: 4px 2px 10px;',
+      '  padding-bottom: 6px;',
       '  scrollbar-width: none;',
       '  -ms-overflow-style: none;',
       '}',
-      '.htp-cat-slider::-webkit-scrollbar { display: none; }',
-      '.htp-cat-pill {',
+      '.htp-slider::-webkit-scrollbar { display: none; }',
+
+      '.htp-pill {',
       '  flex-shrink: 0;',
       '  display: inline-flex;',
       '  align-items: center;',
-      '  gap: 5px;',
-      '  padding: 6px 14px;',
-      '  border-radius: 20px;',
-      '  border: 1px solid rgba(73,232,194,.18);',
-      '  background: rgba(73,232,194,.04);',
-      '  color: #94a3b8;',
+      '  gap: 6px;',
+      '  padding: 7px 16px;',
+      '  border-radius: 99px;',
+      '  border: 1px solid rgba(73,232,194,.15);',
+      '  background: rgba(255,255,255,.03);',
+      '  color: #64748b;',
       '  font-size: 12px;',
       '  font-weight: 700;',
       '  cursor: pointer;',
@@ -67,49 +77,53 @@
       '  white-space: nowrap;',
       '  user-select: none;',
       '}',
-      '.htp-cat-pill:hover { background: rgba(73,232,194,.10); color: #cbd5e1; }',
-      '.htp-cat-pill.active {',
-      '  background: rgba(73,232,194,.15);',
+      '.htp-pill:hover { background: rgba(73,232,194,.08); color: #94a3b8; transform: translateY(-1px); }',
+      '.htp-pill.act {',
+      '  background: rgba(73,232,194,.12);',
       '  border-color: #49e8c2;',
       '  color: #49e8c2;',
-      '  box-shadow: 0 0 12px rgba(73,232,194,.18);',
+      '  box-shadow: 0 0 14px rgba(73,232,194,.15);',
       '}',
-      '.htp-cat-pill .pill-count {',
+      '.htp-pill .pc {',
       '  font-size: 10px;',
-      '  font-weight: 800;',
-      '  padding: 1px 5px;',
+      '  font-weight: 900;',
+      '  padding: 0 5px;',
+      '  line-height: 16px;',
       '  border-radius: 8px;',
-      '  background: rgba(73,232,194,.12);',
+      '  background: rgba(73,232,194,.1);',
       '  color: #49e8c2;',
-      '  min-width: 16px;',
+      '  min-width: 18px;',
       '  text-align: center;',
       '}',
-      '.htp-cat-pill.active .pill-count { background: rgba(73,232,194,.25); }',
+      '.htp-pill.act .pc { background: rgba(73,232,194,.2); }',
 
-      /* fade edges */
-      '.htp-cat-slider-wrap::after {',
+      /* right fade edge */
+      '.fc::after {',
       '  content: \'\';',
       '  position: absolute;',
-      '  right: 0; top: 0; bottom: 10px;',
-      '  width: 48px;',
-      '  background: linear-gradient(to right, transparent, rgba(6,10,18,.95));',
+      '  right: 0; top: 0; bottom: 0;',
+      '  width: 60px;',
+      '  background: linear-gradient(to right, transparent, rgba(6,10,18,.96));',
       '  pointer-events: none;',
       '}',
 
-      /* ── Toolbar row (search + sort) ── */
-      '.htp-mkt-toolbar {',
+      /* === Status chips + search row === */
+      '.fr {',
       '  display: flex;',
       '  align-items: center;',
       '  gap: 10px;',
-      '  margin-bottom: 18px;',
       '  flex-wrap: wrap;',
       '}',
-      '.htp-mkt-search {',
+      /* hide the ugly old status chips row - status is shown on cards now */
+      '#stC { display: none !important; }',
+
+      /* search input */
+      '.fi {',
       '  flex: 1;',
       '  min-width: 180px;',
       '  padding: 9px 14px 9px 36px;',
       '  background: rgba(10,15,30,.8);',
-      '  border: 1px solid rgba(73,232,194,.14);',
+      '  border: 1px solid rgba(73,232,194,.12);',
       '  border-radius: 10px;',
       '  color: #e2e8f0;',
       '  font-size: 13px;',
@@ -120,550 +134,328 @@
       '  background-repeat: no-repeat;',
       '  background-position: 12px center;',
       '}',
-      '.htp-mkt-search:focus { border-color: rgba(73,232,194,.4); }',
-      '.htp-mkt-search::placeholder { color: #475569; }',
-      '.htp-mkt-sort {',
-      '  padding: 9px 12px;',
-      '  background: rgba(10,15,30,.8);',
-      '  border: 1px solid rgba(73,232,194,.14);',
-      '  border-radius: 10px;',
-      '  color: #94a3b8;',
-      '  font-size: 12px;',
-      '  font-family: inherit;',
-      '  cursor: pointer;',
-      '  outline: none;',
-      '}',
+      '.fi:focus { border-color: rgba(73,232,194,.35); }',
+      '.fi::placeholder { color: #334155; }',
 
-      /* ── Market cards grid ── */
-      '.htp-markets-grid {',
+      /* === Market grid === */
+      '.mg {',
       '  display: grid;',
-      '  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));',
+      '  grid-template-columns: repeat(auto-fill, minmax(300px,1fr));',
       '  gap: 16px;',
       '}',
 
-      /* ── Market card ── */
-      '.htp-mkt-card {',
+      /* === Market card === */
+      '.htp-mc {',
       '  background: rgba(10,15,30,.85);',
-      '  border: 1px solid rgba(73,232,194,.1);',
+      '  border: 1px solid rgba(73,232,194,.09);',
       '  border-radius: 16px;',
       '  overflow: hidden;',
+      '  cursor: pointer;',
       '  transition: border-color .2s, transform .2s, box-shadow .2s;',
-      '  cursor: pointer;',
+      '  display: flex;',
+      '  flex-direction: column;',
       '}',
-      '.htp-mkt-card:hover {',
-      '  border-color: rgba(73,232,194,.35);',
-      '  transform: translateY(-2px);',
-      '  box-shadow: 0 8px 32px rgba(73,232,194,.08);',
-      '}',
-      '.htp-mkt-card.expanded { border-color: #49e8c2; cursor: default; }',
-
-      /* card top accent bar */
-      '.htp-mkt-card-bar {',
-      '  height: 3px;',
-      '  background: linear-gradient(90deg, #49e8c2, #6366f1);',
+      '.htp-mc:hover {',
+      '  border-color: rgba(73,232,194,.32);',
+      '  transform: translateY(-3px);',
+      '  box-shadow: 0 10px 36px rgba(0,0,0,.35);',
       '}',
 
-      /* card header */
-      '.htp-mkt-card-head {',
-      '  padding: 14px 16px 10px;',
-      '}',
-      '.htp-mkt-card-top {',
-      '  display: flex;',
-      '  align-items: flex-start;',
-      '  justify-content: space-between;',
-      '  gap: 10px;',
-      '  margin-bottom: 8px;',
-      '}',
-      '.htp-mkt-title {',
-      '  font-size: 14px;',
-      '  font-weight: 800;',
-      '  color: #f1f5f9;',
-      '  line-height: 1.4;',
-      '  flex: 1;',
-      '}',
-      '.htp-mkt-cat-badge {',
-      '  flex-shrink: 0;',
-      '  font-size: 10px;',
-      '  font-weight: 800;',
-      '  padding: 3px 9px;',
-      '  border-radius: 20px;',
-      '  letter-spacing: .04em;',
-      '}',
-      '.htp-mkt-status-badge {',
-      '  flex-shrink: 0;',
-      '  font-size: 9px;',
-      '  font-weight: 800;',
-      '  padding: 2px 7px;',
-      '  border-radius: 10px;',
-      '  text-transform: uppercase;',
-      '  letter-spacing: .06em;',
-      '}',
-      '.htp-mkt-status-badge.open   { background:rgba(73,232,194,.1); color:#49e8c2; border:1px solid rgba(73,232,194,.25); }',
-      '.htp-mkt-status-badge.pending{ background:rgba(245,158,11,.1); color:#f59e0b; border:1px solid rgba(245,158,11,.25); }',
-      '.htp-mkt-status-badge.closed { background:rgba(100,116,139,.1);color:#64748b; border:1px solid rgba(100,116,139,.2); }',
-      '.htp-mkt-status-badge.cancelled{background:rgba(239,68,68,.1); color:#ef4444; border:1px solid rgba(239,68,68,.2); }',
+      /* accent bar */
+      '.htp-mc-bar { height: 3px; }',
 
-      /* meta row */
-      '.htp-mkt-meta {',
-      '  display: flex;',
-      '  flex-wrap: wrap;',
-      '  gap: 8px;',
-      '  margin-bottom: 12px;',
-      '}',
-      '.htp-mkt-meta-item {',
-      '  font-size: 11px;',
-      '  color: #64748b;',
-      '  display: flex;',
-      '  align-items: center;',
-      '  gap: 4px;',
-      '}',
-      '.htp-mkt-meta-item svg { opacity: .6; }',
+      /* card body */
+      '.htp-mc-body { padding: 16px; flex: 1; display: flex; flex-direction: column; }',
 
-      /* pool bar */
-      '.htp-mkt-pool-row {',
-      '  display: flex;',
-      '  align-items: center;',
-      '  justify-content: space-between;',
-      '  margin-bottom: 8px;',
+      /* top badges row */
+      '.htp-mc-top { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }',
+      '.htp-mc-badge {',
+      '  font-size: 10px; font-weight: 800; padding: 3px 9px;',
+      '  border-radius: 99px; letter-spacing: .04em;',
       '}',
-      '.htp-mkt-pool-val {',
-      '  font-size: 20px;',
-      '  font-weight: 900;',
-      '  color: #49e8c2;',
-      '  font-variant-numeric: tabular-nums;',
+      '.htp-mc-status {',
+      '  font-size: 9px; font-weight: 800; padding: 3px 8px;',
+      '  border-radius: 99px; text-transform: uppercase; letter-spacing: .06em;',
       '}',
-      '.htp-mkt-pool-lbl { font-size: 10px; color: #475569; margin-top: 1px; }',
-      '.htp-mkt-outcomes-preview {',
-      '  display: flex;',
-      '  gap: 6px;',
-      '  flex-wrap: wrap;',
-      '  margin-bottom: 4px;',
-      '}',
-      '.htp-mkt-outcome-chip {',
-      '  font-size: 11px;',
-      '  font-weight: 700;',
-      '  padding: 3px 9px;',
-      '  border-radius: 8px;',
-      '  background: rgba(99,102,241,.08);',
-      '  border: 1px solid rgba(99,102,241,.2);',
-      '  color: #a5b4fc;',
-      '}',
+      '.htp-mc-status.open     { background:rgba(34,197,94,.1);  color:#22c55e; border:1px solid rgba(34,197,94,.25); }',
+      '.htp-mc-status.pending  { background:rgba(245,158,11,.1); color:#f59e0b; border:1px solid rgba(245,158,11,.25); }',
+      '.htp-mc-status.closed   { background:rgba(100,116,139,.1);color:#64748b; border:1px solid rgba(100,116,139,.2); }',
+      '.htp-mc-status.cancelled{ background:rgba(239,68,68,.1);  color:#ef4444; border:1px solid rgba(239,68,68,.2); }',
 
-      /* expanded body */
-      '.htp-mkt-body {',
-      '  padding: 0 16px 16px;',
-      '  border-top: 1px solid rgba(73,232,194,.08);',
-      '  margin-top: 4px;',
-      '  padding-top: 14px;',
-      '}',
-      '.htp-mkt-desc {',
-      '  font-size: 12px;',
-      '  color: #94a3b8;',
-      '  line-height: 1.6;',
-      '  margin-bottom: 14px;',
-      '}',
-      '.htp-outcome-row {',
-      '  margin-bottom: 10px;',
-      '}',
-      '.htp-outcome-label {',
-      '  display: flex;',
-      '  justify-content: space-between;',
-      '  font-size: 12px;',
-      '  margin-bottom: 4px;',
-      '}',
-      '.htp-outcome-name { font-weight: 700; color: #cbd5e1; }',
-      '.htp-outcome-odds { font-weight: 800; color: #49e8c2; }',
-      '.htp-outcome-track {',
-      '  height: 6px;',
-      '  background: rgba(255,255,255,.05);',
-      '  border-radius: 4px;',
-      '  overflow: hidden;',
-      '  margin-bottom: 6px;',
-      '}',
-      '.htp-outcome-fill {',
-      '  height: 100%;',
-      '  background: linear-gradient(90deg,#49e8c2,#6366f1);',
-      '  border-radius: 4px;',
-      '  transition: width .4s ease;',
-      '}',
-      '.htp-bet-row {',
-      '  display: flex;',
-      '  gap: 6px;',
-      '  margin-top: 4px;',
-      '}',
-      '.htp-bet-input {',
-      '  flex: 1;',
-      '  padding: 7px 10px;',
-      '  background: rgba(6,10,18,.9);',
-      '  border: 1px solid rgba(73,232,194,.15);',
-      '  border-radius: 8px;',
-      '  color: #e2e8f0;',
-      '  font-size: 12px;',
-      '  font-family: inherit;',
-      '  outline: none;',
-      '}',
-      '.htp-bet-input:focus { border-color: rgba(73,232,194,.4); }',
-      '.htp-bet-btn {',
-      '  padding: 7px 14px;',
-      '  background: linear-gradient(135deg,rgba(73,232,194,.15),rgba(99,102,241,.1));',
-      '  border: 1px solid rgba(73,232,194,.3);',
-      '  border-radius: 8px;',
-      '  color: #49e8c2;',
-      '  font-size: 12px;',
-      '  font-weight: 800;',
-      '  cursor: pointer;',
-      '  transition: all .15s;',
-      '  white-space: nowrap;',
-      '}',
-      '.htp-bet-btn:hover { background: rgba(73,232,194,.2); }',
-      '.htp-mkt-footer {',
-      '  display: flex;',
-      '  align-items: center;',
-      '  justify-content: space-between;',
-      '  margin-top: 14px;',
+      /* deadline  */
+      '.htp-mc-dl { margin-left: auto; font-size: 10px; color: #334155; }',
+
+      /* title */
+      '.htp-mc-title { font-size: 14px; font-weight: 700; color: #e2e8f0; line-height: 1.5; margin: 0 0 14px; flex: 1; }',
+
+      /* outcomes bar */
+      '.htp-mc-bar2 { height: 6px; border-radius: 4px; overflow: hidden; background: rgba(255,255,255,.04); display: flex; margin-bottom: 6px; }',
+      '.htp-mc-bar2-yes { border-radius: 4px 0 0 4px; transition: width .3s; }',
+      '.htp-mc-bar2-no  { border-radius: 0 4px 4px 0; transition: width .3s; background: rgba(239,68,68,.65); }',
+      '.htp-mc-odds { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; margin-bottom: 14px; }',
+
+      /* pool footer */
+      '.htp-mc-foot {',
+      '  display: flex; align-items: center; justify-content: space-between;',
       '  padding-top: 12px;',
-      '  border-top: 1px solid rgba(73,232,194,.07);',
-      '  font-size: 11px;',
-      '  color: #475569;',
+      '  border-top: 1px solid rgba(255,255,255,.04);',
+      '  margin-top: auto;',
       '}',
-      '.htp-mkt-footer a { color: #49e8c2; text-decoration: none; word-break: break-all; font-size: 10px; }',
+      '.htp-mc-pool { display: flex; align-items: baseline; gap: 4px; }',
+      '.htp-mc-pool-val { font-size: 20px; font-weight: 900; color: #49e8c2; font-variant-numeric: tabular-nums; }',
+      '.htp-mc-pool-unit { font-size: 11px; color: #334155; }',
+      '.htp-mc-ent { font-size: 11px; color: #334155; }',
+      '.htp-mc-creator { font-size: 10px; color: #1e293b; }',
 
-      /* empty state */
-      '.htp-mkt-empty {',
+      /* === Empty state === */
+      '.htp-empty {',
       '  grid-column: 1/-1;',
       '  text-align: center;',
-      '  padding: 60px 20px;',
-      '  color: #475569;',
+      '  padding: 70px 20px;',
       '}',
-      '.htp-mkt-empty-icon { font-size: 40px; margin-bottom: 12px; opacity: .5; }',
-      '.htp-mkt-empty-title { font-size: 15px; font-weight: 800; color: #64748b; margin-bottom: 6px; }',
-      '.htp-mkt-empty-sub { font-size: 12px; }',
+      '.htp-empty-icon { font-size: 44px; opacity: .35; margin-bottom: 14px; }',
+      '.htp-empty-title { font-size: 16px; font-weight: 800; color: #334155; margin-bottom: 6px; }',
+      '.htp-empty-sub   { font-size: 12px; color: #1e293b; }',
+      '.htp-empty-cta   {',
+      '  display: inline-flex; align-items: center; gap: 6px;',
+      '  margin-top: 20px; padding: 9px 20px;',
+      '  border-radius: 10px; border: 1px solid rgba(73,232,194,.3);',
+      '  background: rgba(73,232,194,.08); color: #49e8c2;',
+      '  font-size: 12px; font-weight: 800; cursor: pointer;',
+      '  transition: all .18s;',
+      '}',
+      '.htp-empty-cta:hover { background: rgba(73,232,194,.15); }',
 
-      /* results count */
-      '.htp-mkt-count { font-size: 11px; color: #475569; margin-bottom: 12px; }',
-      '.htp-mkt-count strong { color: #49e8c2; }',
+      /* === Results count === */
+      '#htp-count { font-size: 11px; color: #334155; margin-bottom: 12px; }',
+      '#htp-count strong { color: #49e8c2; }',
 
+      /* responsive */
       '@media(max-width:600px){',
-      '  .htp-markets-grid { grid-template-columns: 1fr; }',
-      '  .htp-mkt-pool-val { font-size: 16px; }',
+      '  .mg { grid-template-columns: 1fr; }',
+      '  .htp-mc-pool-val { font-size: 16px; }',
       '}',
     ].join('\n');
-    document.head.appendChild(style);
+    document.head.appendChild(s);
   }
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────
-  function timeUntil(ts) {
-    if (!ts) return '--';
-    var t = typeof ts === 'number' && ts < 1e12 ? ts * 1000 : ts;
-    var diff = t - Date.now();
-    if (diff <= 0) return 'Expired';
-    var d = Math.floor(diff / 86400000);
-    var h = Math.floor((diff % 86400000) / 3600000);
-    return d > 0 ? d + 'd ' + h + 'h' : h + 'h ' + Math.floor((diff % 3600000) / 60000) + 'm';
-  }
+  // ---- Build dynamic slider -------------------------------------------------
+  // Reads window.mkts (the main app's market array) for live category counts
+  function getMkts() { return (W.mkts && W.mkts.length) ? W.mkts : []; }
 
-  function truncate(addr) {
-    if (!addr || addr.length < 16) return addr || '--';
-    return addr.slice(0, 10) + '…' + addr.slice(-6);
-  }
+  function buildDynamicSlider() {
+    var cc = document.getElementById('catC');
+    if (!cc) return;
 
-  function getCatMeta(cat) {
-    return CAT_META[cat] || CAT_META['Other'];
-  }
+    // Wrap once in .htp-slider
+    if (!cc.querySelector('.htp-slider')) {
+      cc.innerHTML = '<div class="htp-slider" id="htp-slider-inner"></div>';
+    }
+    var sl = document.getElementById('htp-slider-inner') || cc.querySelector('.htp-slider');
+    if (!sl) return;
 
-  // ─── Build dynamic category list from current markets ────────────────────
-  function buildCategoryList(markets) {
+    var mkts = getMkts();
+    var fCat = W.fCat || 'All';
+
+    // Count per category
     var counts = {};
-    counts['all'] = markets.length;
-    markets.forEach(function(m) {
-      var c = (m.category || 'Other').trim();
-      counts[c] = (counts[c] || 0) + 1;
-    });
-    return counts;
-  }
-
-  // ─── Render slider ────────────────────────────────────────────────────────
-  function renderSlider(markets) {
-    var wrap = document.getElementById('htp-cat-slider');
-    if (!wrap) return;
-    var counts = buildCategoryList(markets);
+    mkts.forEach(function(m) { var c = m.cat || 'Other'; counts[c] = (counts[c]||0)+1; });
 
     var pills = [];
-    // "Show All" first
-    pills.push(makePill('all', '✦', 'Show All', counts['all'], activeFilter === 'all'));
-    // Then every category found in data, sorted by count desc
-    Object.keys(counts).filter(function(k) { return k !== 'all'; }).sort(function(a, b) {
-      return counts[b] - counts[a];
-    }).forEach(function(cat) {
-      var meta = getCatMeta(cat);
-      pills.push(makePill(cat, meta.icon, cat, counts[cat], activeFilter === cat));
+    // "Show All Events" always first
+    pills.push(pill('All', '✶', 'Show All Events', mkts.length, fCat === 'All'));
+
+    // Sort categories by count desc, then alpha
+    var cats = Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a] || a.localeCompare(b); });
+    cats.forEach(function(c) {
+      var m = catMeta(c);
+      pills.push(pill(c, m.icon, c, counts[c], fCat === c));
     });
 
-    wrap.innerHTML = pills.join('');
+    sl.innerHTML = pills.join('');
+
+    // Scroll active pill into view
+    var active = sl.querySelector('.htp-pill.act');
+    if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }
 
-  function makePill(key, icon, label, count, isActive) {
-    return '<button class="htp-cat-pill' + (isActive ? ' active' : '') + '" onclick="htpMktFilter(\'' + key + '\')">' +
+  function pill(key, icon, label, count, isActive) {
+    return '<button class="htp-pill' + (isActive ? ' act' : '') + '" onclick="window._htpSetCat(\'' + key + '\')">' +
       '<span>' + icon + '</span>' +
       '<span>' + label + '</span>' +
-      '<span class="pill-count">' + (count || 0) + '</span>' +
+      '<span class="pc">' + (count || 0) + '</span>' +
       '</button>';
   }
 
-  // ─── Filter logic ─────────────────────────────────────────────────────────
-  function applyFilter(markets) {
-    return markets.filter(function(m) {
-      // category filter
-      if (activeFilter !== 'all') {
-        var cat = (m.category || 'Other').trim();
-        if (cat !== activeFilter) return false;
-      }
-      // search
-      if (searchQuery) {
-        var q = searchQuery.toLowerCase();
-        var title = (m.title || '').toLowerCase();
-        var desc  = (m.description || '').toLowerCase();
-        if (title.indexOf(q) === -1 && desc.indexOf(q) === -1) return false;
-      }
+  // ---- Override app globals --------------------------------------------------
+  // Replaces buildF() from the inline script (called by setCat, setSt, renderM)
+  var _origBuildF = W.buildF;
+  W.buildF = function() {
+    buildDynamicSlider();
+    // Rebuild count line
+    ensureCountEl();
+    updateCount();
+  };
+
+  // Override setCat so the slider reflects the correct active state
+  var _origSetCat = W.setCat;
+  W._htpSetCat = function(c) {
+    W.fCat = c;
+    W.buildF();
+    W.renderM();
+  };
+  W.setCat = W._htpSetCat;
+
+  // Override renderM with premium card renderer
+  var _origRenderM = W.renderM;
+  W.renderM = function() {
+    var g = document.getElementById('mG');
+    if (!g) { if (_origRenderM) _origRenderM(); return; }
+
+    var mkts = getMkts();
+    var fCat = W.fCat || 'All';
+    var fSr  = W.fSr  || '';
+    var _net;
+    try { _net = (typeof W.net !== 'undefined' && W.net) ? W.net : (W.HTP_NETWORK || (typeof W.activeNet !== 'undefined' ? W.activeNet : 'tn12')); }
+    catch(e) { _net = W.HTP_NETWORK || 'tn12'; }
+
+    var filtered = mkts.filter(function(m) {
+      if (fCat !== 'All' && m.cat !== fCat) return false;
+      if (_net !== 'both' && m.net !== 'both' && m.net !== _net) return false;
+      if (fSr && !(m.title||'').toLowerCase().includes(fSr.toLowerCase())) return false;
       return true;
     });
-  }
 
-  // ─── Render market cards ──────────────────────────────────────────────────
-  var expandedId = null;
+    updateCount(filtered.length, mkts.length);
+    buildDynamicSlider(); // keep slider counts fresh
 
-  function renderCards(markets) {
-    var grid = document.getElementById('htp-markets-grid');
-    var countEl = document.getElementById('htp-mkt-count');
-    if (!grid) return;
-
-    var filtered = applyFilter(markets);
-    if (countEl) {
-      countEl.innerHTML = 'Showing <strong>' + filtered.length + '</strong> of <strong>' + markets.length + '</strong> markets';
-    }
-
-    if (filtered.length === 0) {
-      grid.innerHTML = '<div class="htp-mkt-empty"><div class="htp-mkt-empty-icon">📭</div>' +
-        '<div class="htp-mkt-empty-title">No markets found</div>' +
-        '<div class="htp-mkt-empty-sub">Try a different category or clear your search</div></div>';
+    if (!filtered.length) {
+      g.innerHTML = emptyHTML(fCat);
       return;
     }
 
-    grid.innerHTML = filtered.map(function(m) { return buildCard(m); }).join('');
+    g.innerHTML = filtered.map(renderCard).join('');
+  };
+
+  // ---- Card renderer ---------------------------------------------------------
+  function renderCard(m) {
+    var col    = (catMeta(m.cat)).col;
+    var status = m.st || 'open';
+    var pool   = m.pool || ((m.yesTotal||0)+(m.noTotal||0));
+    var poolFmt= pool >= 1000 ? (pool/1000).toFixed(1)+'K' : (pool||0).toLocaleString();
+    var img    = m.img
+      ? '<div style="height:120px;background:url('+m.img+') center/cover no-repeat;"></div>'
+      : '';
+    var yW = Math.max(m.yP||0, 2);
+    var nW = Math.max(m.nP||0, 2);
+
+    return [
+      '<div class="htp-mc" onclick="openM(\'' + m.id + '\')"' +
+        ' onmouseover="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 10px 36px rgba(0,0,0,.35)\'"' +
+        ' onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">' ,
+      '<div class="htp-mc-bar" style="background:linear-gradient(90deg,' + col + ',#6366f1)"></div>',
+      img,
+      '<div class="htp-mc-body">',
+        '<div class="htp-mc-top">',
+          '<span class="htp-mc-badge" style="background:'+col+'18;color:'+col+';border:1px solid '+col+'33">' +
+            catMeta(m.cat).icon + ' ' + (m.cat||'Other') + '</span>',
+          '<span class="htp-mc-status ' + status + '">' + status.toUpperCase() + '</span>',
+          '<span class="htp-mc-dl">' + (m.cl||'') + '</span>',
+        '</div>',
+        '<p class="htp-mc-title">' + (m.title||'Untitled') + '</p>',
+        '<div class="htp-mc-bar2">',
+          '<div class="htp-mc-bar2-yes" style="width:'+yW+'%;background:'+col+'"></div>',
+          '<div class="htp-mc-bar2-no"  style="width:'+nW+'%"></div>',
+        '</div>',
+        '<div class="htp-mc-odds">',
+          '<span style="color:'+col+'">↑ Yes ' + (m.yP||0) + '%</span>',
+          '<span style="color:rgba(239,68,68,.8)">↓ No ' + (m.nP||0) + '%</span>',
+        '</div>',
+        '<div class="htp-mc-foot">',
+          '<div class="htp-mc-pool">',
+            '<span class="htp-mc-pool-val">' + poolFmt + '</span>',
+            '<span class="htp-mc-pool-unit">KAS pool</span>',
+          '</div>',
+          '<span class="htp-mc-ent">' + (m.ent||0) + ' positions</span>',
+        '</div>',
+      '</div>',
+      '</div>',
+    ].join('');
   }
 
-  function buildCard(m) {
-    var id      = m.marketId || m.id || '';
-    var cat     = m.category || 'Other';
-    var meta    = getCatMeta(cat);
-    var status  = m.status || 'active';
-    var statusLabel = status === 'active' ? 'open' : status;
-    var isExp   = expandedId === id;
-    var pool    = (m.totalPool || 0).toFixed(2);
-    var outcomes = m.outcomes || [];
+  // ---- Empty state HTML ------------------------------------------------------
+  function emptyHTML(fCat) {
+    var isCatFilter = fCat && fCat !== 'All';
+    return [
+      '<div class="htp-empty">',
+        '<div class="htp-empty-icon">' + (isCatFilter ? catMeta(fCat).icon : '📭') + '</div>',
+        '<div class="htp-empty-title">' + (isCatFilter
+          ? 'No ' + fCat + ' markets yet'
+          : 'No markets yet') + '</div>',
+        '<div class="htp-empty-sub">' + (isCatFilter
+          ? 'Be the first to create a ' + fCat + ' prediction market.'
+          : 'Prediction markets will appear here once created.') + '</div>',
+        '<button class="htp-empty-cta" onclick="go(\'create\')">+ Create the first event</button>',
+      '</div>',
+    ].join('');
+  }
 
-    // accent bar colour based on category
-    var barColor = meta.color;
-
-    var html = '<div class="htp-mkt-card' + (isExp ? ' expanded' : '') + '" data-market-id="' + id + '">';
-    html += '<div class="htp-mkt-card-bar" style="background:linear-gradient(90deg,' + barColor + ',#6366f1)"></div>';
-
-    // clickable header
-    html += '<div class="htp-mkt-card-head" onclick="htpMktToggle(\'' + id + '\')">';
-    html += '<div class="htp-mkt-card-top">';
-    html += '<div class="htp-mkt-title">' + (m.title || 'Untitled') + '</div>';
-    html += '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">';
-    html += '<span class="htp-mkt-cat-badge" style="background:' + barColor + '22;color:' + barColor + ';border:1px solid ' + barColor + '44">' + meta.icon + ' ' + cat + '</span>';
-    html += '<span class="htp-mkt-status-badge ' + statusLabel + '">' + statusLabel + '</span>';
-    html += '</div>';
-    html += '</div>'; // card-top
-
-    // meta row
-    html += '<div class="htp-mkt-meta">';
-    html += metaItem('<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/></svg>', truncate(m.creatorAddress));
-    html += metaItem('<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>', timeUntil(m.resolutionDate));
-    html += metaItem('<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 00-8 0v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>', (Object.keys(m.positions || {}).length) + ' bettors');
-    html += '</div>';
-
-    // pool + outcomes preview
-    html += '<div class="htp-mkt-pool-row">';
-    html += '<div><div class="htp-mkt-pool-val">' + pool + '</div><div class="htp-mkt-pool-lbl">KAS pool</div></div>';
-    html += '<div class="htp-mkt-outcomes-preview">';
-    outcomes.slice(0, 3).forEach(function(o) {
-      html += '<span class="htp-mkt-outcome-chip">' + o + '</span>';
-    });
-    if (outcomes.length > 3) html += '<span class="htp-mkt-outcome-chip">+' + (outcomes.length - 3) + '</span>';
-    html += '</div>';
-    html += '</div>';
-    html += '</div>'; // card-head
-
-    // expanded body
-    if (isExp) {
-      html += buildExpandedBody(m);
+  // ---- Count helper ----------------------------------------------------------
+  function ensureCountEl() {
+    if (document.getElementById('htp-count')) return;
+    var g = document.getElementById('mG');
+    if (!g || !g.parentNode) return;
+    var el = document.createElement('div');
+    el.id = 'htp-count';
+    g.parentNode.insertBefore(el, g);
+  }
+  function updateCount(shown, total) {
+    var el = document.getElementById('htp-count');
+    if (!el) return;
+    if (shown === undefined) {
+      var mkts = getMkts(); shown = mkts.length; total = mkts.length;
     }
-
-    html += '</div>'; // card
-    return html;
+    el.innerHTML = shown === total
+      ? '<strong>' + total + '</strong> market' + (total !== 1 ? 's' : '')
+      : 'Showing <strong>' + shown + '</strong> of <strong>' + total + '</strong> markets';
   }
 
-  function metaItem(icon, text) {
-    return '<span class="htp-mkt-meta-item">' + icon + text + '</span>';
-  }
-
-  function buildExpandedBody(m) {
-    var id = m.marketId || m.id || '';
-    var outcomes = m.outcomes || [];
-    var totalPos = 0;
-    var counts = [];
-    outcomes.forEach(function(_, idx) {
-      var c = 0;
-      if (m.positions) {
-        Object.keys(m.positions).forEach(function(k) {
-          var p = m.positions[k];
-          if (p && p.outcomeIndex === idx) c += (p.size || 0);
-        });
+  // ---- Watch mkts for changes so slider stays live --------------------------
+  function watchMkts() {
+    var last = 0;
+    setInterval(function() {
+      var m = getMkts();
+      if (m.length !== last) {
+        last = m.length;
+        W.buildF();
       }
-      counts.push(c);
-      totalPos += c;
-    });
-
-    var html = '<div class="htp-mkt-body">';
-    if (m.description) html += '<p class="htp-mkt-desc">' + m.description + '</p>';
-
-    outcomes.forEach(function(o, idx) {
-      var odds = totalPos > 0 ? ((counts[idx] / totalPos) * 100).toFixed(1) : (100 / outcomes.length).toFixed(1);
-      html += '<div class="htp-outcome-row">';
-      html += '<div class="htp-outcome-label"><span class="htp-outcome-name">' + o + '</span><span class="htp-outcome-odds">' + odds + '%</span></div>';
-      html += '<div class="htp-outcome-track"><div class="htp-outcome-fill" style="width:' + odds + '%"></div></div>';
-      html += '<div class="htp-bet-row">';
-      html += '<input type="number" class="htp-bet-input" placeholder="KAS amount" min="' + (m.minPosition || 1) + '" data-outcome-idx="' + idx + '" data-market-id="' + id + '">';
-      html += '<button class="htp-bet-btn" onclick="event.stopPropagation();window.htpPlaceBet(\'' + id + '\', ' + idx + ')">Bet ' + o + '</button>';
-      html += '</div>';
-      html += '</div>';
-    });
-
-    html += '<div class="htp-mkt-footer">';
-    html += '<span>Min: ' + (m.minPosition || 1) + ' KAS</span>';
-    if (m.sourceUrl) html += '<a href="' + m.sourceUrl + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Source ↗</a>';
-    html += '</div>';
-    html += '</div>';
-    return html;
+    }, 1500);
   }
 
-  // ─── Public API ───────────────────────────────────────────────────────────
-  W.htpMktFilter = function(cat) {
-    activeFilter = cat;
-    renderSlider(allMarkets);
-    renderCards(allMarkets);
-    // scroll slider pill into view
-    var pill = document.querySelector('.htp-cat-pill.active');
-    if (pill) pill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  };
-
-  W.htpMktSearch = function(q) {
-    searchQuery = q;
-    renderCards(allMarkets);
-  };
-
-  W.htpMktToggle = function(marketId) {
-    expandedId = expandedId === marketId ? null : marketId;
-    renderCards(allMarkets);
-    // scroll card into view
-    if (expandedId) {
-      setTimeout(function() {
-        var card = document.querySelector('.htp-mkt-card.expanded');
-        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 100);
-    }
-  };
-
-  // also keep old toggle working
-  W.htpToggleMarket = W.htpMktToggle;
-
-  // ─── Bootstrap ────────────────────────────────────────────────────────────
-  function upgradeMarketsSection() {
-    // Find the markets container in the DOM
-    var container = document.getElementById('active-markets') ||
-                    document.getElementById('markets-container') ||
-                    document.querySelector('[data-section="markets"] .section-content');
-    if (!container) return;
-
-    // Replace with upgraded structure
-    var parent = container.parentNode;
-    var upgraded = document.createElement('div');
-    upgraded.className = 'htp-markets-wrap';
-    upgraded.innerHTML =
-      '<div class="htp-cat-slider-wrap"><div class="htp-cat-slider" id="htp-cat-slider">' +
-        '<button class="htp-cat-pill active" onclick="htpMktFilter(\'all\')">✦ Show All <span class="pill-count">0</span></button>' +
-      '</div></div>' +
-      '<div class="htp-mkt-toolbar">' +
-        '<input class="htp-mkt-search" id="htp-mkt-search" type="search" placeholder="Search markets…" oninput="htpMktSearch(this.value)">' +
-        '<select class="htp-mkt-sort" id="htp-mkt-sort" onchange="htpMktSort(this.value)">' +
-          '<option value="newest">Newest</option>' +
-          '<option value="pool">Highest Pool</option>' +
-          '<option value="expiry">Expiring Soon</option>' +
-        '</select>' +
-      '</div>' +
-      '<div class="htp-mkt-count" id="htp-mkt-count"></div>' +
-      '<div class="htp-markets-grid" id="htp-markets-grid">' +
-        '<div class="htp-mkt-empty"><div class="htp-mkt-empty-icon">⏳</div>' +
-        '<div class="htp-mkt-empty-title">Loading markets…</div></div>' +
-      '</div>';
-
-    parent.replaceChild(upgraded, container);
-    // keep old id so other scripts can still find it
-    upgraded.id = 'active-markets';
-  }
-
-  // Sort
-  W.htpMktSort = function(mode) {
-    if (mode === 'pool') {
-      allMarkets.sort(function(a, b) { return (b.totalPool || 0) - (a.totalPool || 0); });
-    } else if (mode === 'expiry') {
-      allMarkets.sort(function(a, b) { return (a.resolutionDate || 0) - (b.resolutionDate || 0); });
-    } else {
-      allMarkets.sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
-    }
-    renderCards(allMarkets);
-  };
-
-  // Called by htp-events-v3.js (we override renderMarkets)
-  W.htpMarketsUIUpdate = function(markets) {
-    allMarkets = markets || [];
-    renderSlider(allMarkets);
-    renderCards(allMarkets);
-  };
-
+  // ---- Bootstrap ------------------------------------------------------------
   function init() {
     injectCSS();
-    upgradeMarketsSection();
-
-    // Hook into Firebase directly to keep slider + cards live
-    function connectFirebase() {
-      var db = W.firebase && W.firebase.database ? W.firebase.database() : null;
-      if (!db) return;
-      db.ref('markets').on('value', function(snap) {
-        var markets = [];
-        if (snap.exists()) {
-          snap.forEach(function(child) {
-            var m = child.val();
-            if (m) { m.marketId = m.marketId || child.key; markets.push(m); }
-          });
-        }
-        markets.sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
-        allMarkets = markets;
-        renderSlider(allMarkets);
-        renderCards(allMarkets);
-      });
+    // Wait for DOM + inline script to fully initialise before overriding
+    function tryInit() {
+      if (document.getElementById('catC') && typeof W.buildF !== 'undefined') {
+        W.buildF();
+        W.renderM();
+        watchMkts();
+      } else {
+        setTimeout(tryInit, 200);
+      }
     }
+    tryInit();
 
-    if (W.firebase && W.firebase.apps && W.firebase.apps.length) {
-      connectFirebase();
-    } else {
-      W.addEventListener('htp:firebase:ready', connectFirebase);
-      setTimeout(function() {
-        if (W.firebase && W.firebase.apps && W.firebase.apps.length) connectFirebase();
-      }, 3000);
+    // Also refresh when navigating to the markets tab
+    var _origGo = W.go;
+    if (typeof _origGo === 'function') {
+      W.go = function(v) {
+        _origGo(v);
+        if (v === 'markets') {
+          setTimeout(function() { W.buildF(); W.renderM(); }, 120);
+        }
+      };
     }
   }
 
