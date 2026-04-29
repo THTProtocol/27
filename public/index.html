@@ -6039,9 +6039,9 @@ event MyMarket {
                             <img src="/img/kastle.png" alt="Kastle" style="width:36px;height:36px;border-radius:8px" />
                             <span style="font-size:12px;font-weight:600;color:var(--text)">Kastle</span>
                         </div>
-                        <div class="card w-card" onclick="selWallet('Kasperia')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;cursor:pointer;border-radius:12px;border:1px solid var(--border);background:rgba(10,15,30,.6);transition:border-color .2s,box-shadow .2s" onmouseenter="this.style.borderColor='#49e8c2';this.style.boxShadow='0 0 16px rgba(73,232,194,.15)'" onmouseleave="this.style.borderColor='var(--border)';this.style.boxShadow=''">
-                            <img src="/img/kasperia.png" alt="Kasperia" style="width:36px;height:36px;border-radius:8px" />
-                            <span style="font-size:12px;font-weight:600;color:var(--text)">Kasperia</span>
+                        <div class="card w-card" onclick="selWallet('OKX')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;cursor:pointer;border-radius:12px;border:1px solid var(--border);background:rgba(10,15,30,.6);transition:border-color .2s,box-shadow .2s" onmouseenter="this.style.borderColor='#49e8c2';this.style.boxShadow='0 0 16px rgba(73,232,194,.15)'" onmouseleave="this.style.borderColor='var(--border)';this.style.boxShadow=''">
+                            <img src="https://www.google.com/s2/favicons?domain=okx.com&sz=64" alt="OKX Wallet" style="width:36px;height:36px;border-radius:8px" />
+                            <span style="font-size:12px;font-weight:600;color:var(--text)">OKX Wallet</span>
                         </div>
                     </div>
                 <div id="walletStatus"
@@ -7730,7 +7730,7 @@ event MyMarket {
             switch (name) {
                 case 'KasWare':  return w.kasware  || w.kasWare  || null;
                 case 'Kastle':   return w.kastle   || null;
-                case 'Kasperia': return w.kasperia || null;
+                case 'OKX':      return (w.okxwallet && w.okxwallet.kaspa) ? w.okxwallet.kaspa : null;
                 
                 
                 
@@ -7771,7 +7771,7 @@ event MyMarket {
             if (!provider) {
                 var INSTALL_URLS = {
                     'KasWare':'https://kasware.xyz', 'Kastle':'https://kastle.cc',
-                    'Kasperia':'https://kasperia.app',
+                    'OKX':'https://www.okx.com/web3',
                     
                 };
                 var url = INSTALL_URLS[name] || '';
@@ -22899,161 +22899,6 @@ window.addEventListener('htp:balance:updated', function(e) {
 <script src="htp-skill-v3.js"></script>
 
 
-{
-  function toggleMobileView(){
-    var ov=document.getElementById('mobileOverlay');
-    var lbl=document.getElementById('viewToggleLabel');
-    var ico=document.getElementById('viewToggleIcon');
-    if(ov.classList.contains('active')){
-      ov.classList.remove('active');
-      if(lbl)lbl.textContent='Mobile';
-      if(ico)ico.innerHTML='&#128241;';
-    }else{
-      ov.classList.add('active');
-      if(lbl)lbl.textContent='Desktop';
-      if(ico)ico.innerHTML='&#128187;';
-      syncMobStats();
-    }
-  }
-  window.toggleMobileView=toggleMobileView;
-  window.mobTab=function(name){
-    document.querySelectorAll('.mob-section').forEach(function(s){s.classList.remove('mob-active');});
-    document.querySelectorAll('.mob-nav-btn').forEach(function(b){b.classList.remove('active');});
-    var sec=document.getElementById('mob-'+name);
-    var nav=document.getElementById('mnav-'+name);
-    if(sec)sec.classList.add('mob-active');
-    if(nav)nav.classList.add('active');
-  };
-  window.updateMobConnBtn=function(){
-    setTimeout(function(){
-      var btn=document.getElementById('mobConnBtn');
-      var ms=document.getElementById('mobWalletStatus');
-      var ds=document.getElementById('walletStatus');
-      if(window.walletAddress&&btn)btn.textContent=window.walletAddress.slice(0,8)+'...';
-      if(ds&&ms){ms.innerHTML=ds.innerHTML;ms.style.display=ds.innerHTML.trim()?'block':'none';}
-    },1500);
-  };
-  window.mobConnectMnemonic=function(){
-    var v=document.getElementById('mobMnInput').value.trim();
-    if(!v)return;
-    var di=document.querySelector('input[placeholder*="mnemonic"],textarea[placeholder*="mnemonic"],#htpMnemonicInput');
-    if(di){di.value=v;var btn=di.closest('div').querySelector('button');if(btn)btn.click();}
-    window.updateMobConnBtn();
-  };
-  function syncMobStats(){
-    [['mobTotalPool','[id*="totalPool"]'],['mobActiveMarkets','[id*="activeMarkets"]'],['mobPositions','[id*="positions"]']].forEach(function(m){
-      var src=document.querySelector(m[1]);
-      var dst=document.getElementById(m[0]);
-      if(src&&dst&&src.textContent.trim())dst.textContent=src.textContent.trim();
-    });
-  }
-})();
-</script>
-
-
-  function toggleMobileView(){
-    var ov=document.getElementById('mobileOverlay');
-    var lbl=document.getElementById('viewToggleLabel');
-    var ico=document.getElementById('viewToggleIcon');
-    if(ov.classList.contains('active')){
-      ov.classList.remove('active');
-      if(lbl)lbl.textContent='Mobile';
-      if(ico)ico.innerHTML='&#128241;';
-    }else{
-      ov.classList.add('active');
-      if(lbl)lbl.textContent='Desktop';
-      if(ico)ico.innerHTML='&#128187;';
-      syncMobStats();
-    }
-  }
-  window.toggleMobileView=toggleMobileView;
-  window.mobTab=function(name){
-    document.querySelectorAll('.mob-section').forEach(function(s){s.classList.remove('mob-active');});
-    document.querySelectorAll('.mob-nav-btn').forEach(function(b){b.classList.remove('active');});
-    var sec=document.getElementById('mob-'+name);
-    var nav=document.getElementById('mnav-'+name);
-    if(sec)sec.classList.add('mob-active');
-    if(nav)nav.classList.add('active');
-  };
-  window.updateMobConnBtn=function(){
-    setTimeout(function(){
-      var btn=document.getElementById('mobConnBtn');
-      var ms=document.getElementById('mobWalletStatus');
-      var ds=document.getElementById('walletStatus');
-      if(window.walletAddress&&btn)btn.textContent=window.walletAddress.slice(0,8)+'...';
-      if(ds&&ms){ms.innerHTML=ds.innerHTML;ms.style.display=ds.innerHTML.trim()?'block':'none';}
-    },1500);
-  };
-  window.mobConnectMnemonic=function(){
-    var v=document.getElementById('mobMnInput').value.trim();
-    if(!v)return;
-    var di=document.querySelector('input[placeholder*="mnemonic"],textarea[placeholder*="mnemonic"],#htpMnemonicInput');
-    if(di){di.value=v;var btn=di.closest('div').querySelector('button');if(btn)btn.click();}
-    window.updateMobConnBtn();
-  };
-  function syncMobStats(){
-    [['mobTotalPool','[id*="totalPool"]'],['mobActiveMarkets','[id*="activeMarkets"]'],['mobPositions','[id*="positions"]']].forEach(function(m){
-      var src=document.querySelector(m[1]);
-      var dst=document.getElementById(m[0]);
-      if(src&&dst&&src.textContent.trim())dst.textContent=src.textContent.trim();
-    });
-  }
-})();
-</script>
-
-
-  function toggleMobileView(){
-    var ov=document.getElementById('mobileOverlay');
-    var lbl=document.getElementById('viewToggleLabel');
-    var ico=document.getElementById('viewToggleIcon');
-    if(ov.classList.contains('active')){
-      ov.classList.remove('active');
-      if(lbl)lbl.textContent='Mobile';
-      if(ico)ico.innerHTML='&#128241;';
-    }else{
-      ov.classList.add('active');
-      if(lbl)lbl.textContent='Desktop';
-      if(ico)ico.innerHTML='&#128187;';
-      syncMobStats();
-    }
-  }
-  window.toggleMobileView=toggleMobileView;
-  window.mobTab=function(name){
-    document.querySelectorAll('.mob-section').forEach(function(s){s.classList.remove('mob-active');});
-    document.querySelectorAll('.mob-nav-btn').forEach(function(b){b.classList.remove('active');});
-    var sec=document.getElementById('mob-'+name);
-    var nav=document.getElementById('mnav-'+name);
-    if(sec)sec.classList.add('mob-active');
-    if(nav)nav.classList.add('active');
-  };
-  window.updateMobConnBtn=function(){
-    setTimeout(function(){
-      var btn=document.getElementById('mobConnBtn');
-      var ms=document.getElementById('mobWalletStatus');
-      var ds=document.getElementById('walletStatus');
-      if(window.walletAddress&&btn)btn.textContent=window.walletAddress.slice(0,8)+'...';
-      if(ds&&ms){ms.innerHTML=ds.innerHTML;ms.style.display=ds.innerHTML.trim()?'block':'none';}
-    },1500);
-  };
-  window.mobConnectMnemonic=function(){
-    var v=document.getElementById('mobMnInput').value.trim();
-    if(!v)return;
-    var di=document.querySelector('#htpMnemonicInput');
-    if(!di)di=document.querySelector('textarea[placeholder*="mnemonic"]');
-    if(di){di.value=v;var btn=di.closest('div').querySelector('button');if(btn)btn.click();}
-    window.updateMobConnBtn();
-  };
-  function syncMobStats(){
-    var maps=[['mobTotalPool','[id*="totalPool"]'],['mobActiveMarkets','[id*="activeMarkets"]'],['mobPositions','[id*="positions"]']];
-    maps.forEach(function(m){
-      var src=document.querySelector(m[1]);
-      var dst=document.getElementById(m[0]);
-      if(src&&dst&&src.textContent.trim())dst.textContent=src.textContent.trim();
-    });
-  }
-})();
-</script>
-
 
 
 
@@ -23626,8 +23471,8 @@ select.mob-input-field{cursor:pointer}
         <div class="mob-ext-card" onclick="selWallet('Kastle');updateMobConnBtn()">
           <img src="/img/kastle.png" alt="Kastle" /><span>Kastle</span>
         </div>
-        <div class="mob-ext-card" onclick="selWallet('Kasperia');updateMobConnBtn()">
-          <img src="/img/kasperia.png" alt="Kasperia" /><span>Kasperia</span>
+        <div class="mob-ext-card" onclick="selWallet('OKX');updateMobConnBtn()">
+            <img src="https://www.google.com/s2/favicons?domain=okx.com&sz=64" alt="OKX Wallet" style="width:36px;height:36px;border-radius:8px"/>
         </div>
       </div>
       <div id="mobWalletStatus"></div>
