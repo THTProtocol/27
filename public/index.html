@@ -4154,7 +4154,7 @@ html,body{background:#010806!important;}
                         </select>
                     </div>
                     <div id="htp-nav-balance" style="display:none;align-items:center;gap:6px;background:rgba(73,232,194,0.08);border:1px solid rgba(73,232,194,0.3);border-radius:20px;padding:4px 14px 4px 10px;font-size:13px;font-weight:600;color:#fff;white-space:nowrap;margin-right:2px"><svg width="18" height="18" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;vertical-align:middle"><circle cx="100" cy="100" r="100" fill="#49e8c2"/><path d="M140 40 L140 160 M140 100 L60 40 M140 100 L60 160" stroke="#0d1117" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/></svg> <span id="htp-nav-bal-amt">0.00</span> <span style="color:#49e8c2;font-size:11px">KAS</span></div>
-                    <button class="btn-c" id="cBtn" onclick="
+                    <button id="viewToggleBtn" onclick="toggleMobileView()" style="margin-right:8px;padding:6px 14px;background:rgba(73,232,194,.08);border:1px solid rgba(73,232,194,.25);color:#49e8c2;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.03em;display:inline-flex;align-items:center;gap:6px"><span id="viewToggleIcon">&#128241;</span><span id="viewToggleLabel">Mobile</span></button><button class="btn-c" id="cBtn" onclick="
   if(window.walletAddress){
     var bal=window.walletBalance&&window.walletBalance.total?((window.walletBalance.total/1e8).toFixed(2)+' KAS'):(window.htpBalance?window.htpBalance+' KAS':'Loading...');
     var nb=document.getElementById('htp-nav-balance');
@@ -22841,6 +22841,59 @@ window.addEventListener('htp:balance:updated', function(e) {
   };
   function syncMobStats(){
     [['mobTotalPool','[id*="totalPool"]'],['mobActiveMarkets','[id*="activeMarkets"]'],['mobPositions','[id*="positions"]']].forEach(function(m){
+      var src=document.querySelector(m[1]);
+      var dst=document.getElementById(m[0]);
+      if(src&&dst&&src.textContent.trim())dst.textContent=src.textContent.trim();
+    });
+  }
+})();
+</script>
+
+
+  function toggleMobileView(){
+    var ov=document.getElementById('mobileOverlay');
+    var lbl=document.getElementById('viewToggleLabel');
+    var ico=document.getElementById('viewToggleIcon');
+    if(ov.classList.contains('active')){
+      ov.classList.remove('active');
+      if(lbl)lbl.textContent='Mobile';
+      if(ico)ico.innerHTML='&#128241;';
+    }else{
+      ov.classList.add('active');
+      if(lbl)lbl.textContent='Desktop';
+      if(ico)ico.innerHTML='&#128187;';
+      syncMobStats();
+    }
+  }
+  window.toggleMobileView=toggleMobileView;
+  window.mobTab=function(name){
+    document.querySelectorAll('.mob-section').forEach(function(s){s.classList.remove('mob-active');});
+    document.querySelectorAll('.mob-nav-btn').forEach(function(b){b.classList.remove('active');});
+    var sec=document.getElementById('mob-'+name);
+    var nav=document.getElementById('mnav-'+name);
+    if(sec)sec.classList.add('mob-active');
+    if(nav)nav.classList.add('active');
+  };
+  window.updateMobConnBtn=function(){
+    setTimeout(function(){
+      var btn=document.getElementById('mobConnBtn');
+      var ms=document.getElementById('mobWalletStatus');
+      var ds=document.getElementById('walletStatus');
+      if(window.walletAddress&&btn)btn.textContent=window.walletAddress.slice(0,8)+'...';
+      if(ds&&ms){ms.innerHTML=ds.innerHTML;ms.style.display=ds.innerHTML.trim()?'block':'none';}
+    },1500);
+  };
+  window.mobConnectMnemonic=function(){
+    var v=document.getElementById('mobMnInput').value.trim();
+    if(!v)return;
+    var di=document.querySelector('#htpMnemonicInput');
+    if(!di)di=document.querySelector('textarea[placeholder*="mnemonic"]');
+    if(di){di.value=v;var btn=di.closest('div').querySelector('button');if(btn)btn.click();}
+    window.updateMobConnBtn();
+  };
+  function syncMobStats(){
+    var maps=[['mobTotalPool','[id*="totalPool"]'],['mobActiveMarkets','[id*="activeMarkets"]'],['mobPositions','[id*="positions"]']];
+    maps.forEach(function(m){
       var src=document.querySelector(m[1]);
       var dst=document.getElementById(m[0]);
       if(src&&dst&&src.textContent.trim())dst.textContent=src.textContent.trim();
