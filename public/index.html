@@ -23927,6 +23927,348 @@ window.addEventListener('htp:balance:updated', function(e) {
 
 
 
+<div id="mobToast"></div>
+
+<script>
+(function(){
+
+  /* ---- Core toggle ---- */
+  function toggleMobileView(){
+    var ov=document.getElementById('mobileOverlay');
+    var lbl=document.getElementById('viewToggleLabel');
+    var ico=document.getElementById('viewToggleIcon');
+    if(ov.classList.contains('active')){
+      ov.classList.remove('active');
+      if(lbl)lbl.textContent='Mobile';
+      if(ico)ico.innerHTML='&#128241;';
+    }else{
+      ov.classList.add('active');
+      if(lbl)lbl.textContent='Desktop';
+      if(ico)ico.innerHTML='&#128187;';
+      mobSyncAll();
+    }
+  }
+  window.toggleMobileView=toggleMobileView;
+
+  /* ---- Tab switching ---- */
+  window.mobTab=function(name){
+    document.querySelectorAll('.mob-sec-wrap').forEach(function(s){s.classList.remove('mob-active');});
+    document.querySelectorAll('.mob-nav-btn').forEach(function(b){b.classList.remove('active');});
+    var sec=document.getElementById('mobTab-'+name);
+    var nav=document.getElementById('mnav-'+name);
+    if(sec)sec.classList.add('mob-active');
+    if(nav)nav.classList.add('active');
+    var hero=document.getElementById('mobHero');
+    if(hero)hero.style.display=(name==='markets'||name==='games')?'block':'none';
+    var sb=document.getElementById('mobScrollBody');
+    if(sb)sb.scrollTop=0;
+  };
+
+  /* ---- Collapse ---- */
+  window.mobToggleCollapse=function(id,btn){
+    var el=document.getElementById(id);
+    if(!el)return;
+    el.classList.toggle('open');
+    if(btn)btn.classList.toggle('open');
+  };
+
+  /* ---- Toast ---- */
+  function mobToast(msg,dur){
+    var t=document.getElementById('mobToast');
+    if(!t)return;
+    t.textContent=msg;
+    t.classList.add('show');
+    setTimeout(function(){t.classList.remove('show');},(dur||2200));
+  }
+  window.mobToast=mobToast;
+
+  /* ---- Wallet connection ---- */
+  window.updateMobConnBtn=function(){
+    setTimeout(function(){
+      var btn=document.getElementById('mobConnBtn');
+      var ms=document.getElementById('mobWalletStatus');
+      var ds=document.getElementById('walletStatus');
+      if(window.walletAddress&&btn){
+        var short=window.walletAddress.slice(0,12)+'...';
+        btn.textContent=short;
+        btn.classList.add('connected');
+      }
+      if(ds&&ms&&ds.innerHTML.trim()){
+        ms.innerHTML=ds.innerHTML;
+        ms.style.display='block';
+      }
+      mobUpdateWalletDetail();
+    },1500);
+  };
+
+  function mobUpdateWalletDetail(){
+    if(!window.walletAddress||!window.walletConnected)return;
+    var d=document.getElementById('mobWalletDetail');
+    if(d)d.style.display='block';
+    var addr=document.getElementById('mobWalAddr');
+    var bal=document.getElementById('mobWalBal');
+    var net=document.getElementById('mobWalNet');
+    var prov=document.getElementById('mobWalProv');
+    if(addr)addr.textContent=window.walletAddress;
+    if(bal&&window.walletBalance){
+      var kas=(window.walletBalance.total/1e8).toFixed(2);
+      bal.textContent=kas+' KAS';
+    }
+    if(net)net.textContent=window.htpNetwork||'mainnet';
+    if(prov)prov.textContent=window.walletProvider||'--';
+  }
+
+  window.mobConnectMnemonic=function(){
+    var v=document.getElementById('mobMnInput').value.trim();
+    if(!v){mobToast('Enter mnemonic first');return;}
+    var di=document.querySelector('#htpMnemonicInput,#mnInput,textarea[placeholder*="mnemonic"]');
+    if(di){
+      di.value=v;
+      var form=di.closest('form,div');
+      if(form){
+        var btn=form.querySelector('button[onclick*="mnemonic"],button[onclick*="connect"],button[onclick*="Connect"]');
+        if(!btn)btn=form.querySelector('button');
+        if(btn)btn.click();
+      }
+    }
+    setTimeout(function(){window.updateMobConnBtn();},1800);
+    mobToast('Connecting...');
+  };
+
+  /* ---- Send KAS ---- */
+  window.mobSendKas=function(){
+    var p=document.getElementById('mobSendPanel');
+    if(p)p.style.display=p.style.display==='none'?'block':'none';
+  };
+  window.mobConfirmSend=function(){
+    var to=document.getElementById('mobSendTo').value.trim();
+    var amt=parseFloat(document.getElementById('mobSendAmt').value);
+    if(!to||!amt){mobToast('Enter address and amount');return;}
+    if(typeof htpSend==='function'){
+      htpSend(to,Math.round(amt*1e8)).then(function(){mobToast('TX sent!');}).catch(function(e){mobToast('Error: '+e.message);});
+    } else if(typeof sendKas==='function'){
+      sendKas(to,amt);
+    } else {
+      mobToast('Connect wallet first');
+    }
+  };
+
+  /* ---- Create market ---- */
+  window.mobCreateMarket=function(){
+    if(!window.walletAddress){mobToast('Connect wallet first');return;}
+    var q=document.getElementById('mobMktQ').value.trim();
+    var cat=document.getElementById('mobMktCat').value;
+    var res=document.getElementById('mobMktRes').value;
+    var min=parseFloat(document.getElementById('mobMktMin').value)||10;
+    var oracle=document.getElementById('mobMktOracle').value.trim();
+    if(!q){mobToast('Enter market question');return;}
+    // Wire to desktop create market function
+    if(typeof createMarket==='function'){
+      createMarket({question:q,category:cat,resolution:res,minBet:min,oracle:oracle});
+      mobToast('Creating market...');
+    } else if(typeof htpCreateMarket==='function'){
+      htpCreateMarket(q,cat,res,min,oracle);
+      mobToast('Creating market...');
+    } else {
+      // Mirror to desktop form and click
+      var dq=document.querySelector('#marketQuestion,#mktQuestion,input[placeholder*="question"],input[placeholder*="Question"]');
+      if(dq){dq.value=q;}
+      var dcreate=document.querySelector('#createMarketBtn,button[onclick*="createMarket"]');
+      if(dcreate){dcreate.click();mobToast('Market submitted');}
+      else mobToast('Use desktop to create market');
+    }
+  };
+
+  /* ---- Place bet ---- */
+  var mobBetAmount=0;
+  window.mobSetBet=function(amt,el){
+    document.querySelectorAll('.mob-bet-chip').forEach(function(c){c.classList.remove('selected');});
+    if(el)el.classList.add('selected');
+    if(amt>0)document.getElementById('mobBetAmt').value=amt;
+    mobBetAmount=amt;
+  };
+  window.mobPlaceBet=function(){
+    if(!window.walletAddress){mobToast('Connect wallet first');return;}
+    var mkt=document.getElementById('mobBetMktId').value.trim();
+    var outcome=document.getElementById('mobBetOutcome').value;
+    var amt=parseFloat(document.getElementById('mobBetAmt').value);
+    if(!mkt||!amt){mobToast('Fill in all fields');return;}
+    if(typeof placeBet==='function'){placeBet(mkt,outcome,amt);mobToast('Bet placed!');}
+    else if(typeof htpPlaceBet==='function'){htpPlaceBet(mkt,outcome,amt);mobToast('Placing bet...');}
+    else{mobToast('Use desktop to place bet');}
+  };
+
+  /* ---- Games ---- */
+  window.mobOpenGame=function(game){
+    // Switch to games tab and open challenge form
+    mobTab('games');
+    var sel=document.getElementById('mobChalGame');
+    if(sel)sel.value=game;
+    var panel=document.getElementById('mobChalPanel');
+    if(panel){panel.classList.add('open');}
+    // Also try to activate the desktop game tab
+    var desktopGameBtns=document.querySelectorAll('[onclick*="'+game+'"],[data-game="'+game+'"]');
+    if(desktopGameBtns.length>0)desktopGameBtns[0].click();
+    mobToast(game.charAt(0).toUpperCase()+game.slice(1)+' selected');
+  };
+
+  var mobStakeAmount=0;
+  window.mobSetStake=function(amt,el){
+    document.querySelectorAll('#mobTab-games .mob-bet-chip').forEach(function(c){c.classList.remove('selected');});
+    if(el)el.classList.add('selected');
+    if(amt>0)document.getElementById('mobChalStake').value=amt;
+    mobStakeAmount=amt;
+  };
+
+  window.mobChallenge=function(){
+    if(!window.walletAddress){mobToast('Connect wallet first');return;}
+    var game=document.getElementById('mobChalGame').value;
+    var opp=document.getElementById('mobChalOpp').value.trim();
+    var stake=parseFloat(document.getElementById('mobChalStake').value);
+    if(!stake){mobToast('Enter stake amount');return;}
+    // Try desktop challenge functions
+    if(typeof createChallenge==='function'){createChallenge(game,opp,stake);mobToast('Challenge created!');return;}
+    if(typeof htpCreateChallenge==='function'){htpCreateChallenge(game,opp,stake);mobToast('Challenge sent!');return;}
+    if(typeof challengePlayer==='function'){challengePlayer(opp,game,stake);mobToast('Challenge sent!');return;}
+    // Fallback: mirror to desktop form
+    var dg=document.querySelector('select[id*="game"],select[id*="Game"]');
+    if(dg)dg.value=game;
+    var do_=document.querySelector('input[id*="opponent"],input[placeholder*="opponent"],input[placeholder*="address"]');
+    if(do_)do_.value=opp;
+    var ds=document.querySelector('input[id*="stake"],input[id*="amount"],input[placeholder*="KAS"]');
+    if(ds)ds.value=stake;
+    var db=document.querySelector('button[onclick*="challenge"],button[onclick*="Challenge"],#challengeBtn');
+    if(db){db.click();mobToast('Challenge submitted!');}
+    else mobToast('Challenge ready on desktop');
+  };
+
+  window.mobJoinMatch=function(){
+    if(!window.walletAddress){mobToast('Connect wallet first');return;}
+    var id=document.getElementById('mobJoinId').value.trim();
+    if(!id){mobToast('Enter match ID');return;}
+    if(typeof joinMatch==='function'){joinMatch(id);mobToast('Joining match...');return;}
+    if(typeof htpJoinMatch==='function'){htpJoinMatch(id);mobToast('Joining...');return;}
+    var di=document.querySelector('input[id*="joinId"],input[id*="matchId"],input[placeholder*="match"]');
+    if(di){di.value=id;}
+    var db=document.querySelector('button[onclick*="join"],button[onclick*="Join"],#joinBtn');
+    if(db){db.click();mobToast('Joining match...');}
+    else mobToast('Enter match ID on desktop');
+  };
+
+  /* ---- Portfolio ---- */
+  window.mobRefreshPortfolio=function(){
+    if(typeof refreshPortfolio==='function'){refreshPortfolio();mobToast('Refreshing...');}
+    else if(typeof htpLoadPositions==='function'){htpLoadPositions();mobToast('Loading...');}
+    else mobToast('Syncing from desktop...');
+    setTimeout(mobSyncPortfolio,1500);
+  };
+
+  window.mobRefreshMatches=function(){
+    if(typeof loadMatches==='function'){loadMatches();}
+    else if(typeof htpLoadMatches==='function'){htpLoadMatches();}
+    setTimeout(mobSyncMatches,1500);
+  };
+
+  window.mobClaimWinnings=function(){
+    if(!window.walletAddress){mobToast('Connect wallet first');return;}
+    var id=document.getElementById('mobClaimId').value.trim();
+    if(!id){mobToast('Enter match/market ID');return;}
+    if(typeof claimWinnings==='function'){claimWinnings(id);mobToast('Claiming...');return;}
+    if(typeof htpClaim==='function'){htpClaim(id);mobToast('Claiming...');return;}
+    var di=document.querySelector('input[id*="claim"],input[placeholder*="claim"]');
+    if(di){di.value=id;}
+    var db=document.querySelector('button[onclick*="claim"],button[onclick*="Claim"],#claimBtn');
+    if(db){db.click();mobToast('Claiming winnings...');}
+    else mobToast('Use desktop to claim');
+  };
+
+  function mobSyncPortfolio(){
+    var pnlEl=document.querySelector('#pnlDisplay,#totalPnl,[id*="pnl"]');
+    var openEl=document.querySelector('#openPositions,[id*="openPos"]');
+    var claimEl=document.querySelector('#claimable,[id*="claimable"]');
+    if(pnlEl)document.getElementById('mobPortPnl').textContent=pnlEl.textContent.trim()||'0';
+    if(openEl)document.getElementById('mobPortOpen').textContent=openEl.textContent.trim()||'0';
+    if(claimEl)document.getElementById('mobPortClaim').textContent=claimEl.textContent.trim()||'0';
+  }
+
+  function mobSyncMatches(){
+    var ml=document.getElementById('mobMatchList');
+    if(!ml)return;
+    var desktopMatches=document.querySelectorAll('.match-row,.game-row,[class*="matchRow"],[class*="match-item"]');
+    if(desktopMatches.length===0)return;
+    ml.innerHTML='';
+    desktopMatches.forEach(function(m){
+      var clone=m.cloneNode(true);
+      clone.style.cssText='font-size:12px;padding:10px;background:rgba(10,15,30,.6);border:1px solid rgba(73,232,194,.08);border-radius:9px;margin-bottom:6px;';
+      ml.appendChild(clone);
+    });
+  }
+
+  /* ---- Settings ---- */
+  window.mobSetNetwork=function(net){
+    document.getElementById('mobNetMainBtn').classList.toggle('active',net==='mainnet');
+    document.getElementById('mobNetTestBtn').classList.toggle('active',net!=='mainnet');
+    var an=document.getElementById('mobAboutNet');
+    if(an)an.textContent=net;
+    if(typeof htpSetNetwork==='function')htpSetNetwork(net==='mainnet'?'mainnet':'tn12');
+    mobToast('Switched to '+net);
+  };
+
+  window.mobSetRpc=function(){
+    var url=document.getElementById('mobRpcUrl').value.trim();
+    if(!url){mobToast('Enter RPC URL');return;}
+    if(typeof htpConnectNode==='function')htpConnectNode(url);
+    var di=document.querySelector('input[id*="rpc"],input[id*="node"],input[placeholder*="wss"]');
+    if(di){di.value=url;var btn=di.closest('div').querySelector('button');if(btn)btn.click();}
+    mobToast('Connecting to node...');
+  };
+
+  window.mobSaveEscrow=function(){
+    var v=document.getElementById('mobEscrowMn').value.trim();
+    if(!v||v.split(' ').length<12){mobToast('Enter valid 12/24 word mnemonic');return;}
+    localStorage.setItem('htpEscrowMnemonic',v);
+    var di=document.querySelector('#htpEscrowInput,textarea[placeholder*="escrow"]');
+    if(di){di.value=v;var btn=di.closest('div').querySelector('button');if(btn)btn.click();}
+    document.getElementById('mobEscrowMn').value='';
+    mobToast('Escrow mnemonic saved');
+  };
+
+  /* ---- Sync stats from desktop DOM ---- */
+  function mobSyncAll(){
+    var maps=[
+      ['mobStatPool','[id*="totalPool"],[id*="poolTotal"]'],
+      ['mobStatMkts','[id*="activeMarkets"],[id*="marketCount"]'],
+      ['mobStatPos','[id*="positions"],[id*="positionCount"]'],
+    ];
+    maps.forEach(function(m){
+      var src=document.querySelector(m[1]);
+      var dst=document.getElementById(m[0]);
+      if(src&&dst&&src.textContent.trim())dst.textContent=src.textContent.trim();
+    });
+    mobUpdateWalletDetail();
+    mobSyncPortfolio();
+  }
+
+  /* ---- Auto-open on real mobile ---- */
+  if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){
+    window.addEventListener('load',function(){
+      setTimeout(function(){toggleMobileView();},400);
+    });
+  }
+
+  /* ---- Poll wallet state every 5s when overlay is open ---- */
+  setInterval(function(){
+    var ov=document.getElementById('mobileOverlay');
+    if(ov&&ov.classList.contains('active')&&window.walletAddress){
+      mobUpdateWalletDetail();
+    }
+  },5000);
+
+})();
+</script>
+
+
+
 <style>
 /* ===== MOBILE OVERLAY FULL ===== */
 #mobileOverlay{
