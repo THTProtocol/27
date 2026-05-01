@@ -7609,12 +7609,16 @@ event MyMarket {
             switch (name) {
                 case 'KasWare':  return w.kasware  || w.kasWare  || null;
                 case 'Kastle':   return w.kastle   || null;
-                case 'Kasanova': return w.kasanova || null;
-                case 'Kaspium':  return w.kaspium  || null;
-                case 'KaspaCom': return w.kaspacom || null;
+                case 'Kasperia': return w.kasperia || null;
+                case 'OKX':      return (w.okxwallet && w.okxwallet.kaspa) ? w.okxwallet.kaspa : (w.okxwallet||null);
+                case 'KSPR':     return w.kspr || w.ksprWallet || null;
+                case 'Kasanova': return (w.kasanova && (w.kasanova.kasware||w.kasanova.requestAccounts)) ? w.kasanova : null;
+                case 'Kaspium':  return w.kaspium  || w.KaspiumWallet || null;
+                case 'KaspaCom': return w.kaspacom || (w.kaspa && typeof w.kaspa.connect==='function' ? w.kaspa : null) || null;
+                case 'Tangem':   return w.tangem   || w.tangemWallet || null;
                 case 'DEX.cc':   return w.dexcc    || w.dex     || null;
                 case 'mnemonic': return mnemonicProvider;
-                default:         return w.kasware || w.kastle || w.kasanova || w.kaspium || null;
+                default:         return w.kasware || w.kastle || w.kasperia || w.kasanova || w.kaspium || null;
             }
         }
 
@@ -7935,11 +7939,17 @@ event MyMarket {
                 try { localStorage.setItem('htp_markets', JSON.stringify(mkts)); } catch(e){}
             }
         })();
+        // Bridge: expose mkts so all external scripts (markets-ui, wallet-fix, demo-match) share same array
+        window.mkts = mkts;
+        window.htpMarkets = mkts;
+        window._htpMarkets = mkts;
         window._htpAddMarket = function(m){
             if(!mkts.find(function(x){ return x.id===m.id; })){
                 mkts.push(m);
+                window.mkts = mkts; window.htpMarkets = mkts; window._htpMarkets = mkts;
                 try { localStorage.setItem('htp_markets', JSON.stringify(mkts)); } catch(e){}
                 if(typeof renderM === 'function') renderM();
+                if(typeof window.buildF === 'function') window.buildF();
             }
         };
 
