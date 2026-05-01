@@ -7,6 +7,14 @@
       {
         "source": "**/*.wasm",
         "headers": [{ "key": "Content-Type", "value": "application/wasm" }]
+      },
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+      },
+      {
+        "source": "**",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
       }
     ],
     "rewrites": [
