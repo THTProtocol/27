@@ -59,374 +59,149 @@
   window.HTP_TOCCATA_LIVE = TOCCATA_LIVE;
 
   function detectNetwork() {
-    // Priority order: URL param → localStorage override → default (tn12 for now)
-    var param = (new URLSearchParams(window.location.search)).get('net');
-    var stored = null;
-    try { stored = localStorage.getItem('htp_network'); } catch (e) {}
-    var key = (param || stored || 'tn12').toLowerCase();
-    if (!NETWORK_MAP[key]) key = 'tn12';
-    var net = NETWORK_MAP[key];
-    // Expose globally , every other module reads these
-    window.HTP_NETWORK       = key;                   // 'tn12' | 'mainnet'
-    window.activeNet         = net;                   // full config object
-    window.HTP_RESOLVER_ALIAS= net.resolverAlias;     // 'tn12' or 'mainnet' for Kaspa Resolver
-    window.HTP_USE_RESOLVER  = net.useResolver;       // true = use Resolver, false = direct endpoint
-    window.HTP_PREFIX        = net.prefix;
-    window.HTP_NETWORK_ID    = net.networkId;
-    window.HTP_EXPLORER      = net.explorerTx;
-    try { localStorage.setItem('htp_network', key); } catch (e) {}
-    console.log('[HTP Init] Network:', key, '| Resolver:', net.resolverAlias, '| Using Resolver:', net.useResolver);
-    return net;
+    // 1. Explicit override via URL param  ?net=mainnet  or  ?net=tn12
+    var p = new URLSearchParams(window.location.search).get('net');
+    if (p && NETWORK_MAP[p]) { window.HTP_NETWORK = p; window.activeNet = NETWORK_MAP[p]; return; }
+    // 2. Stored preference
+    try { p = localStorage.getItem('htpNetwork'); } catch(e) { p = null; }
+    if (p && NETWORK_MAP[p]) { window.HTP_NETWORK = p; window.activeNet = NETWORK_MAP[p]; return; }
+    // 3. Default: TN12 (testnet) until mainnet covenants go live
+    window.HTP_NETWORK = 'tn12';
+    window.activeNet   = NETWORK_MAP.tn12;
   }
-
-  // Run immediately , synchronous
   detectNetwork();
 
   /* ═══════════════════════════════════════════════════════════════════════════
    * 2.  WASM BOOT GATE
-   * ═══════════════════════════════════════════════════════════════════════════
-   *
-   * The inline init in index.html (or external loader) calls
-   * window._onWasmReady() once the WASM module is initialised.
-   *
-   * Pattern:
-   *   - Before WASM ready: all .wasm-gate elements are disabled + dimmed.
-   *   - After: they are enabled, opacity restored, and any queued callbacks fire.
-   */
+   * ═══════════════════════════════════════════════════════════════════════════ */
+  var _wasmCallbacks = [];
+  window.wasmReady   = false;
 
-  var _wasmReadyCallbacks = [];
-  var _wasmReadyFired     = false;
-  var _wasmWarnTimer      = null;
+  window._onWasmReady = function (fn) {
+    if (typeof fn !== 'function') return;
+    if (window.wasmReady) { try { fn(); } catch(e) { console.error('[HTP] _onWasmReady cb error', e); } return; }
+    _wasmCallbacks.push(fn);
+  };
 
-  function _unlockGates() {
-    document.querySelectorAll('.wasm-gate').forEach(function (el) {
-      el.disabled      = false;
-      el.style.opacity = '1';
-      el.title         = '';
-    });
+  function _fireWasmReady() {
+    if (window.wasmReady) return;
+    window.wasmReady = true;
+    document.querySelectorAll('.wasm-gate').forEach(function(el) { el.classList.remove('wasm-gate'); });
+    _wasmCallbacks.forEach(function(fn) { try { fn(); } catch(e) { console.error('[HTP] wasm cb error', e); } });
+    _wasmCallbacks = [];
+    try { window.dispatchEvent(new Event('htpWasmReady')); } catch(e2) {}
   }
 
-  function _onWasmReady() {
-    if (_wasmReadyFired) return;
-    
-    // Clear any pending timeouts
-    if (typeof _wasmTimeoutHandle !== 'undefined') {
-      clearTimeout(_wasmTimeoutHandle);
-    }
-    
-    _wasmReadyFired      = true;
-    window.wasmReady     = true;
-    window.kaspaWasmReady = function () { return true; };
-    _unlockGates();
-    if (_wasmWarnTimer) {
-      clearTimeout(_wasmWarnTimer);
-      _wasmWarnTimer = null;
-    }
-    var oldBanner = document.getElementById('htp-wasm-warning');
-    if (oldBanner) oldBanner.remove();
-    console.log('[HTP Init] WASM ready , gates unlocked ✓');
-    _wasmReadyCallbacks.forEach(function (cb) {
-      try { cb(); } catch (e) { console.warn('[HTP Init] wasmReady callback error', e); }
-    });
-    _wasmReadyCallbacks = [];
-    window.dispatchEvent(new CustomEvent('htp:wasm:ready'));
-  }
-
-  function whenWasmReady(cb) {
-    if (_wasmReadyFired) { try { cb(); } catch (e) {} }
-    else { _wasmReadyCallbacks.push(cb); }
-  }
-
-  // Expose so external loader (inline <script> in index.html) can call it
-  window._onWasmReady  = _onWasmReady;
-  window.whenWasmReady = whenWasmReady;
+  // Kick off the WASM module.  Catches and ignores missing-file errors gracefully.
+  window.whenWasmReady = function(fn) { window._onWasmReady(fn); };
 
   /* ═══════════════════════════════════════════════════════════════════════════
-   * WASM TIMEOUT & RETRY LOGIC (30s with optional single retry)
-   * ═══════════════════════════════════════════════════════════════════════════ */
-  var _wasmRetried = false;
-  
-  function _showWasmError(msg) {
-    console.error('[HTP Init] WASM ERROR:', msg);
-    var modal = document.createElement('div');
-    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,14,26,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;font-family:"Inter",sans-serif;color:#e2e8f0';
-    var box = document.createElement('div');
-    box.style.cssText = 'max-width:600px;padding:40px;background:#111827;border:1px solid rgba(79,152,163,0.15);border-radius:8px;text-align:left';
-    
-    var title = document.createElement('h2');
-    title.style.cssText = 'font-size:20px;font-weight:600;margin:0 0 16px 0;color:#ef4444';
-    title.textContent = 'Kaspa WASM SDK Failed to Load';
-    
-    var body = document.createElement('p');
-    body.style.cssText = 'margin:0 0 24px 0;line-height:1.6;color:#94a3b8;font-size:14px';
-    body.textContent = msg;
-    
-    var tip = document.createElement('p');
-    tip.style.cssText = 'margin:0 0 24px 0;padding:12px;background:#1a2235;border-left:3px solid #4f98a3;font-size:13px;line-height:1.5;color:#cbd5e1';
-    tip.textContent = 'Try: 1) Hard refresh (Ctrl+Shift+R), 2) Check browser console, 3) Verify network connection';
-    
-    var btn = document.createElement('button');
-    btn.style.cssText = 'padding:10px 20px;background:#4f98a3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:500;font-size:14px';
-    btn.textContent = 'Refresh Page';
-    btn.onclick = function() { window.location.reload(true); };
-    
-    box.appendChild(title);
-    box.appendChild(body);
-    box.appendChild(tip);
-    box.appendChild(btn);
-    modal.appendChild(box);
-    document.body.appendChild(modal);
-  }
-
-  function _showLiteBanner() {
-    if (document.getElementById('htp-wasm-warning')) return;
-    var banner = document.createElement('div');
-    banner.id = 'htp-wasm-warning';
-    banner.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:9000;background:#1a2235;color:#cbd5e1;border:1px solid rgba(79,152,163,0.35);border-radius:8px;padding:8px 14px;font:500 12px/1.4 Inter,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.25);max-width:90vw';
-    banner.innerHTML = '<span style="color:#4f98a3">Lite Mode</span> active. Kaspa WASM SDK unavailable, on-chain actions are disabled. <button id="htp-wasm-retry" style="margin-left:10px;background:#4f98a3;color:#fff;border:0;border-radius:4px;padding:3px 10px;cursor:pointer;font-weight:600">Retry</button>';
-    document.body.appendChild(banner);
-    var btn = document.getElementById('htp-wasm-retry');
-    if (btn) btn.onclick = function () { window.location.reload(); };
-  }
-
-  function _retryWasmLoad() {
-    if (window.wasmLoadError) {
-      // Inline SDK already reported an unrecoverable failure (missing binary, wrong MIME).
-      // Surface lite-mode banner instead of a blocking modal; user has no node requirement.
-      _showLiteBanner();
-      window.dispatchEvent(new CustomEvent('htp:wasm:fatal'));
-      return;
-    }
-    if (_wasmRetried) {
-      _showLiteBanner();
-      window.dispatchEvent(new CustomEvent('htp:wasm:fatal'));
-      return;
-    }
-    _wasmRetried = true;
-    console.warn('[HTP Init] WASM retry attempt');
-    setTimeout(function () {
-      if (!_wasmReadyFired) _showLiteBanner();
-    }, 8000);
-  }
-
-  // Primary timeout: 30 seconds
-  var _wasmTimeoutHandle = setTimeout(function () {
-    if (_wasmReadyFired) return; // Already loaded
-    console.warn('[HTP Init] Primary WASM timeout at 30s , attempting recovery');
-    _retryWasmLoad();
-  }, 30000);
-
-  // Also listen for the inline SDK's htpWasmReady event (belt-and-suspenders)
-  window.addEventListener('htpWasmReady', function () {
-    if (!_wasmReadyFired) _onWasmReady();
-  });
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * 3.  IDENTITY & SEAT
+   * 3.  IDENTITY / SEAT RESOLUTION
    * ═══════════════════════════════════════════════════════════════════════════ */
 
-  function getViewerId() {
-    try {
-      if (window.connectedAddress) return window.connectedAddress;
-      if (window.htpAddress)       return window.htpAddress;
-      return localStorage.getItem('htpPlayerId');
-    } catch (e) { return null; }
+  function getMySeat(matchData, myAddr) {
+    if (!matchData || !myAddr) return null;
+    if (matchData.playerA === myAddr) return 'A';
+    if (matchData.playerB === myAddr) return 'B';
+    return null;
   }
 
-  function initIdentity() {
-    var vid = getViewerId();
-    if (!vid) {
-      var newId = 'P-' + Math.random().toString(36).substr(2, 8).toUpperCase();
-      try { localStorage.setItem('htpPlayerId', newId); } catch (e) {}
-      console.log('[HTP Init] New anonymous identity:', newId);
-    } else {
-      console.log('[HTP Init] Identity:', vid.substring(0, 16) + (vid.length > 16 ? '…' : ''));
-    }
-  }
-
-  function getMySeat(match) {
-    var viewerId = getViewerId();
-    if (!viewerId) return { seat: 'spectator', viewerId: null };
-    var cId   = match.creatorId   || match.creator || match.p1 || (match.info && match.info.creatorId);
-    var jId   = match.joinerId    || match.opponent || match.p2 || (match.info && match.info.joinerId);
-    var cAddr = match.creatorAddrFull  || match.creatorAddr;
-    var jAddr = match.opponentAddrFull || match.opponentAddr;
-    var isP1  = (viewerId === cId  || (cAddr && viewerId === cAddr));
-    var isP2  = (viewerId === jId  || (jAddr && viewerId === jAddr));
-    if (isP1) return { seat: 'player1', viewerId: viewerId };
-    if (isP2) return { seat: 'player2', viewerId: viewerId };
-    if (match.seats) {
-      if (viewerId === match.seats.player1Id || viewerId === match.seats.creatorId) return { seat: 'player1', viewerId: viewerId };
-      if (viewerId === match.seats.player2Id || viewerId === match.seats.joinerId)  return { seat: 'player2', viewerId: viewerId };
-    }
-    return { seat: 'spectator', viewerId: viewerId };
-  }
-
-  function getOrientation(match, gameTypeOverride) {
-    var ref  = getMySeat(match);
-    var seat = ref.seat;
-    var g    = (gameTypeOverride || match.gameType || match.game || '').toLowerCase();
-    if (seat === 'spectator') return { playerColor: 'w', playerSide: 1, isFlipped: false, seat: 'spectator' };
-    return {
-      playerColor: seat === 'player2' ? 'b' : 'w',
-      playerSide:  seat === 'player2' ? (g === 'checkers' || g === 'ck' ? 3 : 2) : 1,
-      isFlipped:   seat === 'player2',
-      seat:        seat,
-    };
+  function getOrientation(seat) {
+    // 'A' = white (bottom), 'B' = black (top) for chess-style boards
+    return seat === 'B' ? 'black' : 'white';
   }
 
   /* ═══════════════════════════════════════════════════════════════════════════
-   * 4.  WALLET
+   * 4.  WALLET AUTO-CONNECT
    * ═══════════════════════════════════════════════════════════════════════════ */
 
-  function onWalletConnected(address) {
-    if (!address) return;
-    window.connectedAddress = address;
-    window.htpAddress       = address;
-    window.walletAddress    = address;
-    try { localStorage.setItem('htpPlayerId', address); } catch (e) {}
+  var _walletConnectListeners = [];
 
-    // Notify RPC client to start UTXO tracking
-    window.dispatchEvent(new CustomEvent('htp:wallet:connected', { detail: { address: address } }));
-
-    // Update connect button
-    var btn = document.getElementById('htp-connect-wallet-btn')
-           || document.getElementById('connectWalletBtn');
-    if (btn) {
-      btn.textContent = address.substring(0, 10) + '…' + address.slice(-4);
-      btn.classList.add('connected');
-      btn.disabled = false;
-    }
-    var statusEl = document.getElementById('htp-wallet-status');
-    if (statusEl) statusEl.textContent = address.substring(0, 12) + '…';
-
-    console.log('[HTP Init] Wallet connected:', address, '| Net:', window.HTP_NETWORK);
+  function onWalletConnected(addr, pubkey) {
+    window.connectedAddress = addr;
+    window.htpAddress       = addr;
+    window.htpPubkey        = pubkey || '';
+    try { localStorage.setItem('htpAddress', addr); } catch(e) {}
+    _walletConnectListeners.forEach(function(fn) { try { fn(addr, pubkey); } catch(e2) {} });
+    try { window.dispatchEvent(new CustomEvent('htpWalletConnected', { detail: { address: addr, pubkey: pubkey } })); } catch(e3) {}
   }
+
+  window.onWalletConnected = onWalletConnected;
 
   async function detectAndConnectWallet() {
-    // 1. KasWare browser extension
+    // 1. KasWare
     if (window.kasware) {
       try {
-        var accounts = await window.kasware.requestAccounts();
-        if (accounts && accounts[0]) { onWalletConnected(accounts[0]); return; }
-      } catch (e) {}
+        var accs = await window.kasware.requestAccounts();
+        if (accs && accs[0]) { onWalletConnected(accs[0]); return accs[0]; }
+      } catch(e) { console.warn('[HTP] KasWare connect failed:', e.message || e); }
     }
-    // 2. KaspaWallet extension
+    // 2. KaspaWallet (legacy)
     if (window.kaspaWallet) {
       try {
-        var addr = await window.kaspaWallet.connect();
-        if (addr) { onWalletConnected(addr); return; }
-      } catch (e) {}
+        var a2 = await window.kaspaWallet.connect();
+        if (a2) { onWalletConnected(a2); return a2; }
+      } catch(e2) { console.warn('[HTP] KaspaWallet connect failed:', e2.message || e2); }
     }
-    // 3. Persisted address from previous session
+    // 3. Stored address
     try {
-      var saved = localStorage.getItem('htpPlayerId');
-      if (saved && (saved.startsWith('kaspa') || saved.startsWith('kaspatest'))) {
-        onWalletConnected(saved);
-      }
-    } catch (e) {}
-  }
-
-  function bindConnectButton() {
-    var btn = document.getElementById('htp-connect-wallet-btn')
-           || document.getElementById('connectWalletBtn')
-           || document.querySelector('[data-action="connect-wallet"]');
-    if (!btn) return;
-    btn.addEventListener('click', async function () {
-      btn.textContent = 'Connecting…';
-      btn.disabled    = true;
-      await detectAndConnectWallet();
-      if (!window.connectedAddress) {
-        btn.textContent = 'Connect Wallet';
-        btn.disabled    = false;
-      }
-    });
+      var stored = localStorage.getItem('htpAddress');
+      if (stored) { onWalletConnected(stored); return stored; }
+    } catch(e3) {}
+    return null;
   }
 
   /* ═══════════════════════════════════════════════════════════════════════════
-   * 5.  BOARD CSS
+   * 5.  BOARD CSS INJECTION
    * ═══════════════════════════════════════════════════════════════════════════ */
 
   function injectBoardCss() {
-    if (document.getElementById('htp-skill-style')) return;
-    var style = document.createElement('style');
-    style.id   = 'htp-skill-style';
-    style.textContent = [
-      '.htp-board-container{width:100%;max-width:100%;aspect-ratio:1/1;background:#1e293b;border-radius:12px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 20px 50px rgba(0,0,0,.5),0 0 20px rgba(73,232,194,.1);border:1px solid rgba(255,255,255,.05)}',
-      '.htp-board-grid{display:grid;width:100%;height:100%;padding:4px;box-sizing:border-box}',
-      '.htp-board-cell{display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;user-select:none;transition:transform .1s}',
-      '.htp-board-cell:active{transform:scale(.95)}',
-      '.chess-sq-light{background:#ebecd0;color:#779556}',
-      '.chess-sq-dark{background:#779556;color:#ebecd0}',
-      '.htp-board-cell.selected{background:rgba(255,255,0,.45)!important;box-shadow:inset 0 0 10px rgba(0,0,0,.2)}',
-      '.htp-board-cell.legal-move::after{content:"";width:22%;height:22%;background:rgba(0,0,0,.15);border-radius:50%}',
-      '.htp-board-cell.legal-capture::after{content:"";width:85%;height:85%;border:5px solid rgba(0,0,0,.15);border-radius:50%}',
-      '.htp-board-cell.last-from,.htp-board-cell.last-to{background:rgba(255,255,0,.25)!important}',
-      '.htp-board-cell.check{background:radial-gradient(circle,#ff4d4d 30%,transparent 80%)!important}',
-      '.chess-piece-w{color:#fff;text-shadow:0 4px 8px rgba(0,0,0,.5);font-size:min(44px,8.8vw);filter:drop-shadow(0 2px 2px rgba(0,0,0,.2));transition:all .2s}',
-      '.chess-piece-b{color:#111;text-shadow:0 2px 4px rgba(255,255,255,.2);font-size:min(44px,8.8vw);filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));transition:all .2s}',
-      '.htp-board-cell:hover .chess-piece-w,.htp-board-cell:hover .chess-piece-b{transform:scale(1.05)}',
-      '.coord-label{position:absolute;font-size:min(8px,1.8vw);font-weight:800;text-transform:uppercase;user-select:none;pointer-events:none;opacity:.6}',
-      '.coord-rank{left:2px;top:2px}',
-      '.coord-file{right:2px;bottom:2px}',
-      '.chess-sq-light .coord-label{color:#779556}',
-      '.chess-sq-dark .coord-label{color:#ebecd0}',
-      '@media(max-width:600px){.htp-board-container{border-radius:8px}.coord-label{font-size:8px}}',
+    if (document.getElementById('htp-board-css')) return;
+    var s = document.createElement('style');
+    s.id = 'htp-board-css';
+    s.textContent = [
+      '.htp-board{display:grid;border:2px solid rgba(73,232,194,.25);border-radius:4px;overflow:hidden;}',
+      '.htp-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:clamp(14px,2.5vw,26px);cursor:pointer;transition:background .12s;}',
+      '.htp-cell.light{background:#2a3a2a;}',
+      '.htp-cell.dark{background:#1a2a1a;}',
+      '.htp-cell.selected{background:rgba(73,232,194,.35)!important;}',
+      '.htp-cell.legal{background:rgba(73,232,194,.18)!important;}',
+      '.htp-cell.last-move{background:rgba(73,232,194,.22)!important;}',
+      '.htp-piece{pointer-events:none;line-height:1;}',
     ].join('');
-    document.head.appendChild(style);
-  }
-
-  function getIndices(count, flipped) {
-    var rows = []; for (var i = 7; i >= 0; i--) rows.push(i); if (flipped) rows.reverse();
-    var cols = []; for (var j = 0; j <  8; j++) cols.push(j); if (flipped) cols.reverse();
-    return { rows: rows, cols: cols };
+    document.head.appendChild(s);
   }
 
   /* ═══════════════════════════════════════════════════════════════════════════
-   * 6.  DOM READY
+   * 6.  BOARD INDEX HELPERS
    * ═══════════════════════════════════════════════════════════════════════════ */
 
-  function onReady() {
-    initIdentity();
+  function getIndices(rank, file, orientation) {
+    // rank 0-7 = rows 8-1 for white orientation
+    if (orientation === 'black') return { row: rank, col: 7 - file };
+    return { row: 7 - rank, col: file };
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+   * 7.  DOMContentLoaded BOOTSTRAP
+   * ═══════════════════════════════════════════════════════════════════════════ */
+
+  document.addEventListener('DOMContentLoaded', function() {
     injectBoardCss();
-    bindConnectButton();
-    detectAndConnectWallet();
+    // Non-blocking wallet detection (best-effort)
+    setTimeout(function() { detectAndConnectWallet().catch(function() {}); }, 300);
 
-    // Restore active match deadlines from Firebase Realtime DB
-    if (window.firebase && window.firebase.apps && window.firebase.apps.length && window.firebase.database) {
-      window.firebase.database().ref('matches')
-        .orderByChild('status').equalTo('active')
-        .once('value')
-        .then(function (snap) {
-          var matches = [];
-          snap.forEach(function (child) {
-            var m = child.val();
-            m.id = child.key;
-            matches.push(m);
-          });
-          if (matches.length) {
-            window.dispatchEvent(new CustomEvent('htp:matches:loaded', { detail: { matches: matches } }));
-          }
-        })
-        .catch(function () {});
-    }
-
-    console.log('[HTP Init] v3.0 ready | Network:', window.HTP_NETWORK, '|', window.HTP_RPC_URL);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', onReady);
-  } else {
-    onReady();
-  }
+    // WASM gate: listen for htpWasmReady event (fired by patch-games.js suppressWasm)
+    window.addEventListener('htpWasmReady', function() { _fireWasmReady(); }, { once: true });
+    // Fallback: declare WASM ready after 4s regardless
+    setTimeout(function() { _fireWasmReady(); }, 4000);
+  });
 
   /* ═══════════════════════════════════════════════════════════════════════════
-   * 7.  PUBLIC API
+   * 8.  PUBLIC API
    * ═══════════════════════════════════════════════════════════════════════════ */
 
-  window.htpSkillUI = {
-    getViewerId:       getViewerId,
-    initIdentity:      initIdentity,
+  window.HTPInit = {
     getMySeat:         getMySeat,
     getOrientation:    getOrientation,
     injectBoardCss:    injectBoardCss,
@@ -443,3 +218,77 @@
   };
 
 })(window);
+
+/* =============================================================
+ * HTP SERVER CONNECTION — auto-fetches Railway WS URL
+ * Exposes: window.htpServerSend, window.htpJoinGameRoom, window.htpGameAction
+ * ============================================================= */
+(function() {
+  'use strict';
+  function initServerWs(wsUrl) {
+    if (!wsUrl || window.__htpServerWs) return;
+    window.HTP_SERVER_WS_URL = wsUrl;
+    function connect() {
+      try {
+        var ws = new WebSocket(wsUrl);
+        ws.onopen = function() {
+          window.__htpServerWs = ws;
+          window.dispatchEvent(new CustomEvent('htp:server:connected', { detail: { url: wsUrl } }));
+          console.log('[HTP] Server WS connected:', wsUrl);
+        };
+        ws.onmessage = function(e) {
+          try {
+            var msg = JSON.parse(e.data);
+            window.dispatchEvent(new CustomEvent('htp:server:message', { detail: msg }));
+            if (msg.event === 'game-state-update' && msg.data) window.dispatchEvent(new CustomEvent('htp:game:state', { detail: msg.data }));
+            if (msg.event === 'game-over' && msg.data) window.dispatchEvent(new CustomEvent('htp:game:over', { detail: msg.data }));
+            if (msg.event === 'action-error' && msg.data) window.dispatchEvent(new CustomEvent('htp:game:error', { detail: msg.data }));
+          } catch(err) {}
+        };
+        ws.onclose = function() {
+          window.__htpServerWs = null;
+          console.warn('[HTP] Server WS closed, retry in 5s');
+          setTimeout(connect, 5000);
+        };
+        ws.onerror = function() { try { ws.close(); } catch(e2) {} };
+      } catch(e) { console.warn('[HTP] WS error:', e.message); }
+    }
+    connect();
+  }
+
+  window.htpServerSend = function(msg) {
+    var ws = window.__htpServerWs;
+    if (ws && ws.readyState === 1) { ws.send(JSON.stringify(msg)); return true; }
+    return false;
+  };
+  window.htpJoinGameRoom = function(gameId) {
+    return window.htpServerSend({ type: 'join-game', gameId: gameId });
+  };
+  window.htpGameAction = function(gameId, action, data, playerAddr) {
+    return window.htpServerSend({
+      type: 'game-action', gameId: gameId, action: action,
+      data: data || {}, player: playerAddr || window.connectedAddress || window.htpAddress || ''
+    });
+  };
+
+  function fetchConfig() {
+    var base = (window.HTP_SERVER_URL || '').replace(/\/ws$/, '');
+    fetch(base + '/api/config', { signal: AbortSignal.timeout(5000) })
+      .then(function(r) { return r.json(); })
+      .then(function(cfg) {
+        if (cfg && cfg.wsUrl) {
+          console.log('[HTP] Server config:', cfg);
+          initServerWs(cfg.wsUrl);
+        }
+      })
+      .catch(function() {
+        var proto = location.protocol === 'https:' ? 'wss' : 'ws';
+        var fallback = proto + '://' + location.host + '/ws';
+        console.warn('[HTP] /api/config failed, trying fallback:', fallback);
+        initServerWs(fallback);
+      });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fetchConfig);
+  else fetchConfig();
+})();
