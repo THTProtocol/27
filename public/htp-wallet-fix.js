@@ -1,4 +1,4 @@
-/* htp-wallet-fix.js — v10 stub: all logic in htp-wallet-logos.js */
+/* htp-wallet-fix.js — v11 stub */
 (function(){
   function sync(){
     if(typeof window._htpSetConnectNet!=='function') return;
