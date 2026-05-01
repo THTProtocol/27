@@ -75,3 +75,14 @@
   else boot();
 
 })();
+
+/* ── Load htp-gamefix-sync.js dynamically (avoids 1.1 MB index.html re-push) ── */
+(function() {
+  if (window.__htpGamefixSyncInjected) return;
+  window.__htpGamefixSyncInjected = true;
+  var s = document.createElement('script');
+  s.src = 'htp-gamefix-sync.js';
+  s.async = false;
+  (document.body || document.head).appendChild(s);
+  console.log('[HTP] htp-gamefix-sync.js injected');
+})();
