@@ -1,9 +1,9 @@
 /**
- * htp-wallet-logos.js — v6
+ * htp-wallet-logos.js — v6.1
  * Real official logos sourced from:
  *   KasWare  → github.com/kasware-wallet/extension (confirmed 200)
  *   Kastle   → gstatic faviconV2 from kastle.cc (confirmed 200)
- *   Kasperia → gstatic faviconV2 from kasperia.app (returns 404=grey, SVG fallback)
+ *   Kasperia → lh3.googleusercontent.com Chrome Web Store icon (confirmed 200)
  *   OKX      → gstatic faviconV2 from okx.com (confirmed 200)
  *   Kaspium  → gstatic faviconV2 from kaspium.io (confirmed 200)
  *   Tangem   → gstatic faviconV2 from tangem.com (confirmed 200)
@@ -12,7 +12,7 @@
 var _LOGO_URLS = {
   KasWare:  'https://raw.githubusercontent.com/kasware-wallet/extension/main/build/_raw/images/logo/logo@128x.png',
   Kastle:   'https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://kastle.cc&size=128',
-  Kasperia: null,
+  Kasperia: 'https://lh3.googleusercontent.com/b08QPuruZqIwLRmpcTrN54hmxY6YEQgVKS4y1s7LAYiIulTlZAaxvsWRUK2SIivLecsxgoCuoH66jNLnQLzjMWXtFr0=s128-rj-sc0x00ffffff',
   OKX:      'https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://okx.com&size=128',
   Kaspium:  'https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://kaspium.io&size=128',
   Tangem:   'https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://tangem.com&size=128'
@@ -21,7 +21,7 @@ var _LOGO_URLS = {
 window.HTP_WALLET_LOGOS = {
   KasWare:  '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="#0b1f15"/><polygon points="13,12 25,12 25,29 39,12 51,12 36,32 51,52 39,52 25,35 25,52 13,52" fill="#49e8c2"/></svg>',
   Kastle:   '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="#0d1623"/><rect x="8" y="38" width="48" height="18" rx="1" fill="#5ba3d4"/><rect x="8" y="24" width="12" height="16" fill="#5ba3d4"/><rect x="44" y="24" width="12" height="16" fill="#5ba3d4"/><rect x="24" y="20" width="16" height="20" fill="#7bbce8"/><rect x="8" y="18" width="4" height="8" fill="#5ba3d4"/><rect x="16" y="18" width="4" height="8" fill="#5ba3d4"/><rect x="44" y="18" width="4" height="8" fill="#5ba3d4"/><rect x="52" y="18" width="4" height="8" fill="#5ba3d4"/><rect x="24" y="13" width="4" height="9" fill="#7bbce8"/><rect x="31" y="13" width="4" height="9" fill="#7bbce8"/><rect x="38" y="13" width="4" height="9" fill="#7bbce8"/><rect x="28" y="44" width="8" height="12" rx="4" fill="#0d1623"/></svg>',
-  Kasperia: '<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="80" rx="18" fill="#0d0820"/><ellipse cx="40" cy="46" rx="28" ry="16" fill="#1a0f3a"/><path d="M12 46 Q18 30 40 22 Q62 30 68 46" fill="#6d28d9" opacity="0.7"/><ellipse cx="40" cy="44" rx="24" ry="12" fill="#7c3aed" opacity="0.5"/><circle cx="32" cy="34" r="3" fill="white" opacity="0.9"/><circle cx="33" cy="33" r="1.2" fill="#1a0820"/><circle cx="48" cy="34" r="3" fill="white" opacity="0.9"/><circle cx="49" cy="33" r="1.2" fill="#1a0820"/><path d="M36 42 Q40 46 44 42" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/><path d="M28 52 L26 60 L22 56" fill="#6d28d9" opacity="0.8"/><path d="M52 52 L54 60 L58 56" fill="#6d28d9" opacity="0.8"/><path d="M38 52 L36 64 L40 62 L44 64 L42 52" fill="#7c3aed" opacity="0.9"/><text x="40" y="20" text-anchor="middle" font-size="10" font-weight="800" fill="#a78bfa" font-family="monospace">K</text></svg>',
+  Kasperia: '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="#0a1628"/><path d="M18 38 Q26 16 40 14 Q54 12 50 30 Q46 44 32 50 Q20 54 18 38Z" fill="#4db8e8" opacity="0.9"/><path d="M20 36 Q28 18 40 16 Q52 14 48 30 Q44 42 32 48" fill="none" stroke="#7dd4f0" stroke-width="1.5" opacity="0.6"/><circle cx="38" cy="20" r="3" fill="#7dd4f0" opacity="0.8"/></svg>',
   OKX:      '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="#000"/><rect x="8" y="8" width="20" height="20" rx="3" fill="#fff"/><rect x="36" y="8" width="20" height="20" rx="3" fill="#fff"/><rect x="8" y="36" width="20" height="20" rx="3" fill="#fff"/><rect x="36" y="36" width="20" height="20" rx="3" fill="#49e8c2"/></svg>',
   Kaspium:  '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="#071c10"/><path d="M32 6 L55 16 L55 36 C55 50 32 60 32 60 C32 60 9 50 9 36 L9 16 Z" fill="#1a5c32" stroke="#49e8c2" stroke-width="2"/><rect x="22" y="20" width="5" height="24" rx="1" fill="#49e8c2"/><polygon points="27,32 40,20 46,20 33,32 46,44 40,44" fill="#49e8c2"/></svg>',
   Tangem:   '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="#061510"/><rect x="6" y="14" width="52" height="36" rx="6" fill="none" stroke="#49e8c2" stroke-width="2.2"/><rect x="13" y="28" width="14" height="10" rx="3" fill="none" stroke="#49e8c2" stroke-width="1.5"/><line x1="13" y1="33" x2="27" y2="33" stroke="#49e8c2" stroke-width="1"/><line x1="20" y1="28" x2="20" y2="38" stroke="#49e8c2" stroke-width="1"/><path d="M35 28 Q42 33 35 38" fill="none" stroke="#49e8c2" stroke-width="1.5" stroke-linecap="round"/><path d="M39 25 Q49 33 39 41" fill="none" stroke="#49e8c2" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/></svg>'
@@ -38,7 +38,6 @@ window.getWalletLogo = function(name) {
     if (!style) {
       style = document.createElement('style');
       style.id = 'wpc-nav-fix';
-      // Ensure hamburger always visible on small screens, header wraps properly
       style.textContent = [
         '@media(max-width:959px){',
           '.menu-toggle{display:flex!important;align-items:center;justify-content:center;',
@@ -53,7 +52,6 @@ window.getWalletLogo = function(name) {
       ].join('');
       document.head.appendChild(style);
     }
-    // If no open listener set, add one that closes on nav item click
     var toggle = document.querySelector('.menu-toggle');
     if (toggle && !toggle._htpFixed) {
       toggle._htpFixed = true;
@@ -245,7 +243,7 @@ window.getWalletLogo = function(name) {
       ].join('');
       document.head.appendChild(s);
     }
-    console.log('[HTP] wallet grid v6 injected');
+    console.log('[HTP] wallet grid v6.1 injected');
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
