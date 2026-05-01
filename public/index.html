@@ -4001,6 +4001,25 @@ html,body{background:#010806!important;}
 </style>
 <link rel="stylesheet" href="htp-skill-v3.css">
 <link rel="stylesheet" href="htp-buttons-v2.css">
+<style id="htp-mob-responsive">
+@media(max-width:768px){
+  .hdr{padding:10px 14px!important;}
+  .hdr-nav{gap:4px!important;}
+  .nav-btn{padding:6px 10px!important;font-size:10px!important;}
+  .mx,.sec-pad{padding:14px!important;}
+  .sh h2{font-size:22px!important;}
+  .card{padding:14px!important;}
+  #mG{grid-template-columns:1fr!important;}
+  .hw-grid,.w-grid{grid-template-columns:1fr!important;}
+  #wlGrid{grid-template-columns:1fr 1fr!important;}
+}
+@media(max-width:480px){
+  .hdr-logo span{display:none!important;}
+  .nav-btn{padding:5px 7px!important;font-size:9px!important;}
+  .sh h2{font-size:18px!important;}
+  #wlGrid{grid-template-columns:1fr!important;}
+}
+</style>
 </head>
 <body>
     <div class="shell">
@@ -7897,6 +7916,32 @@ event MyMarket {
             m.fee = m.fee || 'Spot: 2% on winnings only | Maximizer: 50% loss cushion, same upside';
             m.created = m.created || '2026-03-01';
         });
+
+        // Seed demo events for testing
+        (function seedDemo(){
+            if(mkts.length === 0){
+                [
+                  { id:'demo-001', title:'Will Kaspa reach $1 before end of 2025?', cat:'Crypto', st:'open',
+                    yP:67, nP:33, pool:15000, ent:42, cl:'6d 23h', net:'both', src:'CoinGecko', img:'',
+                    creatorBond:1000, desc:'Binary parimutuel on Kaspa price.',
+                    fee:'Spot: 2% | Maximizer: 50% cushion', resolution:'Bonded + CoinGecko',
+                    deadline:'2025-12-31', created:'2026-05-01' },
+                  { id:'demo-002', title:'Will Bitcoin hit $120K this year?', cat:'Crypto', st:'open',
+                    yP:54, nP:46, pool:32000, ent:88, cl:'14d 5h', net:'both', src:'CoinGecko', img:'',
+                    creatorBond:1000, desc:'Binary parimutuel on Bitcoin ATH.',
+                    fee:'Spot: 2% | Maximizer: 50% cushion', resolution:'Bonded + CoinGecko',
+                    deadline:'2026-12-31', created:'2026-05-01' }
+                ].forEach(function(d){ mkts.push(d); });
+                try { localStorage.setItem('htp_markets', JSON.stringify(mkts)); } catch(e){}
+            }
+        })();
+        window._htpAddMarket = function(m){
+            if(!mkts.find(function(x){ return x.id===m.id; })){
+                mkts.push(m);
+                try { localStorage.setItem('htp_markets', JSON.stringify(mkts)); } catch(e){}
+                if(typeof renderM === 'function') renderM();
+            }
+        };
 
         let fCat = "All", fSt = "open", fSr = "";
 
