@@ -1,0 +1,27 @@
+{
+  "hosting": {
+    "site": "hightable420",
+    "public": "public",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "headers": [
+      {
+        "source": "**/*.wasm",
+        "headers": [{ "key": "Content-Type", "value": "application/wasm" }]
+      },
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+      },
+      {
+        "source": "**/*.html",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "!/**/*.@(wasm|js|css|json|map|png|jpg|jpeg|svg|ico|gif|webp|woff|woff2|ttf)",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
