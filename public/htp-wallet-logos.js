@@ -1,10 +1,9 @@
 /**
- * htp-wallet-logos.js — v13.0
- * LOGOS LOCKED — same Chrome Web Store URLs as v10/v11/v12, do not change.
- * Kaspa-native wallets ONLY (verified native KAS support).
- * Kastle: connect()→getAccount() with proper error handling.
- * Mobile toggle: affects entire page body.
- * Card onclick REMOVED — only button fires (no flicker).
+ * htp-wallet-logos.js — v14.0
+ * KEY CHANGE: No longer overrides window.selWallet.
+ * index.html closure's selWallet() handles all connections.
+ * We only polyfill kastle.requestAccounts() so the closure works with Kastle.
+ * Mobile toggle intact. Install redirect for undetected wallets.
  */
 
 // ── LOGOS (LOCKED) ───────────────────────────────────────────────────────────
@@ -29,7 +28,7 @@ var _WL_INSTALL = {
   KaspaCom: 'https://wallet.kaspa.com'
 };
 
-// ── Wallet definitions (Kaspa-native only) ────────────────────────────────────
+// ── Wallet definitions ────────────────────────────────────────────────────────
 var _WL_DESKTOP = [
   { id:'KasWare',  name:'KasWare',  sub:'Chrome · Firefox', detect:function(){ return !!(window.kasware||window.kasWare); } },
   { id:'Kastle',   name:'Kastle',   sub:'Chrome',            detect:function(){ return !!window.kastle; } },
@@ -46,6 +45,50 @@ var _WL_MOBILE = [
 function _isPhone(){ return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent); }
 window._htpMobOn = window._htpMobOn !== undefined ? window._htpMobOn
   : (_isPhone() ? true : localStorage.getItem('htpMob')==='1');
+
+// ── Kastle requestAccounts polyfill ──────────────────────────────────────────
+// index.html's selWallet() calls provider.requestAccounts() for ALL wallets.
+// Kastle doesn't have requestAccounts — we add it here so the closure works.
+(function patchProviders(){
+  function patchKastle(){
+    if(!window.kastle || typeof window.kastle.requestAccounts === 'function') return;
+    window.kastle.requestAccounts = async function(){
+      var ok;
+      try { ok = await window.kastle.connect(); } catch(e) { throw new Error('Kastle connect: '+e.message); }
+      if(ok === false) throw new Error('User denied Kastle connection');
+      var acc;
+      try { acc = await window.kastle.getAccount(); } catch(e) { throw new Error('Kastle getAccount: '+e.message); }
+      if(!acc) throw new Error('Kastle: no account returned');
+      var addr = acc.address || (typeof acc === 'string' ? acc : null);
+      if(!addr) throw new Error('Kastle: could not read address');
+      return [addr];
+    };
+    // Also polyfill getBalance if missing
+    if(typeof window.kastle.getBalance !== 'function'){
+      window.kastle.getBalance = async function(){ return {confirmed:0,unconfirmed:0,total:0}; };
+    }
+  }
+
+  patchKastle();
+  setTimeout(patchKastle, 300);
+  setTimeout(patchKastle, 1000);
+  setTimeout(patchKastle, 2500);
+  document.addEventListener('click', function once(){ patchKastle(); document.removeEventListener('click',once,true); }, true);
+})();
+
+// ── Install redirect for undetected wallets ───────────────────────────────────
+window._htpInstall = function(name){
+  var url = (_WL_INSTALL||{})[name]||'';
+  var st = document.getElementById('walletStatus');
+  if(st){
+    st.style.display = 'block';
+    st.innerHTML =
+      '<div style="font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:8px">'+name+' not installed</div>'
+      +(url?'<a href="'+url+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:rgba(73,232,194,.08);border:1px solid rgba(73,232,194,.3);border-radius:10px;color:#49e8c2;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;text-decoration:none">Install '+name+' ↗</a><br><br>':'')
+      +'<span style="font-size:11px;color:#475569">Or use Mnemonic / Hex Key below.</span>';
+  }
+  if(url) window.open(url,'_blank');
+};
 
 // ── Network selector ──────────────────────────────────────────────────────────
 window._htpSetConnectNet = function(sid, net){
@@ -85,126 +128,9 @@ function _injectNetSels(){
   }
 }
 
-// ── selWallet — wallet-specific connect logic ─────────────────────────────────
-(function(){
-
-  async function connectKastle(p){
-    var ok;
-    try { ok = await p.connect(); } catch(e) { throw new Error('Kastle: '+e.message); }
-    if(ok === false) throw new Error('Kastle connection denied by user');
-    var acc;
-    try { acc = await p.getAccount(); } catch(e) { throw new Error('Kastle getAccount failed: '+e.message); }
-    if(!acc) throw new Error('Kastle returned no account');
-    return acc.address || (typeof acc==='string'?acc:null);
-  }
-
-  async function connectKasWare(p){
-    var r = await p.requestAccounts();
-    if(Array.isArray(r)) return r[0]||null;
-    if(typeof r==='string') return r;
-    return null;
-  }
-
-  async function connectGeneric(p){
-    if(typeof p.requestAccounts==='function'){
-      var r = await p.requestAccounts();
-      if(Array.isArray(r)) return r[0]||null;
-      if(typeof r==='string') return r;
-    }
-    if(typeof p.connect==='function'){
-      var r2 = await p.connect();
-      if(typeof r2==='string') return r2;
-      if(r2&&r2.address) return r2.address;
-      if(Array.isArray(r2)) return r2[0]||null;
-    }
-    if(typeof p.enable==='function'){
-      var r3 = await p.enable();
-      if(Array.isArray(r3)) return r3[0]||null;
-    }
-    throw new Error('No connect method available');
-  }
-
-  function getProv(name){
-    switch(name){
-      case 'KasWare':  return window.kasware||window.kasWare||null;
-      case 'Kastle':   return window.kastle||null;
-      case 'Kasperia': return window.kasperia||null;
-      case 'OKX':      return (window.okxwallet&&window.okxwallet.kaspa)?window.okxwallet.kaspa:null;
-      case 'Kasanova': return (window.kasanova&&window.kasanova.kasware)?window.kasanova.kasware:null;
-      case 'Kaspium':  return window.kaspium||window.KaspiumWallet||null;
-      case 'KaspaCom': return window.kaspacom||(window.kaspa&&typeof window.kaspa.connect==='function'?window.kaspa:null)||null;
-      default:         return null;
-    }
-  }
-
-  function setStatus(html){
-    var st=document.getElementById('walletStatus');
-    if(st){st.style.display='block';st.innerHTML=html;}
-  }
-
-  window.selWallet = async function(name){
-    setStatus('<span style="color:#94a3b8">Connecting to '+name+'...</span>');
-
-    var p=null;
-    for(var i=0;i<25;i++){p=getProv(name);if(p) break; await new Promise(function(r){setTimeout(r,150);});}
-
-    if(!p){
-      var url=_WL_INSTALL[name]||'';
-      setStatus('<div style="display:flex;gap:14px;align-items:flex-start">'
-        +'<div><div style="font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:6px">'+name+' not detected</div>'
-        +(url?'<div style="font-size:12px;color:#94a3b8;margin-bottom:10px">Install the extension, refresh, then connect.</div>'
-          +'<a href="'+url+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;background:rgba(73,232,194,.08);border:1px solid rgba(73,232,194,.25);border-radius:10px;color:#49e8c2;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;text-decoration:none">Install '+name+' ↗</a>':'')
-        +'<div style="margin-top:10px;font-size:12px;color:#475569">Or connect via <b style="color:#49e8c2">Mnemonic</b> / <b style="color:#49e8c2">Hex Key</b> below.</div>'
-        +'</div></div>');
-      return;
-    }
-
-    try{
-      var addr;
-      if(name==='Kastle')       addr = await connectKastle(p);
-      else if(name==='KasWare') addr = await connectKasWare(p);
-      else                      addr = await connectGeneric(p);
-
-      if(!addr) throw new Error('Wallet returned no address');
-
-      window.walletAddress=window.htpAddress=window.connectedAddress=addr;
-      window.walletProvider=name; window.conn=true;
-      try{localStorage.setItem('htpPlayerId',addr);}catch(e){}
-
-      var net='unknown';
-      try{ net = typeof p.getNetwork==='function' ? await p.getNetwork() : (window.activeNet||'unknown'); }catch(e){}
-
-      try{
-        var bal=await p.getBalance();
-        window.walletBalance={confirmed:bal.confirmed||bal.mature||0,unconfirmed:bal.unconfirmed||bal.pending||0,total:bal.total||0};
-      }catch(e){window.walletBalance={confirmed:0,unconfirmed:0,total:0};}
-
-      try{window.walletPubKey=await p.getPublicKey();}catch(e){}
-
-      if(typeof window.updateWalletUI==='function') window.updateWalletUI(name,net);
-      if(typeof window.htpWalletV3==='object'&&typeof window.htpWalletV3.updateUI==='function') window.htpWalletV3.updateUI();
-      if(typeof window.startBalancePoller==='function') window.startBalancePoller();
-      window.dispatchEvent(new CustomEvent('htp:wallet:connected',{detail:{address:addr,wallet:name}}));
-      var dc=document.getElementById('dcBtn'); if(dc) dc.style.display='inline-block';
-
-      setStatus('<div style="display:flex;align-items:center;gap:10px">'
-        +'<span style="color:#22c55e;font-size:18px">✓</span>'
-        +'<div><div style="font-size:12px;font-weight:700;color:#f1f5f9">'+name+' Connected</div>'
-        +'<div style="font-family:monospace;font-size:11px;color:#49e8c2;margin-top:2px">'+addr.substring(0,16)+'...'+addr.slice(-6)+'</div>'
-        +'<div style="font-size:10px;color:#475569;margin-top:2px">Network: '+net+'</div>'
-        +'</div></div>');
-
-    }catch(e){
-      setStatus('<span style="color:#ef4444">Connection failed: '+(e.message||String(e))+'</span>');
-      window.conn=false;
-    }
-  };
-
-})();
-
 // ── CSS ───────────────────────────────────────────────────────────────────────
 (function(){
-  var sid='wl13-styles';
+  var sid='wl14-styles';
   if(document.getElementById(sid)) return;
   var s=document.createElement('style');
   s.id=sid;
@@ -242,16 +168,19 @@ function _injectNetSels(){
 })();
 
 // ── Card builder ──────────────────────────────────────────────────────────────
+// Detected wallets → call index.html closure's selWallet() directly
+// Undetected wallets → show install link via _htpInstall()
 function _buildCard(w){
   var found=w.detect();
-  var url=_WL_INSTALL[w.id]||'';
   var logo=_WL_LOGOS[w.id]||'';
   var dot=found?'<div class="wlCard-dot"></div>':'';
   var sub=found?'<span style="color:#49e8c2">Detected</span>':('<span style="color:#64748b">'+w.sub+'</span>');
   var cls='wlCard '+(found?'wlCard-on':'wlCard-off');
   var bCls='wlCard-btn '+(found?'wlCard-btn-on':'wlCard-btn-off');
   var bTxt=found?'Connect':'Install';
-  var act=found?'window.selWallet(\''+w.id+'\')':'window.open(\''+url+'\',\'_blank\')';
+  // IMPORTANT: calls window.selWallet which IS the index.html closure version at runtime
+  // (logos.js no longer overrides window.selWallet)
+  var act=found?'window.selWallet(\''+w.id+'\')':'window._htpInstall(\''+w.id+'\')';
   return '<div class="'+cls+'">'
     +dot
     +'<div class="wlCard-logo"><img src="'+logo+'" alt="'+w.name+'" onerror="this.style.display=\'none\'"></div>'
@@ -261,7 +190,7 @@ function _buildCard(w){
     +'</div>';
 }
 
-// ── Mobile toggle (whole page) ────────────────────────────────────────────────
+// ── Mobile toggle ─────────────────────────────────────────────────────────────
 function _applyMob(){
   var on=window._htpMobOn;
   var ms=document.getElementById('htpMobStyle');
@@ -304,6 +233,7 @@ window._htpToggleMob=function(){
     var sec=document.getElementById('v-wallet');
     if(!sec) return;
 
+    // If wlWrap already exists, just refresh the grid
     var wrap=document.getElementById('wlWrap');
     if(wrap){
       var grid=document.getElementById('wlGrid');
@@ -313,6 +243,7 @@ window._htpToggleMob=function(){
       return;
     }
 
+    // Build fresh wlWrap
     wrap=document.createElement('div');
     wrap.id='wlWrap';
     wrap.innerHTML=
@@ -322,14 +253,24 @@ window._htpToggleMob=function(){
       +'<button id="htpMobToggle" onclick="window._htpToggleMob()">Mobile</button>'
       +'<span class="wlHdr-hint">Click to connect &middot; Mnemonic &amp; Key below</span>'
       +'</div>'
-      +'<div id="wlGrid">'+getWallets().map(_buildCard).join('')+'</div>'
-      +'<div id="walletStatus"></div>';
+      +'<div id="wlGrid">'+getWallets().map(_buildCard).join('')+'</div>';
 
+    // Replace the existing .w-grid or insert before .sh sibling
     var mx=sec.querySelector('.mx')||sec;
     var old=sec.querySelector('.w-grid');
-    if(old) old.parentNode.replaceChild(wrap,old);
-    else{ var sh=mx.querySelector('.sh'); mx.insertBefore(wrap,sh?sh.nextSibling:mx.firstChild); }
+    if(old){
+      // Move walletStatus div outside old grid first
+      var wst=document.getElementById('walletStatus');
+      old.parentNode.insertBefore(wrap, old);
+      old.remove();
+      // Re-attach walletStatus after wlWrap
+      if(wst) wrap.parentNode.insertBefore(wst, wrap.nextSibling);
+    } else {
+      var sh=mx.querySelector('.sh');
+      mx.insertBefore(wrap, sh?sh.nextSibling:mx.firstChild);
+    }
 
+    // Remove duplicate walletStatus elements
     var allSt=sec.querySelectorAll('#walletStatus');
     allSt.forEach(function(el,i){if(i>0) el.remove();});
 
@@ -340,10 +281,14 @@ window._htpToggleMob=function(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',run);
   else run();
 
+  // Re-run when wallet view is navigated to
   var _go=window.go;
-  if(typeof _go==='function'&&!_go._wl13){
-    window.go=function(v){_go(v);if(v==='wallet') setTimeout(run,200);};
-    window.go._wl13=true;
+  if(typeof _go==='function'&&!_go._wl14){
+    window.go=function(v){
+      _go(v);
+      if(v==='wallet') setTimeout(run,200);
+    };
+    window.go._wl14=true;
   }
   window.addEventListener('htp:view:wallet',function(){setTimeout(run,200);});
   window._wlRefresh=run;
