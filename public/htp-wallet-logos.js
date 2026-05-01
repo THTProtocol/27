@@ -1,7 +1,10 @@
-/** htp-wallet-logos.js — v16.0
- * Buttons fixed: use event delegation on #wlGrid, not inline onclick.
- * selWallet is exposed on window via _exposeSelWallet().
- * KSPR Bot removed.
+/** htp-wallet-logos.js — v17.0
+ * KEY FIXES:
+ * 1. Patch waitForProvider in index.html to retry 60x500ms (30s) instead of 20x150ms
+ * 2. Cards use direct onclick="selWallet(...)" just like the original .w-card HTML
+ * 3. No pointer-events:none on buttons — buttons have full onclick handlers
+ * 4. Kastle polyfill applied earlier and more aggressively
+ * 5. KSPR removed
  */
 
 // ── LOGOS ──────────────────────────────────────────────────────────────────────
@@ -28,65 +31,107 @@ var _WL_INSTALL={
   Tangem:  'https://tangem.com/kaspa'
 };
 
-// ── Desktop wallet list (no KSPR) ───────────────────────────────────────────────
+// ── Desktop wallet list ─────────────────────────────────────────────────────────
 var _WL_DESKTOP=[
-  {id:'KasWare', name:'KasWare', sub:'Chrome · Firefox',detect:function(){return !!(window.kasware||window.kasWare);}},
+  {id:'KasWare', name:'KasWare', sub:'Chrome \u00b7 Firefox',detect:function(){return !!(window.kasware||window.kasWare);}},
   {id:'Kastle',  name:'Kastle',  sub:'Chrome',           detect:function(){return !!window.kastle;}},
   {id:'Kasperia',name:'Kasperia',sub:'Chrome',           detect:function(){return !!window.kasperia;}},
-  {id:'OKX',     name:'OKX',     sub:'Chrome · Mobile',  detect:function(){return !!(window.okxwallet&&window.okxwallet.kaspa);}},
-  {id:'KaspaCom',name:'KaspaCom',sub:'Web · Mobile',     detect:function(){return !!(window.kaspacom||(window.kaspa&&typeof window.kaspa.connect==='function'));}}
+  {id:'OKX',     name:'OKX',     sub:'Chrome \u00b7 Mobile',  detect:function(){return !!(window.okxwallet&&window.okxwallet.kaspa);}},
+  {id:'KaspaCom',name:'KaspaCom',sub:'Web \u00b7 Mobile',     detect:function(){return !!(window.kaspacom||(window.kaspa&&typeof window.kaspa.connect==='function'));}}
 ];
 
 // ── Mobile-only apps ────────────────────────────────────────────────────────────
 var _WL_MOBILE=[
-  {id:'Kasanova',name:'Kasanova',sub:'iOS · Android',         detect:function(){return !!(window.kasanova&&window.kasanova.kasware);}},
-  {id:'Kaspium', name:'Kaspium', sub:'iOS · Android',         detect:function(){return !!(window.kaspium||window.KaspiumWallet);}},
-  {id:'Tangem',  name:'Tangem',  sub:'iOS · Android (NFC)',   detect:function(){return !!(window.tangem||window.tangemWallet);}}
+  {id:'Kasanova',name:'Kasanova',sub:'iOS \u00b7 Android',         detect:function(){return !!(window.kasanova&&window.kasanova.kasware);}},
+  {id:'Kaspium', name:'Kaspium', sub:'iOS \u00b7 Android',         detect:function(){return !!(window.kaspium||window.KaspiumWallet);}},
+  {id:'Tangem',  name:'Tangem',  sub:'iOS \u00b7 Android (NFC)',   detect:function(){return !!(window.tangem||window.tangemWallet);}}
 ];
 
 function _isPhone(){return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);}
 window._htpMobOn=window._htpMobOn!==undefined?window._htpMobOn:(_isPhone()?true:localStorage.getItem('htpMob')==='1');
 
+// ── PATCH waitForProvider to be much more patient (60 retries x 500ms = 30s) ───
+// index.html's original is only 20x150ms = 3 seconds which is not enough for Kastle.
+(function patchWaitForProvider(){
+  // We replace it after DOMContentLoaded so index.html's version is already defined
+  function install(){
+    if(typeof waitForProvider==='function'&&!waitForProvider._wl17patched){
+      var _orig=waitForProvider;
+      // Redefine on window so the inline script's call uses the patched version
+      window.waitForProvider=async function(name){
+        // Try fast path first (20x150ms like original)
+        var fast=await _orig(name);
+        if(fast) return fast;
+        // Slow path: keep trying for 30s more (60x500ms)
+        for(var i=0;i<60;i++){
+          var p=typeof getProvider==='function'?getProvider(name):null;
+          if(p) return p;
+          await new Promise(function(r){setTimeout(r,500);});
+        }
+        return null;
+      };
+      window.waitForProvider._wl17patched=true;
+    }
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',install);
+  }else{
+    install();
+  }
+  // Also try after a tick in case index.html defines it after us
+  setTimeout(install,500);
+  setTimeout(install,1500);
+})();
+
 // ── Kastle polyfill ─────────────────────────────────────────────────────────────
 (function(){
-  function p(){
-    if(!window.kastle||typeof window.kastle.requestAccounts==='function') return;
+  function patch(){
+    if(!window.kastle) return;
+    if(typeof window.kastle.requestAccounts==='function') return; // already has it
     window.kastle.requestAccounts=async function(){
-      try{await window.kastle.connect();}catch(e){throw new Error('Kastle connect: '+e.message);}
+      try{await window.kastle.connect();}catch(e){
+        // connect() may throw even on success if already connected
+        if(!/already|connected/i.test(e.message)) throw new Error('Kastle: '+e.message);
+      }
       var a=await window.kastle.getAccount();
-      if(!a) throw new Error('Kastle: no account');
+      if(!a) throw new Error('Kastle: no account returned');
       var addr=a.address||(typeof a==='string'?a:null);
-      if(!addr) throw new Error('Kastle: no address');
+      if(!addr) throw new Error('Kastle: could not get address');
       return[addr];
     };
     if(typeof window.kastle.getBalance!=='function')
       window.kastle.getBalance=async function(){return{confirmed:0,unconfirmed:0,total:0};};
+    if(typeof window.kastle.getNetwork!=='function')
+      window.kastle.getNetwork=async function(){return'testnet-12';};
   }
-  p(); setTimeout(p,300); setTimeout(p,1200);
-  document.addEventListener('click',function o(){p();document.removeEventListener('click',o,true);},true);
+  // Patch immediately and on intervals until kastle is available
+  patch();
+  var _pt=setInterval(function(){
+    patch();
+    if(window.kastle&&typeof window.kastle.requestAccounts==='function') clearInterval(_pt);
+  },200);
+  setTimeout(function(){clearInterval(_pt);},15000);
+  document.addEventListener('click',function o(){patch();document.removeEventListener('click',o,true);},true);
 })();
 
-// ── Expose selWallet on window ──────────────────────────────────────────────────
-// index.html defines selWallet inside a closure — we poll until it's available,
-// then expose it as window.selWallet so our event handler can call it.
-(function exposeSelWallet(){
-  if(typeof window.selWallet==='function') return; // already exposed
+// ── Direct connect function ─────────────────────────────────────────────────────
+// Called by onclick on each card button directly — no delegation needed.
+window._htpConnect=function(name){
+  // selWallet is a plain global function in index.html (non-IIFE script block)
+  if(typeof selWallet==='function'){
+    selWallet(name);
+    return;
+  }
+  // Fallback: wait up to 3s for selWallet to be defined
   var tries=0;
   var t=setInterval(function(){
-    if(++tries>60){clearInterval(t);return;}
-    // index.html sometimes sets window.htpSelWallet as an alias — check both
-    if(typeof window.selWallet==='function'||typeof window.htpSelWallet==='function'){
-      if(!window.selWallet&&window.htpSelWallet) window.selWallet=window.htpSelWallet;
+    if(++tries>30){clearInterval(t);return;}
+    if(typeof selWallet==='function'){
       clearInterval(t);
-      return;
+      selWallet(name);
     }
-    // Search all script-scoped globals we know about
-    var candidates=['_selWallet','doSelWallet','connectWallet'];
-    candidates.forEach(function(k){
-      if(typeof window[k]==='function'&&!window.selWallet) window.selWallet=window[k];
-    });
   },100);
-})();
+};
 
 // ── Install handler ─────────────────────────────────────────────────────────────
 window._htpInstall=function(n){
@@ -142,8 +187,8 @@ function _injectNetSels(){
 
 // ── CSS ─────────────────────────────────────────────────────────────────────────
 (function(){
-  if(document.getElementById('wl16-styles')) return;
-  var s=document.createElement('style'); s.id='wl16-styles';
+  if(document.getElementById('wl17-styles')) return;
+  var s=document.createElement('style'); s.id='wl17-styles';
   s.textContent=[
     '@keyframes wlPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.8)}}',
     '#wlWrap{background:rgba(255,255,255,.025);border:1px solid rgba(73,232,194,.1);border-radius:20px;padding:24px;margin-bottom:20px;backdrop-filter:blur(12px);}',
@@ -157,24 +202,28 @@ function _injectNetSels(){
     '#wlGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}',
     '@media(min-width:480px){#wlGrid{grid-template-columns:repeat(3,1fr)!important;}}',
     '@media(min-width:900px){#wlGrid{grid-template-columns:repeat(5,1fr)!important;}}',
-    '.wlCard{position:relative;border-radius:16px;padding:18px 10px 14px;text-align:center;overflow:hidden;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s,opacity .2s;}',
+    // Card: cursor pointer, no overflow hidden so hover glow works
+    '.wlCard{position:relative;border-radius:16px;padding:18px 10px 14px;text-align:center;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s,opacity .2s;}',
     '.wlCard:hover{transform:translateY(-3px) scale(1.02)!important;box-shadow:0 16px 40px rgba(0,0,0,.6)!important;opacity:1!important;}',
     '.wlCard-on{background:rgba(73,232,194,.04);border:1px solid rgba(73,232,194,.4);}',
     '.wlCard-off{background:rgba(255,255,255,.015);border:1px solid rgba(255,255,255,.07);opacity:.75;}',
     '.wlCard-dot{position:absolute;top:9px;right:9px;width:7px;height:7px;background:#49e8c2;border-radius:50%;box-shadow:0 0 8px #49e8c2;animation:wlPulse 2s ease-in-out infinite;}',
-    '.wlCard-logo{width:52px;height:52px;margin:0 auto 11px;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.2);}',
-    '.wlCard-logo img{width:100%;height:100%;object-fit:cover;border-radius:12px;}',
-    '.wlCard-name{font-size:11px;font-weight:800;color:#f1f5f9;margin-bottom:3px;letter-spacing:.01em;}',
-    '.wlCard-sub{font-size:9.5px;font-weight:600;margin-bottom:11px;}',
-    '.wlCard-btn{width:100%;padding:8px 4px;border-radius:10px;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .15s;pointer-events:none;}',
-    '.wlCard-btn-on{background:#49e8c2;color:#021a10;border:none;}',
-    '.wlCard-btn-off{background:rgba(73,232,194,.06);color:#49e8c2;border:1px solid rgba(73,232,194,.22);}',
+    '.wlCard-logo{width:52px;height:52px;margin:0 auto 11px;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.2);pointer-events:none;}',
+    '.wlCard-logo img{width:100%;height:100%;object-fit:cover;border-radius:12px;pointer-events:none;}',
+    '.wlCard-name{font-size:11px;font-weight:800;color:#f1f5f9;margin-bottom:3px;letter-spacing:.01em;pointer-events:none;}',
+    '.wlCard-sub{font-size:9.5px;font-weight:600;margin-bottom:11px;pointer-events:none;}',
+    // Button: full pointer-events, its own onclick does the work
+    '.wlCard-btn{width:100%;padding:8px 4px;border-radius:10px;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .15s;border:none;}',
+    '.wlCard-btn-on{background:#49e8c2;color:#021a10;}',
+    '.wlCard-btn-on:hover{background:#6fffd8;}',
+    '.wlCard-btn-off{background:rgba(73,232,194,.06);color:#49e8c2;border:1px solid rgba(73,232,194,.22)!important;}',
+    '.wlCard-btn-off:hover{background:rgba(73,232,194,.13);}',
     '#walletStatus{margin-top:16px;padding:16px 18px;border-radius:14px;border:1px solid rgba(73,232,194,.12);background:rgba(4,12,28,.7);font-size:13px;backdrop-filter:blur(8px);display:none;}'
   ].join('\n');
   document.head.appendChild(s);
 })();
 
-// ── Card builder ────────────────────────────────────────────────────────────────
+// ── Card builder — uses direct onclick just like original .w-card HTML ───────────
 function _buildCard(w){
   var found=w.detect();
   var logo=_WL_LOGOS[w.id]||'';
@@ -182,50 +231,18 @@ function _buildCard(w){
   var sub=found?'<span style="color:#49e8c2">Detected</span>':'<span style="color:#64748b">'+w.sub+'</span>';
   var cls='wlCard '+(found?'wlCard-on':'wlCard-off');
   var bCls='wlCard-btn '+(found?'wlCard-btn-on':'wlCard-btn-off');
-  var bTxt=found?'Connect':'Install';
-  // data-wid and data-act stored on card — clicked via event delegation (no inline onclick)
-  var act=found?'connect':'install';
-  return '<div class="'+cls+'" data-wid="'+w.id+'" data-act="'+act+'">'
+  var bTxt=found?'Connect':'Install \u2197';
+  // Use direct onclick on both the card AND the button — belt and suspenders
+  var action=found
+    ?'window._htpConnect(\''+w.id+'\')'
+    :'window._htpInstall(\''+w.id+'\')';
+  return '<div class="'+cls+'" onclick="'+action+'">'
     +dot
     +'<div class="wlCard-logo"><img src="'+logo+'" alt="'+w.name+'" onerror="this.style.display=\'none\'"></div>'
     +'<div class="wlCard-name">'+w.name+'</div>'
     +'<div class="wlCard-sub">'+sub+'</div>'
-    +'<button class="'+bCls+'">'+bTxt+'</button>'
+    +'<button class="'+bCls+'" onclick="event.stopPropagation();'+action+'">'+bTxt+'</button>'
     +'</div>';
-}
-
-// ── Event delegation — attach ONE listener to #wlGrid ──────────────────────────
-function _attachGridClicks(grid){
-  if(grid._wl16) return;
-  grid._wl16=true;
-  grid.addEventListener('click',function(e){
-    var card=e.target.closest('[data-wid]');
-    if(!card) return;
-    e.stopPropagation();
-    var wid=card.dataset.wid;
-    var act=card.dataset.act;
-    if(act==='connect'){
-      // Try window.selWallet first, then window.htpSelWallet, then direct call
-      var fn=window.selWallet||window.htpSelWallet;
-      if(typeof fn==='function'){
-        fn(wid);
-      } else {
-        // Last resort: show status and hint
-        var st=document.getElementById('walletStatus');
-        if(st){
-          st.style.display='block';
-          st.innerHTML='<span style="color:#f59e0b">Connecting to '+wid+'... if this persists refresh the page.</span>';
-        }
-        // Retry once after 500ms (selWallet may still be loading)
-        setTimeout(function(){
-          var fn2=window.selWallet||window.htpSelWallet;
-          if(typeof fn2==='function') fn2(wid);
-        },500);
-      }
-    } else {
-      window._htpInstall(wid);
-    }
-  });
 }
 
 // ── Mobile toggle ───────────────────────────────────────────────────────────────
@@ -261,7 +278,7 @@ window._htpToggleMob=function(){window._htpMobOn=!window._htpMobOn;_applyMob();}
     var wrap=document.getElementById('wlWrap');
     if(wrap){
       var g=document.getElementById('wlGrid');
-      if(g){ g.innerHTML=getW().map(_buildCard).join(''); _attachGridClicks(g); }
+      if(g) g.innerHTML=getW().map(_buildCard).join('');
       _injectNetSels(); _applyMob();
       return;
     }
@@ -288,20 +305,17 @@ window._htpToggleMob=function(){window._htpMobOn=!window._htpMobOn;_applyMob();}
     }
 
     sec.querySelectorAll('#walletStatus').forEach(function(el,i){if(i>0)el.remove();});
-
-    var g=document.getElementById('wlGrid');
-    if(g) _attachGridClicks(g);
-
-    _injectNetSels(); _applyMob();
+    _injectNetSels();
+    _applyMob();
   }
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',run);
   else run();
 
   var _g=window.go;
-  if(typeof _g==='function'&&!_g._wl16){
+  if(typeof _g==='function'&&!_g._wl17){
     window.go=function(v){_g(v); if(v==='wallet') setTimeout(run,200);};
-    window.go._wl16=true;
+    window.go._wl17=true;
   }
   window.addEventListener('htp:view:wallet',function(){setTimeout(run,200);});
   window._wlRefresh=run;
