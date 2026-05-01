@@ -1,0 +1,477 @@
+/* ═══════════════════════════════════════════════════════════════
+   HTP MOBILE v18 — Complete responsive + hover twitch fix
+   Injected by htp-wallet-logos.js via <link>
+═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. FIX CARD HOVER TWITCH ──────────────────────────────────
+   Root cause: cubic-bezier(.34,1.56,.64,1) is a spring that
+   overshoots, causing an infinite micro-oscillation on some GPU
+   compositors. Replace with smooth ease-out everywhere.
+─────────────────────────────────────────────────────────────── */
+.wlCard {
+  transition: transform 0.18s ease-out, box-shadow 0.18s ease-out, opacity 0.18s ease-out !important;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+.wlCard:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 14px 36px rgba(0,0,0,0.55) !important;
+  opacity: 1 !important;
+}
+
+/* Also fix any other card hover tweens site-wide */
+.card, .k-card, .sg-card, .m-card, .hw-card {
+  transition: transform 0.18s ease-out, box-shadow 0.18s ease-out !important;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* ── 2. MOBILE PREVIEW MODE ────────────────────────────────────
+   When .htp-mob-preview is on <html>, constrain to 390px
+─────────────────────────────────────────────────────────────── */
+html.htp-mob-preview,
+html.htp-mob-preview body {
+  background: #000 !important;
+}
+html.htp-mob-preview #app,
+html.htp-mob-preview .shell {
+  max-width: 390px !important;
+  min-height: 100vh !important;
+  margin: 0 auto !important;
+  box-shadow: 0 0 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(73,232,194,0.15) !important;
+  overflow-x: hidden !important;
+  position: relative !important;
+}
+
+/* ── 3. GLOBAL MOBILE FOUNDATION ──────────────────────────────── */
+@media (max-width: 768px) {
+  /* Prevent horizontal scroll */
+  html, body {
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── HEADER ── */
+  .hdr {
+    padding: 0 !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+  }
+  .hdr-in {
+    padding: 10px 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+  }
+  .hdr-brand {
+    flex: 1 !important;
+  }
+  .hdr-brand span:first-of-type {
+    font-size: 14px !important;
+  }
+  .hdr-brand small {
+    font-size: 8px !important;
+  }
+  .logo {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+  }
+  .btn-c {
+    font-size: 10px !important;
+    padding: 6px 10px !important;
+    white-space: nowrap !important;
+  }
+  .net-pill {
+    font-size: 9px !important;
+    padding: 3px 8px !important;
+  }
+
+  /* ── NAV HAMBURGER ── */
+  .menu-toggle {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    background: rgba(73,232,194,0.06) !important;
+    border: 1px solid rgba(73,232,194,0.2) !important;
+    color: #49e8c2 !important;
+    font-size: 18px !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+  }
+  .hdr-nav {
+    display: none !important;
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: rgba(2,10,8,0.97) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-bottom: 1px solid rgba(73,232,194,0.15) !important;
+    padding: 10px 12px 16px !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    z-index: 999 !important;
+  }
+  .hdr-nav.open {
+    display: flex !important;
+  }
+  .hdr-nav .nav-btn {
+    padding: 12px 14px !important;
+    text-align: left !important;
+    border-radius: 8px !important;
+    width: 100% !important;
+    font-size: 13px !important;
+  }
+
+  /* ── NET TABS ── */
+  .net-tabs {
+    padding: 6px 12px 0 !important;
+    gap: 4px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+  .net-tabs::-webkit-scrollbar { display: none !important; }
+  .net-tab {
+    font-size: 11px !important;
+    padding: 8px 8px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* ── SECTION PADDING ── */
+  .mx, .sec-pad {
+    padding: 0 12px !important;
+  }
+  .mx.sec-pad {
+    padding: 14px 12px 32px !important;
+  }
+
+  /* ── SECTION HEADER ── */
+  .sh {
+    margin-bottom: 20px !important;
+  }
+  .sh h2 {
+    font-size: 22px !important;
+    line-height: 1.2 !important;
+  }
+  .sh p {
+    font-size: 13px !important;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 20px 0 !important;
+    text-align: center !important;
+  }
+  .hero-wrap {
+    min-height: auto !important;
+    grid-template-columns: 1fr !important;
+  }
+  .hero h1 {
+    font-size: 26px !important;
+    line-height: 1.2 !important;
+  }
+  .hero-sub {
+    font-size: 13px !important;
+  }
+  .hero-cta {
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+  .hero-cta .cta1, .hero-cta .cta2 {
+    text-align: center !important;
+    width: 100% !important;
+  }
+  .hero-vis {
+    display: none !important;
+  }
+
+  /* ── STATS STRIP ── */
+  .stats-strip {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .stat-card {
+    padding: 12px !important;
+  }
+  .stat-val {
+    font-size: 18px !important;
+  }
+  .stat-lbl {
+    font-size: 9px !important;
+  }
+
+  /* ── KASPA STATS ── */
+  .kaspa-stats {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+  }
+  .ks {
+    padding: 10px 6px !important;
+  }
+  .ks-v {
+    font-size: 14px !important;
+  }
+  .ks-l {
+    font-size: 8px !important;
+  }
+
+  /* ── GENERAL GRIDS → SINGLE COLUMN ── */
+  .k-grid, .sg-grid, .w-grid, .hw-grid, .create-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* ── MARKETS SECTION ── */
+  #mG {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .fb {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .fc, .fr {
+    width: 100% !important;
+  }
+  .fi {
+    width: 100% !important;
+    font-size: 13px !important;
+  }
+  /* Event detail layout: stack panels */
+  .el {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .el-m, .el-s {
+    width: 100% !important;
+  }
+  /* Spot / Maximizer tabs */
+  .et-tabs {
+    display: flex !important;
+    gap: 0 !important;
+  }
+  .tt {
+    flex: 1 !important;
+    font-size: 12px !important;
+    padding: 10px 6px !important;
+  }
+
+  /* ── CREATE EVENT ── */
+  .create-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .create-panel {
+    width: 100% !important;
+  }
+  .or {
+    flex-direction: row !important;
+    gap: 6px !important;
+  }
+
+  /* ── SKILL GAMES ── */
+  .sg-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .sg-gbtn {
+    padding: 14px 8px !important;
+  }
+  .sg-ico {
+    font-size: 28px !important;
+  }
+  .sg-lbl {
+    font-size: 10px !important;
+  }
+  /* Game board: full width */
+  .sg-board-wrap, .chess-board-wrap, .game-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+  }
+  /* Skill game layout: stack */
+  .sg-layout, .game-layout {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  .sg-sidebar {
+    width: 100% !important;
+    order: -1 !important;
+  }
+
+  /* ── ORACLE / PORTFOLIO ── */
+  .card {
+    padding: 14px !important;
+  }
+  .chip {
+    font-size: 9px !important;
+    padding: 2px 7px !important;
+  }
+
+  /* ── WALLET SECTION ── */
+  #wlWrap {
+    padding: 16px !important;
+    border-radius: 14px !important;
+  }
+  #wlGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .wlHdr {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin-bottom: 14px !important;
+  }
+  .wlHdr-hint {
+    display: none !important;
+  }
+  #htpMobToggle {
+    font-size: 9px !important;
+    padding: 5px 10px !important;
+  }
+  .wlCard {
+    padding: 14px 8px 12px !important;
+    border-radius: 12px !important;
+  }
+  .wlCard-logo {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 11px !important;
+    margin-bottom: 8px !important;
+  }
+  .wlCard-name {
+    font-size: 10px !important;
+  }
+  .wlCard-sub {
+    font-size: 8.5px !important;
+  }
+  .wlCard-btn {
+    font-size: 8.5px !important;
+    padding: 7px 4px !important;
+    border-radius: 8px !important;
+  }
+
+  /* Mnemonic / Hex sections */
+  .fg {
+    gap: 8px !important;
+  }
+  .fg input, .fg textarea {
+    font-size: 13px !important;
+  }
+
+  /* ── KASPA SECTION ── */
+  #v-kaspa .k-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── TERMS ── */
+  #v-terms .mx {
+    padding: 14px 12px !important;
+  }
+
+  /* ── BALANCE PILL ── */
+  .htp-balance-pill-fixed {
+    top: 58px !important;
+    right: 10px !important;
+    font-size: 10px !important;
+    padding: 4px 10px !important;
+    transform: scale(0.92) !important;
+    transform-origin: top right !important;
+  }
+
+  /* ── DAG MINI ── */
+  .dag-mini, #dagMiniWrap, #liveDagContainer, #dagMiniContainer {
+    height: 220px !important;
+    min-height: 220px !important;
+    max-height: 220px !important;
+  }
+
+  /* ── OVERVIEW FEATURE GRID ── */
+  .ft-grid, .feature-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* ── ROADMAP / TIMELINE ── */
+  .tl-wrap, .roadmap-wrap {
+    padding-left: 24px !important;
+  }
+}
+
+/* ── 4. SMALL PHONE (max 480px) ─────────────────────────────── */
+@media (max-width: 480px) {
+  .hdr-brand span:first-of-type {
+    font-size: 12px !important;
+  }
+  .hdr-brand small {
+    display: none !important;
+  }
+  .btn-c {
+    font-size: 9px !important;
+    padding: 5px 8px !important;
+  }
+  .sh h2 {
+    font-size: 18px !important;
+  }
+  .hero h1 {
+    font-size: 22px !important;
+  }
+  .stats-strip {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  #wlGrid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .sg-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .kaspa-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .net-tab {
+    font-size: 10px !important;
+    padding: 7px 5px !important;
+  }
+  /* Stack Spot/Max tabs vertically on very small screens */
+  .et-tabs {
+    flex-direction: row !important;
+  }
+}
+
+/* ── 5. LANDSCAPE PHONE ──────────────────────────────────────── */
+@media (max-width: 768px) and (orientation: landscape) {
+  .hero-wrap {
+    min-height: auto !important;
+  }
+  .hero {
+    padding: 10px 0 !important;
+  }
+  .dag-mini, #dagMiniWrap, #liveDagContainer, #dagMiniContainer {
+    height: 160px !important;
+    min-height: 160px !important;
+    max-height: 160px !important;
+  }
+}
+
+/* ── 6. TOUCH TARGETS ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* All interactive elements min 44px tap target */
+  .nav-btn, .tt, .cta1, .cta2, .bp, .wlCard-btn, button.sg-gbtn {
+    min-height: 44px !important;
+  }
+  /* Prevent iOS zoom on inputs */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+  input.fi, .fs input {
+    font-size: 14px !important;
+  }
+}
