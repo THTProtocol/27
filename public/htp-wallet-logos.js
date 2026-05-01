@@ -1,13 +1,9 @@
 /**
- * htp-wallet-logos.js — v7.1
- * Real official logos sourced from:
- *   KasWare  → github.com/kasware-wallet/extension (confirmed 200)
- *   Kastle   → gstatic faviconV2 from kastle.cc (confirmed 200)
- *   Kasperia → lh3.googleusercontent.com Chrome Web Store icon (confirmed 200)
- *   OKX      → gstatic faviconV2 from okx.com (confirmed 200)
- *   Kaspium  → gstatic faviconV2 from kaspium.io (confirmed 200)
- *   Kasanova → gstatic faviconV2 from kasanova.io (confirmed 200)
- *   Tangem   → gstatic faviconV2 from tangem.com (confirmed 200)
+ * htp-wallet-logos.js — v7.2
+ * - Replaces ONLY the .w-grid element with the new card grid
+ * - Preserves all existing .w-sec sections (mnemonic, hex key, custom node, etc.)
+ * - Extension wallets call native selWallet() which handles TN12 mnemonic signing
+ * - Mobile/hardware wallets get a kaspa: address paste input
  */
 
 var _LOGO_URLS = {
@@ -20,13 +16,11 @@ var _LOGO_URLS = {
   Tangem:   'https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://tangem.com&size=128'
 };
 
-// Fallback SVGs used only if the real logo URL fails to load
 window.HTP_WALLET_LOGOS = {
   KasWare:  '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="#0b1f15"/><polygon points="13,12 25,12 25,29 39,12 51,12 36,32 51,52 39,52 25,35 25,52 13,52" fill="#49e8c2"/></svg>',
   Kastle:   '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="#0d1623"/><rect x="8" y="38" width="48" height="18" rx="1" fill="#5ba3d4"/><rect x="8" y="24" width="12" height="16" fill="#5ba3d4"/><rect x="44" y="24" width="12" height="16" fill="#5ba3d4"/><rect x="24" y="20" width="16" height="20" fill="#7bbce8"/><rect x="8" y="18" width="4" height="8" fill="#5ba3d4"/><rect x="16" y="18" width="4" height="8" fill="#5ba3d4"/><rect x="44" y="18" width="4" height="8" fill="#5ba3d4"/><rect x="52" y="18" width="4" height="8" fill="#5ba3d4"/><rect x="24" y="13" width="4" height="9" fill="#7bbce8"/><rect x="31" y="13" width="4" height="9" fill="#7bbce8"/><rect x="38" y="13" width="4" height="9" fill="#7bbce8"/><rect x="28" y="44" width="8" height="12" rx="4" fill="#0d1623"/></svg>',
   Kasperia: '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="#0a1628"/><path d="M18 38 Q26 16 40 14 Q54 12 50 30 Q46 44 32 50 Q20 54 18 38Z" fill="#4db8e8" opacity="0.9"/><path d="M20 36 Q28 18 40 16 Q52 14 48 30 Q44 42 32 48" fill="none" stroke="#7dd4f0" stroke-width="1.5" opacity="0.6"/><circle cx="38" cy="20" r="3" fill="#7dd4f0" opacity="0.8"/></svg>',
   OKX:      '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="#000"/><rect x="8" y="8" width="20" height="20" rx="3" fill="#fff"/><rect x="36" y="8" width="20" height="20" rx="3" fill="#fff"/><rect x="8" y="36" width="20" height="20" rx="3" fill="#fff"/><rect x="36" y="36" width="20" height="20" rx="3" fill="#49e8c2"/></svg>',
-  // Kasanova: dark bg, swirling teal-to-purple wave matching the real app icon
   Kasanova: '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="ksnBg" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#0d0d22"/><stop offset="100%" stop-color="#070714"/></radialGradient><linearGradient id="ksnWave" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#06b6d4"/><stop offset="50%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#ec4899"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(#ksnBg)"/><path d="M10 48 C14 36 20 28 28 24 C36 20 40 22 38 30 C36 36 30 38 26 34 C22 30 24 22 32 18 C40 14 50 18 54 28" fill="none" stroke="url(#ksnWave)" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="32" r="3.5" fill="#a78bfa" opacity="0.9"/><circle cx="22" cy="40" r="2" fill="#06b6d4" opacity="0.7"/></svg>',
   Kaspium:  '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="#071c10"/><path d="M32 6 L55 16 L55 36 C55 50 32 60 32 60 C32 60 9 50 9 36 L9 16 Z" fill="#1a5c32" stroke="#49e8c2" stroke-width="2"/><rect x="22" y="20" width="5" height="24" rx="1" fill="#49e8c2"/><polygon points="27,32 40,20 46,20 33,32 46,44 40,44" fill="#49e8c2"/></svg>',
   Tangem:   '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="#061510"/><rect x="6" y="14" width="52" height="36" rx="6" fill="none" stroke="#49e8c2" stroke-width="2.2"/><rect x="13" y="28" width="14" height="10" rx="3" fill="none" stroke="#49e8c2" stroke-width="1.5"/><line x1="13" y1="33" x2="27" y2="33" stroke="#49e8c2" stroke-width="1"/><line x1="20" y1="28" x2="20" y2="38" stroke="#49e8c2" stroke-width="1"/><path d="M35 28 Q42 33 35 38" fill="none" stroke="#49e8c2" stroke-width="1.5" stroke-linecap="round"/><path d="M39 25 Q49 33 39 41" fill="none" stroke="#49e8c2" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/></svg>'
@@ -40,17 +34,13 @@ function getWalletLogo(name) {
 (function applyNavFix() {
   function fix() {
     document.querySelectorAll('.nav-btn').forEach(function(btn) {
-      var v = btn.getAttribute('data-v') || btn.getAttribute('onclick') || '';
-      var isAct = btn.classList.contains('act');
-      if (!isAct) return;
-      var after = btn.querySelector('.nav-active-bar');
-      if (!after) {
-        after = document.createElement('span');
-        after.className = 'nav-active-bar';
-        after.style.cssText = 'position:absolute;left:10px;right:10px;bottom:6px;height:2px;border-radius:2px;background:rgba(73,232,194,.95);box-shadow:0 0 10px rgba(73,232,194,.24);pointer-events:none';
-        btn.style.position = 'relative';
-        btn.appendChild(after);
-      }
+      if (!btn.classList.contains('act')) return;
+      if (btn.querySelector('.nav-active-bar')) return;
+      var after = document.createElement('span');
+      after.className = 'nav-active-bar';
+      after.style.cssText = 'position:absolute;left:10px;right:10px;bottom:6px;height:2px;border-radius:2px;background:rgba(73,232,194,.95);box-shadow:0 0 10px rgba(73,232,194,.24);pointer-events:none';
+      btn.style.position = 'relative';
+      btn.appendChild(after);
     });
   }
   if (document.readyState !== 'loading') fix();
@@ -58,7 +48,7 @@ function getWalletLogo(name) {
   document.addEventListener('click', function(){ setTimeout(fix, 80); });
 })();
 
-// ── Wallet grid ───────────────────────────────────────────────────────────────
+// ── Wallet grid — replaces ONLY .w-grid, preserves all .w-sec sections ────────
 (function patchWalletGrid() {
 
   function logoEl(id) {
@@ -72,26 +62,28 @@ function getWalletLogo(name) {
          + getWalletLogo(id) + '</div>';
   }
 
+  // Extension wallets — call native selWallet() which handles TN12 mnemonic/wasm signing
   var EXT_WALLETS = [
-    { id:'KasWare',  label:'KasWare',    badge:'Chrome \u00b7 Firefox',
+    { id:'KasWare',  label:'KasWare',    badge:'Chrome · Firefox',
       detect: function(){ return !!window.kasware; },
-      url:'https://chromewebstore.google.com/detail/kasware-wallet/hklhheigdmpoolooomdihmhlpjjdbklf' },
-    { id:'Kastle',   label:'Kastle',     badge:'Chrome \u00b7 Mobile',
+      installUrl:'https://chromewebstore.google.com/detail/kasware-wallet/hklhheigdmpoolooomdihmhlpjjdbklf' },
+    { id:'Kastle',   label:'Kastle',     badge:'Chrome · Mobile',
       detect: function(){ return !!window.kastle; },
-      url:'https://chromewebstore.google.com/detail/kastle/oambclflhjfppdmkghokjmpppmaebego' },
+      installUrl:'https://chromewebstore.google.com/detail/kastle/oambclflhjfppdmkghokjmpppmaebego' },
     { id:'Kasperia', label:'Kasperia',   badge:'Chrome',
       detect: function(){ return !!window.kasperia; },
-      url:'https://chromewebstore.google.com/detail/kasperia/ffalcabgggegkejjlknofllbaledgcob' },
-    { id:'OKX',      label:'OKX Wallet', badge:'Chrome \u00b7 Mobile',
+      installUrl:'https://chromewebstore.google.com/detail/kasperia/ffalcabgggegkejjlknofllbaledgcob' },
+    { id:'OKX',      label:'OKX Wallet', badge:'Chrome · Mobile',
       detect: function(){ return !!(window.okxwallet && window.okxwallet.kaspa); },
-      url:'https://chromewebstore.google.com/detail/okx-wallet/mcohilncbfahbmgdjkbpemcciiolgcge' }
+      installUrl:'https://chromewebstore.google.com/detail/okx-wallet/mcohilncbfahbmgdjkbpemcciiolgcge' }
   ];
 
+  // Mobile/hardware wallets — address paste only (no mnemonic, no extension)
   var ADDR_WALLETS = [
-    { id:'Kasanova', label:'Kasanova', badge:'iOS \u00b7 Android',
+    { id:'Kasanova', label:'Kasanova', badge:'iOS · Android',
       appstore:'https://apps.apple.com/app/kasanova-wallet/id6748974415',
       playstore:'https://play.google.com/store/apps/details?id=io.kasanova.wallet' },
-    { id:'Kaspium',  label:'Kaspium',  badge:'iOS \u00b7 Android',
+    { id:'Kaspium',  label:'Kaspium',  badge:'iOS · Android',
       appstore:'https://apps.apple.com/app/kaspium-wallet/id1644798032',
       playstore:'https://play.google.com/store/apps/details?id=io.kaspium.kaspiumwallet' },
     { id:'Tangem',   label:'Tangem',   badge:'Hardware NFC',
@@ -102,7 +94,8 @@ function getWalletLogo(name) {
   function buildExtCard(w) {
     var found = w.detect();
     return [
-      '<div class="wpc" data-wid="', w.id, '" onclick="window._wpcConnect(\'', w.id, '\')"',
+      '<div class="wpc" data-wid="', w.id, '"',
+      ' onclick="window._wpcConnect(\'', w.id, '\')"',
       ' style="background:rgba(255,255,255,.028);border:1px solid ', found ? 'rgba(73,232,194,.4)' : 'rgba(255,255,255,.07)',
       ';border-radius:14px;padding:18px 10px 14px;text-align:center;cursor:pointer;',
       'transition:border-color .2s,transform .2s,box-shadow .2s;position:relative;overflow:hidden;">',
@@ -110,20 +103,20 @@ function getWalletLogo(name) {
         logoEl(w.id),
         '<div style="font-size:13px;font-weight:800;color:#f1f5f9;margin-bottom:3px">', w.label, '</div>',
         '<div style="font-size:10px;margin-bottom:10px;color:', found ? '#49e8c2' : '#556070', '">',
-          found ? '&#x25cf;&thinsp;Detected' : w.badge,
+          found ? '● Detected' : w.badge,
         '</div>',
         '<button style="width:100%;padding:7px 4px;background:', found ? '#49e8c2' : 'rgba(73,232,194,.06)',
           ';color:', found ? '#02110d' : '#49e8c2',
           ';border:1px solid ', found ? 'transparent' : 'rgba(73,232,194,.3)',
-          ';border-radius:8px;cursor:pointer;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;">',
-          found ? 'Connect' : 'Install \u2197',
+          ';border-radius:8px;cursor:pointer;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase">',
+          found ? 'Connect' : 'Install ↗',
         '</button>',
       '</div>'
     ].join('');
   }
 
   function buildAddrCard(w) {
-    var inputId = 'wpc-addr-' + w.id.toLowerCase();
+    var iid = 'wpc-addr-' + w.id.toLowerCase();
     return [
       '<div class="wpc wpc-addr" data-wid="', w.id, '"',
       ' style="background:rgba(255,255,255,.018);border:1px solid rgba(255,255,255,.07);',
@@ -131,32 +124,76 @@ function getWalletLogo(name) {
         logoEl(w.id),
         '<div style="font-size:13px;font-weight:800;color:#f1f5f9;margin-bottom:3px">', w.label, '</div>',
         '<div style="font-size:10px;color:#556070;margin-bottom:12px">', w.badge, '</div>',
-        // Address paste input
-        '<input id="', inputId, '" type="text" placeholder="Paste kaspa:addr\u2026"',
-        ' style="width:100%;box-sizing:border-box;padding:8px 10px;background:rgba(8,13,26,.9);',
-        'border:1px solid rgba(73,232,194,.18);border-radius:9px;color:#e2e8f0;font-size:10px;',
-        'font-family:ui-monospace,monospace;outline:none;margin-bottom:8px;',
-        'transition:border-color .18s"/>',
-        '<button onclick="window._wpcAddrConnect(\'', w.id, '\',\'', inputId, '\')"',
+        '<input id="', iid, '" type="text" placeholder="Paste kaspa:addr…"',
+        ' style="width:100%;box-sizing:border-box;padding:8px 10px;',
+        'background:rgba(8,13,26,.9);border:1px solid rgba(73,232,194,.18);border-radius:9px;',
+        'color:#e2e8f0;font-size:10px;font-family:ui-monospace,monospace;outline:none;',
+        'margin-bottom:8px;transition:border-color .18s"/>',
+        '<button onclick="window._wpcAddrConnect(\'', w.id, '\',\'', iid, '\')"',
         ' style="width:100%;padding:7px 4px;background:rgba(73,232,194,.07);color:#49e8c2;',
-        'border:1px solid rgba(73,232,194,.28);border-radius:8px;cursor:pointer;font-size:10px;',
-        'font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;">',
-        'Use This Address',
+        'border:1px solid rgba(73,232,194,.28);border-radius:8px;cursor:pointer;',
+        'font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">',
+        'Use Address',
         '</button>',
         '<div style="display:flex;gap:6px">',
           '<a href="', w.appstore, '" target="_blank" rel="noopener"',
           ' style="flex:1;padding:6px 4px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);',
           'border-radius:7px;font-size:9px;font-weight:700;color:#94a3b8;text-decoration:none;',
-          'letter-spacing:.04em;text-transform:uppercase;display:block;text-align:center">\u2b07 App Store</a>',
+          'letter-spacing:.04em;text-transform:uppercase;display:block;text-align:center">↓ App Store</a>',
           '<a href="', w.playstore, '" target="_blank" rel="noopener"',
           ' style="flex:1;padding:6px 4px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);',
           'border-radius:7px;font-size:9px;font-weight:700;color:#94a3b8;text-decoration:none;',
-          'letter-spacing:.04em;text-transform:uppercase;display:block;text-align:center">&#x25b6; Play Store</a>',
+          'letter-spacing:.04em;text-transform:uppercase;display:block;text-align:center">▶ Play Store</a>',
         '</div>',
       '</div>'
     ].join('');
   }
 
+  // ── Extension connect: call native selWallet() first, fallback to provider API ──
+  window._wpcConnect = function(id) {
+    var w = EXT_WALLETS.find(function(x){ return x.id === id; });
+    if (!w) return;
+
+    // Not installed → open Chrome Web Store
+    if (!w.detect()) {
+      window.open(w.installUrl, '_blank');
+      if (window.showToast) window.showToast('Opening ' + w.label + ' install page…', 'info');
+      return;
+    }
+
+    // ALWAYS call native selWallet() — it handles TN12, mnemonic-mode, wasm signing etc.
+    if (typeof window.selWallet === 'function') {
+      window.selWallet(id);
+      return;
+    }
+
+    // Fallback if selWallet not available yet
+    var providers = {
+      KasWare:  window.kasware,
+      Kastle:   window.kastle,
+      Kasperia: window.kasperia,
+      OKX:      (window.okxwallet && window.okxwallet.kaspa) ? window.okxwallet.kaspa : null
+    };
+    var provider = providers[id];
+    if (!provider) { if (window.showToast) window.showToast('Could not find ' + id + ' provider', 'error'); return; }
+    var req = provider.requestAccounts || provider.connect;
+    if (!req) { if (window.showToast) window.showToast(id + ' does not expose requestAccounts', 'error'); return; }
+    req.call(provider).then(function(accounts) {
+      var addr = Array.isArray(accounts) ? accounts[0] : (accounts && accounts.address ? accounts.address : accounts);
+      if (!addr) { if (window.showToast) window.showToast('No address returned from ' + id, 'warn'); return; }
+      window.walletAddress = window.htpAddress = window.connectedAddress = window.htpWalletAddress = addr;
+      window.walletProvider = id; window.conn = true;
+      window.dispatchEvent(new CustomEvent('htp:wallet:connected', { detail: { address: addr, wallet: id } }));
+      window.dispatchEvent(new CustomEvent('kaspa:wallet:connected', { detail: { address: addr, wallet: id } }));
+      if (window.showToast) window.showToast(id + ' connected ✓', 'success');
+      if (window.updateWalletUI) window.updateWalletUI(id, addr);
+      if (window.onWalletConnected) window.onWalletConnected(addr, id);
+    }).catch(function(e) {
+      if (window.showToast) window.showToast('Connection refused: ' + ((e && e.message) || e), 'error');
+    });
+  };
+
+  // ── Mobile/hardware: paste kaspa: address ──────────────────────────────────
   window._wpcAddrConnect = function(walletId, inputId) {
     var input = document.getElementById(inputId);
     var addr = input ? input.value.trim() : '';
@@ -169,54 +206,11 @@ function getWalletLogo(name) {
     window.conn = true;
     window.dispatchEvent(new CustomEvent('htp:wallet:connected', { detail: { address: addr, wallet: walletId } }));
     window.dispatchEvent(new CustomEvent('kaspa:wallet:connected', { detail: { address: addr, wallet: walletId } }));
-    if (window.showToast) window.showToast(walletId + ' address set \u2713', 'success');
+    if (window.showToast) window.showToast(walletId + ' address set ✓', 'success');
     if (window.updateWalletUI) window.updateWalletUI(walletId, addr);
     if (window.onWalletConnected) window.onWalletConnected(addr, walletId);
     if (window.htpWalletV3 && window.htpWalletV3._onConnected) window.htpWalletV3._onConnected(addr, walletId);
-    // Highlight the input green
     if (input) { input.style.borderColor = '#49e8c2'; input.style.color = '#49e8c2'; }
-  };
-
-  window._wpcConnect = function(id) {
-    var w = EXT_WALLETS.find(function(x){ return x.id === id; });
-    if (!w) return;
-
-    // Not detected → open the direct Chrome Web Store install page
-    if (!w.detect()) {
-      window.open(w.url, '_blank');
-      if (window.showToast) window.showToast('Opening ' + w.label + ' install page\u2026', 'info');
-      return;
-    }
-
-    // Detected → try the app's native selWallet first
-    if (typeof window.selWallet === 'function') { window.selWallet(id); return; }
-
-    // Fallback: call requestAccounts directly
-    var providers = {
-      KasWare:  window.kasware,
-      Kastle:   window.kastle,
-      Kasperia: window.kasperia,
-      OKX:      (window.okxwallet && window.okxwallet.kaspa) ? window.okxwallet.kaspa : null
-    };
-    var provider = providers[id];
-    if (!provider) { if (window.showToast) window.showToast('Could not find ' + id + ' provider', 'error'); return; }
-    var req = provider.requestAccounts || provider.connect;
-    if (!req) { if (window.showToast) window.showToast(id + ' does not support requestAccounts', 'error'); return; }
-    req.call(provider).then(function(accounts) {
-      var addr = Array.isArray(accounts) ? accounts[0] : (accounts && accounts.address ? accounts.address : accounts);
-      if (!addr) { if (window.showToast) window.showToast('No address returned from ' + id, 'warn'); return; }
-      window.walletAddress = window.htpAddress = window.connectedAddress = window.htpWalletAddress = addr;
-      window.walletProvider = id; window.conn = true;
-      window.dispatchEvent(new CustomEvent('htp:wallet:connected', { detail: { address: addr, wallet: id } }));
-      window.dispatchEvent(new CustomEvent('kaspa:wallet:connected', { detail: { address: addr, wallet: id } }));
-      if (window.showToast) window.showToast(id + ' connected \u2713', 'success');
-      if (window.updateWalletUI) window.updateWalletUI(id, addr);
-      if (window.onWalletConnected) window.onWalletConnected(addr, id);
-      if (window.htpWalletV3 && window.htpWalletV3._onConnected) window.htpWalletV3._onConnected(addr, id);
-    }).catch(function(e) {
-      var msg = (e && e.message) ? e.message : String(e);
-      if (window.showToast) window.showToast('Connection refused: ' + msg, 'error');
-    });
   };
 
   function buildGrid() {
@@ -226,7 +220,7 @@ function getWalletLogo(name) {
              'color:#49e8c2;margin-bottom:12px;display:flex;align-items:center;gap:8px">',
           '<span>Browser Extensions</span>',
           '<span style="height:1px;flex:1;background:rgba(73,232,194,.15)"></span>',
-          '<span style="color:#556070">Desktop \u2014 full connect</span>',
+          '<span style="color:#556070">Full connect</span>',
         '</div>',
         '<div id="wpc-ext-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">',
           EXT_WALLETS.map(buildExtCard).join(''),
@@ -237,7 +231,7 @@ function getWalletLogo(name) {
              'color:#94a3b8;margin-bottom:12px;display:flex;align-items:center;gap:8px">',
           '<span>Mobile &amp; Hardware</span>',
           '<span style="height:1px;flex:1;background:rgba(148,163,184,.15)"></span>',
-          '<span style="color:#556070">Paste your address</span>',
+          '<span style="color:#556070">Paste address</span>',
         '</div>',
         '<div id="wpc-addr-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">',
           ADDR_WALLETS.map(buildAddrCard).join(''),
@@ -246,47 +240,72 @@ function getWalletLogo(name) {
     ].join('');
   }
 
+  function injectStyles() {
+    if (document.getElementById('wpc-style')) return;
+    var s = document.createElement('style');
+    s.id = 'wpc-style';
+    s.textContent = [
+      '.wpc{transition:transform .18s,box-shadow .18s}',
+      '.wpc:hover{transform:translateY(-3px)!important;box-shadow:0 14px 32px rgba(0,0,0,.55)!important}',
+      '@keyframes wpc-pulse{0%,100%{opacity:1}50%{opacity:.4}}',
+      '.wpc-addr input:focus{border-color:rgba(73,232,194,.55)!important;box-shadow:0 0 0 3px rgba(73,232,194,.08)!important}',
+      '@media(min-width:540px){',
+        '#wpc-ext-grid{grid-template-columns:repeat(4,1fr)!important}',
+        '#wpc-addr-grid{grid-template-columns:repeat(3,1fr)!important}',
+      '}'
+    ].join('');
+    document.head.appendChild(s);
+  }
+
   function run() {
     var section = document.getElementById('v-wallet');
     if (!section) return;
-    var mx = section.querySelector('.mx');
-    var container = mx || section;
-    var sh = container.querySelector('.sh');
-    Array.from(container.children).forEach(function(c) {
-      if (c !== sh) container.removeChild(c);
-    });
+
+    // ── Find or create the replacement target ──────────────────────────────
+    // We target .w-grid (the old vertical wallet list) and replace it in-place.
+    // Everything else (.w-sec blocks — mnemonic, hex, custom node) is left untouched.
+    var oldGrid = section.querySelector('.w-grid');
+
+    if (document.getElementById('wpc-wrap')) {
+      // Already injected — just re-render the grid cards (detect states may have changed)
+      var wrap = document.getElementById('wpc-wrap');
+      wrap.innerHTML = buildGrid();
+      return;
+    }
+
     var wrap = document.createElement('div');
     wrap.id = 'wpc-wrap';
+    wrap.style.marginBottom = '24px';
     wrap.innerHTML = buildGrid();
-    container.appendChild(wrap);
-    if (sh) {
-      var h2 = sh.querySelector('h2');
-      var p  = sh.querySelector('p');
-      if (h2) h2.textContent = 'Connect Wallet';
-      if (p)  p.textContent  = 'Browser extensions connect instantly. Mobile & hardware wallets — paste your KAS address below.';
+
+    if (oldGrid) {
+      // Replace the old .w-grid with our new grid, keeping everything else
+      oldGrid.parentNode.replaceChild(wrap, oldGrid);
+    } else {
+      // Fallback: prepend inside .mx container after .sh header
+      var mx = section.querySelector('.mx') || section;
+      var sh = mx.querySelector('.sh');
+      if (sh && sh.nextSibling) {
+        mx.insertBefore(wrap, sh.nextSibling);
+      } else {
+        mx.insertBefore(wrap, mx.firstChild);
+      }
     }
-    if (!document.getElementById('wpc-style')) {
-      var s = document.createElement('style');
-      s.id = 'wpc-style';
-      s.textContent = [
-        '.wpc{transition:transform .18s,box-shadow .18s}',
-        '.wpc:hover{transform:translateY(-3px)!important;box-shadow:0 14px 32px rgba(0,0,0,.55)!important}',
-        '@keyframes wpc-pulse{0%,100%{opacity:1}50%{opacity:.4}}',
-        '.wpc-addr input:focus{border-color:rgba(73,232,194,.55)!important;box-shadow:0 0 0 3px rgba(73,232,194,.08)!important}',
-        '@media(min-width:540px){',
-          '#wpc-ext-grid{grid-template-columns:repeat(4,1fr)!important}',
-          '#wpc-addr-grid{grid-template-columns:repeat(3,1fr)!important}',
-        '}'
-      ].join('');
-      document.head.appendChild(s);
-    }
-    console.log('[HTP] wallet grid v7.1 injected');
+
+    // Update the section header text
+    var sh2 = section.querySelector('.sh h2');
+    var sp  = section.querySelector('.sh p');
+    if (sh2) sh2.textContent = 'Connect Wallet';
+    if (sp)  sp.textContent  = 'Browser extensions connect instantly. For mobile/hardware, paste your KAS address. Use Mnemonic or Hex Key below to connect on TN12.';
+
+    injectStyles();
+    console.log('[HTP] wallet grid v7.2 injected — mnemonic/hex sections preserved');
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
   else run();
 
-  // Re-run when user navigates to wallet view
+  // Re-run when navigating to wallet view
   var _origGo = window.go;
   if (typeof _origGo === 'function' && !_origGo._wlPatch) {
     window.go = function(v) { _origGo(v); if (v === 'wallet') setTimeout(run, 150); };
