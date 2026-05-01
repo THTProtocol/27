@@ -1,511 +1,232 @@
-// =============================================================================
-// htp-markets-ui.js  v7 - HTP diamond logo, Place Prediction, clean mode disclosures
-// =============================================================================
-(function(W) {
+/**
+ * htp-markets-ui.js — v13.0
+ * Markets grid, categories, sorting, search, and fee disclosure.
+ */
+(function(W){
   'use strict';
 
-  var CAT_META = {
-    'Macro':    { col: '#0ea5e9' },
-    'Crypto':   { col: '#a855f7' },
-    'Politics': { col: '#ef4444' },
-    'Sports':   { col: '#f59e0b' },
-    'Kaspa':    { col: '#22c55e' },
-    'Skill':    { col: '#06b6d4' },
-    'Tech':     { col: '#3b82f6' },
-    'Finance':  { col: '#f97316' },
-    'Gaming':   { col: '#ec4899' },
-    'Other':    { col: '#94a3b8' }
-  };
-  function catCol(c) { return (CAT_META[c] || { col: '#94a3b8' }).col; }
-
-  function injectCSS() {
-    if (document.getElementById('htp-ui6-css')) return;
-    var s = document.createElement('style');
-    s.id = 'htp-ui6-css';
-    s.textContent = [
-      '.view{opacity:0;transform:translateY(6px)}',
-      '.view.show{display:block;opacity:1;transform:translateY(0);animation:htpFade .2s ease}',
-      '@keyframes htpFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}',
-      '.nav-btn{position:relative}',
-      '.nav-btn.act::after{content:"";position:absolute;left:10px;right:10px;bottom:6px;height:2px;border-radius:2px;background:rgba(73,232,194,.95);box-shadow:0 0 10px rgba(73,232,194,.24)}',
-      '.nav-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;margin-left:6px;padding:0 5px;border-radius:999px;font-size:10px;font-weight:800;background:rgba(73,232,194,.12);color:#49e8c2;border:1px solid rgba(73,232,194,.22);vertical-align:middle}',
-      '.sgv2-lobby-hdr span>span[style*="border-radius:50%"],.sgv2-lobby-hdr span>span[style*="border-radius: 50%"]{display:none!important}',
-      '#nodeStatus{display:flex;align-items:center;gap:8px;padding:4px 10px;border:1px solid rgba(73,232,194,.12);border-radius:999px;background:linear-gradient(135deg,rgba(73,232,194,.08),rgba(73,232,194,.03));box-shadow:inset 0 0 0 1px rgba(255,255,255,.02)}',
-      '#nodeStatus .htp-node-dot{width:8px;height:8px;border-radius:2px;display:inline-block;flex-shrink:0;position:relative}',
-      '#nodeStatus .htp-node-dot.connected,#nodeStatus .htp-node-dot.rest{background:#49e8c2;box-shadow:0 0 0 0 rgba(73,232,194,.55);animation:htpPulse 1.35s ease-in-out infinite}',
-      '#nodeStatus .htp-node-dot.connecting{background:#f59e0b;box-shadow:0 0 0 0 rgba(245,158,11,.45);animation:htpPulseAmber 1s ease-in-out infinite}',
-      '#nodeStatus .htp-node-dot.error{background:#ef4444;box-shadow:0 0 0 0 rgba(239,68,68,.45);animation:htpPulseRed 1.2s ease-in-out infinite}',
-      '#nodeStatus .htp-node-dot.disconnected{background:transparent;border:1.5px solid #6b7280;box-shadow:none;animation:none}',
-      '#nodeStatus .htp-node-text{font-size:11px;color:var(--muted);letter-spacing:.02em}',
-      '@keyframes htpPulse{0%{transform:scale(.92);box-shadow:0 0 0 0 rgba(73,232,194,.55)}50%{transform:scale(1.08);box-shadow:0 0 0 6px rgba(73,232,194,0)}100%{transform:scale(.92);box-shadow:0 0 0 0 rgba(73,232,194,0)}}',
-      '@keyframes htpPulseAmber{0%{transform:scale(.92);box-shadow:0 0 0 0 rgba(245,158,11,.5)}50%{transform:scale(1.08);box-shadow:0 0 0 6px rgba(245,158,11,0)}100%{transform:scale(.92);box-shadow:0 0 0 0 rgba(245,158,11,0)}}',
-      '@keyframes htpPulseRed{0%{transform:scale(.92);box-shadow:0 0 0 0 rgba(239,68,68,.45)}50%{transform:scale(1.08);box-shadow:0 0 0 6px rgba(239,68,68,0)}100%{transform:scale(.92);box-shadow:0 0 0 0 rgba(239,68,68,0)}}',
-      '#ptSwitchSkill,#ptSwitchEvent,#ptSwitchClaim{padding:9px 20px!important;border-radius:999px!important;border:1px solid rgba(73,232,194,.14)!important;background:rgba(255,255,255,.03)!important;color:#64748b!important;font-size:12px!important;font-weight:700!important;letter-spacing:.04em!important;cursor:pointer!important;transition:all .18s!important;white-space:nowrap}',
-      '#ptSwitchSkill:hover,#ptSwitchEvent:hover,#ptSwitchClaim:hover{background:rgba(73,232,194,.08)!important;color:#94a3b8!important}',
-      '#ptSwitchSkill.pt-act,#ptSwitchEvent.pt-act,#ptSwitchClaim.pt-act{background:linear-gradient(135deg,rgba(73,232,194,.14),rgba(73,232,194,.07))!important;border-color:rgba(73,232,194,.55)!important;color:#7ef5dc!important;box-shadow:0 0 0 1px rgba(73,232,194,.18) inset,0 0 18px rgba(73,232,194,.12)!important;transform:translateY(-1px)}',
-      '#v-markets .mkt-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:12px;flex-wrap:wrap}',
-      '#v-markets .mkt-hdr-left h2{font-size:28px;font-weight:900;color:#f1f5f9;margin:0 0 4px;letter-spacing:-.02em}',
-      '#v-markets .mkt-hdr-left p{font-size:12px;color:#475569;margin:0}',
-      '#v-markets .mkt-create-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:12px;border:1px solid rgba(73,232,194,.35);background:linear-gradient(135deg,rgba(73,232,194,.14),rgba(99,102,241,.08));color:#49e8c2;font-size:13px;font-weight:800;letter-spacing:.03em;cursor:pointer;white-space:nowrap;transition:all .18s;box-shadow:0 6px 20px rgba(0,0,0,.18)}',
-      '#v-markets .mkt-create-btn:hover{background:rgba(73,232,194,.22);box-shadow:0 0 22px rgba(73,232,194,.2),0 8px 24px rgba(0,0,0,.22);transform:translateY(-1px)}',
-      '.mkt-fc{position:sticky;top:70px;z-index:14;padding:10px 0;margin-bottom:16px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);background:linear-gradient(180deg,rgba(6,10,18,.96),rgba(6,10,18,.82));border-bottom:1px solid rgba(73,232,194,.07)}',
-      '.mkt-slider{display:flex;gap:8px;overflow-x:auto;scroll-behavior:smooth;padding-bottom:4px;scrollbar-width:none;-ms-overflow-style:none}',
-      '.mkt-slider::-webkit-scrollbar{display:none}',
-      '.mkt-pill{flex-shrink:0;display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;border:1px solid rgba(73,232,194,.13);background:rgba(255,255,255,.025);color:#64748b;font-size:12px;font-weight:700;cursor:pointer;transition:all .17s;white-space:nowrap;user-select:none;position:relative}',
-      '.mkt-pill:hover{background:rgba(73,232,194,.07);color:#a7b6c8;transform:translateY(-1px);border-color:rgba(73,232,194,.24)}',
-      '.mkt-pill.act{background:linear-gradient(135deg,rgba(73,232,194,.16),rgba(73,232,194,.06));border-color:rgba(73,232,194,.52);color:#82f5dd;box-shadow:0 0 0 1px rgba(73,232,194,.16) inset,0 0 18px rgba(73,232,194,.14)}',
-      '.mkt-pill.act::after{display:none!important;content:none!important}',
-      '.mkt-pill .pc{font-size:10px;font-weight:900;padding:0 6px;line-height:18px;height:18px;border-radius:999px;background:rgba(73,232,194,.08);color:#49e8c2;min-width:18px;text-align:center;border:1px solid rgba(73,232,194,.12)}',
-      '.mkt-pill.act .pc{background:rgba(73,232,194,.14);color:#b6fff0;border-color:rgba(73,232,194,.24)}',
-      '.mkt-sr{display:flex!important;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:nowrap}',
+  // ── Inject styles ──────────────────────────────────────────────────────────
+  (function(){
+    var sid='htp-mkt-styles-v8';
+    if(document.getElementById(sid)) return;
+    var s=document.createElement('style');
+    s.id=sid;
+    s.textContent=[
+      '#mktHeader{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}',
       '.mkt-fi{flex:1;min-width:0;padding:10px 14px 10px 36px;background:rgba(8,13,26,.85);border:1px solid rgba(73,232,194,.11);border-radius:12px;color:#e2e8f0;font-size:13px;font-family:inherit;outline:none;transition:border-color .18s,box-shadow .18s;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'14\' height=\'14\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2349e8c2\' stroke-width=\'2.5\'%3E%3Ccircle cx=\'11\' cy=\'11\' r=\'8\'/%3E%3Cpath d=\'m21 21-4.35-4.35\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center}',
-      '.mkt-fi:focus{border-color:rgba(73,232,194,.32);box-shadow:0 0 0 3px rgba(73,232,194,.07)}',
-      '.mkt-fi::placeholder{color:#2d3748}',
+      '.mkt-fi:focus{border-color:rgba(73,232,194,.4);box-shadow:0 0 0 3px rgba(73,232,194,.1)}',
+      '.mkt-fi::placeholder{color:#475569}',
       '.mkt-sort{flex-shrink:0;width:150px;padding:10px 12px;background:rgba(8,13,26,.85);border:1px solid rgba(73,232,194,.11);border-radius:12px;color:#64748b;font-size:12px;font-weight:600;font-family:inherit;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2349e8c2\' stroke-width=\'2.5\'%3E%3Cpath d=\'m6 9 6 6 6-6\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:calc(100% - 10px) center;padding-right:28px}',
-      '#htp-count{font-size:11px;color:#3d4f67;margin-bottom:14px}',
-      '#htp-count strong{color:#49e8c2}',
-      '.mg{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}',
-      '.htp-mc{background:rgba(8,13,26,.9);border:1px solid rgba(73,232,194,.08);border-radius:18px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;transition:border-color .2s,transform .2s,box-shadow .2s;box-shadow:0 8px 24px rgba(0,0,0,.2)}',
-      '.htp-mc:hover{border-color:rgba(73,232,194,.3);transform:translateY(-3px);box-shadow:0 16px 44px rgba(0,0,0,.32)}',
-      '.htp-mc-bar{height:3px}',
-      '.htp-mc-cover{height:160px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}',
-      '.htp-mc-cover-img{width:100%;height:100%;object-fit:cover}',
+      '.mkt-sort:focus{border-color:rgba(73,232,194,.4)}',
+      '#mktCatBar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}',
+      '.mkt-cat{padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border:1px solid rgba(73,232,194,.18);color:#64748b;background:rgba(255,255,255,.02);transition:all .18s}',
+      '.mkt-cat:hover{border-color:rgba(73,232,194,.4);color:#94a3b8}',
+      '.mkt-cat.act{background:rgba(73,232,194,.12);border-color:rgba(73,232,194,.5);color:#49e8c2}',
+      '#mG{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}',
+      '@media(max-width:600px){#mG{grid-template-columns:1fr}}',
+      '.mc{background:rgba(8,13,26,.9);border:1px solid rgba(73,232,194,.08);border-radius:18px;overflow:hidden;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.64,1),border-color .2s,box-shadow .2s;display:flex;flex-direction:column}',
+      '.mc:hover{transform:translateY(-4px);border-color:rgba(73,232,194,.3);box-shadow:0 16px 50px rgba(0,0,0,.6)}',
+      '.htp-mc-cover{width:100%;overflow:hidden;background:rgba(73,232,194,.04)}',
+      '.htp-mc-cover-img{display:block;width:100%;height:100%;object-fit:cover}',
       '.htp-mc-cover-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center}',
-      '.htp-mc-body{padding:14px 16px;flex:1;display:flex;flex-direction:column}',
-      '.htp-mc-top{display:flex;align-items:center;gap:6px;margin-bottom:9px;flex-wrap:wrap}',
-      '.htp-mc-badge{font-size:10px;font-weight:800;padding:2px 9px;border-radius:99px;letter-spacing:.04em}',
-      '.htp-mc-status{font-size:9px;font-weight:800;padding:2px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.06em}',
-      '.htp-mc-status.open{background:rgba(34,197,94,.08);color:#22c55e;border:1px solid rgba(34,197,94,.22)}',
-      '.htp-mc-status.pending{background:rgba(245,158,11,.08);color:#f59e0b;border:1px solid rgba(245,158,11,.22)}',
-      '.htp-mc-status.closed{background:rgba(100,116,139,.08);color:#64748b;border:1px solid rgba(100,116,139,.18)}',
-      '.htp-mc-status.cancelled{background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.18)}',
-      '.htp-mc-urgency{font-size:9px;font-weight:800;padding:2px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.05em;background:rgba(245,158,11,.1);color:#f59e0b;border:1px solid rgba(245,158,11,.2)}',
-      '.htp-mc-dl{margin-left:auto;font-size:10px;color:#2d3a50}',
-      '.htp-mc-title{font-size:14px;font-weight:700;color:#dde3ed;line-height:1.5;margin:0 0 12px;flex:1}',
-      '.htp-mc-bar2{height:7px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.03);display:flex;margin-bottom:6px}',
-      '.htp-mc-bar2-yes{border-radius:999px 0 0 999px;transition:width .3s}',
-      '.htp-mc-bar2-no{border-radius:0 999px 999px 0;transition:width .3s;background:rgba(239,68,68,.6)}',
-      '.htp-mc-odds{display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:12px}',
-      '.htp-mc-foot{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(255,255,255,.04);margin-top:auto}',
-      '.htp-mc-pool{display:flex;align-items:baseline;gap:4px}',
-      '.htp-mc-pool-val{font-size:19px;font-weight:900;color:#49e8c2;font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}',
-      '.htp-mc-pool-unit{font-size:11px;color:#2d3a50}',
-      '.htp-mc-ent{font-size:11px;color:#2d3a50}',
-      '.htp-empty{grid-column:1/-1;text-align:center;padding:72px 20px;border:1px solid rgba(73,232,194,.07);border-radius:22px;background:linear-gradient(180deg,rgba(8,13,26,.75),rgba(8,13,26,.42))}',
-      '.htp-empty-icon{width:64px;height:64px;margin:0 auto 18px;border-radius:18px;background:rgba(73,232,194,.06);border:1px solid rgba(73,232,194,.12);display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(73,232,194,.08) inset, 0 0 18px rgba(73,232,194,.06)}',
-      '.htp-empty-title{font-size:17px;font-weight:800;color:#c8d3e0;margin-bottom:8px}',
-      '.htp-empty-sub{font-size:12px;color:#475569;max-width:400px;margin:0 auto;line-height:1.6}',
-      '.htp-empty-cta{display:inline-flex;align-items:center;gap:6px;margin-top:20px;padding:10px 20px;border-radius:12px;border:1px solid rgba(73,232,194,.28);background:rgba(73,232,194,.07);color:#49e8c2;font-size:12px;font-weight:800;cursor:pointer;transition:all .18s}',
-      '.htp-empty-cta:hover{background:rgba(73,232,194,.14);box-shadow:0 0 16px rgba(73,232,194,.12)}',
-      '.htp-sk{background:rgba(8,13,26,.72);border:1px solid rgba(73,232,194,.07);border-radius:18px;overflow:hidden;position:relative;min-height:250px}',
-      '.htp-sk::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.05),transparent);animation:htpShim 1.6s infinite}',
-      '.htp-sk-top{height:160px;background:linear-gradient(135deg,rgba(73,232,194,.06),rgba(99,102,241,.06))}',
-      '.htp-sk-body{padding:14px}',
-      '.htp-sk-ln{height:9px;border-radius:5px;background:rgba(255,255,255,.04);margin-bottom:11px}',
-      '.htp-sk-ln.a{width:42%}.htp-sk-ln.b{width:80%}.htp-sk-ln.c{width:62%}.htp-sk-ln.d{width:75%}',
-      '@keyframes htpShim{100%{transform:translateX(100%)}}',
-      '#htp-btt{position:fixed;right:20px;bottom:24px;width:42px;height:42px;border-radius:13px;border:1px solid rgba(73,232,194,.22);background:rgba(8,13,26,.88);color:#49e8c2;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 8px 28px rgba(0,0,0,.26);z-index:50;backdrop-filter:blur(10px)}',
-      '#htp-btt:hover{background:rgba(73,232,194,.1);box-shadow:0 0 16px rgba(73,232,194,.16)}',
-      '@media(max-width:480px){.mkt-sort{width:120px}.mg{grid-template-columns:1fr}.htp-mc-pool-val{font-size:16px}}'
+      '.mc-inner{padding:16px}',
+      '.mc-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}',
+      '.mc-q{font-size:15px;font-weight:700;color:#f1f5f9;line-height:1.4;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
+      '.mc-bar-wrap{display:flex;height:6px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,.05);margin-bottom:6px}',
+      '.mc-bar-y{background:var(--accent,#49e8c2);border-radius:3px}',
+      '.mc-bar-n{background:rgba(239,68,68,.65);border-radius:3px}',
+      '.mc-odds{display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:12px}',
+      '.mc-meta{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:#475569;padding-top:10px;border-top:1px solid rgba(255,255,255,.05)}',
+      '.mc-pool{font-weight:700;color:#49e8c2}',
+      '.mkt-empty{text-align:center;padding:48px 0;color:#475569}',
+      '.mkt-empty svg{opacity:.25;margin-bottom:16px}',
+      '.mkt-empty h3{font-size:16px;color:#64748b;margin-bottom:8px}',
+      '#mktCount{font-size:11px;color:#475569;font-weight:600;margin-left:auto}'
     ].join('');
     document.head.appendChild(s);
+  })();
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function getMkts(){return W.htpMarkets||W._htpMarkets||[];}
+  function fmt(n){return n>=1000?(n/1000).toFixed(1)+'K':String(n||0);}
+  function timeLeft(ts){
+    var d=Math.max(0,ts-Date.now()),h=Math.floor(d/3600000),m=Math.floor((d%3600000)/60000);
+    if(d<=0) return 'Closed';
+    if(h>48) return Math.floor(h/24)+'d left';
+    return h>0?h+'h '+m+'m left':m+'m left';
   }
+  var CATS=['All','Sports','Crypto','Politics','Entertainment','Tech','Other'];
+  var CAT_COLORS={'Sports':'rgba(59,130,246,.15)','Crypto':'rgba(245,158,11,.15)',
+    'Politics':'rgba(239,68,68,.15)','Entertainment':'rgba(168,85,247,.15)',
+    'Tech':'rgba(34,197,94,.15)','Other':'rgba(100,116,139,.15)'};
+  var CAT_TC={'Sports':'#3b82f6','Crypto':'#f59e0b','Politics':'#ef4444',
+    'Entertainment':'#a855f7','Tech':'#22c55e','Other':'#64748b'};
 
-  function nodeDot(state) {
-    return '<span class="htp-node-dot ' + (state || 'disconnected') + '"></span>';
-  }
+  // ── Layout builder ─────────────────────────────────────────────────────────
+  function ensureMarketsLayout(){
+    var sec=document.getElementById('v-markets');
+    if(!sec||document.getElementById('mktHeader')) return;
+    var mx=sec.querySelector('.mx')||sec;
+    var existing=sec.querySelector('#active-markets');
 
-  function fixNodeStatus(ns) {
-    if (!ns) return;
-    var txtEl = ns.querySelector('.htp-node-text');
-    var existingTxt = txtEl ? txtEl.textContent.trim() : '';
-    var html = ns.innerHTML || '';
-    var txtMatch = html.match(/<span[^>]*font-size[^>]*>([^<]+)<\/span>/);
-    var txt = existingTxt || (txtMatch ? txtMatch[1].trim() : 'Not connected');
-    var state = 'disconnected';
-    if (/block\s+\d+/i.test(txt) || /connected/i.test(txt)) state = 'connected';
-    else if (/connecting/i.test(txt)) state = 'connecting';
-    else if (/error|failed/i.test(txt)) state = 'error';
-    ns.innerHTML = nodeDot(state) + '<span class="htp-node-text">' + txt + '</span>';
-  }
+    var hdr=document.createElement('div'); hdr.id='mktHeader';
+    var fi=document.createElement('input');
+    fi.className='mkt-fi'; fi.type='text'; fi.placeholder='Search markets...';
+    fi.oninput=function(){W.fSr=this.value.trim().toLowerCase();W.renderM();};
+    var sr=document.createElement('select'); sr.className='mkt-sort';
+    [['newest','Newest'],['ending','Ending Soon'],['pool','Largest Pool'],['popular','Most Positions']]
+      .forEach(function(o){var op=document.createElement('option');op.value=o[0];op.textContent=o[1];sr.appendChild(op);});
+    sr.onchange=function(){W._htpSort=this.value;W.renderM();};
+    hdr.appendChild(fi); hdr.appendChild(sr);
 
-  function patchNodeStatus() {
-    var ns = document.getElementById('nodeStatus');
-    if (!ns) { setTimeout(patchNodeStatus, 300); return; }
-    fixNodeStatus(ns);
-    var mo = new MutationObserver(function() { setTimeout(function(){ fixNodeStatus(ns); }, 0); });
-    mo.observe(ns, { childList: true, subtree: false });
-  }
-
-  function getMkts() { return (W.mkts && W.mkts.length) ? W.mkts : []; }
-
-  var htpLogoSVG = '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="18" fill="rgba(73,232,194,0.07)" stroke="rgba(73,232,194,0.2)" stroke-width="1"/><polygon points="20,8 30,16 30,24 20,32 10,24 10,16" fill="rgba(73,232,194,0.1)" stroke="rgba(73,232,194,0.35)" stroke-width="1.5"/><path d="M14 14L20 20L14 26M20 20H26" stroke="#49e8c2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-  function urgencyChip(m) {
-    var raw = m.deadline || m.dead || m.expiresAt || m.resolutionDate || m.cl;
-    if (!raw) return '';
-    var d = new Date(raw);
-    if (isNaN(d) && typeof raw === 'number') d = new Date(raw < 1e12 ? raw * 1000 : raw);
-    if (isNaN(d)) return '';
-    var diff = d - Date.now();
-    if (diff <= 0 || diff > 172800000) return '';
-    var hrs = Math.max(1, Math.floor(diff / 3600000));
-    return '<span class="htp-mc-urgency">Closes ' + (hrs >= 24 ? Math.floor(hrs / 24) + 'd' : hrs + 'h') + '</span>';
-  }
-
-  function renderCard(m) {
-    var col = catCol(m.cat);
-    var st = m.st || 'open';
-    var pool = m.pool || ((m.yesTotal || 0) + (m.noTotal || 0));
-    var pFmt = pool >= 1000 ? (pool / 1000).toFixed(1) + 'K' : (pool || 0).toLocaleString();
-    var yW = Math.max(m.yP || 0, 2), nW = Math.max(m.nP || 0, 2);
-    var cover = m.img
-      ? '<div class="htp-mc-cover" style="height:160px"><img class="htp-mc-cover-img" src="' + m.img + '" loading="lazy" style="width:100%;height:100%;object-fit:cover"/></div>'
-      : '<div class="htp-mc-cover" style="height:160px;background:'
-        + 'radial-gradient(ellipse at 20% 50%,' + col + '28,transparent 55%),'
-        + 'radial-gradient(ellipse at 80% 20%,rgba(99,102,241,.18),transparent 50%),'
-        + 'linear-gradient(135deg,' + col + '0d 0%,#060a12 60%);'
-        + 'display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">'
-        + '<div style="position:absolute;inset:0;background-image:radial-gradient(circle,' + col + '08 1px,transparent 1px);background-size:22px 22px"></div>'
-        + '<div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:5px;opacity:.4">' + htpLogoSVG
-        + '<span style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(73,232,194,.45)">HTP</span></div>'
-        + '</div>';
-    return '<div class="htp-mc" onclick="openM(\'' + m.id + '\')">'
-      + '<div class="htp-mc-bar" style="background:linear-gradient(90deg,' + col + ',#6366f1)"></div>'
-      + cover
-      + '<div class="htp-mc-body">'
-      + '<div class="htp-mc-top">'
-      + '<span class="htp-mc-badge" style="background:' + col + '15;color:' + col + ';border:1px solid ' + col + '2e">' + (m.cat || 'Other') + '</span>'
-      + '<span class="htp-mc-status ' + st + '">' + st.toUpperCase() + '</span>'
-      + urgencyChip(m)
-      + '<span class="htp-mc-dl">' + (m.cl || '') + '</span>'
-      + '</div>'
-      + '<p class="htp-mc-title">' + (m.title || 'Untitled') + '</p>'
-      + '<div class="htp-mc-bar2"><div class="htp-mc-bar2-yes" style="width:' + yW + '%;background:' + col + '"></div><div class="htp-mc-bar2-no" style="width:' + nW + '%"></div></div>'
-      + '<div class="htp-mc-odds"><span style="color:' + col + '">Yes ' + (m.yP || 0) + '%</span><span style="color:rgba(239,68,68,.8)">No ' + (m.nP || 0) + '%</span></div>'
-      + '<div class="htp-mc-foot"><div class="htp-mc-pool"><span class="htp-mc-pool-val">' + pFmt + '</span><span class="htp-mc-pool-unit"> KAS pool</span></div><span class="htp-mc-ent">' + (m.ent || 0) + ' positions</span></div>'
-      + '</div></div>';
-  }
-
-  function skeletonHTML() {
-    var c = '<div class="htp-sk"><div class="htp-sk-top"></div><div class="htp-sk-body"><div class="htp-sk-ln a"></div><div class="htp-sk-ln b"></div><div class="htp-sk-ln c"></div><div class="htp-sk-ln d"></div></div></div>';
-    return c + c + c;
-  }
-
-  function emptyHTML(fCat) {
-    var isCat = fCat && fCat !== 'All';
-    var title = isCat ? 'No ' + fCat + ' markets yet' : 'No markets yet';
-    var sub = isCat ? 'Be the first to create a ' + fCat + ' prediction market on Kaspa.' : 'Prediction markets appear here once created.';
-    return '<div class="htp-empty"><div class="htp-empty-icon">' + htpLogoSVG + '</div>'
-      + '<div class="htp-empty-title">' + title + '</div>'
-      + '<div class="htp-empty-sub">' + sub + '</div>'
-      + '<button class="htp-empty-cta" onclick="go(\'create\')">+ Create the first event</button></div>';
-  }
-
-  function ensureMarketsLayout() {
-    var sec = document.querySelector('#v-markets .mx.sec-pad');
-    if (!sec || sec.dataset.htpLayout) return;
-    sec.dataset.htpLayout = '1';
-    var sh = sec.querySelector('.sh');
-    if (sh) sh.outerHTML = '<div class="mkt-hdr"><div class="mkt-hdr-left"><h2>Markets</h2><p>Parimutuel information markets and skill events on Kaspa.</p></div><button class="mkt-create-btn" onclick="go(\'create\')">+ Create Event</button></div>';
-    var fb = sec.querySelector('.fb');
-    if (fb) {
-      var sI = document.getElementById('sI');
-      var stC = document.getElementById('stC');
-      if (sI) {
-        var wrap = document.createElement('div'); wrap.id = 'htpFiltWrap';
-        var fcDiv = document.createElement('div'); fcDiv.className = 'mkt-fc';
-        var slDiv = document.createElement('div'); slDiv.className = 'mkt-slider'; slDiv.id = 'htpSlider';
-        fcDiv.appendChild(slDiv); wrap.appendChild(fcDiv);
-        var srDiv = document.createElement('div'); srDiv.className = 'mkt-sr';
-        sI.className = 'mkt-fi'; sI.placeholder = 'Search markets...'; srDiv.appendChild(sI);
-        var sortSel = document.createElement('select'); sortSel.id = 'htpSort'; sortSel.className = 'mkt-sort';
-        sortSel.innerHTML = '<option value="newest">Newest</option><option value="pool">Highest Pool</option><option value="expiry">Expiring Soon</option>';
-        sortSel.onchange = function() { W._htpSort = this.value; W.renderM(); };
-        srDiv.appendChild(sortSel); wrap.appendChild(srDiv);
-        fb.replaceWith(wrap);
-        if (stC) stC.style.display = 'none';
-      }
-    }
-    var mG = document.getElementById('mG');
-    if (mG && !document.getElementById('htp-count')) {
-      var ct = document.createElement('div'); ct.id = 'htp-count';
-      mG.parentNode.insertBefore(ct, mG);
-    }
-  }
-
-  function buildSlider() {
-    var sl = document.getElementById('htpSlider'); if (!sl) return;
-    var mkts = getMkts(), fCat = W.fCat || 'All', counts = {};
-    mkts.forEach(function(m) { var c = m.cat || 'Other'; counts[c] = (counts[c] || 0) + 1; });
-    var html = mktPill('All', 'Show All Events', mkts.length, fCat === 'All', '#49e8c2');
-    Object.keys(counts).sort(function(a, b) { return counts[b] - counts[a] || a.localeCompare(b); })
-      .forEach(function(c) { html += mktPill(c, c, counts[c], fCat === c, catCol(c)); });
-    sl.innerHTML = html;
-    var act = sl.querySelector('.mkt-pill.act');
-    if (act) act.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  }
-
-  function mktPill(key, label, n, isAct, col) {
-    return '<button class="mkt-pill' + (isAct ? ' act' : '') + '" style="--pill-col:' + col + '" onclick="window._htpCat(\'' + key + '\')">'
-      + '<span>' + label + '</span><span class="pc">' + (n || 0) + '</span></button>';
-  }
-
-  function updateNavBadge() {
-    var btn = document.querySelector('.nav-btn[data-v="markets"]'); if (!btn) return;
-    var b = btn.querySelector('.nav-badge');
-    var n = getMkts().length;
-    if (!b) { b = document.createElement('span'); b.className = 'nav-badge'; btn.appendChild(b); }
-    b.textContent = n; b.style.display = n > 0 ? 'inline-flex' : 'none';
-  }
-
-  function updateCount(shown, total) {
-    var el = document.getElementById('htp-count'); if (!el) return;
-    if (shown === undefined) { var m = getMkts(); shown = m.length; total = m.length; }
-    el.innerHTML = shown === total
-      ? '<strong>' + total + '</strong> market' + (total !== 1 ? 's' : '')
-      : 'Showing <strong>' + shown + '</strong> of <strong>' + total + '</strong>';
-  }
-
-  function ensureBackTop() {
-    if (document.getElementById('htp-btt')) return;
-    var b = document.createElement('button');
-    b.id = 'htp-btt'; b.setAttribute('aria-label', 'Back to top');
-    b.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m18 15-6-6-6 6"/></svg>';
-    b.onclick = function() { window.scrollTo({ top: 0, behavior: 'smooth' }); };
-    document.body.appendChild(b);
-    window.addEventListener('scroll', function() { b.style.display = window.scrollY > 300 ? 'flex' : 'none'; }, { passive: true });
-  }
-
-  var TAB_LABELS = { ptSwitchSkill: 'Games', ptSwitchEvent: 'Markets', ptSwitchClaim: 'Rewards' };
-
-  function applyTabLabels() {
-    Object.keys(TAB_LABELS).forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) el.textContent = TAB_LABELS[id];
+    var catBar=document.createElement('div'); catBar.id='mktCatBar';
+    CATS.forEach(function(c){
+      var b=document.createElement('button');
+      b.className='mkt-cat'+(c==='All'?' act':''); b.textContent=c;
+      b.onclick=function(){document.querySelectorAll('.mkt-cat').forEach(function(x){x.classList.remove('act');});this.classList.add('act');W._htpCat(c);};
+      catBar.appendChild(b);
     });
+
+    var countEl=document.createElement('span'); countEl.id='mktCount';
+    hdr.appendChild(countEl);
+
+    var grid=document.createElement('div'); grid.id='mG';
+    if(existing){existing.parentNode.insertBefore(hdr,existing);existing.parentNode.insertBefore(catBar,existing);existing.id='mG';existing.parentNode.replaceChild(grid,existing);}
+    else{mx.appendChild(hdr);mx.appendChild(catBar);mx.appendChild(grid);}
   }
 
-  function patchPortfolioTabs() {
-    applyTabLabels();
-    var _orig = W.setPortfolioType;
-    if (_orig && !_orig._patched) {
-      W.setPortfolioType = function(type) {
-        _orig(type);
-        applyTabLabels();
-        var map = { skill: 'ptSwitchSkill', events: 'ptSwitchEvent', claim: 'ptSwitchClaim' };
-        Object.keys(map).forEach(function(t) {
-          var el = document.getElementById(map[t]);
-          if (!el) return;
-          el.style.color = '';
-          el.style.borderBottomColor = '';
-          el.classList.toggle('pt-act', t === type);
-        });
-      };
-      W.setPortfolioType._patched = true;
+  function buildSlider(){ /* handled by catBar buttons */ }
+  function updateNavBadge(){
+    var b=document.querySelector('[data-nav="markets"] .nav-badge,[onclick*="markets"] .nav-badge');
+    if(b) b.textContent=getMkts().filter(function(m){return m.status==='active';}).length||'';
+  }
+  function updateCount(){
+    var el=document.getElementById('mktCount');
+    if(el){
+      var n=getMkts().filter(function(m){return m.status==='active';}).length;
+      el.textContent=n+' active';
     }
-    var init = document.getElementById('ptSwitchSkill');
-    if (init && !document.querySelector('.pt-act')) init.classList.add('pt-act');
-    setTimeout(applyTabLabels, 500);
-    setTimeout(applyTabLabels, 1500);
-    setTimeout(applyTabLabels, 3000);
   }
 
-  function isActuallyConnected() {
-    return !!(W.walletAddress && W.conn);
+  // ── Card renderer ──────────────────────────────────────────────────────────
+  function renderCard(m){
+    var yP=m.yP||50, nP=m.nP||50;
+    var cat=m.category||'Other';
+    var bg=CAT_COLORS[cat]||CAT_COLORS.Other;
+    var tc=CAT_TC[cat]||CAT_TC.Other;
+    var poolK=fmt(m.pool||0);
+    var tl=timeLeft(m.closeTime||(Date.now()+86400000));
+    var cover=m.img
+      ?'<div class="htp-mc-cover" style="height:160px"><img class="htp-mc-cover-img" src="'+m.img+'" loading="lazy" style="width:100%;height:100%;object-fit:cover"/></div>'
+      :'';
+    return '<div class="mc" onclick="window.openM&&window.openM(\''+m.marketId+'\')">'
+      +cover
+      +'<div class="mc-inner">'
+      +'<span class="mc-tag" style="background:'+bg+';color:'+tc+'">'+cat+'</span>'
+      +'<div class="mc-q">'+m.question+'</div>'
+      +'<div class="mc-bar-wrap"><div class="mc-bar-y" style="width:'+yP+'%"></div><div class="mc-bar-n" style="width:'+nP+'%"></div></div>'
+      +'<div class="mc-odds"><span style="color:#49e8c2">Yes '+yP+'%</span><span style="color:rgba(239,68,68,.9)">No '+nP+'%</span></div>'
+      +'<div class="mc-meta"><span class="mc-pool">'+poolK+' KAS</span><span>'+m.ent+' positions</span><span>'+tl+'</span></div>'
+      +'</div></div>';
   }
 
-  function patchClaimPanel() {
-    var addrEl = document.getElementById('claimWalletAddr');
-    var ctx = document.getElementById('claimWalletCtx');
-    var claimAddrEl = document.getElementById('claimToAddr');
-    var list = document.getElementById('claimEscrowList');
-    var openCount = document.getElementById('claimOpenCount');
-    var totalKas = document.getElementById('claimTotalKAS');
-
-    if (!addrEl) return;
-
-    if (!isActuallyConnected()) {
-      addrEl.textContent = 'No wallet connected';
-      addrEl.style.color = 'var(--muted)';
-      if (claimAddrEl) claimAddrEl.value = '';
-      if (list) list.innerHTML = '';
-      if (openCount) openCount.textContent = '0';
-      if (totalKas) totalKas.textContent = '0';
-      if (ctx) ctx.style.opacity = '0.72';
-      return;
-    }
-
-    var myAddr = W.walletAddress || '';
-    addrEl.textContent = myAddr ? (myAddr.substring(0,16) + '...' + myAddr.slice(-8)) : 'No wallet connected';
-    addrEl.style.color = '#49e8c2';
-    if (ctx) ctx.style.opacity = '1';
-    if (claimAddrEl && !claimAddrEl.value) claimAddrEl.value = myAddr;
-  }
-
-  function patchInitClaimPanel() {
-    var _orig = W.initClaimPanel;
-    if (!_orig || _orig._htpPatched) return;
-    W.initClaimPanel = function() {
-      _orig();
-      patchClaimPanel();
-    };
-    W.initClaimPanel._htpPatched = true;
-  }
-
-  function watchWalletState() {
-    var last = '';
-    setInterval(function() {
-      var sig = JSON.stringify({
-        walletAddress: W.walletAddress || '',
-        conn: !!W.conn,
-        htpWalletAddress: W.htpWalletAddress || ''
-      });
-      if (sig !== last) {
-        last = sig;
-        patchClaimPanel();
-      }
-    }, 800);
-  }
-
-  // ── Patch "Place Bet" → "Place Prediction" ──────────────────────────────
-  function patchBetButton() {
-    function fixBtn() {
-      var btn = document.getElementById('betBtn');
-      if (!btn) return;
-      if ((btn.textContent || '').indexOf('Place Bet') === 0)
-        btn.textContent = btn.textContent.replace('Place Bet', 'Place Prediction');
-    }
-    fixBtn();
-    var mo = new MutationObserver(fixBtn);
-    var btn = document.getElementById('betBtn');
-    if (btn) mo.observe(btn, { childList: true, characterData: true, subtree: true });
-    var _calc = W.calc;
-    if (_calc && !_calc._bp) { W.calc = function(){ _calc.apply(this,arguments); setTimeout(fixBtn,0); }; W.calc._bp=true; }
-    var _ut = W.updTrade;
-    if (_ut && !_ut._bp) { W.updTrade = function(){ _ut.apply(this,arguments); setTimeout(fixBtn,0); }; W.updTrade._bp=true; }
-  }
-
-  // ── Improved Spot / Maximizer fee disclosures ────────────────────────────
-  function patchFeeDisclosure() {
-    W.updateFeeDisclosure = function(mode) {
-      var el = document.querySelector('.fee-disclosure');
-      if (!el) return;
-      if (mode === 'maximizer') {
-        el.innerHTML =
-          '<div style="margin-bottom:9px;display:flex;align-items:center;gap:8px">'
-        + '<span style="font-weight:800;font-size:12.5px;color:#49e8c2">Maximizer Mode</span>'
-        + '<span style="font-size:10px;padding:2px 8px;background:rgba(99,102,241,.15);color:#a78bfa;border-radius:99px;font-weight:700">SilverScript \u26a1</span>'
-        + '</div>'
-        + '<div style="display:flex;flex-direction:column;gap:7px;font-size:12px">'
-        + '<div style="display:flex;gap:10px;align-items:flex-start">'
-        + '<span style="width:38px;flex-shrink:0;font-size:10px;font-weight:800;padding:3px 0;color:#22c55e;text-align:center;background:rgba(34,197,94,.1);border-radius:5px;border:1px solid rgba(34,197,94,.2)">WIN</span>'
-        + '<span style="color:#cbd5e1;line-height:1.5">Full pool payout at current odds \u2014 identical to Spot. 2% fee on winnings only.</span>'
-        + '</div>'
-        + '<div style="display:flex;gap:10px;align-items:flex-start">'
-        + '<span style="width:38px;flex-shrink:0;font-size:10px;font-weight:800;padding:3px 0;color:#f59e0b;text-align:center;background:rgba(245,158,11,.1);border-radius:5px;border:1px solid rgba(245,158,11,.2)">LOSS</span>'
-        + '<span style="color:#cbd5e1;line-height:1.5">Protocol holds 50% of your stake as a recoverable cushion. Reclaim it anytime for a 30% recovery fee \u2014 keeping <b style="color:#f1f5f9">35% of your stake back</b>.</span>'
-        + '</div>'
-        + '</div>'
-        + '<div style="margin-top:9px;padding:8px 10px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.12);border-radius:8px;font-size:10px;color:#64748b;line-height:1.55">'
-        + 'Insurance collateral is locked in a SilverScript covenant on Kaspa L1. Recovery is always available \u2014 no middlemen required.'
-        + '</div>';
-      } else {
-        el.innerHTML =
-          '<div style="margin-bottom:9px">'
-        + '<span style="font-weight:800;font-size:12.5px;color:#49e8c2">Spot Mode</span>'
-        + '</div>'
-        + '<div style="display:flex;flex-direction:column;gap:7px;font-size:12px">'
-        + '<div style="display:flex;gap:10px;align-items:flex-start">'
-        + '<span style="width:38px;flex-shrink:0;font-size:10px;font-weight:800;padding:3px 0;color:#22c55e;text-align:center;background:rgba(34,197,94,.1);border-radius:5px;border:1px solid rgba(34,197,94,.2)">WIN</span>'
-        + '<span style="color:#cbd5e1;line-height:1.5">Receive your full share of the pool, proportional to your stake and the current odds.</span>'
-        + '</div>'
-        + '<div style="display:flex;gap:10px;align-items:flex-start">'
-        + '<span style="width:38px;flex-shrink:0;font-size:10px;font-weight:800;padding:3px 0;color:#ef4444;text-align:center;background:rgba(239,68,68,.1);border-radius:5px;border:1px solid rgba(239,68,68,.2)">LOSS</span>'
-        + '<span style="color:#cbd5e1;line-height:1.5">Your entire stake is distributed to the winning side. <b style="color:#f1f5f9">No partial recovery.</b></span>'
-        + '</div>'
-        + '</div>'
-        + '<div style="margin-top:9px;padding:8px 10px;background:rgba(73,232,194,.04);border:1px solid rgba(73,232,194,.08);border-radius:8px;font-size:10px;color:#64748b;line-height:1.55">'
-        + 'Parimutuel: all stakes pool together. Winners split the losing side pro-rata. 2% fee on winnings only. Zero fees on losses. Settled on Kaspa L1.'
-        + '</div>';
-      }
-    };
-    var _setMd = W.setMd;
-    if (_setMd && !_setMd._fp) {
-      W.setMd = function(m) { _setMd.apply(this,arguments); W.updateFeeDisclosure(m); };
-      W.setMd._fp = true;
-    }
-    setTimeout(function(){ W.updateFeeDisclosure(W.tMode || 'spot'); }, 400);
-  }
-
-  W._htpCat = function(c) { W.fCat = c; buildSlider(); W.renderM(); };
-  W.setCat = W._htpCat;
-  W.buildF = function() { ensureMarketsLayout(); buildSlider(); updateNavBadge(); updateCount(); };
-
+  // ── Main render ────────────────────────────────────────────────────────────
   var _origRenderM = W.renderM;
-  W.renderM = function() {
-    var g = document.getElementById('mG');
-    if (!g) { if (_origRenderM) _origRenderM(); return; }
-    var mkts = getMkts().slice(), fCat = W.fCat || 'All', fSr = W.fSr || '', sort = W._htpSort || 'newest', _net;
-    try { _net = (W.net || W.HTP_NETWORK || (typeof W.activeNet !== 'undefined' ? W.activeNet : 'tn12')); } catch (e) { _net = 'tn12'; }
-    if (!W._htpLoaded && mkts.length === 0) { g.innerHTML = skeletonHTML(); W._htpLoaded = true; setTimeout(function() { if (!getMkts().length) W.renderM(); }, 800); return; }
-    var filtered = mkts.filter(function(m) {
-      if (fCat !== 'All' && m.cat !== fCat) return false;
-      if (_net !== 'both' && m.net !== 'both' && m.net !== _net) return false;
-      if (fSr && !(m.title || '').toLowerCase().includes(fSr.toLowerCase())) return false;
-      return true;
-    });
-    filtered.sort(function(a, b) {
-      if (sort === 'pool') return (b.pool || 0) - (a.pool || 0);
-      if (sort === 'expiry') return new Date(a.deadline || a.cl || 0) - new Date(b.deadline || b.cl || 0);
-      return new Date(b.created || 0) - new Date(a.created || 0);
-    });
-    updateCount(filtered.length, mkts.length); updateNavBadge(); buildSlider();
-    g.innerHTML = filtered.length ? filtered.map(renderCard).join('') : emptyHTML(fCat);
+  W.renderM = function(){
+    var g=document.getElementById('mG');
+    if(!g){if(_origRenderM) _origRenderM(); return;}
+    var mkts=getMkts().slice(), fCat=W.fCat||'All', fSr=W.fSr||'', sort=W._htpSort||'newest';
+    mkts=mkts.filter(function(m){return m.status==='active';});
+    if(fCat!=='All') mkts=mkts.filter(function(m){return (m.category||'Other')===fCat;});
+    if(fSr) mkts=mkts.filter(function(m){return (m.question||'').toLowerCase().indexOf(fSr)!==-1;});
+    if(sort==='ending') mkts.sort(function(a,b){return (a.closeTime||0)-(b.closeTime||0);});
+    else if(sort==='pool') mkts.sort(function(a,b){return (b.pool||0)-(a.pool||0);});
+    else if(sort==='popular') mkts.sort(function(a,b){return (b.ent||0)-(a.ent||0);});
+    else mkts.sort(function(a,b){return (b.createdAt||0)-(a.createdAt||0);});
+
+    if(!mkts.length){
+      g.innerHTML='<div class="mkt-empty"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><h3>No markets found</h3><p>Try a different category or search term.</p></div>';
+    } else {
+      g.innerHTML=mkts.map(renderCard).join('');
+    }
+    updateCount();
   };
 
-  function watchMkts() {
-    var last = '';
-    setInterval(function() {
-      var sig = JSON.stringify((getMkts() || []).map(function(m) { return [m.id, m.cat, m.st, m.pool]; }));
-      if (sig !== last) { last = sig; W.buildF(); W.renderM(); }
-    }, 1500);
-  }
-
-  function boot() {
-    injectCSS();
-    ensureBackTop();
-    patchNodeStatus();
-
-    function tryInit() {
-      if (document.getElementById('mG')) {
-        ensureMarketsLayout();
-        W.buildF();
-        W.renderM();
-        patchPortfolioTabs();
-        patchInitClaimPanel();
-        patchClaimPanel();
-        patchBetButton();
-        patchFeeDisclosure();
-        watchMkts();
-        watchWalletState();
-        var _go = W.go;
-        if (typeof _go === 'function' && !_go._htpW) {
-          W.go = function(v) {
-            _go(v);
-            if (v === 'markets') setTimeout(function(){ W.buildF(); W.renderM(); }, 120);
-            if (v === 'portfolio') setTimeout(function(){ patchClaimPanel(); }, 120);
-          };
-          W.go._htpW = true;
-        }
+  // ── Spot / Maximizer fee disclosures ──────────────────────────────────────
+  function patchFeeDisclosure(){
+    W.updateFeeDisclosure=function(mode){
+      var el=document.querySelector('.fee-disclosure');
+      if(!el) return;
+      if(mode==='maximizer'){
+        el.innerHTML=
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+          +'<span style="font-weight:800;font-size:12px;color:#49e8c2">Maximizer Mode</span>'
+          +'<span style="font-size:10px;padding:2px 8px;background:rgba(99,102,241,.15);color:#a78bfa;border-radius:99px;font-weight:700">SilverScript</span>'
+          +'</div>'
+          +'<div style="display:flex;flex-direction:column;gap:6px;font-size:12px">'
+          +'<div style="display:flex;gap:10px;align-items:center">'
+          +'<span style="width:36px;flex-shrink:0;font-size:10px;font-weight:800;padding:3px 0;color:#22c55e;text-align:center;background:rgba(34,197,94,.1);border-radius:5px;border:1px solid rgba(34,197,94,.2)">WIN</span>'
+          +'<span style="color:#cbd5e1">Full pool payout. 2% fee on winnings only.</span>'
+          +'</div>'
+          +'<div style="display:flex;gap:10px;align-items:center">'
+          +'<span style="width:36px;flex-shrink:0;font-size:10px;font-weight:800;padding:3px 0;color:#f59e0b;text-align:center;background:rgba(245,158,11,.1);border-radius:5px;border:1px solid rgba(245,158,11,.2)">LOSS</span>'
+          +'<span style="color:#cbd5e1"><b style="color:#f1f5f9">Keep 35% of your stake.</b> Recover anytime on-chain.</span>'
+          +'</div>'
+          +'</div>'
+          +'<div style="margin-top:7px">'
+          +'<button onclick="var d=document.getElementById(\'fd-mx-detail\');d.style.display=d.style.display===\'none\'?\'\':\'none\';this.textContent=d.style.display===\'none\'?\'Read more\':\'Show less\'" style="background:none;border:none;color:#49e8c2;font-size:10px;font-weight:700;cursor:pointer;padding:0;letter-spacing:.04em">Read more</button>'
+          +'<div id="fd-mx-detail" style="display:none;margin-top:7px;padding:8px 10px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.12);border-radius:8px;font-size:10px;color:#94a3b8;line-height:1.6">'
+          +'On loss, 50% of your stake is locked as collateral in a SilverScript covenant on Kaspa L1. Reclaim it anytime for a 30% recovery fee, keeping 35% of your original stake. No middlemen. Always available.'
+          +'</div>'
+          +'</div>';
       } else {
-        setTimeout(tryInit, 200);
+        el.innerHTML=
+          '<div style="margin-bottom:8px">'
+          +'<span style="font-weight:800;font-size:12px;color:#49e8c2">Spot Mode</span>'
+          +'</div>'
+          +'<div style="display:flex;flex-direction:column;gap:6px;font-size:12px">'
+          +'<div style="display:flex;gap:10px;align-items:center">'
+          +'<span style="width:36px;flex-shrink:0;font-size:10px;font-weight:800;padding:3px 0;color:#22c55e;text-align:center;background:rgba(34,197,94,.1);border-radius:5px;border:1px solid rgba(34,197,94,.2)">WIN</span>'
+          +'<span style="color:#cbd5e1">Full pool payout at current odds. 2% fee on winnings only.</span>'
+          +'</div>'
+          +'<div style="display:flex;gap:10px;align-items:center">'
+          +'<span style="width:36px;flex-shrink:0;font-size:10px;font-weight:800;padding:3px 0;color:#ef4444;text-align:center;background:rgba(239,68,68,.1);border-radius:5px;border:1px solid rgba(239,68,68,.2)">LOSS</span>'
+          +'<span style="color:#cbd5e1">Stake goes to the winning pool. Zero fees on losses.</span>'
+          +'</div>'
+          +'</div>'
+          +'<div style="margin-top:7px">'
+          +'<button onclick="var d=document.getElementById(\'fd-sp-detail\');d.style.display=d.style.display===\'none\'?\'\':\'none\';this.textContent=d.style.display===\'none\'?\'Read more\':\'Show less\'" style="background:none;border:none;color:#49e8c2;font-size:10px;font-weight:700;cursor:pointer;padding:0;letter-spacing:.04em">Read more</button>'
+          +'<div id="fd-sp-detail" style="display:none;margin-top:7px;padding:8px 10px;background:rgba(73,232,194,.04);border:1px solid rgba(73,232,194,.08);border-radius:8px;font-size:10px;color:#94a3b8;line-height:1.6">'
+          +'Parimutuel: all stakes pool together. Winners split the losing side pro-rata. 2% fee on winnings only. No fees on losses. Settled on Kaspa L1.'
+          +'</div>'
+          +'</div>';
       }
+    };
+    var _setMd=W.setMd;
+    if(_setMd&&!_setMd._fp){
+      W.setMd=function(m){_setMd.apply(this,arguments);W.updateFeeDisclosure(m);};
+      W.setMd._fp=true;
     }
-    tryInit();
+    setTimeout(function(){W.updateFeeDisclosure(W.tMode||'spot');},400);
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
+  W._htpCat=function(c){W.fCat=c;buildSlider();W.renderM();};
+  W.setCat=W._htpCat;
+  W.buildF=function(){ensureMarketsLayout();buildSlider();updateNavBadge();updateCount();};
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  function init(){
+    ensureMarketsLayout();
+    patchFeeDisclosure();
+    buildSlider();
+    updateNavBadge();
+    W.renderM();
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
+  else init();
+
+  window.addEventListener('htp:markets:loaded',function(){ensureMarketsLayout();W.renderM();updateNavBadge();});
+  window.addEventListener('htp:view:markets',function(){setTimeout(function(){ensureMarketsLayout();W.renderM();patchFeeDisclosure();},100);});
 
 })(window);
