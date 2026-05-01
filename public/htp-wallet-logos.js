@@ -1,13 +1,10 @@
-/** htp-wallet-logos.js v19d
- * Fix: mobile button text was empty because _updMobBtn called getElementById
- * before btn was in DOM. Now sets innerHTML directly on the element reference.
- */
+/** htp-wallet-logos.js v19e */
 
 // ── Inject htp-mobile.css ────────────────────────────────────────────────
 (function(){
   if(document.getElementById('htp-mobile-css')) return;
   var l=document.createElement('link');
-  l.id='htp-mobile-css'; l.rel='stylesheet'; l.href='htp-mobile.css?v=19d';
+  l.id='htp-mobile-css'; l.rel='stylesheet'; l.href='htp-mobile.css?v=19e';
   document.head.appendChild(l);
 })();
 
@@ -47,7 +44,7 @@ window._htpMobOn=_isPhone();
 // ── Patch waitForProvider to 30s ─────────────────────────────────────────
 (function(){
   function ins(){
-    if(typeof waitForProvider!=='function'||waitForProvider._v19d) return;
+    if(typeof waitForProvider!=='function'||waitForProvider._v19e) return;
     var orig=waitForProvider;
     window.waitForProvider=async function(name){
       var p=await orig(name); if(p) return p;
@@ -58,7 +55,7 @@ window._htpMobOn=_isPhone();
       }
       return null;
     };
-    window.waitForProvider._v19d=true;
+    window.waitForProvider._v19e=true;
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ins);
   else ins();
@@ -152,8 +149,8 @@ function _injectNetSels(){
 
 // ── CSS ─────────────────────────────────────────────────────────────────
 (function(){
-  if(document.getElementById('wl19d')) return;
-  var s=document.createElement('style'); s.id='wl19d';
+  if(document.getElementById('wl19e')) return;
+  var s=document.createElement('style'); s.id='wl19e';
   s.textContent=
     '@keyframes wlDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.75)}}'
     +'#htpMobBtn{display:inline-flex!important;align-items:center;gap:6px;padding:7px 16px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;white-space:nowrap;flex-shrink:0;background:#49e8c2;color:#021a10!important;border:none!important;box-shadow:0 0 14px rgba(73,232,194,.4);transition:background .15s,box-shadow .15s;margin-left:8px;}'
@@ -163,10 +160,9 @@ function _injectNetSels(){
     +'.w-card,.card.w-card{transition:transform .16s ease-out,box-shadow .16s ease-out!important;}'
     +'.w-card:hover,.card.w-card:hover{transform:translateY(-3px)!important;box-shadow:0 10px 28px rgba(0,0,0,.45)!important;}'
     +'#wlWrap{background:rgba(255,255,255,.02);border:1px solid rgba(73,232,194,.1);border-radius:18px;padding:22px;margin-bottom:20px;}'
-    +'.wlHdr{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}'
+    +'.wlHdr{display:flex;align-items:center;gap:10px;margin-bottom:18px;}'
     +'.wlHdr-ttl{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#49e8c2;}'
-    +'.wlHdr-line{flex:1;height:1px;background:linear-gradient(90deg,rgba(73,232,194,.2),transparent);min-width:16px;}'
-    +'.wlHdr-hint{font-size:10px;color:#475569;letter-spacing:.04em;}'
+    +'.wlHdr-line{flex:1;height:1px;background:linear-gradient(90deg,rgba(73,232,194,.2),transparent);}'
     +'#wlGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}'
     +'@media(min-width:540px){#wlGrid{grid-template-columns:repeat(3,1fr)!important;}}'
     +'@media(min-width:900px){#wlGrid{grid-template-columns:repeat(5,1fr)!important;}}'
@@ -196,12 +192,8 @@ function _card(name){
   var found=_det(name);
   var d=_WL[name]||{};
   var sub=found?'<span style="color:#49e8c2">● Detected</span>':'<span style="color:#556">'+d.sub+'</span>';
-  var actCard=found
-    ?'window._htpConnect(\''+name+'\')'
-    :'window._htpInstall(\''+name+'\')'
-  var actBtn=found
-    ?'event.stopPropagation();window._htpConnect(\''+name+'\')'
-    :'event.stopPropagation();window._htpInstall(\''+name+'\')'
+  var actCard=found?'window._htpConnect(\''+name+'\')':'window._htpInstall(\''+name+'\')';
+  var actBtn =found?'event.stopPropagation();window._htpConnect(\''+name+'\')':'event.stopPropagation();window._htpInstall(\''+name+'\')';
   return '<div class="wlCard '+(found?'on':'off')+'" onclick="'+actCard+'">'
     +(found?'<div class="wlDot"></div>':'')
     +'<div class="wlLogo"><img src="'+(d.logo||'')+'" alt="'+name+'" onerror="this.style.opacity=0"></div>'
@@ -213,18 +205,14 @@ function _card(name){
 }
 
 // ── Mobile toggle ──────────────────────────────────────────────────────────
-function _setBtnState(btn, on) {
-  // Set text + class directly on the element reference (works before/after DOM insert)
-  btn.innerHTML = on ? '&#x1F4F1;&#160;Mobile On' : '&#x1F4F1;&#160;Mobile';
-  if (on) { btn.classList.remove('mob-off'); }
-  else    { btn.classList.add('mob-off'); }
+function _setBtnState(btn,on){
+  btn.innerHTML=on?'&#x1F4F1;&#160;Mobile On':'&#x1F4F1;&#160;Mobile';
+  if(on){btn.classList.remove('mob-off');}else{btn.classList.add('mob-off');}
 }
-
 function _updMobBtn(){
   var btn=document.getElementById('htpMobBtn');
-  if(btn) _setBtnState(btn, window._htpMobOn);
+  if(btn) _setBtnState(btn,window._htpMobOn);
 }
-
 function _injectMobToggle(){
   if(document.getElementById('htpMobBtn')) return;
   var container=document.querySelector('.hdr-r')||document.querySelector('.hdr-in');
@@ -232,32 +220,21 @@ function _injectMobToggle(){
   var btn=document.createElement('button');
   btn.id='htpMobBtn';
   btn.onclick=window._htpToggleMob;
-  // Set text NOW, before inserting into DOM
-  _setBtnState(btn, window._htpMobOn);
-  // Insert before the first child of .hdr-r
-  container.insertBefore(btn, container.firstChild);
+  _setBtnState(btn,window._htpMobOn);
+  container.insertBefore(btn,container.firstChild);
 }
-
 function _applyMob(){
   if(window._htpMobOn) document.documentElement.classList.add('htp-mob-preview');
   else                 document.documentElement.classList.remove('htp-mob-preview');
   _updMobBtn();
   if(typeof window._wlRefresh==='function') setTimeout(window._wlRefresh,60);
 }
-
-window._htpToggleMob=function(){
-  window._htpMobOn=!window._htpMobOn;
-  _applyMob();
-};
-
-// Auto-on for real phones
+window._htpToggleMob=function(){window._htpMobOn=!window._htpMobOn;_applyMob();};
 if(_isPhone()) document.documentElement.classList.add('htp-mob-preview');
 
 // ── Main render ──────────────────────────────────────────────────────────
 (function(){
-  function wallets(){
-    return (window._htpMobOn||_isPhone()) ? _MOB.concat(_DESK) : _DESK;
-  }
+  function wallets(){return(window._htpMobOn||_isPhone())?_MOB.concat(_DESK):_DESK;}
 
   function render(){
     var sec=document.getElementById('v-wallet'); if(!sec) return;
@@ -273,7 +250,6 @@ if(_isPhone()) document.documentElement.classList.add('htp-mob-preview');
       '<div class="wlHdr">'
         +'<span class="wlHdr-ttl">Choose Wallet</span>'
         +'<div class="wlHdr-line"></div>'
-        +'<span class="wlHdr-hint">Detected → Connect · Others → Install</span>'
       +'</div>'
       +'<div id="wlGrid">'+wallets().map(_card).join('')+'</div>';
     var old=sec.querySelector('.w-grid');
@@ -293,9 +269,9 @@ if(_isPhone()) document.documentElement.classList.add('htp-mob-preview');
   else render();
 
   var _go=window.go;
-  if(typeof _go==='function'&&!_go._v19d){
+  if(typeof _go==='function'&&!_go._v19e){
     window.go=function(v){_go(v);if(v==='wallet')setTimeout(render,150);};
-    window.go._v19d=true;
+    window.go._v19e=true;
   }
   window.addEventListener('htp:view:wallet',function(){setTimeout(render,150);});
   window._wlRefresh=render;
