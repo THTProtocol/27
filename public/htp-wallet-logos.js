@@ -1,19 +1,17 @@
-/** htp-wallet-logos.js v19c
- * - Mobile button now solid green pill in .hdr-r (always visible)
- * - No localStorage persistence (no stuck mobile)
- * - No hover twitch (!important ease-out)
- * - Clean connect/install onclick
+/** htp-wallet-logos.js v19d
+ * Fix: mobile button text was empty because _updMobBtn called getElementById
+ * before btn was in DOM. Now sets innerHTML directly on the element reference.
  */
 
-// ── Inject htp-mobile.css ───────────────────────────────────────────────
+// ── Inject htp-mobile.css ────────────────────────────────────────────────
 (function(){
   if(document.getElementById('htp-mobile-css')) return;
   var l=document.createElement('link');
-  l.id='htp-mobile-css'; l.rel='stylesheet'; l.href='htp-mobile.css?v=19c';
+  l.id='htp-mobile-css'; l.rel='stylesheet'; l.href='htp-mobile.css?v=19d';
   document.head.appendChild(l);
 })();
 
-// ── Logos ─────────────────────────────────────────────────────────────
+// ── Logos ────────────────────────────────────────────────────────────
 var _WL={
   KasWare:  { logo:'https://lh3.googleusercontent.com/GWR2Bode3QAzDrsZJHVRsYhCN60azRCtL1xoOBxqCYcDpbMD_avwiFkuiAOAkuyLnEh9DGOAoZSbWDcNUhiZ7X6RZE8=s128', install:'https://chromewebstore.google.com/detail/kasware-wallet/hklhheigdmpoolooomdihmhlpjjdbklf', sub:'Chrome · Firefox' },
   Kastle:   { logo:'https://lh3.googleusercontent.com/byDg7ykj9UUJRur0v8jFr9orcj7N1_M6LuqtwnJxlnVNk4GV0JrhFmS0Xp0U9QRgxGZa4wf7-8M29v7kfEBc-Ha9kg=s128', install:'https://chromewebstore.google.com/detail/kastle/oambclflhjfppdmkghokjmpppmaebego', sub:'Chrome' },
@@ -46,10 +44,10 @@ var _MOB =['Kasanova','Kaspium','OKX','KaspaCom','Tangem'];
 function _isPhone(){return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);}
 window._htpMobOn=_isPhone();
 
-// ── Patch waitForProvider to 30s ──────────────────────────────────────────
+// ── Patch waitForProvider to 30s ─────────────────────────────────────────
 (function(){
   function ins(){
-    if(typeof waitForProvider!=='function'||waitForProvider._v19c) return;
+    if(typeof waitForProvider!=='function'||waitForProvider._v19d) return;
     var orig=waitForProvider;
     window.waitForProvider=async function(name){
       var p=await orig(name); if(p) return p;
@@ -60,7 +58,7 @@ window._htpMobOn=_isPhone();
       }
       return null;
     };
-    window.waitForProvider._v19c=true;
+    window.waitForProvider._v19d=true;
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ins);
   else ins();
@@ -84,12 +82,15 @@ window._htpMobOn=_isPhone();
     if(!window.kastle.getNetwork) window.kastle.getNetwork=async function(){return'testnet-12';};
   }
   p();
-  var iv=setInterval(function(){p();if(window.kastle&&typeof window.kastle.requestAccounts==='function')clearInterval(iv);},200);
+  var iv=setInterval(function(){
+    p();
+    if(window.kastle&&typeof window.kastle.requestAccounts==='function') clearInterval(iv);
+  },200);
   setTimeout(function(){clearInterval(iv);},15000);
   document.addEventListener('click',function o(){p();document.removeEventListener('click',o,true);},true);
 })();
 
-// ── Connect / Install ───────────────────────────────────────────────────
+// ── Connect / Install ──────────────────────────────────────────────────
 window._htpConnect=function(name){
   if(typeof selWallet==='function'){selWallet(name);return;}
   var n=0,t=setInterval(function(){
@@ -104,13 +105,18 @@ window._htpInstall=function(name){
   if(st){
     st.style.display='block';
     st.innerHTML='<span style="color:#f1f5f9;font-weight:700">'+name+' not installed.</span>'
-      +(url?'<br><br><a href="'+url+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:rgba(73,232,194,.08);border:1px solid rgba(73,232,194,.3);border-radius:10px;color:#49e8c2;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;text-decoration:none">Install '+name+' &#x2197;</a><br><br>':'')
+      +(url?'<br><br><a href="'+url+'" target="_blank" rel="noopener" '
+        +'style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;'
+        +'background:rgba(73,232,194,.08);border:1px solid rgba(73,232,194,.3);'
+        +'border-radius:10px;color:#49e8c2;font-size:11px;font-weight:800;'
+        +'letter-spacing:.06em;text-transform:uppercase;text-decoration:none">'
+        +'Install '+name+' &#x2197;</a><br><br>':'')
       +'<span style="font-size:11px;color:#64748b">Or use Mnemonic / Hex Key below.</span>';
   }
   if(url) window.open(url,'_blank');
 };
 
-// ── Network selector ──────────────────────────────────────────────────
+// ── Network selector ─────────────────────────────────────────────────
 window._htpSetNet=function(sid,net){
   window.activeNet=net;
   if(typeof window.htpSetNetwork==='function') window.htpSetNetwork(net);
@@ -124,7 +130,7 @@ window._htpSetNet=function(sid,net){
 function _netSel(sid){
   var cur=window.activeNet||'tn12';
   var b='flex:1;padding:9px 0;border-radius:9px;font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;';
-  var on=b+'background:#49e8c2;color:#021a10;border:none;';
+  var on =b+'background:#49e8c2;color:#021a10;border:none;';
   var off=b+'background:rgba(73,232,194,.07);color:#49e8c2;border:1px solid rgba(73,232,194,.2);';
   return '<div data-ns="'+sid+'" style="display:flex;gap:8px;margin-bottom:16px">'
     +'<button data-net="tn12" onclick="window._htpSetNet(\''+sid+'\',\'tn12\')" style="'+(cur==='tn12'?on:off)+'">TN12 Testnet</button>'
@@ -136,7 +142,7 @@ function _injectNetSels(){
     var el=document.getElementById(pair[0]); if(!el) return;
     var sid=pair[1];
     if(document.querySelector('[data-ns="'+sid+'"]')) return;
-    var wrap=el.closest&&el.closest('.fg')||el.parentNode;
+    var wrap=(el.closest&&el.closest('.fg'))||el.parentNode;
     if(wrap&&wrap.parentNode){
       var d=document.createElement('div'); d.innerHTML=_netSel(sid);
       wrap.parentNode.insertBefore(d.firstElementChild,wrap);
@@ -144,27 +150,16 @@ function _injectNetSels(){
   });
 }
 
-// ── CSS ──────────────────────────────────────────────────────────────────
+// ── CSS ─────────────────────────────────────────────────────────────────
 (function(){
-  if(document.getElementById('wl19c')) return;
-  var s=document.createElement('style'); s.id='wl19c';
+  if(document.getElementById('wl19d')) return;
+  var s=document.createElement('style'); s.id='wl19d';
   s.textContent=
     '@keyframes wlDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.75)}}'
-    // Mobile button — solid, always visible
-    +'#htpMobBtn{'
-      +'display:inline-flex!important;align-items:center;gap:6px;'
-      +'padding:7px 14px;border-radius:20px;'
-      +'font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;'
-      +'cursor:pointer;white-space:nowrap;flex-shrink:0;'
-      +'background:#49e8c2;color:#021a10;border:none;'
-      +'box-shadow:0 0 14px rgba(73,232,194,.4);'
-      +'transition:background .15s,box-shadow .15s;'
-      +'margin-left:8px;'
-    +'}'
-    +'#htpMobBtn:hover{background:#6fffd8;box-shadow:0 0 20px rgba(73,232,194,.6);}'
-    +'#htpMobBtn.mob-off{background:rgba(73,232,194,.1);color:#49e8c2;border:1px solid rgba(73,232,194,.3);box-shadow:none;}'
-    +'#htpMobBtn.mob-off:hover{background:rgba(73,232,194,.2);}'
-    // Kill spring easing on old .w-card
+    +'#htpMobBtn{display:inline-flex!important;align-items:center;gap:6px;padding:7px 16px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;white-space:nowrap;flex-shrink:0;background:#49e8c2;color:#021a10!important;border:none!important;box-shadow:0 0 14px rgba(73,232,194,.4);transition:background .15s,box-shadow .15s;margin-left:8px;}'
+    +'#htpMobBtn:hover{background:#6fffd8;box-shadow:0 0 22px rgba(73,232,194,.7);}'
+    +'#htpMobBtn.mob-off{background:rgba(73,232,194,.1)!important;color:#49e8c2!important;border:1px solid rgba(73,232,194,.3)!important;box-shadow:none!important;}'
+    +'#htpMobBtn.mob-off:hover{background:rgba(73,232,194,.2)!important;}'
     +'.w-card,.card.w-card{transition:transform .16s ease-out,box-shadow .16s ease-out!important;}'
     +'.w-card:hover,.card.w-card:hover{transform:translateY(-3px)!important;box-shadow:0 10px 28px rgba(0,0,0,.45)!important;}'
     +'#wlWrap{background:rgba(255,255,255,.02);border:1px solid rgba(73,232,194,.1);border-radius:18px;padding:22px;margin-bottom:20px;}'
@@ -196,17 +191,17 @@ function _injectNetSels(){
   document.head.appendChild(s);
 })();
 
-// ── Card builder ───────────────────────────────────────────────────────
+// ── Card builder ────────────────────────────────────────────────────────
 function _card(name){
   var found=_det(name);
   var d=_WL[name]||{};
   var sub=found?'<span style="color:#49e8c2">● Detected</span>':'<span style="color:#556">'+d.sub+'</span>';
   var actCard=found
-    ? 'window._htpConnect(\'' + name + '\')'
-    : 'window._htpInstall(\'' + name + '\')';
+    ?'window._htpConnect(\''+name+'\')'
+    :'window._htpInstall(\''+name+'\')'
   var actBtn=found
-    ? 'event.stopPropagation();window._htpConnect(\'' + name + '\')'
-    : 'event.stopPropagation();window._htpInstall(\'' + name + '\')';
+    ?'event.stopPropagation();window._htpConnect(\''+name+'\')'
+    :'event.stopPropagation();window._htpInstall(\''+name+'\')'
   return '<div class="wlCard '+(found?'on':'off')+'" onclick="'+actCard+'">'
     +(found?'<div class="wlDot"></div>':'')
     +'<div class="wlLogo"><img src="'+(d.logo||'')+'" alt="'+name+'" onerror="this.style.opacity=0"></div>'
@@ -217,42 +212,52 @@ function _card(name){
     +'</button></div>';
 }
 
-// ── Mobile toggle button — solid pill in .hdr-r ─────────────────────────────
-function _updMobBtn(){
-  var btn=document.getElementById('htpMobBtn'); if(!btn) return;
-  var on=window._htpMobOn;
-  btn.innerHTML=on?'📱&nbsp;Mobile On':'📱&nbsp;Mobile';
-  if(on){btn.classList.remove('mob-off');}else{btn.classList.add('mob-off');}
+// ── Mobile toggle ──────────────────────────────────────────────────────────
+function _setBtnState(btn, on) {
+  // Set text + class directly on the element reference (works before/after DOM insert)
+  btn.innerHTML = on ? '&#x1F4F1;&#160;Mobile On' : '&#x1F4F1;&#160;Mobile';
+  if (on) { btn.classList.remove('mob-off'); }
+  else    { btn.classList.add('mob-off'); }
 }
+
+function _updMobBtn(){
+  var btn=document.getElementById('htpMobBtn');
+  if(btn) _setBtnState(btn, window._htpMobOn);
+}
+
 function _injectMobToggle(){
   if(document.getElementById('htpMobBtn')) return;
-  // Target .hdr-r (the right side of the header with the network pill)
   var container=document.querySelector('.hdr-r')||document.querySelector('.hdr-in');
   if(!container) return;
   var btn=document.createElement('button');
   btn.id='htpMobBtn';
   btn.onclick=window._htpToggleMob;
-  _updMobBtn();
-  // Insert at the start of .hdr-r so it appears before the network selector
-  container.insertBefore(btn,container.firstChild);
+  // Set text NOW, before inserting into DOM
+  _setBtnState(btn, window._htpMobOn);
+  // Insert before the first child of .hdr-r
+  container.insertBefore(btn, container.firstChild);
 }
 
 function _applyMob(){
-  var on=window._htpMobOn;
-  if(on) document.documentElement.classList.add('htp-mob-preview');
-  else   document.documentElement.classList.remove('htp-mob-preview');
+  if(window._htpMobOn) document.documentElement.classList.add('htp-mob-preview');
+  else                 document.documentElement.classList.remove('htp-mob-preview');
   _updMobBtn();
   if(typeof window._wlRefresh==='function') setTimeout(window._wlRefresh,60);
 }
+
 window._htpToggleMob=function(){
   window._htpMobOn=!window._htpMobOn;
   _applyMob();
 };
+
+// Auto-on for real phones
 if(_isPhone()) document.documentElement.classList.add('htp-mob-preview');
 
-// ── Main render ───────────────────────────────────────────────────────────
+// ── Main render ──────────────────────────────────────────────────────────
 (function(){
-  function wallets(){return(window._htpMobOn||_isPhone())?_MOB.concat(_DESK):_DESK;}
+  function wallets(){
+    return (window._htpMobOn||_isPhone()) ? _MOB.concat(_DESK) : _DESK;
+  }
 
   function render(){
     var sec=document.getElementById('v-wallet'); if(!sec) return;
@@ -268,7 +273,7 @@ if(_isPhone()) document.documentElement.classList.add('htp-mob-preview');
       '<div class="wlHdr">'
         +'<span class="wlHdr-ttl">Choose Wallet</span>'
         +'<div class="wlHdr-line"></div>'
-        +'<span class="wlHdr-hint">Detected → Connect &nbsp;·&nbsp; Others → Install</span>'
+        +'<span class="wlHdr-hint">Detected → Connect · Others → Install</span>'
       +'</div>'
       +'<div id="wlGrid">'+wallets().map(_card).join('')+'</div>';
     var old=sec.querySelector('.w-grid');
@@ -288,9 +293,9 @@ if(_isPhone()) document.documentElement.classList.add('htp-mob-preview');
   else render();
 
   var _go=window.go;
-  if(typeof _go==='function'&&!_go._v19c){
+  if(typeof _go==='function'&&!_go._v19d){
     window.go=function(v){_go(v);if(v==='wallet')setTimeout(render,150);};
-    window.go._v19c=true;
+    window.go._v19d=true;
   }
   window.addEventListener('htp:view:wallet',function(){setTimeout(render,150);});
   window._wlRefresh=render;
