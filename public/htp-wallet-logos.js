@@ -1,57 +1,53 @@
 /**
- * htp-wallet-logos.js — v11.0
- * LOGOS ARE LOCKED — do not change these URLs ever again.
- * Kastle fix: uses connect() → getAccount() (not requestAccounts)
- * Mobile Preview toggle: injected IN the wallet section header (visible always)
- * Desktop shows 6 Chrome wallets; mobile adds 3 more
+ * htp-wallet-logos.js — v12.0
+ * LOGOS LOCKED — same Chrome Web Store URLs as v10/v11, do not change.
+ * Kaspa-native wallets ONLY (verified native KAS support).
+ * Kastle: connect()→getAccount() with proper error handling.
+ * Mobile toggle: affects entire page body, not just wallet section.
+ * Status cleared on every new connect attempt.
  */
 
-// ─── LOGOS (LOCKED — DO NOT CHANGE) ─────────────────────────────────────────
+// ── LOGOS (LOCKED) ──────────────────────────────────────────────────────────
 var _WL_LOGOS = {
   KasWare:  'https://lh3.googleusercontent.com/GWR2Bode3QAzDrsZJHVRsYhCN60azRCtL1xoOBxqCYcDpbMD_avwiFkuiAOAkuyLnEh9DGOAoZSbWDcNUhiZ7X6RZE8=s128-rj-sc0x00ffffff',
   Kastle:   'https://lh3.googleusercontent.com/byDg7ykj9UUJRur0v8jFr9orcj7N1_M6LuqtwnJxlnVNk4GV0JrhFmS0Xp0U9QRgxGZa4wf7-8M29v7kfEBc-Ha9kg=s128-rj-sc0x00ffffff',
   Kasperia: 'https://lh3.googleusercontent.com/b08QPuruZqIwLRmpcTrN54hmxY6YEQgVKS4y1s7LAYiIulTlZAaxvsWRUK2SIivLecsxgoCuoH66jNLnQLzjMWXtFr0=s128-rj-sc0x00ffffff',
   OKX:      'https://lh3.googleusercontent.com/2bBevW79q6gRZTFdm42CzUetuEKndq4fn41HQGknMpKMF_d-Ae2sJJzgfFUAVb1bJKCBb4ptZ9EAPp-QhWYIvc35yw=s128-rj-sc0x00ffffff',
-  SafePal:  'https://lh3.googleusercontent.com/QW00mbAVyzdfmjpDy6DGRU-qlIRNMGA-DZpGTYfTp1X1ISWb6NNyXhR2ss2iiqmLp9KYkRiWDrPrvL3224HkUtJbIQ=s128-rj-sc0x00ffffff',
-  Coin98:   'https://lh3.googleusercontent.com/_WoXIYFA61OlH42EYJjrbvQkVoVCDRTt-iy8Lrhl7vFL4V8i07oXyLo8AoRShQqtZQbn6JPYtfnFjKrL2BX5b9fDeA=s128-rj-sc0x00ffffff',
   Kasanova: 'https://kasanova.app/favicon.ico',
   Kaspium:  'https://kaspium.io/favicon.ico',
   KaspaCom: 'https://wallet.kaspa.com/favicon.ico'
 };
 
-// ─── Install URLs ─────────────────────────────────────────────────────────────
+// ── Install URLs ─────────────────────────────────────────────────────────────
 var _WL_INSTALL = {
   KasWare:  'https://chromewebstore.google.com/detail/kasware-wallet/hklhheigdmpoolooomdihmhlpjjdbklf',
   Kastle:   'https://chromewebstore.google.com/detail/kastle/oambclflhjfppdmkghokjmpppmaebego',
   Kasperia: 'https://chromewebstore.google.com/detail/kasperia/ffalcabgggegkejjlknofllbaledgcob',
   OKX:      'https://chromewebstore.google.com/detail/okx-wallet/mcohilncbfahbmgdjkbpemcciiolgcge',
-  SafePal:  'https://chromewebstore.google.com/detail/safepal-extension-wallet/lgmpcpglpngdoalbgeoldeajfclnhafa',
-  Coin98:   'https://chromewebstore.google.com/detail/coin98-wallet/aeachknmefphepccionboohckonoeemg',
   Kasanova: 'https://kasanova.app',
   Kaspium:  'https://kaspium.io',
   KaspaCom: 'https://wallet.kaspa.com'
 };
 
-// ─── Wallet definitions ───────────────────────────────────────────────────────
+// ── Wallet definitions (Kaspa-native only) ───────────────────────────────────
 var _WL_DESKTOP = [
   { id:'KasWare',  name:'KasWare',  sub:'Chrome · Firefox', detect:function(){ return !!(window.kasware||window.kasWare); } },
   { id:'Kastle',   name:'Kastle',   sub:'Chrome',            detect:function(){ return !!window.kastle; } },
   { id:'Kasperia', name:'Kasperia', sub:'Chrome',            detect:function(){ return !!window.kasperia; } },
-  { id:'OKX',      name:'OKX',      sub:'Chrome · Mobile',   detect:function(){ return !!(window.okxwallet&&window.okxwallet.kaspa); } },
-  { id:'SafePal',  name:'SafePal',  sub:'Chrome',            detect:function(){ return !!(window.safepal||window.SafePal); } },
-  { id:'Coin98',   name:'Coin98',   sub:'Chrome',            detect:function(){ return !!(window.coin98||window.coin98Wallet); } }
+  { id:'OKX',      name:'OKX',      sub:'Chrome · Mobile',   detect:function(){ return !!(window.okxwallet&&window.okxwallet.kaspa); } }
 ];
 
 var _WL_MOBILE = [
-  { id:'Kasanova', name:'Kasanova', sub:'iOS · Android', detect:function(){ return !!(window.kasanova||window.KasanovaWallet); } },
+  { id:'Kasanova', name:'Kasanova', sub:'iOS · Android', detect:function(){ return !!(window.kasanova&&window.kasanova.kasware); } },
   { id:'Kaspium',  name:'Kaspium',  sub:'iOS · Android', detect:function(){ return !!(window.kaspium||window.KaspiumWallet); } },
-  { id:'KaspaCom', name:'KaspaCom', sub:'Web · Mobile',  detect:function(){ return !!(window.kaspacom||(window.kaspa&&window.kaspa.requestAccounts)); } }
+  { id:'KaspaCom', name:'KaspaCom', sub:'Web · Mobile',  detect:function(){ return !!(window.kaspacom||(window.kaspa&&typeof window.kaspa.connect==='function')); } }
 ];
 
 function _isPhone(){ return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent); }
-window._htpMobOn = window._htpMobOn || (_isPhone() ? true : (localStorage.getItem('htpMob')==='1'));
+window._htpMobOn = window._htpMobOn !== undefined ? window._htpMobOn
+  : (_isPhone() ? true : localStorage.getItem('htpMob')==='1');
 
-// ─── Network selector (once per section) ─────────────────────────────────────
+// ── Network selector ─────────────────────────────────────────────────────────
 window._htpSetConnectNet = function(sid, net){
   window.activeNet = net;
   if(typeof window.htpSetNetwork==='function') window.htpSetNetwork(net);
@@ -79,38 +75,55 @@ function _injectNetSels(){
   if(mn&&!document.querySelector('[data-net-sel="ns-mn"]')){
     var d=document.createElement('div'); d.innerHTML=_mkNetSel('ns-mn');
     var t=(mn.closest&&mn.closest('.fg'))||mn.parentNode;
-    t.parentNode.insertBefore(d.firstElementChild,t);
+    if(t&&t.parentNode) t.parentNode.insertBefore(d.firstElementChild,t);
   }
   var hx=document.getElementById('recHexKey');
   if(hx&&!document.querySelector('[data-net-sel="ns-hx"]')){
     var d2=document.createElement('div'); d2.innerHTML=_mkNetSel('ns-hx');
     var t2=(hx.closest&&hx.closest('.fg'))||hx.parentNode;
-    t2.parentNode.insertBefore(d2.firstElementChild,t2);
+    if(t2&&t2.parentNode) t2.parentNode.insertBefore(d2.firstElementChild,t2);
   }
 }
 
-// ─── selWallet — wallet-specific connect logic ────────────────────────────────
+// ── selWallet ── wallet-specific connect logic ────────────────────────────────
 (function(){
 
   async function connectKastle(p){
-    // Kastle API: connect() returns boolean, then getAccount() returns {address, publicKey}
-    var ok = await p.connect();
-    if(!ok) throw new Error('User denied Kastle connection');
-    var acc = await p.getAccount();
-    return acc && (acc.address || acc);
+    // Kastle API: connect() → boolean; then getAccount() → {address, publicKey}
+    var ok;
+    try { ok = await p.connect(); } catch(e) { throw new Error('Kastle: '+e.message); }
+    if(ok === false) throw new Error('Kastle connection denied by user');
+    // ok can be true or an object - either way proceed to getAccount
+    var acc;
+    try { acc = await p.getAccount(); } catch(e) { throw new Error('Kastle getAccount failed: '+e.message); }
+    if(!acc) throw new Error('Kastle returned no account');
+    return acc.address || (typeof acc==='string'?acc:null);
   }
 
   async function connectKasWare(p){
     var r = await p.requestAccounts();
-    if(Array.isArray(r)) return r[0];
-    return r;
+    if(Array.isArray(r)) return r[0]||null;
+    if(typeof r==='string') return r;
+    return null;
   }
 
   async function connectGeneric(p){
-    if(typeof p.requestAccounts==='function') return (await p.requestAccounts())[0]||null;
-    if(typeof p.connect==='function'){ var r=await p.connect(); if(typeof r==='string') return r; if(r&&r.address) return r.address; return null; }
-    if(typeof p.enable==='function') return (await p.enable())[0]||null;
-    throw new Error('No connect method');
+    if(typeof p.requestAccounts==='function'){
+      var r = await p.requestAccounts();
+      if(Array.isArray(r)) return r[0]||null;
+      if(typeof r==='string') return r;
+    }
+    if(typeof p.connect==='function'){
+      var r2 = await p.connect();
+      if(typeof r2==='string') return r2;
+      if(r2&&r2.address) return r2.address;
+      if(Array.isArray(r2)) return r2[0]||null;
+    }
+    if(typeof p.enable==='function'){
+      var r3 = await p.enable();
+      if(Array.isArray(r3)) return r3[0]||null;
+    }
+    throw new Error('No connect method available');
   }
 
   function getProv(name){
@@ -119,82 +132,98 @@ function _injectNetSels(){
       case 'Kastle':   return window.kastle||null;
       case 'Kasperia': return window.kasperia||null;
       case 'OKX':      return (window.okxwallet&&window.okxwallet.kaspa)?window.okxwallet.kaspa:null;
-      case 'SafePal':  return window.safepal||window.SafePal||null;
-      case 'Coin98':   return window.coin98||window.coin98Wallet||null;
-      case 'Kasanova': return window.kasanova||window.KasanovaWallet||null;
+      case 'Kasanova': return (window.kasanova&&window.kasanova.kasware)?window.kasanova.kasware:null;
       case 'Kaspium':  return window.kaspium||window.KaspiumWallet||null;
-      case 'KaspaCom': return window.kaspacom||(window.kaspa&&window.kaspa.requestAccounts?window.kaspa:null)||null;
+      case 'KaspaCom': return window.kaspacom||(window.kaspa&&typeof window.kaspa.connect==='function'?window.kaspa:null)||null;
       default:         return null;
     }
   }
 
-  window.selWallet = async function(name){
+  function setStatus(html){
     var st=document.getElementById('walletStatus');
-    function setS(h){if(st){st.style.display='block';st.innerHTML=h;}}
-    setS('<span style="color:#94a3b8">Connecting to '+name+'…</span>');
+    if(st){st.style.display='block';st.innerHTML=html;}
+  }
+
+  window.selWallet = async function(name){
+    // Clear any stale status immediately
+    setStatus('<span style="color:#94a3b8">Connecting to '+name+'…</span>');
 
     var p=null;
-    for(var i=0;i<20;i++){p=getProv(name);if(p) break; await new Promise(function(r){setTimeout(r,150);});}
+    for(var i=0;i<25;i++){p=getProv(name);if(p) break; await new Promise(function(r){setTimeout(r,150);});}
 
     if(!p){
       var url=_WL_INSTALL[name]||'';
-      setS('<div style="display:flex;gap:14px;align-items:flex-start">'
+      setStatus('<div style="display:flex;gap:14px;align-items:flex-start">'
         +'<div style="font-size:26px">🔌</div>'
         +'<div><div style="font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:6px">'+name+' not detected</div>'
-        +(url?'<div style="font-size:12px;color:#94a3b8;margin-bottom:10px">Install the extension, refresh, then connect.</div>'
+        +(url?'<div style="font-size:12px;color:#94a3b8;margin-bottom:10px">Install the extension, refresh this page, then connect.</div>'
           +'<a href="'+url+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;background:rgba(73,232,194,.08);border:1px solid rgba(73,232,194,.25);border-radius:10px;color:#49e8c2;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;text-decoration:none">Install '+name+' ↗</a>':'')
-        +'<div style="margin-top:10px;font-size:12px;color:#475569">Or use <b style="color:#49e8c2">Mnemonic</b> / <b style="color:#49e8c2">Hex Key</b> below.</div>'
+        +'<div style="margin-top:10px;font-size:12px;color:#475569">Or connect via <b style="color:#49e8c2">Mnemonic</b> / <b style="color:#49e8c2">Hex Key</b> below.</div>'
         +'</div></div>');
       return;
     }
 
     try{
       var addr;
-      if(name==='Kastle') addr = await connectKastle(p);
+      if(name==='Kastle')       addr = await connectKastle(p);
       else if(name==='KasWare') addr = await connectKasWare(p);
-      else addr = await connectGeneric(p);
+      else                      addr = await connectGeneric(p);
 
-      if(!addr) throw new Error('No address returned');
+      if(!addr) throw new Error('Wallet returned no address');
 
       window.walletAddress=window.htpAddress=window.connectedAddress=addr;
       window.walletProvider=name; window.conn=true;
+      try{localStorage.setItem('htpPlayerId',addr);}catch(e){}
 
-      var net='unknown'; try{net=await p.getNetwork();}catch(e){}
+      var net='unknown';
+      try{ net = typeof p.getNetwork==='function' ? await p.getNetwork() : (window.activeNet||'unknown'); }catch(e){}
+
       try{
         var bal=await p.getBalance();
         window.walletBalance={confirmed:bal.confirmed||bal.mature||0,unconfirmed:bal.unconfirmed||bal.pending||0,total:bal.total||0};
       }catch(e){window.walletBalance={confirmed:0,unconfirmed:0,total:0};}
+
       try{window.walletPubKey=await p.getPublicKey();}catch(e){}
 
       if(typeof window.updateWalletUI==='function') window.updateWalletUI(name,net);
+      if(typeof window.htpWalletV3==='object'&&typeof window.htpWalletV3.updateUI==='function') window.htpWalletV3.updateUI();
       if(typeof window.startBalancePoller==='function') window.startBalancePoller();
+      window.dispatchEvent(new CustomEvent('htp:wallet:connected',{detail:{address:addr,wallet:name}}));
       var dc=document.getElementById('dcBtn'); if(dc) dc.style.display='inline-block';
 
+      setStatus('<div style="display:flex;align-items:center;gap:10px">'
+        +'<span style="color:#22c55e;font-size:18px">✓</span>'
+        +'<div><div style="font-size:12px;font-weight:700;color:#f1f5f9">'+name+' Connected</div>'
+        +'<div style="font-family:monospace;font-size:11px;color:#49e8c2;margin-top:2px">'+addr.substring(0,16)+'…'+addr.slice(-6)+'</div>'
+        +'<div style="font-size:10px;color:#475569;margin-top:2px">Network: '+net+'</div>'
+        +'</div></div>');
+
     }catch(e){
-      if(st){st.style.display='block';st.innerHTML='<span style="color:#ef4444">Connection failed: '+(e.message||e)+'</span>';}
+      setStatus('<span style="color:#ef4444">Connection failed: '+(e.message||String(e))+'</span>');
       window.conn=false;
     }
   };
 
 })();
 
-// ─── CSS ──────────────────────────────────────────────────────────────────────
+// ── CSS ───────────────────────────────────────────────────────────────────────
 (function(){
-  if(document.getElementById('wl11-styles')) return;
+  var sid='wl12-styles';
+  if(document.getElementById(sid)) return;
   var s=document.createElement('style');
-  s.id='wl11-styles';
+  s.id=sid;
   s.textContent=[
     '@keyframes wlPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.8)}}',
     '#wlWrap{background:rgba(255,255,255,.025);border:1px solid rgba(73,232,194,.1);border-radius:20px;padding:24px;margin-bottom:20px;backdrop-filter:blur(12px);}',
-    '.wlHdr{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}',
+    '.wlHdr{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}',
     '.wlHdr-title{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#49e8c2;white-space:nowrap;}',
     '.wlHdr-line{flex:1;height:1px;background:linear-gradient(90deg,rgba(73,232,194,.25) 0%,transparent 100%);min-width:20px;}',
     '.wlHdr-hint{font-size:10px;color:#475569;letter-spacing:.05em;white-space:nowrap;}',
     '#htpMobToggle{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border:1px solid rgba(73,232,194,.25);color:#49e8c2;background:rgba(73,232,194,.06);white-space:nowrap;transition:all .2s;flex-shrink:0;}',
-    '#htpMobToggle:hover{background:rgba(73,232,194,.14);border-color:rgba(73,232,194,.4);}',
-    '#htpMobToggle.mob-on{background:rgba(73,232,194,.18);border-color:#49e8c2;color:#021a10;}',
-    '#wlGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}',
-    '@media(min-width:600px){#wlGrid{grid-template-columns:repeat(6,1fr)!important;}}',
+    '#htpMobToggle:hover{background:rgba(73,232,194,.15);border-color:rgba(73,232,194,.45);}',
+    '#htpMobToggle.mob-on{background:rgba(73,232,194,.2);border-color:#49e8c2;box-shadow:0 0 12px rgba(73,232,194,.3);}',
+    '#wlGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}',
+    '@media(min-width:480px){#wlGrid{grid-template-columns:repeat(4,1fr)!important;}}',
     '.wlCard{position:relative;border-radius:16px;padding:18px 10px 14px;text-align:center;cursor:pointer;overflow:hidden;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s,opacity .2s;}',
     '.wlCard:hover{transform:translateY(-5px) scale(1.02)!important;box-shadow:0 20px 50px rgba(0,0,0,.7)!important;opacity:1!important;}',
     '.wlCard-on{background:rgba(73,232,194,.04);border:1px solid rgba(73,232,194,.4);}',
@@ -216,17 +245,17 @@ function _injectNetSels(){
   document.head.appendChild(s);
 })();
 
-// ─── Card builder ─────────────────────────────────────────────────────────────
+// ── Card builder ──────────────────────────────────────────────────────────────
 function _buildCard(w){
   var found=w.detect();
   var url=_WL_INSTALL[w.id]||'';
   var logo=_WL_LOGOS[w.id]||'';
   var dot=found?'<div class="wlCard-dot"></div>':'';
-  var sub=found?'<span style="color:#49e8c2">● Detected</span>':w.sub;
+  var sub=found?'<span style="color:#49e8c2">● Detected</span>':('<span style="color:#64748b">'+w.sub+'</span>');
   var cls='wlCard '+(found?'wlCard-on':'wlCard-off');
   var bCls='wlCard-btn '+(found?'wlCard-btn-on':'wlCard-btn-off');
   var bTxt=found?'Connect':'Install ↗';
-  var act=found?'window.selWallet(\''+w.id+'\')':'window.open(\''+url+'\',\'_blank\')';
+  var act=found?'window.selWallet(\''+w.id+'\')'+'':'window.open(\''+url+'\',\'_blank\')';
   return '<div class="'+cls+'" onclick="'+act+'">'
     +dot
     +'<div class="wlCard-logo"><img src="'+logo+'" alt="'+w.name+'" onerror="this.style.display=\'none\'"></div>'
@@ -236,31 +265,35 @@ function _buildCard(w){
     +'</div>';
 }
 
-// ─── Mobile toggle (inside wallet header) ─────────────────────────────────────
-function _renderMobBtn(){
-  var btn=document.getElementById('htpMobToggle');
-  if(!btn) return;
-  var on=window._htpMobOn;
-  btn.textContent=on?'📱 Mobile On':'📱 Mobile';
-  btn.className=on?'mob-on':'';
-  btn.id='htpMobToggle';
-}
-
+// ── Mobile toggle (whole page) ────────────────────────────────────────────────
 function _applyMob(){
   var on=window._htpMobOn;
-  var app=document.getElementById('app')||document.body;
+  // Apply to entire page
+  var html=document.documentElement;
+  var body=document.body;
+  var app=document.getElementById('app');
   var ms=document.getElementById('htpMobStyle');
   if(!ms){ms=document.createElement('style');ms.id='htpMobStyle';document.head.appendChild(ms);}
   if(on){
-    app.style.maxWidth='390px'; app.style.margin='0 auto'; app.style.boxShadow='0 0 0 100vw rgba(0,0,0,.75)';
-    ms.textContent='body{overflow-x:hidden!important}#app{max-width:390px!important;margin:0 auto!important}';
+    ms.textContent=[
+      'html,body{overflow-x:hidden!important;}',
+      '#app,body>*:not(#htpMobStyle){max-width:390px!important;margin-left:auto!important;margin-right:auto!important;}',
+      'body{background:#000!important;box-shadow:inset 0 0 0 100vw rgba(0,0,0,.85)!important;}'
+    ].join('');
+    if(app){app.style.maxWidth='390px';app.style.margin='0 auto';app.style.boxShadow='0 0 80px rgba(0,0,0,.9)';}
   }else{
-    app.style.maxWidth=''; app.style.margin=''; app.style.boxShadow='';
     ms.textContent='';
+    if(app){app.style.maxWidth='';app.style.margin='';app.style.boxShadow='';}
   }
   localStorage.setItem('htpMob',on?'1':'0');
-  _renderMobBtn();
-  if(typeof window._wlRefresh==='function') setTimeout(window._wlRefresh,50);
+  // Update button appearance
+  var btn=document.getElementById('htpMobToggle');
+  if(btn){
+    btn.textContent=on?'📱 Mobile On':'📱 Mobile';
+    if(on) btn.classList.add('mob-on'); else btn.classList.remove('mob-on');
+  }
+  // Refresh wallet grid
+  if(typeof window._wlRefresh==='function') setTimeout(window._wlRefresh,60);
 }
 
 window._htpToggleMob=function(){
@@ -268,7 +301,7 @@ window._htpToggleMob=function(){
   _applyMob();
 };
 
-// ─── Main wallet section builder ──────────────────────────────────────────────
+// ── Main wallet section builder ───────────────────────────────────────────────
 (function buildWalletPage(){
 
   function getWallets(){
@@ -284,8 +317,7 @@ window._htpToggleMob=function(){
       var grid=document.getElementById('wlGrid');
       if(grid) grid.innerHTML=getWallets().map(_buildCard).join('');
       _injectNetSels();
-      _renderMobBtn();
-      if(window._htpMobOn) _applyMob();
+      _applyMob();
       return;
     }
 
@@ -303,24 +335,26 @@ window._htpToggleMob=function(){
 
     var mx=sec.querySelector('.mx')||sec;
     var old=sec.querySelector('.w-grid');
-    if(old){ old.parentNode.replaceChild(wrap,old); }
+    if(old) old.parentNode.replaceChild(wrap,old);
     else{ var sh=mx.querySelector('.sh'); mx.insertBefore(wrap,sh?sh.nextSibling:mx.firstChild); }
 
-    sec.querySelectorAll('#walletStatus').forEach(function(el,i){if(i>0) el.remove();});
+    // Remove duplicate status divs
+    var allSt=sec.querySelectorAll('#walletStatus');
+    allSt.forEach(function(el,i){if(i>0) el.remove();});
+
     _injectNetSels();
-    _renderMobBtn();
-    if(window._htpMobOn) _applyMob();
+    _applyMob();
   }
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',run);
   else run();
 
   var _go=window.go;
-  if(typeof _go==='function'&&!_go._wl11){
-    window.go=function(v){_go(v);if(v==='wallet') setTimeout(run,180);};
-    window.go._wl11=true;
+  if(typeof _go==='function'&&!_go._wl12){
+    window.go=function(v){_go(v);if(v==='wallet') setTimeout(run,200);};
+    window.go._wl12=true;
   }
-  window.addEventListener('htp:view:wallet',function(){setTimeout(run,180);});
+  window.addEventListener('htp:view:wallet',function(){setTimeout(run,200);});
   window._wlRefresh=run;
 
 })();
