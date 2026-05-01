@@ -1,32 +1,32 @@
-/** htp-wallet-logos.js v19
- * - No hover twitch (ease-out only, no spring)
- * - All wallet cards work: detected=Connect, undetected=Install
- * - Mobile preview toggle injected into header (not wallet section)
- * - Full mobile CSS loaded via htp-mobile.css
- * - Kastle polyfill, waitForProvider patched to 30s
+/** htp-wallet-logos.js v19b
+ * FIXES:
+ * 1. Mobile toggle no longer persists to localStorage — resets to off on reload
+ *    (real phones still auto-on via UA detection)
+ * 2. Install onclick syntax fixed (no stray backslash)
+ * 3. Card transition uses !important to beat old .w-card CSS in index.html
+ * 4. waitForProvider patched to 30s, Kastle polyfill, mobile toggle in header
  */
 
-// ── Inject htp-mobile.css ────────────────────────────────────────────────────
+// ── Inject htp-mobile.css ───────────────────────────────────────────────────
 (function(){
   if(document.getElementById('htp-mobile-css')) return;
   var l=document.createElement('link');
-  l.id='htp-mobile-css'; l.rel='stylesheet'; l.href='htp-mobile.css?v=19';
+  l.id='htp-mobile-css'; l.rel='stylesheet'; l.href='htp-mobile.css?v=19b';
   document.head.appendChild(l);
 })();
 
-// ── Logos (Chrome Web Store cached URLs = always load) ───────────────────────
+// ── Logos ───────────────────────────────────────────────────────────────
 var _WL={
   KasWare:  { logo:'https://lh3.googleusercontent.com/GWR2Bode3QAzDrsZJHVRsYhCN60azRCtL1xoOBxqCYcDpbMD_avwiFkuiAOAkuyLnEh9DGOAoZSbWDcNUhiZ7X6RZE8=s128', install:'https://chromewebstore.google.com/detail/kasware-wallet/hklhheigdmpoolooomdihmhlpjjdbklf', sub:'Chrome · Firefox' },
   Kastle:   { logo:'https://lh3.googleusercontent.com/byDg7ykj9UUJRur0v8jFr9orcj7N1_M6LuqtwnJxlnVNk4GV0JrhFmS0Xp0U9QRgxGZa4wf7-8M29v7kfEBc-Ha9kg=s128', install:'https://chromewebstore.google.com/detail/kastle/oambclflhjfppdmkghokjmpppmaebego', sub:'Chrome' },
   Kasperia: { logo:'https://lh3.googleusercontent.com/b08QPuruZqIwLRmpcTrN54hmxY6YEQgVKS4y1s7LAYiIulTlZAaxvsWRUK2SIivLecsxgoCuoH66jNLnQLzjMWXtFr0=s128', install:'https://chromewebstore.google.com/detail/kasperia/ffalcabgggegkejjlknofllbaledgcob', sub:'Chrome' },
   OKX:      { logo:'https://lh3.googleusercontent.com/2bBevW79q6gRZTFdm42CzUetuEKndq4fn41HQGknMpKMF_d-Ae2sJJzgfFUAVb1bJKCBb4ptZ9EAPp-QhWYIvc35yw=s128', install:'https://chromewebstore.google.com/detail/okx-wallet/mcohilncbfahbmgdjkbpemcciiolgcge', sub:'Chrome · Mobile' },
-  Kasanova: { logo:'https://kasanova.app/favicon.ico',    install:'https://kasanova.app',          sub:'iOS · Android' },
-  Kaspium:  { logo:'https://kaspium.io/favicon.ico',      install:'https://kaspium.io',            sub:'iOS · Android' },
-  KaspaCom: { logo:'https://wallet.kaspa.com/favicon.ico',install:'https://wallet.kaspa.com',      sub:'Web · Mobile' },
-  Tangem:   { logo:'https://tangem.com/favicon.ico',      install:'https://tangem.com/kaspa',      sub:'iOS · Android' }
+  Kasanova: { logo:'https://kasanova.app/favicon.ico',     install:'https://kasanova.app',          sub:'iOS · Android' },
+  Kaspium:  { logo:'https://kaspium.io/favicon.ico',       install:'https://kaspium.io',            sub:'iOS · Android' },
+  KaspaCom: { logo:'https://wallet.kaspa.com/favicon.ico', install:'https://wallet.kaspa.com',      sub:'Web · Mobile'  },
+  Tangem:   { logo:'https://tangem.com/favicon.ico',       install:'https://tangem.com/kaspa',      sub:'iOS · Android' }
 };
 
-// Detect which wallets are present
 function _det(name){
   var w=window;
   switch(name){
@@ -42,18 +42,19 @@ function _det(name){
   return false;
 }
 
-// Desktop wallets shown on desktop
 var _DESK=['KasWare','Kastle','Kasperia','OKX','KaspaCom'];
-// Mobile wallets shown when mobile
-var _MOB=['Kasanova','Kaspium','OKX','KaspaCom','Tangem'];
+var _MOB =['Kasanova','Kaspium','OKX','KaspaCom','Tangem'];
 
 function _isPhone(){return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);}
-if(window._htpMobOn===undefined) window._htpMobOn=_isPhone()?true:(localStorage.getItem('htpMob')==='1');
 
-// ── Patch waitForProvider to 30s ────────────────────────────────────────────
+// Mobile preview: OFF by default on desktop, auto-ON on real phone
+// No localStorage persistence — always resets on reload (so it can never get stuck)
+window._htpMobOn = _isPhone();
+
+// ── Patch waitForProvider to 30s ───────────────────────────────────────────
 (function(){
   function ins(){
-    if(typeof waitForProvider!=='function'||waitForProvider._v19) return;
+    if(typeof waitForProvider!=='function'||waitForProvider._v19b) return;
     var orig=waitForProvider;
     window.waitForProvider=async function(name){
       var p=await orig(name); if(p) return p;
@@ -64,23 +65,25 @@ if(window._htpMobOn===undefined) window._htpMobOn=_isPhone()?true:(localStorage.
       }
       return null;
     };
-    window.waitForProvider._v19=true;
+    window.waitForProvider._v19b=true;
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ins);
   else ins();
   setTimeout(ins,400); setTimeout(ins,1200);
 })();
 
-// ── Kastle polyfill ──────────────────────────────────────────────────────────
+// ── Kastle polyfill ───────────────────────────────────────────────────────
 (function(){
   function p(){
     if(!window.kastle||typeof window.kastle.requestAccounts==='function') return;
     window.kastle.requestAccounts=async function(){
-      try{await window.kastle.connect();}catch(e){if(!/already|connected/i.test(e.message))throw new Error('Kastle: '+e.message);}
+      try{await window.kastle.connect();}catch(e){
+        if(!/already|connected/i.test(e.message)) throw new Error('Kastle: '+e.message);
+      }
       var a=await window.kastle.getAccount();
       var addr=(a&&a.address)||(typeof a==='string'?a:null);
       if(!addr) throw new Error('Kastle: no address');
-      return[addr];
+      return [addr];
     };
     if(!window.kastle.getBalance) window.kastle.getBalance=async function(){return{confirmed:0,unconfirmed:0,total:0};};
     if(!window.kastle.getNetwork) window.kastle.getNetwork=async function(){return'testnet-12';};
@@ -91,7 +94,7 @@ if(window._htpMobOn===undefined) window._htpMobOn=_isPhone()?true:(localStorage.
   document.addEventListener('click',function o(){p();document.removeEventListener('click',o,true);},true);
 })();
 
-// ── Connect handler ──────────────────────────────────────────────────────────
+// ── Connect / Install ───────────────────────────────────────────────────────
 window._htpConnect=function(name){
   if(typeof selWallet==='function'){selWallet(name);return;}
   var n=0,t=setInterval(function(){
@@ -100,25 +103,19 @@ window._htpConnect=function(name){
   },100);
 };
 
-// ── Install handler ──────────────────────────────────────────────────────────
 window._htpInstall=function(name){
-  var url=((_WL[name]||{}).install)||'';
+  var url=((_WL[name])||{}).install||'';
   var st=document.getElementById('walletStatus');
   if(st){
     st.style.display='block';
-    st.innerHTML='<span style="color:#f1f5f9;font-weight:700">'+name+' not installed</span>'
-      +(url?'<br><br><a href="'+url+'" target="_blank" rel="noopener" '
-      +'style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;'
-      +'background:rgba(73,232,194,.08);border:1px solid rgba(73,232,194,.3);'
-      +'border-radius:10px;color:#49e8c2;font-size:11px;font-weight:800;'
-      +'letter-spacing:.06em;text-transform:uppercase;text-decoration:none">'
-      +'Install '+name+' &#x2197;</a><br><br>':'')
+    st.innerHTML='<span style="color:#f1f5f9;font-weight:700">'+name+' not installed.</span>'
+      +(url?'<br><br><a href="'+url+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:rgba(73,232,194,.08);border:1px solid rgba(73,232,194,.3);border-radius:10px;color:#49e8c2;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;text-decoration:none">Install '+name+' &#x2197;</a><br><br>':'')
       +'<span style="font-size:11px;color:#64748b">Or use Mnemonic / Hex Key below.</span>';
   }
   if(url) window.open(url,'_blank');
 };
 
-// ── Network selector ─────────────────────────────────────────────────────────
+// ── Network selector ──────────────────────────────────────────────────────
 window._htpSetNet=function(sid,net){
   window.activeNet=net;
   if(typeof window.htpSetNetwork==='function') window.htpSetNetwork(net);
@@ -140,9 +137,9 @@ function _netSel(sid){
     +'</div>';
 }
 function _injectNetSels(){
-  ['recMn','recHexKey'].forEach(function(id,i){
-    var el=document.getElementById(id); if(!el) return;
-    var sid='ns'+i;
+  [['recMn','ns0'],['recHexKey','ns1']].forEach(function(pair){
+    var el=document.getElementById(pair[0]); if(!el) return;
+    var sid=pair[1];
     if(document.querySelector('[data-ns="'+sid+'"]')) return;
     var wrap=el.closest&&el.closest('.fg')||el.parentNode;
     if(wrap&&wrap.parentNode){
@@ -152,12 +149,15 @@ function _injectNetSels(){
   });
 }
 
-// ── CSS — smooth, no spring, no twitch ───────────────────────────────────────
+// ── CSS — !important on transition to beat old .w-card styles in index.html ──
 (function(){
-  if(document.getElementById('wl19')) return;
-  var s=document.createElement('style'); s.id='wl19';
+  if(document.getElementById('wl19b')) return;
+  var s=document.createElement('style'); s.id='wl19b';
   s.textContent=
     '@keyframes wlDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.75)}}'
+    // Kill ALL spring easings on .w-card from index.html
+    +'.w-card,.card.w-card{transition:transform .16s ease-out,box-shadow .16s ease-out!important;}'
+    +'.w-card:hover,.card.w-card:hover{transform:translateY(-3px)!important;box-shadow:0 10px 28px rgba(0,0,0,.45)!important;}'
     +'#wlWrap{background:rgba(255,255,255,.02);border:1px solid rgba(73,232,194,.1);border-radius:18px;padding:22px;margin-bottom:20px;}'
     +'.wlHdr{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}'
     +'.wlHdr-ttl{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#49e8c2;}'
@@ -166,20 +166,20 @@ function _injectNetSels(){
     +'#wlGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}'
     +'@media(min-width:540px){#wlGrid{grid-template-columns:repeat(3,1fr)!important;}}'
     +'@media(min-width:900px){#wlGrid{grid-template-columns:repeat(5,1fr)!important;}}'
-    /* CARD — ease-out ONLY, no cubic-bezier spring */
+    // CARD — ease-out only, !important to override anything
     +'.wlCard{position:relative;border-radius:14px;padding:18px 10px 14px;text-align:center;cursor:pointer;'
-    +'transition:transform .16s ease-out,box-shadow .16s ease-out,border-color .16s ease-out;'
-    +'will-change:transform;-webkit-backface-visibility:hidden;backface-visibility:hidden;}'
+    +'transition:transform .16s ease-out,box-shadow .16s ease-out,opacity .16s ease-out!important;'
+    +'-webkit-backface-visibility:hidden;backface-visibility:hidden;will-change:transform;}'
     +'.wlCard:hover{transform:translateY(-3px)!important;box-shadow:0 12px 32px rgba(0,0,0,.5)!important;}'
     +'.wlCard.on{background:rgba(73,232,194,.04);border:1px solid rgba(73,232,194,.35);}'
     +'.wlCard.off{background:rgba(255,255,255,.015);border:1px solid rgba(255,255,255,.07);opacity:.78;}'
-    +'.wlCard.off:hover{opacity:1;}'
+    +'.wlCard.off:hover{opacity:1!important;}'
     +'.wlDot{position:absolute;top:8px;right:8px;width:7px;height:7px;background:#49e8c2;border-radius:50%;box-shadow:0 0 7px #49e8c2;animation:wlDot 2s ease-in-out infinite;}'
     +'.wlLogo{width:50px;height:50px;margin:0 auto 10px;border-radius:13px;background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;overflow:hidden;pointer-events:none;}'
     +'.wlLogo img{width:100%;height:100%;object-fit:cover;border-radius:11px;pointer-events:none;}'
     +'.wlName{font-size:11px;font-weight:800;color:#f1f5f9;margin-bottom:2px;pointer-events:none;}'
     +'.wlSub{font-size:9px;font-weight:600;margin-bottom:10px;pointer-events:none;}'
-    +'.wlBtn{width:100%;padding:8px 4px;border-radius:9px;font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;transition:background .12s ease-out;border:none;outline:none;}'
+    +'.wlBtn{width:100%;padding:8px 4px;border-radius:9px;font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;transition:background .12s ease-out!important;border:none;outline:none;}'
     +'.wlBtn.on{background:#49e8c2;color:#021a10;}'
     +'.wlBtn.on:hover{background:#6fffd8;}'
     +'.wlBtn.off{background:rgba(73,232,194,.07);color:#49e8c2;border:1px solid rgba(73,232,194,.2)!important;}'
@@ -188,101 +188,87 @@ function _injectNetSels(){
   document.head.appendChild(s);
 })();
 
-// ── Card builder ─────────────────────────────────────────────────────────────
+// ── Card builder ──────────────────────────────────────────────────────────
 function _card(name){
   var found=_det(name);
   var d=_WL[name]||{};
-  var logo=d.logo||'';
   var sub=found?'<span style="color:#49e8c2">● Detected</span>':'<span style="color:#556">'+d.sub+'</span>';
-  var act=found?'window._htpConnect(\''+name+'\')':'window._htpInstall(\''+name+'\');\ ';
-  return '<div class="wlCard '+(found?'on':'off')+'" onclick="'+act+'">'
+  // onclick strings: no trailing backslash, clean syntax
+  var actCard=found
+    ? 'window._htpConnect(\'' + name + '\')'
+    : 'window._htpInstall(\'' + name + '\')';
+  var actBtn=found
+    ? 'event.stopPropagation();window._htpConnect(\'' + name + '\')'
+    : 'event.stopPropagation();window._htpInstall(\'' + name + '\')';
+  return '<div class="wlCard '+(found?'on':'off')+'" onclick="'+actCard+'">'
     +(found?'<div class="wlDot"></div>':'')
-    +'<div class="wlLogo"><img src="'+logo+'" alt="'+name+'" onerror="this.style.opacity=0"></div>'
+    +'<div class="wlLogo"><img src="'+(d.logo||'')+'" alt="'+name+'" onerror="this.style.opacity=0"></div>'
     +'<div class="wlName">'+name+'</div>'
     +'<div class="wlSub">'+sub+'</div>'
-    +'<button class="wlBtn '+(found?'on':'off')+'" onclick="event.stopPropagation();'+act+'">'
+    +'<button class="wlBtn '+(found?'on':'off')+'" onclick="'+actBtn+'">'
     +(found?'Connect':'Install &#x2197;')
     +'</button></div>';
 }
 
-// ── Mobile toggle — injected into header, NOT the wallet section ──────────────
-function _injectMobToggle(){
-  if(document.getElementById('htpMobBtn')) return;
-  // Find the header right-side area (btn-c / .hdr-actions / .hdr-in)
-  var targets=['.hdr-right','.hdr-actions','.hdr-in','.hdr'];
-  var container=null;
-  for(var i=0;i<targets.length;i++){
-    container=document.querySelector(targets[i]);
-    if(container) break;
-  }
-  if(!container) return;
-  var btn=document.createElement('button');
-  btn.id='htpMobBtn';
-  btn.title='Toggle mobile preview';
-  btn.onclick=window._htpToggleMob;
-  btn.style.cssText=
-    'display:inline-flex;align-items:center;gap:5px;padding:5px 11px;'
-    +'border-radius:16px;font-size:10px;font-weight:800;letter-spacing:.05em;'
-    +'text-transform:uppercase;cursor:pointer;border:1px solid rgba(73,232,194,.25);'
-    +'color:#49e8c2;background:rgba(73,232,194,.06);white-space:nowrap;'
-    +'transition:background .15s ease-out,border-color .15s ease-out;'
-    +'margin-left:8px;flex-shrink:0;';
-  _updMobBtn(btn);
-  // Insert before the last child of header (usually connect button)
-  container.appendChild(btn);
-}
-
-function _updMobBtn(btn){
-  btn=btn||document.getElementById('htpMobBtn');
-  if(!btn) return;
+// ── Mobile toggle — injected into header ─────────────────────────────────
+function _updMobBtn(){
+  var btn=document.getElementById('htpMobBtn'); if(!btn) return;
   var on=window._htpMobOn;
   btn.textContent=on?'\uD83D\uDCF1 Mobile On':'\uD83D\uDCF1 Mobile';
   btn.style.background=on?'rgba(73,232,194,.18)':'rgba(73,232,194,.06)';
   btn.style.borderColor=on?'#49e8c2':'rgba(73,232,194,.25)';
-  if(on) btn.style.boxShadow='0 0 10px rgba(73,232,194,.25)';
-  else btn.style.boxShadow='';
+  btn.style.boxShadow=on?'0 0 10px rgba(73,232,194,.25)':'';
+}
+function _injectMobToggle(){
+  if(document.getElementById('htpMobBtn')) return;
+  var c=document.querySelector('.hdr-in')||document.querySelector('.hdr');
+  if(!c) return;
+  var btn=document.createElement('button');
+  btn.id='htpMobBtn';
+  btn.onclick=window._htpToggleMob;
+  btn.style.cssText='display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:16px;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;border:1px solid rgba(73,232,194,.25);color:#49e8c2;background:rgba(73,232,194,.06);white-space:nowrap;transition:background .15s,border-color .15s;margin-left:8px;flex-shrink:0;';
+  _updMobBtn();
+  // Insert before the last item (usually wallet connect btn)
+  var last=c.lastElementChild;
+  if(last) c.insertBefore(btn,last); else c.appendChild(btn);
 }
 
 function _applyMob(){
   var on=window._htpMobOn;
   if(on) document.documentElement.classList.add('htp-mob-preview');
   else   document.documentElement.classList.remove('htp-mob-preview');
-  localStorage.setItem('htpMob',on?'1':'0');
+  // No localStorage save — always resets on reload
   _updMobBtn();
   if(typeof window._wlRefresh==='function') setTimeout(window._wlRefresh,60);
 }
-window._htpToggleMob=function(){window._htpMobOn=!window._htpMobOn;_applyMob();};
-// Auto-on for real phones
+window._htpToggleMob=function(){
+  window._htpMobOn=!window._htpMobOn;
+  _applyMob();
+};
+// Auto-on for real phones only
 if(_isPhone()) document.documentElement.classList.add('htp-mob-preview');
 
-// ── Main render ───────────────────────────────────────────────────────────────
+// ── Main render ────────────────────────────────────────────────────────────
 (function(){
   function wallets(){return(window._htpMobOn||_isPhone())?_MOB.concat(_DESK):_DESK;}
 
   function render(){
     var sec=document.getElementById('v-wallet'); if(!sec) return;
     var wrap=document.getElementById('wlWrap');
-
     if(wrap){
-      // Already rendered — just refresh grid
       var g=document.getElementById('wlGrid');
       if(g) g.innerHTML=wallets().map(_card).join('');
       _injectNetSels();
-      _applyMob();
       return;
     }
-
-    // Build fresh
     wrap=document.createElement('div'); wrap.id='wlWrap';
     wrap.innerHTML=
       '<div class="wlHdr">'
         +'<span class="wlHdr-ttl">Choose Wallet</span>'
         +'<div class="wlHdr-line"></div>'
-        +'<span class="wlHdr-hint">Detected wallets show Connect · Others show Install</span>'
+        +'<span class="wlHdr-hint">Detected → Connect &nbsp;·&nbsp; Others → Install</span>'
       +'</div>'
       +'<div id="wlGrid">'+wallets().map(_card).join('')+'</div>';
-
-    // Replace the old .w-grid if present, otherwise inject after .sh
     var old=sec.querySelector('.w-grid');
     if(old){
       var st=document.getElementById('walletStatus');
@@ -293,25 +279,20 @@ if(_isPhone()) document.documentElement.classList.add('htp-mob-preview');
       var sh=mx.querySelector('.sh');
       mx.insertBefore(wrap,sh?sh.nextSibling:mx.firstChild);
     }
-
     _injectNetSels();
-    _applyMob();
-    _injectMobToggle();
   }
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',render);
   else render();
 
-  // Hook into view navigation
   var _go=window.go;
-  if(typeof _go==='function'&&!_go._v19){
+  if(typeof _go==='function'&&!_go._v19b){
     window.go=function(v){_go(v);if(v==='wallet')setTimeout(render,150);};
-    window.go._v19=true;
+    window.go._v19b=true;
   }
   window.addEventListener('htp:view:wallet',function(){setTimeout(render,150);});
   window._wlRefresh=render;
 
-  // After page fully loads, inject mob toggle into header
   if(document.readyState==='complete') _injectMobToggle();
   else window.addEventListener('load',_injectMobToggle);
 })();
