@@ -1,13 +1,13 @@
 /**
- * htp-wallet-logos.js — v12.0
- * LOGOS LOCKED — same Chrome Web Store URLs as v10/v11, do not change.
+ * htp-wallet-logos.js — v13.0
+ * LOGOS LOCKED — same Chrome Web Store URLs as v10/v11/v12, do not change.
  * Kaspa-native wallets ONLY (verified native KAS support).
  * Kastle: connect()→getAccount() with proper error handling.
- * Mobile toggle: affects entire page body, not just wallet section.
- * Status cleared on every new connect attempt.
+ * Mobile toggle: affects entire page body.
+ * Card onclick REMOVED — only button fires (no flicker).
  */
 
-// ── LOGOS (LOCKED) ──────────────────────────────────────────────────────────
+// ── LOGOS (LOCKED) ───────────────────────────────────────────────────────────
 var _WL_LOGOS = {
   KasWare:  'https://lh3.googleusercontent.com/GWR2Bode3QAzDrsZJHVRsYhCN60azRCtL1xoOBxqCYcDpbMD_avwiFkuiAOAkuyLnEh9DGOAoZSbWDcNUhiZ7X6RZE8=s128-rj-sc0x00ffffff',
   Kastle:   'https://lh3.googleusercontent.com/byDg7ykj9UUJRur0v8jFr9orcj7N1_M6LuqtwnJxlnVNk4GV0JrhFmS0Xp0U9QRgxGZa4wf7-8M29v7kfEBc-Ha9kg=s128-rj-sc0x00ffffff',
@@ -18,7 +18,7 @@ var _WL_LOGOS = {
   KaspaCom: 'https://wallet.kaspa.com/favicon.ico'
 };
 
-// ── Install URLs ─────────────────────────────────────────────────────────────
+// ── Install URLs ──────────────────────────────────────────────────────────────
 var _WL_INSTALL = {
   KasWare:  'https://chromewebstore.google.com/detail/kasware-wallet/hklhheigdmpoolooomdihmhlpjjdbklf',
   Kastle:   'https://chromewebstore.google.com/detail/kastle/oambclflhjfppdmkghokjmpppmaebego',
@@ -29,7 +29,7 @@ var _WL_INSTALL = {
   KaspaCom: 'https://wallet.kaspa.com'
 };
 
-// ── Wallet definitions (Kaspa-native only) ───────────────────────────────────
+// ── Wallet definitions (Kaspa-native only) ────────────────────────────────────
 var _WL_DESKTOP = [
   { id:'KasWare',  name:'KasWare',  sub:'Chrome · Firefox', detect:function(){ return !!(window.kasware||window.kasWare); } },
   { id:'Kastle',   name:'Kastle',   sub:'Chrome',            detect:function(){ return !!window.kastle; } },
@@ -47,7 +47,7 @@ function _isPhone(){ return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent
 window._htpMobOn = window._htpMobOn !== undefined ? window._htpMobOn
   : (_isPhone() ? true : localStorage.getItem('htpMob')==='1');
 
-// ── Network selector ─────────────────────────────────────────────────────────
+// ── Network selector ──────────────────────────────────────────────────────────
 window._htpSetConnectNet = function(sid, net){
   window.activeNet = net;
   if(typeof window.htpSetNetwork==='function') window.htpSetNetwork(net);
@@ -85,15 +85,13 @@ function _injectNetSels(){
   }
 }
 
-// ── selWallet ── wallet-specific connect logic ────────────────────────────────
+// ── selWallet — wallet-specific connect logic ─────────────────────────────────
 (function(){
 
   async function connectKastle(p){
-    // Kastle API: connect() → boolean; then getAccount() → {address, publicKey}
     var ok;
     try { ok = await p.connect(); } catch(e) { throw new Error('Kastle: '+e.message); }
     if(ok === false) throw new Error('Kastle connection denied by user');
-    // ok can be true or an object - either way proceed to getAccount
     var acc;
     try { acc = await p.getAccount(); } catch(e) { throw new Error('Kastle getAccount failed: '+e.message); }
     if(!acc) throw new Error('Kastle returned no account');
@@ -145,8 +143,7 @@ function _injectNetSels(){
   }
 
   window.selWallet = async function(name){
-    // Clear any stale status immediately
-    setStatus('<span style="color:#94a3b8">Connecting to '+name+'…</span>');
+    setStatus('<span style="color:#94a3b8">Connecting to '+name+'...</span>');
 
     var p=null;
     for(var i=0;i<25;i++){p=getProv(name);if(p) break; await new Promise(function(r){setTimeout(r,150);});}
@@ -154,9 +151,8 @@ function _injectNetSels(){
     if(!p){
       var url=_WL_INSTALL[name]||'';
       setStatus('<div style="display:flex;gap:14px;align-items:flex-start">'
-        +'<div style="font-size:26px">🔌</div>'
         +'<div><div style="font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:6px">'+name+' not detected</div>'
-        +(url?'<div style="font-size:12px;color:#94a3b8;margin-bottom:10px">Install the extension, refresh this page, then connect.</div>'
+        +(url?'<div style="font-size:12px;color:#94a3b8;margin-bottom:10px">Install the extension, refresh, then connect.</div>'
           +'<a href="'+url+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;background:rgba(73,232,194,.08);border:1px solid rgba(73,232,194,.25);border-radius:10px;color:#49e8c2;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;text-decoration:none">Install '+name+' ↗</a>':'')
         +'<div style="margin-top:10px;font-size:12px;color:#475569">Or connect via <b style="color:#49e8c2">Mnemonic</b> / <b style="color:#49e8c2">Hex Key</b> below.</div>'
         +'</div></div>');
@@ -194,7 +190,7 @@ function _injectNetSels(){
       setStatus('<div style="display:flex;align-items:center;gap:10px">'
         +'<span style="color:#22c55e;font-size:18px">✓</span>'
         +'<div><div style="font-size:12px;font-weight:700;color:#f1f5f9">'+name+' Connected</div>'
-        +'<div style="font-family:monospace;font-size:11px;color:#49e8c2;margin-top:2px">'+addr.substring(0,16)+'…'+addr.slice(-6)+'</div>'
+        +'<div style="font-family:monospace;font-size:11px;color:#49e8c2;margin-top:2px">'+addr.substring(0,16)+'...'+addr.slice(-6)+'</div>'
         +'<div style="font-size:10px;color:#475569;margin-top:2px">Network: '+net+'</div>'
         +'</div></div>');
 
@@ -208,7 +204,7 @@ function _injectNetSels(){
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 (function(){
-  var sid='wl12-styles';
+  var sid='wl13-styles';
   if(document.getElementById(sid)) return;
   var s=document.createElement('style');
   s.id=sid;
@@ -224,8 +220,8 @@ function _injectNetSels(){
     '#htpMobToggle.mob-on{background:rgba(73,232,194,.2);border-color:#49e8c2;box-shadow:0 0 12px rgba(73,232,194,.3);}',
     '#wlGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}',
     '@media(min-width:480px){#wlGrid{grid-template-columns:repeat(4,1fr)!important;}}',
-    '.wlCard{position:relative;border-radius:16px;padding:18px 10px 14px;text-align:center;cursor:pointer;overflow:hidden;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s,opacity .2s;}',
-    '.wlCard:hover{transform:translateY(-5px) scale(1.02)!important;box-shadow:0 20px 50px rgba(0,0,0,.7)!important;opacity:1!important;}',
+    '.wlCard{position:relative;border-radius:16px;padding:18px 10px 14px;text-align:center;overflow:hidden;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s,opacity .2s;}',
+    '.wlCard:hover{transform:translateY(-3px) scale(1.01)!important;box-shadow:0 16px 40px rgba(0,0,0,.6)!important;opacity:1!important;}',
     '.wlCard-on{background:rgba(73,232,194,.04);border:1px solid rgba(73,232,194,.4);}',
     '.wlCard-off{background:rgba(255,255,255,.015);border:1px solid rgba(255,255,255,.07);opacity:.72;}',
     '.wlCard-dot{position:absolute;top:9px;right:9px;width:7px;height:7px;background:#49e8c2;border-radius:50%;box-shadow:0 0 8px #49e8c2;animation:wlPulse 2s ease-in-out infinite;}',
@@ -251,48 +247,44 @@ function _buildCard(w){
   var url=_WL_INSTALL[w.id]||'';
   var logo=_WL_LOGOS[w.id]||'';
   var dot=found?'<div class="wlCard-dot"></div>':'';
-  var sub=found?'<span style="color:#49e8c2">● Detected</span>':('<span style="color:#64748b">'+w.sub+'</span>');
+  var sub=found?'<span style="color:#49e8c2">Detected</span>':('<span style="color:#64748b">'+w.sub+'</span>');
   var cls='wlCard '+(found?'wlCard-on':'wlCard-off');
   var bCls='wlCard-btn '+(found?'wlCard-btn-on':'wlCard-btn-off');
-  var bTxt=found?'Connect':'Install ↗';
-  var act=found?'window.selWallet(\''+w.id+'\')'+'':'window.open(\''+url+'\',\'_blank\')';
-  return '<div class="'+cls+'" onclick="'+act+'">'
+  var bTxt=found?'Connect':'Install';
+  var act=found?'window.selWallet(\''+w.id+'\')':'window.open(\''+url+'\',\'_blank\')';
+  return '<div class="'+cls+'">'
     +dot
     +'<div class="wlCard-logo"><img src="'+logo+'" alt="'+w.name+'" onerror="this.style.display=\'none\'"></div>'
     +'<div class="wlCard-name">'+w.name+'</div>'
     +'<div class="wlCard-sub">'+sub+'</div>'
-    +'<button class="'+bCls+'" onclick="event.stopPropagation();'+act+'">'+bTxt+'</button>'
+    +'<button class="'+bCls+'" onclick="'+act+'">'+bTxt+'</button>'
     +'</div>';
 }
 
 // ── Mobile toggle (whole page) ────────────────────────────────────────────────
 function _applyMob(){
   var on=window._htpMobOn;
-  // Apply to entire page
-  var html=document.documentElement;
-  var body=document.body;
-  var app=document.getElementById('app');
   var ms=document.getElementById('htpMobStyle');
   if(!ms){ms=document.createElement('style');ms.id='htpMobStyle';document.head.appendChild(ms);}
   if(on){
     ms.textContent=[
       'html,body{overflow-x:hidden!important;}',
       '#app,body>*:not(#htpMobStyle){max-width:390px!important;margin-left:auto!important;margin-right:auto!important;}',
-      'body{background:#000!important;box-shadow:inset 0 0 0 100vw rgba(0,0,0,.85)!important;}'
+      'body{background:#000!important;}'
     ].join('');
+    var app=document.getElementById('app');
     if(app){app.style.maxWidth='390px';app.style.margin='0 auto';app.style.boxShadow='0 0 80px rgba(0,0,0,.9)';}
   }else{
     ms.textContent='';
-    if(app){app.style.maxWidth='';app.style.margin='';app.style.boxShadow='';}
+    var app2=document.getElementById('app');
+    if(app2){app2.style.maxWidth='';app2.style.margin='';app2.style.boxShadow='';}
   }
   localStorage.setItem('htpMob',on?'1':'0');
-  // Update button appearance
   var btn=document.getElementById('htpMobToggle');
   if(btn){
-    btn.textContent=on?'📱 Mobile On':'📱 Mobile';
+    btn.textContent=on?'Mobile On':'Mobile';
     if(on) btn.classList.add('mob-on'); else btn.classList.remove('mob-on');
   }
-  // Refresh wallet grid
   if(typeof window._wlRefresh==='function') setTimeout(window._wlRefresh,60);
 }
 
@@ -327,8 +319,8 @@ window._htpToggleMob=function(){
       '<div class="wlHdr">'
       +'<span class="wlHdr-title">Choose Wallet</span>'
       +'<div class="wlHdr-line"></div>'
-      +'<button id="htpMobToggle" onclick="window._htpToggleMob()">📱 Mobile</button>'
-      +'<span class="wlHdr-hint">Click to connect · Mnemonic &amp; Key below</span>'
+      +'<button id="htpMobToggle" onclick="window._htpToggleMob()">Mobile</button>'
+      +'<span class="wlHdr-hint">Click to connect &middot; Mnemonic &amp; Key below</span>'
       +'</div>'
       +'<div id="wlGrid">'+getWallets().map(_buildCard).join('')+'</div>'
       +'<div id="walletStatus"></div>';
@@ -338,7 +330,6 @@ window._htpToggleMob=function(){
     if(old) old.parentNode.replaceChild(wrap,old);
     else{ var sh=mx.querySelector('.sh'); mx.insertBefore(wrap,sh?sh.nextSibling:mx.firstChild); }
 
-    // Remove duplicate status divs
     var allSt=sec.querySelectorAll('#walletStatus');
     allSt.forEach(function(el,i){if(i>0) el.remove();});
 
@@ -350,9 +341,9 @@ window._htpToggleMob=function(){
   else run();
 
   var _go=window.go;
-  if(typeof _go==='function'&&!_go._wl12){
+  if(typeof _go==='function'&&!_go._wl13){
     window.go=function(v){_go(v);if(v==='wallet') setTimeout(run,200);};
-    window.go._wl12=true;
+    window.go._wl13=true;
   }
   window.addEventListener('htp:view:wallet',function(){setTimeout(run,200);});
   window._wlRefresh=run;
