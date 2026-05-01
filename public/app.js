@@ -5,7 +5,7 @@
 // ============================================================
 
 const API = '';
-const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+const WS_URL = 'ws://178.105.76.81:8080/ws';
 
 const app = {
   wallet: new WalletUI(),
