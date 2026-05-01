@@ -14,8 +14,11 @@ const SettlementEngine = require('./lib/settlement');
 const OracleDaemon = require('./lib/oracle-daemon');
 const ScriptValidator = require('./lib/script-validator');
 const { getOdds, estimatePayout, FEE_SCHEDULE, calculateGamePayout } = require('./lib/fees');
+const GameManager = require('./lib/game-manager');
 
 const PORT = process.env.PORT || 3000;
+const RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || '';
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://hightable420.web.app,https://hightable420.firebaseapp.com').split(',');
 const KASPA_RPC_URL = process.env.KASPA_WRPC_URL || 'ws://127.0.0.1:16210';
 const MAINNET_API = process.env.MAINNET_API || 'https://api.kaspa.org';
 
@@ -24,6 +27,27 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws' });
 
 app.use(express.json());
+
+// CORS for Railway + Firebase Hosting
+app.use((req, res, next) => {
+  const origin = req.headers.origin || '';
+  if (ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.railway.app') || origin.endsWith('.web.app') || origin.endsWith('.firebaseapp.com')) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
+app.get('/api/config', (req, res) => {
+  const domain = RAILWAY_PUBLIC_DOMAIN || req.headers.host || 'localhost:' + PORT;
+  const proto = domain.includes('localhost') ? 'ws' : 'wss';
+  res.json({ wsUrl: proto + '://' + domain + '/ws', network: process.env.HTP_NETWORK || 'tn12', version: '8.0.0' });
+});
+
+app.get('/api/health', (req, res) => res.json({ ok: true, uptime: process.uptime() }));
+
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.wasm')) {
@@ -41,7 +65,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ─── Initialize Services ────────────────────────────────
+// ─── Initialize Services ────────────────────────────────────
 const db = new Database();
 const rpc = new KaspaRPC(KASPA_RPC_URL);
 const validator = new ScriptValidator();
@@ -58,7 +82,7 @@ const indexer = new UtxoIndexer(rpc, db);
 const settlement = new SettlementEngine(txBuilder, rpc, db, indexer);
 const oracle = new OracleDaemon(rpc, db, settlement, indexer);
 
-// ─── WebSocket Clients ──────────────────────────────────
+// ─── WebSocket Clients ────────────────────────────────
 const clients = new Set();
 const gameRooms = new Map();
 
@@ -77,6 +101,8 @@ function broadcastToGame(gameId, event, data) {
     if (ws.readyState === 1) ws.send(msg);
   }
 }
+
+const gameManager = new GameManager(db, settlement, broadcastToGame);
 
 wss.on('connection', (ws) => {
   clients.add(ws);
@@ -123,11 +149,23 @@ function handleWsMessage(ws, msg) {
       break;
     }
     case 'game-action': {
-      // Generic action for poker/blackjack (fold, call, raise, hit, stand, etc.)
       const game = db.getGame(msg.gameId);
       if (!game || game.status !== 'playing') return;
-      db.addMove(msg.gameId, { action: msg.action, data: msg.data, player: msg.player });
-      broadcastToGame(msg.gameId, 'game-action', { gameId: msg.gameId, action: msg.action, data: msg.data, player: msg.player });
+      if (game.type === 'poker' || game.type === 'blackjack') {
+        // Server-authoritative card game: route through GameManager
+        const result = gameManager.handleAction(msg.gameId, msg.player, msg.action, msg.data);
+        if (result && result.error) {
+          ws.send(JSON.stringify({ event: 'action-error', data: { gameId: msg.gameId, error: result.error } }));
+        } else if (result && result.finished) {
+          db.updateGame(msg.gameId, { status: 'finished', winner: result.winner, endedAt: Date.now() });
+          broadcastToGame(msg.gameId, 'game-over', { gameId: msg.gameId, winner: result.winner, reason: result.reason || 'game-over' });
+          settlement.settleGame(msg.gameId, result.winner).catch(e => console.error('[WS] Settle error:', e.message));
+        }
+      } else {
+        // Peer-validated games (chess/checkers/connect4): relay only
+        db.addMove(msg.gameId, { action: msg.action, data: msg.data, player: msg.player });
+        broadcastToGame(msg.gameId, 'game-action', { gameId: msg.gameId, action: msg.action, data: msg.data, player: msg.player });
+      }
       break;
     }
     case 'game-state-update': {
@@ -166,7 +204,7 @@ function handleWsMessage(ws, msg) {
   }
 }
 
-// ─── Indexer / Oracle Events → WebSocket ────────────────
+// ─── Indexer / Oracle Events → WebSocket ────────────
 indexer.on('pool-updated', (data) => broadcast('pool-updated', data));
 indexer.on('receipts-updated', (data) => broadcast('receipts-updated', data));
 indexer.on('escrow-funded', (data) => broadcast('escrow-funded', data));
@@ -175,7 +213,7 @@ oracle.on('resolved', (data) => broadcast('market-resolved', data));
 oracle.on('timeout-refunded', (data) => broadcast('market-refunded', data));
 oracle.on('game-settled', (data) => broadcast('game-settled', data));
 
-// ─── REST API: Markets ──────────────────────────────────
+// ─── REST API: Markets ────────────────────────────
 app.get('/api/markets', (req, res) => {
   const { status, category } = req.query;
   let markets = db.getAllMarkets();
@@ -364,7 +402,7 @@ app.get('/api/markets/:id/estimate', (req, res) => {
   res.json({ estimatedPayout: est, estimatedPayoutKas: est / 1e8 });
 });
 
-// ─── REST API: Node Info ─────────────────────────────────
+// ─── REST API: Node Info ────────────────────────────
 app.get('/api/node/info', async (req, res) => {
   try {
     const info = await rpc.getInfo();
@@ -424,7 +462,7 @@ app.post('/api/tx/submit', async (req, res) => {
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-// ─── REST API: Games ────────────────────────────────────
+// ─── REST API: Games ──────────────────────────────
 app.get('/api/games', (req, res) => {
   const { status, type } = req.query;
   let games = db.getAllGames();
@@ -492,6 +530,7 @@ app.post('/api/games/:id/join', async (req, res) => {
     db.updateUser(playerB, { totalGames: user.totalGames + 1, pubkey: playerBPubkey });
 
     broadcastToGame(game.id, 'game-started', { gameId: game.id, playerB });
+    try { gameManager.onGameStarted(db.getGame(game.id)); } catch(e) { console.error('[GM] onGameStarted error:', e.message); }
     broadcast('game-joined', { gameId: game.id, playerB });
 
     res.json({ game: db.getGame(game.id), pskt: joinTx.pskt });
@@ -501,7 +540,7 @@ app.post('/api/games/:id/join', async (req, res) => {
 });
 
 
-// ─── REST API: Game Claim / Payout ─────────────────────
+// ─── REST API: Game Claim / Payout ─────────────────
 app.post('/api/games/:id/claim', async (req, res) => {
   try {
     const game = db.getGame(req.params.id);
@@ -533,7 +572,7 @@ app.get('/api/games/:id/payout', (req, res) => {
   });
 });
 
-// ─── REST API: Users / Stats ────────────────────────────
+// ─── REST API: Users / Stats ────────────────────────
 app.get('/api/users/:addr', (req, res) => {
   const user = db.getOrCreateUser(req.params.addr);
   const positions = db.getUserPositions(req.params.addr);
@@ -553,7 +592,7 @@ app.get('/api/fees', (req, res) => {
   res.json(FEE_SCHEDULE);
 });
 
-// ─── REST API: Script Validator ─────────────────────────
+// ─── REST API: Script Validator ─────────────────────
 app.post('/api/validate-script', (req, res) => {
   const { script } = req.body;
   if (!script) return res.status(400).json({ error: 'script required' });
@@ -566,7 +605,7 @@ app.post('/api/disassemble', (req, res) => {
   res.json(validator.disassemble(script));
 });
 
-// ─── REST API: Oracle ───────────────────────────────────
+// ─── REST API: Oracle ───────────────────────────────
 app.get('/api/oracle/status', (req, res) => {
   res.json(oracle.getStatus());
 });
@@ -581,7 +620,7 @@ app.post('/api/oracle/resolve', async (req, res) => {
   }
 });
 
-// ─── REST API: Mainnet Proxy ────────────────────────────
+// ─── REST API: Mainnet Proxy ────────────────────────
 app.get('/api/mainnet/:path(*)', async (req, res) => {
   try {
     const url = MAINNET_API + '/' + req.params.path;
@@ -593,7 +632,7 @@ app.get('/api/mainnet/:path(*)', async (req, res) => {
   }
 });
 
-// ─── REST API: Network Info ─────────────────────────────
+// ─── REST API: Network Info ─────────────────────────
 app.get('/api/network', async (req, res) => {
   try {
     const info = await rpc.getBlockDagInfo();
@@ -613,12 +652,12 @@ app.get('/api/network', async (req, res) => {
   }
 });
 
-// ─── SPA Fallback ───────────────────────────────────────
+// ─── SPA Fallback ───────────────────────────────────
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ─── Start ──────────────────────────────────────────────
+// ─── Start ──────────────────────────────────────────
 async function start() {
   console.log('╔══════════════════════════════════════════╗');
   console.log('║   HIGH TABLE PROTOCOL v8.0               ║');
