@@ -1,5 +1,5 @@
 // =============================================================================
-// htp-markets-ui.js  v6 - refined active pills + High Table logo mark
+// htp-markets-ui.js  v7 - HTP diamond logo, Place Prediction, clean mode disclosures
 // =============================================================================
 (function(W) {
   'use strict';
@@ -68,7 +68,7 @@
       '.htp-mc{background:rgba(8,13,26,.9);border:1px solid rgba(73,232,194,.08);border-radius:18px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;transition:border-color .2s,transform .2s,box-shadow .2s;box-shadow:0 8px 24px rgba(0,0,0,.2)}',
       '.htp-mc:hover{border-color:rgba(73,232,194,.3);transform:translateY(-3px);box-shadow:0 16px 44px rgba(0,0,0,.32)}',
       '.htp-mc-bar{height:3px}',
-      '.htp-mc-cover{height:112px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}',
+      '.htp-mc-cover{height:160px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}',
       '.htp-mc-cover-img{width:100%;height:100%;object-fit:cover}',
       '.htp-mc-cover-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center}',
       '.htp-mc-body{padding:14px 16px;flex:1;display:flex;flex-direction:column}',
@@ -99,7 +99,7 @@
       '.htp-empty-cta:hover{background:rgba(73,232,194,.14);box-shadow:0 0 16px rgba(73,232,194,.12)}',
       '.htp-sk{background:rgba(8,13,26,.72);border:1px solid rgba(73,232,194,.07);border-radius:18px;overflow:hidden;position:relative;min-height:250px}',
       '.htp-sk::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.05),transparent);animation:htpShim 1.6s infinite}',
-      '.htp-sk-top{height:112px;background:linear-gradient(135deg,rgba(73,232,194,.06),rgba(99,102,241,.06))}',
+      '.htp-sk-top{height:160px;background:linear-gradient(135deg,rgba(73,232,194,.06),rgba(99,102,241,.06))}',
       '.htp-sk-body{padding:14px}',
       '.htp-sk-ln{height:9px;border-radius:5px;background:rgba(255,255,255,.04);margin-bottom:11px}',
       '.htp-sk-ln.a{width:42%}.htp-sk-ln.b{width:80%}.htp-sk-ln.c{width:62%}.htp-sk-ln.d{width:75%}',
@@ -139,7 +139,7 @@
 
   function getMkts() { return (W.mkts && W.mkts.length) ? W.mkts : []; }
 
-  var htpLogoSVG = '<svg width="30" height="30" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 10L23 20L13 30" stroke="#49e8c2" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M27 9V31" stroke="#49e8c2" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var htpLogoSVG = '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="18" fill="rgba(73,232,194,0.07)" stroke="rgba(73,232,194,0.2)" stroke-width="1"/><polygon points="20,8 30,16 30,24 20,32 10,24 10,16" fill="rgba(73,232,194,0.1)" stroke="rgba(73,232,194,0.35)" stroke-width="1.5"/><path d="M14 14L20 20L14 26M20 20H26" stroke="#49e8c2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   function urgencyChip(m) {
     var raw = m.deadline || m.dead || m.expiresAt || m.resolutionDate || m.cl;
@@ -160,8 +160,16 @@
     var pFmt = pool >= 1000 ? (pool / 1000).toFixed(1) + 'K' : (pool || 0).toLocaleString();
     var yW = Math.max(m.yP || 0, 2), nW = Math.max(m.nP || 0, 2);
     var cover = m.img
-      ? '<div class="htp-mc-cover"><img class="htp-mc-cover-img" src="' + m.img + '" loading="lazy"/></div>'
-      : '<div class="htp-mc-cover htp-mc-cover-fallback" style="background:radial-gradient(circle at 30% 30%,rgba(73,232,194,.12),transparent 45%),linear-gradient(135deg,' + col + '14,#060a12 78%)">' + htpLogoSVG + '</div>';
+      ? '<div class="htp-mc-cover" style="height:160px"><img class="htp-mc-cover-img" src="' + m.img + '" loading="lazy" style="width:100%;height:100%;object-fit:cover"/></div>'
+      : '<div class="htp-mc-cover" style="height:160px;background:'
+        + 'radial-gradient(ellipse at 20% 50%,' + col + '28,transparent 55%),'
+        + 'radial-gradient(ellipse at 80% 20%,rgba(99,102,241,.18),transparent 50%),'
+        + 'linear-gradient(135deg,' + col + '0d 0%,#060a12 60%);'
+        + 'display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">'
+        + '<div style="position:absolute;inset:0;background-image:radial-gradient(circle,' + col + '08 1px,transparent 1px);background-size:22px 22px"></div>'
+        + '<div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:5px;opacity:.4">' + htpLogoSVG
+        + '<span style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(73,232,194,.45)">HTP</span></div>'
+        + '</div>';
     return '<div class="htp-mc" onclick="openM(\'' + m.id + '\')">'
       + '<div class="htp-mc-bar" style="background:linear-gradient(90deg,' + col + ',#6366f1)"></div>'
       + cover
@@ -360,6 +368,76 @@
     }, 800);
   }
 
+  // ── Patch "Place Bet" → "Place Prediction" ──────────────────────────────
+  function patchBetButton() {
+    function fixBtn() {
+      var btn = document.getElementById('betBtn');
+      if (!btn) return;
+      if ((btn.textContent || '').indexOf('Place Bet') === 0)
+        btn.textContent = btn.textContent.replace('Place Bet', 'Place Prediction');
+    }
+    fixBtn();
+    var mo = new MutationObserver(fixBtn);
+    var btn = document.getElementById('betBtn');
+    if (btn) mo.observe(btn, { childList: true, characterData: true, subtree: true });
+    var _calc = W.calc;
+    if (_calc && !_calc._bp) { W.calc = function(){ _calc.apply(this,arguments); setTimeout(fixBtn,0); }; W.calc._bp=true; }
+    var _ut = W.updTrade;
+    if (_ut && !_ut._bp) { W.updTrade = function(){ _ut.apply(this,arguments); setTimeout(fixBtn,0); }; W.updTrade._bp=true; }
+  }
+
+  // ── Improved Spot / Maximizer fee disclosures ────────────────────────────
+  function patchFeeDisclosure() {
+    W.updateFeeDisclosure = function(mode) {
+      var el = document.querySelector('.fee-disclosure');
+      if (!el) return;
+      if (mode === 'maximizer') {
+        el.innerHTML =
+          '<div style="margin-bottom:9px;display:flex;align-items:center;gap:8px">'
+        + '<span style="font-weight:800;font-size:12.5px;color:#49e8c2">Maximizer Mode</span>'
+        + '<span style="font-size:10px;padding:2px 8px;background:rgba(99,102,241,.15);color:#a78bfa;border-radius:99px;font-weight:700">SilverScript \u26a1</span>'
+        + '</div>'
+        + '<div style="display:flex;flex-direction:column;gap:7px;font-size:12px">'
+        + '<div style="display:flex;gap:10px;align-items:flex-start">'
+        + '<span style="width:38px;flex-shrink:0;font-size:10px;font-weight:800;padding:3px 0;color:#22c55e;text-align:center;background:rgba(34,197,94,.1);border-radius:5px;border:1px solid rgba(34,197,94,.2)">WIN</span>'
+        + '<span style="color:#cbd5e1;line-height:1.5">Full pool payout at current odds \u2014 identical to Spot. 2% fee on winnings only.</span>'
+        + '</div>'
+        + '<div style="display:flex;gap:10px;align-items:flex-start">'
+        + '<span style="width:38px;flex-shrink:0;font-size:10px;font-weight:800;padding:3px 0;color:#f59e0b;text-align:center;background:rgba(245,158,11,.1);border-radius:5px;border:1px solid rgba(245,158,11,.2)">LOSS</span>'
+        + '<span style="color:#cbd5e1;line-height:1.5">Protocol holds 50% of your stake as a recoverable cushion. Reclaim it anytime for a 30% recovery fee \u2014 keeping <b style="color:#f1f5f9">35% of your stake back</b>.</span>'
+        + '</div>'
+        + '</div>'
+        + '<div style="margin-top:9px;padding:8px 10px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.12);border-radius:8px;font-size:10px;color:#64748b;line-height:1.55">'
+        + 'Insurance collateral is locked in a SilverScript covenant on Kaspa L1. Recovery is always available \u2014 no middlemen required.'
+        + '</div>';
+      } else {
+        el.innerHTML =
+          '<div style="margin-bottom:9px">'
+        + '<span style="font-weight:800;font-size:12.5px;color:#49e8c2">Spot Mode</span>'
+        + '</div>'
+        + '<div style="display:flex;flex-direction:column;gap:7px;font-size:12px">'
+        + '<div style="display:flex;gap:10px;align-items:flex-start">'
+        + '<span style="width:38px;flex-shrink:0;font-size:10px;font-weight:800;padding:3px 0;color:#22c55e;text-align:center;background:rgba(34,197,94,.1);border-radius:5px;border:1px solid rgba(34,197,94,.2)">WIN</span>'
+        + '<span style="color:#cbd5e1;line-height:1.5">Receive your full share of the pool, proportional to your stake and the current odds.</span>'
+        + '</div>'
+        + '<div style="display:flex;gap:10px;align-items:flex-start">'
+        + '<span style="width:38px;flex-shrink:0;font-size:10px;font-weight:800;padding:3px 0;color:#ef4444;text-align:center;background:rgba(239,68,68,.1);border-radius:5px;border:1px solid rgba(239,68,68,.2)">LOSS</span>'
+        + '<span style="color:#cbd5e1;line-height:1.5">Your entire stake is distributed to the winning side. <b style="color:#f1f5f9">No partial recovery.</b></span>'
+        + '</div>'
+        + '</div>'
+        + '<div style="margin-top:9px;padding:8px 10px;background:rgba(73,232,194,.04);border:1px solid rgba(73,232,194,.08);border-radius:8px;font-size:10px;color:#64748b;line-height:1.55">'
+        + 'Parimutuel: all stakes pool together. Winners split the losing side pro-rata. 2% fee on winnings only. Zero fees on losses. Settled on Kaspa L1.'
+        + '</div>';
+      }
+    };
+    var _setMd = W.setMd;
+    if (_setMd && !_setMd._fp) {
+      W.setMd = function(m) { _setMd.apply(this,arguments); W.updateFeeDisclosure(m); };
+      W.setMd._fp = true;
+    }
+    setTimeout(function(){ W.updateFeeDisclosure(W.tMode || 'spot'); }, 400);
+  }
+
   W._htpCat = function(c) { W.fCat = c; buildSlider(); W.renderM(); };
   W.setCat = W._htpCat;
   W.buildF = function() { ensureMarketsLayout(); buildSlider(); updateNavBadge(); updateCount(); };
@@ -407,6 +485,8 @@
         patchPortfolioTabs();
         patchInitClaimPanel();
         patchClaimPanel();
+        patchBetButton();
+        patchFeeDisclosure();
         watchMkts();
         watchWalletState();
         var _go = W.go;
