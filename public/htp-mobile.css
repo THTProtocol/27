@@ -475,3 +475,26 @@ html.htp-mob-preview .shell {
     font-size: 14px !important;
   }
 }
+
+/* ================================================================
+ * HTP COSMETIC: tap targets and mobile nav sizing (Tasks 4.3, 4.7)
+ * Additive only. Does not touch colors, fonts, layout, or theme.
+ * ================================================================ */
+
+/* 4.3 Mobile tap targets at least 44px */
+.chess-square,
+.connect4-cell,
+.checkers-square,
+.wallet-card,
+button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* 4.7 Mobile nav button sizing */
+nav button,
+.nav-btn {
+  min-height: 44px;
+  padding: 10px 14px;
+  margin: 2px;
+}

@@ -634,3 +634,16 @@ a:hover { color: var(--green-light); }
   .games-grid { grid-template-columns: 1fr; }
   .modal { min-width: unset; width: calc(100% - 24px); }
 }
+
+/* ================================================================
+ * HTP COSMETIC: subtle pulse on "Your turn" indicator (Task 4.6)
+ * Additive only. Does not touch colors, fonts, layout, or theme.
+ * ================================================================ */
+@keyframes htp-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+.your-turn,
+.htp-chess-status-txt.your-turn {
+  animation: htp-pulse 1.5s ease-in-out infinite;
+}

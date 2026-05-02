@@ -168,22 +168,54 @@
    * REAL WALLET LOGOS
    * ═══════════════════════════════════════════════════════════════════════════ */
 
+  // Inline SVG placeholder used when a remote favicon 404s. Picks the first
+  // letter of the wallet name and draws it on the standard tile background.
+  function placeholderSvg(letter) {
+    var ch = (letter || '?').toString().charAt(0).toUpperCase();
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" width="44" height="44">' +
+      '<rect width="44" height="44" rx="10" fill="rgba(79,152,163,0.18)"/>' +
+      '<rect x="3" y="3" width="38" height="38" rx="8" fill="#0a1f1a"/>' +
+      '<text x="22" y="29" font-family="monospace,Courier New" font-size="19" font-weight="900" fill="#49EACB" text-anchor="middle">' + ch + '</text>' +
+      '</svg>'
+    );
+  }
+
   function getWalletLogo(type) {
     var s = 'width:44px;height:44px;border-radius:8px;object-fit:contain;display:block;';
+    // Each img falls back through: local png (when present) -> known favicon ->
+    // inline SVG placeholder. We swap to the placeholder as the final step so
+    // a broken network URL never leaves an empty img frame.
+    var ph = {
+      Kaspium:  placeholderSvg('K'),
+      KaspaCom: placeholderSvg('K'),
+      Tangem:   placeholderSvg('T'),
+      KSPRBot:  placeholderSvg('B'),
+      Kastle:   placeholderSvg('K'),
+      Kasperia: placeholderSvg('K'),
+      Kasanova: placeholderSvg('N'),
+      KasNG:    placeholderSvg('N'),
+      OKX:      placeholderSvg('O')
+    };
+    function imgWithFallback(primary, secondary, key) {
+      var fb = ph[key] || placeholderSvg(key);
+      var sec = secondary ? secondary : fb;
+      // Two-step onerror: try secondary, then placeholder.
+      var oerr = 'if(this.dataset.htpFb!==\'1\'){this.dataset.htpFb=\'1\';this.src=\'' + sec + '\';}else{this.onerror=null;this.src=\'' + fb + '\';}';
+      return '<img src="' + primary + '" onerror="' + oerr + '" style="' + s + '">';
+    }
     var logos = {
-      // KasWare FX — inline SVG (site is down, no external dependency)
+      // KasWare FX  inline SVG (site is down, no external dependency)
       'KasWare': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" width="44" height="44" style="border-radius:8px;display:block"><rect width="44" height="44" rx="10" fill="#49EACB"/><rect x="3" y="3" width="38" height="38" rx="8" fill="#0a1f1a"/><text x="22" y="30" font-family="monospace,Courier New" font-size="19" font-weight="900" fill="#49EACB" text-anchor="middle">|&lt;</text></svg>',
-      // Local PNGs
-      'Kastle':   '<img src="img/kastle.png"   onerror="this.src=\'https://kastle.cc/favicon.ico\'"   style="' + s + '">',
-      'Kasperia': '<img src="img/kasperia.png" onerror="this.src=\'https://kasperia.com/favicon.ico\'" style="' + s + '">',
-      // Live favicons
-      'OKX':      '<img src="https://static.okx.com/cdn/assets/imgs/247/58E63FEA47A2B7D7.png" onerror="this.src=\'https://www.okx.com/favicon.ico\'" style="' + s + '">',
-      'KasNG':    '<img src="https://kaspa-ng.org/favicon.ico" onerror="this.src=\'https://raw.githubusercontent.com/aspectron/kaspa-ng/master/resources/icon.png\'" style="' + s + '">',
-      'Kasanova': '<img src="https://kasanova.app/favicon.ico" onerror="this.src=\'https://kasanova.io/favicon.ico\'" style="' + s + '">',
-      'Kaspium':  '<img src="https://kaspium.io/favicon.ico" style="' + s + '">',
-      'KaspaCom': '<img src="https://kaspa.com/favicon.ico" onerror="this.src=\'https://kaspacom.com/favicon.ico\'" style="' + s + '">',
-      'Tangem':   '<img src="https://tangem.com/favicon.ico" style="' + s + '">',
-      'KSPRBot':  '<img src="https://kspr.app/favicon.ico" onerror="this.src=\'https://telegram.org/favicon.ico\'" style="' + s + '">'
+      'Kastle':   imgWithFallback('img/kastle.png',   'https://kastle.cc/favicon.ico',   'Kastle'),
+      'Kasperia': imgWithFallback('img/kasperia.png', 'https://kasperia.com/favicon.ico','Kasperia'),
+      'OKX':      imgWithFallback('https://static.okx.com/cdn/assets/imgs/247/58E63FEA47A2B7D7.png', 'https://www.okx.com/favicon.ico', 'OKX'),
+      'KasNG':    imgWithFallback('https://kaspa-ng.org/favicon.ico', 'https://raw.githubusercontent.com/aspectron/kaspa-ng/master/resources/icon.png', 'KasNG'),
+      'Kasanova': imgWithFallback('https://kasanova.app/favicon.ico', 'https://kasanova.io/favicon.ico', 'Kasanova'),
+      'Kaspium':  imgWithFallback('https://kaspium.io/favicon.ico', '', 'Kaspium'),
+      'KaspaCom': imgWithFallback('https://kaspa.com/favicon.ico',  'https://kaspacom.com/favicon.ico', 'KaspaCom'),
+      'Tangem':   imgWithFallback('https://tangem.com/favicon.ico', '', 'Tangem'),
+      'KSPRBot':  imgWithFallback('https://kspr.app/favicon.ico',   'https://telegram.org/favicon.ico', 'KSPRBot')
     };
     return logos[type] || '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" width="44" height="44"><rect width="44" height="44" rx="10" fill="rgba(79,152,163,0.15)"/><circle cx="22" cy="22" r="12" fill="none" stroke="#4f98a3" stroke-width="2"/></svg>';
   }
