@@ -63,7 +63,15 @@
     OP_TXOUTPUTSPK:  0xc3
   };
 
-  var FEE_DEST = 'kaspa:qrpynduwkmpzdnx4q44zyln3vg2gkynfkq28tz44j8l4gafxln0hwyj4szzz';
+  // Network-specific treasury addresses. Use getFeeDest(networkId) to select.
+  var MAINNET_TREASURY = 'kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel';
+  var TESTNET_TREASURY = 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m';
+  function getFeeDest(networkId) {
+    if (networkId === 'mainnet' || networkId === 'kaspa') return MAINNET_TREASURY;
+    return TESTNET_TREASURY;
+  }
+  // Backward-compat alias used by older code paths.
+  var FEE_DEST = TESTNET_TREASURY;
 
   /* == Helpers == */
   function hexToBytes(hex) {
@@ -154,10 +162,11 @@
 
     var escrowPubHex = escrowPub.toString ? escrowPub.toString('hex') : bytesToHex(escrowPub);
 
-    // 2. Derive fee SPK for covenant output enforcement
+    // 2. Derive fee SPK for covenant output enforcement (network-specific treasury)
+    var feeDestForNet = getFeeDest(networkId);
     var feeSPKHex;
     try {
-      var feeAddrObj = SDK.Address ? new SDK.Address(FEE_DEST) : { scriptPublicKey: function(){ return new Uint8Array(34); } };
+      var feeAddrObj = SDK.Address ? new SDK.Address(feeDestForNet) : { scriptPublicKey: function(){ return new Uint8Array(34); } };
       var feeSPK = feeAddrObj.scriptPublicKey ? feeAddrObj.scriptPublicKey() : feeAddrObj.toScriptPublicKey();
       feeSPKHex = bytesToHex(feeSPK instanceof Uint8Array ? feeSPK : new Uint8Array(feeSPK));
     } catch (e) {
@@ -195,9 +204,38 @@
         : escrowPubHex;
     }
 
-    // 6. Persist escrow record to localStorage
+    // 6. Persist escrow record SECURELY.
+    // CRITICAL: Private key MUST NOT be stored in plaintext localStorage.
+    // Encrypt with AES-256-GCM using ephemeral session key, store encrypted blob in sessionStorage only.
+    // localStorage receives ONLY the non-sensitive metadata for recovery display.
     var stakeSompi = BigInt(Math.round(stakeKas * Number(SOMPI)));
-    var record = {
+    var privKeyHex = escrowPriv.toString ? escrowPriv.toString('hex') : bytesToHex(escrowPriv);
+
+    // Generate (or reuse) the per-session AES key. Never persisted to disk.
+    var sessionKey = window._htpEscrowSessionKey;
+    if (!sessionKey) {
+      sessionKey = Array.from(
+        crypto.getRandomValues(new Uint8Array(32))
+      ).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+      window._htpEscrowSessionKey = sessionKey;
+    }
+
+    var encPrivKey;
+    try {
+      var encKeyHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(sessionKey));
+      var aesKey = await crypto.subtle.importKey('raw', encKeyHash, { name: 'AES-GCM' }, false, ['encrypt']);
+      var iv = crypto.getRandomValues(new Uint8Array(12));
+      var ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, aesKey, new TextEncoder().encode(privKeyHex));
+      var combined = new Uint8Array(iv.length + ct.byteLength);
+      combined.set(iv);
+      combined.set(new Uint8Array(ct), iv.length);
+      encPrivKey = btoa(String.fromCharCode.apply(null, combined));
+    } catch (e) {
+      console.error('[HTP Escrow] private key encryption failed:', e);
+      encPrivKey = null;
+    }
+
+    var publicRecord = {
       matchId:       matchId,
       escrowAddress: escrowAddress,
       escrowPubHex:  escrowPubHex,
@@ -207,31 +245,80 @@
       stakeKas:      stakeKas,
       stakeSompi:    stakeSompi.toString(),
       networkId:     networkId,
-      createdAt:     Date.now(),
-      privateKey:    escrowPriv.toString ? escrowPriv.toString('hex') : bytesToHex(escrowPriv)
+      createdAt:     Date.now()
     };
+    var secureRecord = {
+      matchId:      matchId,
+      encryptedKey: encPrivKey,
+      createdAt:    Date.now()
+    };
+
     try {
-      localStorage.setItem('htpEscrow_' + matchId, JSON.stringify(record));
+      // Public metadata in localStorage (safe for recovery/display).
+      localStorage.setItem('htpEscrow_' + matchId, JSON.stringify(publicRecord));
+      // Encrypted private key ONLY in sessionStorage (cleared on tab close).
+      sessionStorage.setItem('htpEscrowKey_' + matchId, JSON.stringify(secureRecord));
     } catch(e) {
-      console.warn('[HTP Escrow] localStorage write failed:', e.message);
+      console.warn('[HTP Escrow] storage write failed:', e.message);
     }
 
-    console.log('[HTP Escrow] generated escrow for match', matchId, '| USE_P2SH:', USE_P2SH, '| addr:', escrowAddress);
-    return record;
+    // Schedule cleanup of the encrypted key after 1 hour.
+    setTimeout(function() {
+      try { sessionStorage.removeItem('htpEscrowKey_' + matchId); } catch(e) {}
+    }, 3600000);
+
+    console.log('[HTP Escrow] generated escrow for match', matchId, '| USE_P2SH:', USE_P2SH, '| addr:', escrowAddress, '| PRIVATE KEY ENCRYPTED');
+    // Return record includes the in-memory plaintext private key for the caller to use immediately,
+    // but it is NOT written to disk in plaintext.
+    return Object.assign({}, publicRecord, { privateKey: privKeyHex });
   }
 
-  /* == Escrow retrieval == */
-  function getEscrow(matchId) {
+  /* == Escrow retrieval (decrypts private key from sessionStorage if available) == */
+  async function getEscrow(matchId) {
     try {
-      var raw = localStorage.getItem('htpEscrow_' + matchId)
-             || localStorage.getItem('htpcovenantescrow_' + matchId)
-             || localStorage.getItem('htpcovenantescrows');
-      if (!raw) return null;
-      var data = JSON.parse(raw);
-      // Handle legacy flat-keyed storage
-      if (data && data[matchId]) return data[matchId];
-      return data;
-    } catch(e) { return null; }
+      var publicRaw = localStorage.getItem('htpEscrow_' + matchId)
+                   || localStorage.getItem('htpcovenantescrow_' + matchId);
+      if (!publicRaw) {
+        // Legacy fallback: combined storage shape
+        var legacyRaw = localStorage.getItem('htpcovenantescrows');
+        if (!legacyRaw) return null;
+        try {
+          var legacy = JSON.parse(legacyRaw);
+          if (legacy && legacy[matchId]) return legacy[matchId];
+          return legacy;
+        } catch(e) { return null; }
+      }
+      var escrow = JSON.parse(publicRaw);
+      if (escrow && escrow[matchId]) escrow = escrow[matchId];
+
+      // Try to decrypt the private key from sessionStorage.
+      var secureRaw = sessionStorage.getItem('htpEscrowKey_' + matchId);
+      if (secureRaw && window._htpEscrowSessionKey) {
+        try {
+          var secure = JSON.parse(secureRaw);
+          if (secure && secure.encryptedKey) {
+            var combinedStr = atob(secure.encryptedKey);
+            var combined = new Uint8Array(combinedStr.length);
+            for (var i = 0; i < combinedStr.length; i++) combined[i] = combinedStr.charCodeAt(i);
+            var iv = combined.slice(0, 12);
+            var ct = combined.slice(12);
+            var encKeyHash = await crypto.subtle.digest('SHA-256',
+              new TextEncoder().encode(window._htpEscrowSessionKey));
+            var aesKey = await crypto.subtle.importKey('raw', encKeyHash,
+              { name: 'AES-GCM' }, false, ['decrypt']);
+            var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, aesKey, ct);
+            escrow.privateKey = new TextDecoder().decode(pt);
+          }
+        } catch (e) {
+          console.warn('[HTP Escrow] decrypt failed (session key likely cleared):', e.message);
+        }
+      }
+
+      return escrow;
+    } catch(e) {
+      console.warn('[HTP Escrow] getEscrow failed:', e.message);
+      return null;
+    }
   }
 
   /* == Settlement TX builder == */
@@ -268,7 +355,7 @@
 
   /* == Settlement payout == */
   async function settleMatchPayout(matchId, winnerAddress, payoutSompi) {
-    var esc = getEscrow(matchId);
+    var esc = await getEscrow(matchId);
     if (!esc) {
       if (W.showToast) W.showToast('No escrow record found for match ' + matchId, 'error');
       return null;
@@ -306,9 +393,10 @@
     if (feeAmount < MIN_FEE) feeAmount = MIN_FEE;
     var winnerAmount = BigInt(payoutSompi) - feeAmount;
 
+    var feeDestForNet = getFeeDest(esc.networkId || W.htpNetwork || 'testnet-11');
     var outputs = [
       { address: winnerAddress, amount: winnerAmount },
-      { address: FEE_DEST,     amount: feeAmount }
+      { address: feeDestForNet, amount: feeAmount }
     ];
 
     var txId = null;
@@ -357,7 +445,7 @@
 
   /* == Cancel (creator-only, pre-join) == */
   async function cancelMatchEscrow(matchId) {
-    var esc = getEscrow(matchId);
+    var esc = await getEscrow(matchId);
     if (!esc) {
       if (W.showToast) W.showToast('No escrow record found for match ' + matchId, 'error');
       return null;
@@ -417,7 +505,7 @@
 
   /* == Deposit verification == */
   async function verifyEscrowDeposit(matchId) {
-    var esc = getEscrow(matchId);
+    var esc = await getEscrow(matchId);
     if (!esc) return { ok: false, reason: 'no-escrow-record' };
 
     var utxoFn = W.htpGetUtxos || (W.kaspa && W.kaspa.getUtxos);

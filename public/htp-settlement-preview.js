@@ -28,7 +28,7 @@
 
     W.settleMatchPayout = async function(matchId, winnerAddr, isDraw, pA, pB) {
       // Get escrow to know the stake
-      const esc = W.getEscrow ? W.getEscrow(matchId) : null;
+      const esc = W.getEscrow ? await W.getEscrow(matchId) : null;
       let stakeKas = 0;
 
       if (esc) {

@@ -1,0 +1,94 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "relay": {
+      "$matchId": {
+        ".read": true,
+        "challenge": {
+          ".write": true,
+          ".validate": "newData.hasChildren(['creator','game','stake','timeControl','createdAt'])"
+        },
+        "players": {
+          "$playerAddr": {
+            ".write": "!data.exists() || data.child('joined').val() === true",
+            "joined": { ".validate": "newData.isBoolean()" },
+            "funded": { ".validate": "newData.isBoolean()" }
+          }
+        },
+        "colors": {
+          ".write": "!data.exists()",
+          ".validate": "newData.hasChild('assigned') && newData.child('assigned').val() === true"
+        },
+        "sides": {
+          ".write": "!data.exists()",
+          ".validate": "newData.hasChild('assigned') && newData.child('assigned').val() === true"
+        },
+        "moves": {
+          "$moveId": {
+            ".write": true,
+            ".validate": "newData.hasChildren(['from','to']) || newData.hasChild('type')"
+          }
+        },
+        "clock": {
+          ".write": true
+        },
+        "result": {
+          ".write": "!data.exists()",
+          ".validate": "newData.hasChild('winner')"
+        }
+      }
+    },
+    "settlement": {
+      "$matchId": {
+        ".read": true,
+        "claimed": {
+          ".write": "!data.exists() || (data.child('locked').val() === true && !data.child('txId').exists())",
+          ".validate": "newData.hasChild('ts')"
+        }
+      }
+    },
+    "matches": {
+      ".read": true,
+      "$matchId": {
+        ".write": true
+      }
+    },
+    "markets": {
+      ".read": true,
+      "$marketId": {
+        ".write": true,
+        "title": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200" },
+        "totalPool": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "status": { ".validate": "newData.isString() && (newData.val() === 'active' || newData.val() === 'resolved' || newData.val() === 'cancelled')" },
+        "positions": {
+          "$positionId": {
+            ".write": true,
+            ".validate": "newData.hasChildren(['address','outcomeIndex','size'])",
+            "address": { ".validate": "newData.isString()" },
+            "outcomeIndex": { ".validate": "newData.isNumber()" },
+            "size": { ".validate": "newData.isNumber() && newData.val() > 0" }
+          }
+        }
+      }
+    },
+    "events": {
+      ".read": true,
+      "$eventId": {
+        ".write": true
+      }
+    },
+    "oracle": {
+      ".read": true,
+      "attestations": {
+        "$matchId": {
+          ".write": true
+        }
+      }
+    },
+    "stats": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

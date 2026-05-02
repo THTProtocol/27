@@ -142,21 +142,51 @@
       return;
     }
 
+    // Debug: dump top-level keys to discover where event data actually lives.
+    db.ref('/').once('value').then(function(snap) {
+      var keys = [];
+      snap.forEach(function(child) { keys.push(child.key); });
+      console.log('[HTP Events v3] Top-level Firebase keys:', keys.join(', '));
+    }).catch(function(e) {
+      console.warn('[HTP Events v3] Top-level scan failed:', e && e.message);
+    });
+
+    var aggregated = {};
+    function pushBatch(prefix, snapshot) {
+      if (!snapshot || !snapshot.exists()) return;
+      snapshot.forEach(function(child) {
+        var m = child.val();
+        if (!m) return;
+        m.marketId = m.marketId || m.id || child.key;
+        aggregated[prefix + ':' + m.marketId] = m;
+      });
+    }
+    function flush() {
+      var arr = Object.keys(aggregated).map(function(k){ return aggregated[k]; });
+      renderMarkets(arr);
+    }
+
     marketsRef = db.ref('markets');
     marketsListener = marketsRef.orderByChild('status').equalTo('active').on('value', function(snapshot) {
-      var markets = [];
-      if (snapshot.exists()) {
-        snapshot.forEach(function(child) {
-          var m = child.val();
-          if (m) {
-            m.marketId = m.marketId || child.key;
-            markets.push(m);
-          }
-        });
-      }
-      renderMarkets(markets);
+      // Reset markets bucket only (events bucket preserved).
+      Object.keys(aggregated).forEach(function(k){ if (k.indexOf('markets:') === 0) delete aggregated[k]; });
+      pushBatch('markets', snapshot);
+      flush();
     }, function(err) {
-      console.error('[HTP Events v3] Firebase listen error:', err);
+      console.error('[HTP Events v3] Firebase markets listen error:', err);
+    });
+
+    // Fallback: also listen at /events in case data lives there instead of /markets.
+    var eventsRef = db.ref('events');
+    eventsRef.orderByChild('status').equalTo('active').on('value', function(snapshot) {
+      Object.keys(aggregated).forEach(function(k){ if (k.indexOf('events:') === 0) delete aggregated[k]; });
+      pushBatch('events', snapshot);
+      if (snapshot && snapshot.exists()) {
+        console.log('[HTP Events v3] Found events at /events path');
+      }
+      flush();
+    }, function(err) {
+      console.warn('[HTP Events v3] Firebase events listen error (non-fatal):', err && err.message);
     });
   }
 
