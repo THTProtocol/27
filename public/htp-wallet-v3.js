@@ -53,8 +53,13 @@
       installUrl: 'https://chromewebstore.google.com/detail/kastle/oambclflhjfppdmkghokjmpppmaebego',
       detect: function() { return window.kastle || null; },
       connect: async function(provider) {
+        // Kastle uses .connect() returning {address, publicKey}, NOT .requestAccounts()
         var result = await provider.connect();
-        return result && (result.address || result);
+        if (!result) throw new Error('Kastle connection rejected');
+        if (typeof result === 'string') return result;
+        if (result.address) return result.address;
+        if (result.accounts && result.accounts.length) return result.accounts[0];
+        throw new Error('Kastle returned unexpected data: ' + JSON.stringify(result));
       }
     },
     'Kasperia': {
@@ -89,8 +94,13 @@
       installUrl: 'https://github.com/aspectron/kaspa-ng/releases',
       detect: function() { return window.kasng || null; },
       connect: async function(provider) {
+        // Kaspa-NG uses .connect() returning {address, accounts, publicKey}
         var result = await provider.connect();
-        return result && (result.address || (result.accounts && result.accounts[0]) || result);
+        if (!result) throw new Error('Kaspa-NG connection rejected');
+        if (typeof result === 'string') return result;
+        if (result.address) return result.address;
+        if (result.accounts && result.accounts.length) return result.accounts[0];
+        throw new Error('Kaspa-NG returned unexpected data: ' + JSON.stringify(result));
       }
     },
     'Kasanova': {
@@ -109,12 +119,17 @@
       label: 'Kaspium',
       type: 'Mobile · iOS & Android',
       btnLabel: 'Get App ↗',
-      canConnect: false,
+      canConnect: true,
       installUrl: 'https://kaspium.io',
       detect: function() { return window.kaspium || null; },
       connect: async function(provider) {
+        // Kaspium uses .connect() returning {address} or {accounts: [addr]}
         var result = await provider.connect();
-        return result && (result.address || result);
+        if (!result) throw new Error('Kaspium connection rejected');
+        if (typeof result === 'string') return result;
+        if (result.address) return result.address;
+        if (result.accounts && result.accounts.length) return result.accounts[0];
+        throw new Error('Kaspium returned unexpected data');
       }
     },
     'KaspaCom': {
@@ -370,7 +385,7 @@
     html += '<h3 style="font-size:14px;font-weight:600;margin:0 0 10px">Network</h3>';
     html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
     html += '<button id="network-tn12" class="chip chip-a" onclick="htpWalletV3.setNetwork(\'tn12\')">TN12 Testnet</button>';
-    html += '<button id="network-mainnet" class="chip" onclick="htpWalletV3.setNetwork(\'mainnet\')" style="opacity:0.4;cursor:not-allowed" title="Coming Q2 2026">Mainnet (Q2 2026)</button>';
+    html += '<button id="network-mainnet" class="chip" onclick="htpWalletV3.setNetwork(\'mainnet\')">Mainnet</button>';
     html += '</div></div>';
 
     html += '</div></section>';
@@ -568,10 +583,30 @@
     },
 
     setNetwork(net) {
-      if (net === 'mainnet') return;
-      try { localStorage.setItem('htp_network', net); } catch(e) {}
-      window.HTP_NETWORK = net;
-      window.location.reload();
+      if (net === 'mainnet') {
+        window.HTP_NETWORK = 'mainnet';
+        window.HTP_PREFIX = 'kaspa';
+        window.HTP_RPC_URL = 'wss://wrpc.kaspa.org/mainnet';
+        try { localStorage.setItem('htp_network', 'mainnet'); } catch(e) {}
+        var mainBtn = document.getElementById('network-mainnet');
+        var tnBtn = document.getElementById('network-tn12');
+        if (mainBtn) mainBtn.classList.add('chip-a');
+        if (tnBtn) tnBtn.classList.remove('chip-a');
+        if (window.showToast) window.showToast('Switched to Mainnet. Real KAS will be used.', 'warn');
+      } else {
+        window.HTP_NETWORK = 'tn12';
+        window.HTP_PREFIX = 'kaspatest';
+        window.HTP_RPC_URL = 'wss://wrpc.kaspa.org/testnet-12';
+        try { localStorage.setItem('htp_network', 'tn12'); } catch(e) {}
+        var mainBtn2 = document.getElementById('network-mainnet');
+        var tnBtn2 = document.getElementById('network-tn12');
+        if (tnBtn2) tnBtn2.classList.add('chip-a');
+        if (mainBtn2) mainBtn2.classList.remove('chip-a');
+        if (window.showToast) window.showToast('Switched to TN12 Testnet', 'info');
+      }
+      window.dispatchEvent(new CustomEvent('htp:network:changed', { detail: { network: net } }));
+      console.log('[HTP Wallet V3] Network set to:', net);
+      return true;
     },
 
     updateUI() {

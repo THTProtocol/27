@@ -34,7 +34,13 @@
   // Creator: atomically write colors once
   function assignColorsAsCreator(matchId) {
     var d = db(); if (!d) return 'white';
-    var myColor = Math.random() < 0.5 ? 'white' : 'black';
+    // Deterministic color from matchId hash (consistent across refreshes)
+    var hash = 0;
+    for (var i = 0; i < matchId.length; i++) {
+      hash = ((hash << 5) - hash) + matchId.charCodeAt(i);
+      hash |= 0;
+    }
+    var myColor = (hash % 2 === 0) ? 'white' : 'black';
     var oppColor = myColor === 'white' ? 'black' : 'white';
     var ref = d.ref('relay/' + matchId + '/colors');
     ref.transaction(function (cur) {
@@ -80,55 +86,30 @@
   // Looks for: #chessboard, .chess-board, [data-board], cg-board
 
   function applyOrientation(color) {
+    // htp-chess-ui.js handles its own orientation via chessUI.isFlipped.
+    // We only sync the color to shared state here, no CSS transform hijacking.
     if (!color) return;
-    // Target every possible board container selector
-    var boards = Array.from(document.querySelectorAll(
-      '#chessboard, .chess-board, [data-board], cg-board, .cg-board'
-    ));
 
-    // Also find the inner board table/grid used by the existing renderer
-    var inner = document.getElementById('chessBoardEl') ||
-                document.querySelector('.chess-board-inner') ||
-                document.querySelector('table.chess');
-    if (inner) boards.push(inner);
-
-    if (!boards.length) {
-      // Board not in DOM yet , retry after render
-      setTimeout(function () { applyOrientation(color); }, 300);
-      return;
+    // Set shared state for other modules
+    if (typeof chessUI !== 'undefined') {
+      chessUI.playerColor = color === 'white' ? 'w' : 'b';
+      chessUI.isFlipped = (color === 'black');
     }
 
-    boards.forEach(function (b) {
-      if (color === 'black') {
-        b.style.transform = 'rotate(180deg)';
-        b.setAttribute('data-orientation', 'black');
-        // Flip individual piece elements so they appear upright
-        b.querySelectorAll('.piece, cg-piece, [data-piece], td').forEach(function (p) {
-          p.style.transform = 'rotate(180deg)';
-        });
-      } else {
-        b.style.transform = '';
-        b.setAttribute('data-orientation', 'white');
-        b.querySelectorAll('.piece, cg-piece, [data-piece], td').forEach(function (p) {
-          p.style.transform = '';
-        });
-      }
-    });
+    // Re-render the board cleanly via the V4 renderer
+    if (typeof renderChessBoard === 'function') {
+      renderChessBoard();
+    }
 
-    // Update the "You (White/Black)" label in the existing overlay
+    // Update player label
     var labels = document.querySelectorAll('[id*="playerLabel"], [class*="player-label"], .you-label');
     labels.forEach(function (el) {
-      if (el.textContent.match(/You/i)) {
+      if (el.textContent && el.textContent.match(/You/i)) {
         el.textContent = 'You (' + (color === 'white' ? 'White' : 'Black') + ')';
       }
     });
 
-    // Also set chessUI.playerColor so the existing code knows who we are
-    if (typeof chessUI !== 'undefined') {
-      chessUI.playerColor = color === 'white' ? 'w' : 'b';
-    }
-
-    console.log('[HTP Sync] Board orientation applied:', color);
+    console.log('[HTP Sync] Board orientation applied via renderer:', color);
   }
 
   // ── 3. SYNCHRONIZED CLOCK (Firebase source-of-truth) ─────
@@ -193,15 +174,21 @@
       var self = this;
       clearInterval(self._tick);
       self._tick = setInterval(function () {
-        if (self.active === 'white') {
-          self.whiteMs = Math.max(0, self.whiteMs - 1000);
-          if (self.whiteMs === 0) { clearInterval(self._tick); self._onTimeout('white'); }
-        } else {
-          self.blackMs = Math.max(0, self.blackMs - 1000);
-          if (self.blackMs === 0) { clearInterval(self._tick); self._onTimeout('black'); }
+        // NEVER decrement locally. Clock display is DERIVED from:
+        //   remaining_time = stored_time - (now - last_move_timestamp)
+        // Firebase subscription at _subscribe() provides the authoritative values.
+        // This tick is for timeout detection only.
+        var now = Date.now();
+        var elapsed = self.lastTs ? (now - self.lastTs) : 0;
+        var activeMs = self.active === 'white' ? self.whiteMs : self.blackMs;
+        var remaining = Math.max(0, activeMs - elapsed);
+
+        if (remaining === 0) {
+          clearInterval(self._tick);
+          self._onTimeout(self.active);
         }
         self._render();
-      }, 1000);
+      }, 250);
     },
 
     _render: function () {

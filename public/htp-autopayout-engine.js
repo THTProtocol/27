@@ -159,7 +159,7 @@
       showGameOverOverlay({ reason, winnerStr, iWon, isDraw, matchId, game });
 
       if (!alreadySettled && matchId) {
-        const escrow = W.getEscrow ? W.getEscrow(matchId) : null;
+        const escrow = W.getEscrow ? await W.getEscrow(matchId) : null;
         const hasKey = escrow && escrow.privateKey && !escrow.settled;
 
         if (hasKey && !covenantIntegrityCheck(escrow)) {

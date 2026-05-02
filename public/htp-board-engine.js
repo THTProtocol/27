@@ -369,16 +369,29 @@
   // 6. CLOCK MANAGER , shared across all games
   // ─────────────────────────────────────────────────────────────────────────
 
-  // Global clock state
+  // Global clock state. timeLeft is the AUTHORITATIVE seconds-remaining
+  // captured at the moment of the most recent move (lastMoveTs).
+  // Display = max(0, timeLeft[active] - (now - lastMoveTs)/1000).
+  // We never decrement timeLeft inside the tick; switchClock() snapshots
+  // the new remainder when a move happens. This avoids fighting Firebase
+  // sync overwrites with locally-mutated values.
   const clockState = {
     interval: null,
-    timeLeft: [0, 0],    // [white/p1 ms, black/p2 ms]
+    timeLeft: [0, 0],    // [white/p1 sec, black/p2 sec] at lastMoveTs
     activeSide: 0,       // 0 = white/p1, 1 = black/p2
     increment: 0,        // seconds to add after each move
     gameOver: false,
     matchId: null,
-    game: null
+    game: null,
+    lastMoveTs: 0
   };
+
+  function getDisplayTimeLeft(side) {
+    var stored = clockState.timeLeft[side] || 0;
+    if (side !== clockState.activeSide) return stored;
+    var elapsed = clockState.lastMoveTs ? (Date.now() - clockState.lastMoveTs) / 1000 : 0;
+    return Math.max(0, stored - elapsed);
+  }
 
   function initClocks(opts) {
     if (clockState.interval) clearInterval(clockState.interval);
@@ -390,23 +403,23 @@
     clockState.gameOver  = false;
     clockState.matchId   = opts.id;
     clockState.game      = opts.game;
+    clockState.lastMoveTs = Date.now();
 
     updateClockDisplay();
 
+    // Tick is timeout-detection only; never mutates stored time.
     clockState.interval = setInterval(() => {
       if (clockState.gameOver) {
         clearInterval(clockState.interval);
         return;
       }
 
-      clockState.timeLeft[clockState.activeSide]--;
-
-      if (clockState.timeLeft[clockState.activeSide] <= 0) {
+      var remaining = getDisplayTimeLeft(clockState.activeSide);
+      if (remaining <= 0) {
         clockState.timeLeft[clockState.activeSide] = 0;
         clockState.gameOver = true;
         clearInterval(clockState.interval);
 
-        // Auto-forfeit: write timeout to Firebase
         const loserSide = clockState.activeSide;
         const winnerSide = loserSide === 0 ? 'b' : 'w';
         if (window.firebase && clockState.matchId) {
@@ -422,18 +435,20 @@
       }
 
       updateClockDisplay();
-    }, 1000);
+    }, 250);
   }
 
-  /** Call after a move: stop active clock, add increment, switch to opponent */
+  /** Call after a move: snapshot remaining time, add increment, switch to opponent */
   function switchClock() {
     if (clockState.gameOver) return;
 
-    // Add increment to the player who just moved
-    clockState.timeLeft[clockState.activeSide] += clockState.increment;
+    // Snapshot the actual elapsed time from the active side before switching
+    var actualRemaining = getDisplayTimeLeft(clockState.activeSide);
+    clockState.timeLeft[clockState.activeSide] = actualRemaining + clockState.increment;
 
-    // Switch active side
+    // Switch active side, reset lastMoveTs so the new active side starts ticking
     clockState.activeSide = clockState.activeSide === 0 ? 1 : 0;
+    clockState.lastMoveTs = Date.now();
     updateClockDisplay();
   }
 
@@ -448,17 +463,18 @@
     const topIdx = isFlipped ? 0 : 1;
     const botIdx = isFlipped ? 1 : 0;
 
-    topEl.textContent = fmtTime(clockState.timeLeft[topIdx]);
-    botEl.textContent = fmtTime(clockState.timeLeft[botIdx]);
+    var topVal = getDisplayTimeLeft(topIdx);
+    var botVal = getDisplayTimeLeft(botIdx);
 
-    // Active state
+    topEl.textContent = fmtTime(topVal);
+    botEl.textContent = fmtTime(botVal);
+
     const topActive = clockState.activeSide === topIdx;
     topEl.classList.toggle('active', topActive);
     botEl.classList.toggle('active', !topActive);
 
-    // Danger state (below 30 seconds)
-    topEl.classList.toggle('danger', clockState.timeLeft[topIdx] < 30);
-    botEl.classList.toggle('danger', clockState.timeLeft[botIdx] < 30);
+    topEl.classList.toggle('danger', topVal < 30);
+    botEl.classList.toggle('danger', botVal < 30);
   }
 
   /** Apply clock sync from opponent relay message */
@@ -467,6 +483,8 @@
     const { w, b } = msg.clockSync;
     if (typeof w === 'number') clockState.timeLeft[0] = w;
     if (typeof b === 'number') clockState.timeLeft[1] = b;
+    // The relay message represents the authoritative state at THIS instant.
+    clockState.lastMoveTs = Date.now();
     updateClockDisplay();
   }
 

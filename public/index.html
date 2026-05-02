@@ -6588,6 +6588,8 @@ event MyMarket {
   
   <!-- Chess engine -->
   <script src="chess.min.js"></script>
+  <!-- Patch chess.js isCheck/isCheckmate availability before any chess UI loads -->
+  <script src="htp-chess-ischeck-fix.js"></script>
   
   <!-- Kaspa WASM SDK (must load BEFORE wasm-loader) -->
   <script src="kaspa-wasm-sdk-inline.js"></script>
@@ -6613,7 +6615,6 @@ event MyMarket {
   <!-- HTP Protocol -->
   <script src="htp-covenant-escrow-v2.js"></script>
   <script src="htp-fee-engine.js"></script>
-  <script src="htp-chess-ischeck-fix.js"></script>
   <script src="htp-autopayout-engine.js"></script>
   <script src="htp-settlement-overlay.js"></script>
   <script src="htp-settlement-preview.js"></script>
@@ -22646,10 +22647,8 @@ window.addEventListener('htp:balance:updated', function(e) {
 });
 </script>
 
-<script src="patch-games.js"></script>
 <script src="htp-skill-v3.js"></script>
 <script src="htp-markets-ui.js"></script>
-<script src="htp-wallet-fix.js"></script>
 <script src="htp-demo-match.js"></script>
 </body>
 </html>
