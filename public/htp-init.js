@@ -292,3 +292,147 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fetchConfig);
   else fetchConfig();
 })();
+
+/* =============================================================
+ * HTP COSMETIC LAYER  cosmetic, non-destructive UI polish
+ *  - DAA counter fallback (Task 4.1)
+ *  - Network status indicator dot (Task 4.4)
+ *  - Overlay dismissal: Escape key + backdrop click (Task 4.5)
+ *
+ * Pure additive. Does not change colors, fonts, layout, or theme.
+ * ============================================================= */
+(function() {
+  'use strict';
+
+  /* --- 4.1 DAA counter fallback --- */
+  function initDaaFallback() {
+    var el = document.getElementById('daaScore');
+    if (!el) return;
+    var txt = (el.textContent || '').trim();
+    if (!txt || txt === '-' || txt === '0') {
+      el.textContent = 'syncing...';
+    }
+    // Watch for the regular updaters; if they leave it empty, restore the fallback.
+    try {
+      var mo = new MutationObserver(function() {
+        var v = (el.textContent || '').trim();
+        if (!v) el.textContent = 'syncing...';
+      });
+      mo.observe(el, { childList: true, characterData: true, subtree: true });
+    } catch (e) {}
+  }
+
+  /* --- 4.4 Network status indicator dot ---
+   * The existing #nodeStatus span already contains a colored dot.
+   * We listen for the REST/server connection events and tint the dot
+   * green when live, red when reconnecting. We do NOT replace the existing
+   * status text; we only update the dot color and append a small label
+   * if one is not already present.
+   */
+  function setStatusDot(state) {
+    var ns = document.getElementById('nodeStatus');
+    if (!ns) return;
+    var dot = ns.querySelector('span');
+    if (!dot) return;
+    var color = state === 'live' ? '#10b981' : (state === 'down' ? '#ef4444' : '#6b7280');
+    dot.style.background = color;
+    dot.style.borderColor = color;
+    var lbl = ns.querySelector('.htp-net-label');
+    if (!lbl) {
+      lbl = document.createElement('span');
+      lbl.className = 'htp-net-label';
+      lbl.style.cssText = 'font-size:11px;margin-left:6px;color:var(--muted)';
+      ns.appendChild(lbl);
+    }
+    lbl.textContent = state === 'live' ? 'Live' : (state === 'down' ? 'Reconnecting' : '');
+  }
+  function initNetStatus() {
+    setStatusDot('idle');
+    window.addEventListener('htp:server:connected', function() { setStatusDot('live'); });
+    window.addEventListener('htp:server:disconnected', function() { setStatusDot('down'); });
+    // Also probe the backend periodically. A successful /api/config = live.
+    var base = (window.HTP_SERVER_URL || '').replace(/\/ws$/, '') || (location.protocol + '//' + location.host);
+    function probe() {
+      try {
+        fetch(base + '/api/config', { signal: AbortSignal.timeout(4000) })
+          .then(function(r) { setStatusDot(r.ok ? 'live' : 'down'); })
+          .catch(function() { setStatusDot('down'); });
+      } catch (e) { setStatusDot('down'); }
+    }
+    probe();
+    setInterval(probe, 15000);
+  }
+
+  /* --- 4.5 Overlay dismissal: Escape + backdrop click ---
+   * Targets any element marked as a modal/overlay. We treat anything with
+   * role="dialog", class containing "overlay" / "modal" / "chooser" /
+   * "htp-modal", or a fixed-position full-screen layer with a single inner
+   * card as a dismissable overlay.
+   */
+  function isOverlayLike(el) {
+    if (!el || el.nodeType !== 1) return false;
+    if (el.getAttribute && el.getAttribute('role') === 'dialog') return true;
+    var c = (el.className || '').toString();
+    if (/(overlay|modal|chooser|backdrop|htp-prompt)/i.test(c)) return true;
+    return false;
+  }
+  function findVisibleOverlays() {
+    var nodes = document.querySelectorAll('[role="dialog"], .overlay, .modal, .htp-modal, .htp-overlay, .wallet-chooser, .promotion-modal, .game-over-overlay, .waiting-room, .htp-backdrop');
+    var out = [];
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      var s = window.getComputedStyle(n);
+      if (s.display !== 'none' && s.visibility !== 'hidden' && parseFloat(s.opacity || '1') > 0.01) {
+        out.push(n);
+      }
+    }
+    return out;
+  }
+  function dismiss(node) {
+    if (!node) return;
+    // Prefer a known close hook if the page exposes one.
+    var hook = node.getAttribute && node.getAttribute('data-close');
+    if (hook && typeof window[hook] === 'function') { try { window[hook](); return; } catch (e) {} }
+    // Click an in-card close button if present.
+    var closeBtn = node.querySelector('.close, .htp-close, [data-close], [aria-label="Close"]');
+    if (closeBtn) { try { closeBtn.click(); return; } catch (e) {} }
+    // Fallback: hide the node.
+    try {
+      node.style.display = 'none';
+      node.setAttribute('aria-hidden', 'true');
+    } catch (e) {}
+  }
+  function initOverlayDismissal() {
+    document.addEventListener('keydown', function(ev) {
+      if (ev.key !== 'Escape' && ev.keyCode !== 27) return;
+      var open = findVisibleOverlays();
+      if (!open.length) return;
+      // Topmost only.
+      dismiss(open[open.length - 1]);
+    });
+    document.addEventListener('click', function(ev) {
+      var t = ev.target;
+      if (!t || !isOverlayLike(t)) return;
+      // Only when the click was on the backdrop itself, not inside a card.
+      if (t === ev.currentTarget || t === ev.target) {
+        // Distinguish backdrop click from inner card by checking the click
+        // happened directly on the overlay container (not bubbled from a child).
+        var rect = t.getBoundingClientRect();
+        var inner = t.querySelector('.card, .htp-card, .modal-card, .overlay-card, .panel');
+        if (inner) {
+          var ir = inner.getBoundingClientRect();
+          if (ev.clientX >= ir.left && ev.clientX <= ir.right && ev.clientY >= ir.top && ev.clientY <= ir.bottom) return;
+        }
+        dismiss(t);
+      }
+    }, true);
+  }
+
+  function start() {
+    initDaaFallback();
+    initNetStatus();
+    initOverlayDismissal();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
