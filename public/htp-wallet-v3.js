@@ -41,7 +41,7 @@
       installUrl: 'https://chromewebstore.google.com/detail/kasware-wallet/hklhheigdmpoolooomdihmhlpjjdbklf',
       detect: function() { return window.kasware || window.kasWare || null; },
       connect: async function(provider) {
-        var accounts = await provider.requestAccounts();
+        var accounts = await provider.connect();
         return accounts && accounts[0];
       }
     },
@@ -53,7 +53,7 @@
       installUrl: 'https://chromewebstore.google.com/detail/kastle/oambclflhjfppdmkghokjmpppmaebego',
       detect: function() { return window.kastle || null; },
       connect: async function(provider) {
-        // Kastle uses .connect() returning {address, publicKey}, NOT .requestAccounts()
+        // Kastle uses .connect() returning {address, publicKey}, NOT .connect()
         var result = await provider.connect();
         if (!result) throw new Error('Kastle connection rejected');
         if (typeof result === 'string') return result;
@@ -70,7 +70,7 @@
       installUrl: 'https://chromewebstore.google.com/detail/kasperia/ffalcabgggegkejjlknofllbaledgcob',
       detect: function() { return window.kasperia || null; },
       connect: async function(provider) {
-        var accounts = await provider.requestAccounts();
+        var accounts = await provider.connect();
         return accounts && accounts[0];
       }
     },
@@ -82,7 +82,7 @@
       installUrl: 'https://chromewebstore.google.com/detail/okx-wallet/mcohilncbfahbmgdjkbpemcciiolgcge',
       detect: function() { return (window.okxwallet && window.okxwallet.kaspa) ? window.okxwallet.kaspa : null; },
       connect: async function(provider) {
-        var accounts = await provider.requestAccounts();
+        var accounts = await provider.connect();
         return accounts && accounts[0];
       }
     },
@@ -111,7 +111,7 @@
       installUrl: 'https://kasanova.io',
       detect: function() { return (window.kasanova && window.kasanova.kasware) ? window.kasanova.kasware : null; },
       connect: async function(provider) {
-        var accounts = await provider.requestAccounts();
+        var accounts = await provider.connect();
         return accounts && accounts[0];
       }
     },
