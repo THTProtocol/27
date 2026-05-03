@@ -12,6 +12,7 @@ const Database = require('./lib/db');
 const UtxoIndexer = require('./lib/utxo-indexer');
 const SettlementEngine = require('./lib/settlement');
 const OracleDaemon = require('./lib/oracle-daemon');
+const OracleSigner = require('./lib/oracle-signer');
 const ScriptValidator = require('./lib/script-validator');
 const { getOdds, estimatePayout, FEE_SCHEDULE, calculateGamePayout } = require('./lib/fees');
 const GameManager = require('./lib/game-manager');
@@ -41,9 +42,10 @@ app.use((req, res, next) => {
 });
 
 app.get('/api/config', (req, res) => {
-  const domain = RAILWAY_PUBLIC_DOMAIN || req.headers.host || 'localhost:' + PORT;
-  const proto = domain.includes('localhost') ? 'ws' : 'wss';
-  res.json({ wsUrl: proto + '://' + domain + '/ws', network: process.env.HTP_NETWORK || 'tn12', version: '8.0.0' });
+  // Hardcoded to Hetzner -- nginx proxies from 443 to localhost:3333,
+  // so req.headers.host is always "localhost:3333" (broken).
+  const WS_HOST = process.env.HTP_WS_HOST || '178.105.76.81';
+  res.json({ wsUrl: 'wss://' + WS_HOST + '/ws', network: process.env.HTP_NETWORK || 'tn12', version: '8.0.0' });
 });
 
 app.get('/api/health', (req, res) => res.json({ ok: true, uptime: process.uptime() }));
@@ -71,10 +73,12 @@ const rpc = new KaspaRPC(KASPA_RPC_URL);
 const validator = new ScriptValidator();
 
 const oracleKeys = db.getOracleKeys();
+const oracleSigner = new OracleSigner(db);
+
 const txBuilder = new TxBuilder(rpc, {
   protocolSpkHex: db.getConfig('protocolSpkHex') || '',
   protocolFeeBps: 200,
-  oraclePubkeys: oracleKeys,
+  oraclePubkeys: oracleSigner.getPubkeys(),
   multisigThreshold: 2,
 });
 
@@ -192,6 +196,28 @@ function handleWsMessage(ws, msg) {
     case 'game-draw-accept': {
       db.updateGame(msg.gameId, { winner: 'draw', status: 'finished', endedAt: Date.now() });
       broadcastToGame(msg.gameId, 'game-over', { gameId: msg.gameId, winner: 'draw', reason: 'agreement' });
+      // Attempt real on-chain draw settlement (sync try, async fallback)
+      try {
+        const game = db.getGame(msg.gameId);
+        if (game) {
+          const escrowUtxo = indexer.getGameUtxo(msg.gameId);
+          if (escrowUtxo) {
+            oracleSigner.settleDrawOnChain(game, escrowUtxo).then(r => {
+              db.updateGame(msg.gameId, { settleTxId: r.txId });
+              console.log('[WS] Draw settled on-chain:', r.txId);
+            }).catch(e => console.error('[WS] Draw on-chain failed:', e.message));
+          } else {
+            // Try finding escrow UTXO asynchronously
+            oracleSigner.findEscrowUtxo(game.escrowScriptHex).then(found => {
+              if (found) {
+                return oracleSigner.settleDrawOnChain(game, found);
+              }
+            }).then(r => {
+              if (r) { db.updateGame(msg.gameId, { settleTxId: r.txId }); console.log('[WS] Draw settled on-chain:', r.txId); }
+            }).catch(e => console.error('[WS] Draw on-chain failed:', e.message));
+          }
+        }
+      } catch(e) { console.error('[WS] Draw settle error:', e.message); }
       settlement.settleGame(msg.gameId, 'draw').catch(e => console.error('[WS] Settle error:', e.message));
       break;
     }
@@ -244,7 +270,7 @@ app.post('/api/markets', async (req, res) => {
     const oracleWindowDaa = rpc.hoursToDAATicks(oracleWindowHours || 6);
     const graceDaa = rpc.hoursToDAATicks(graceHours || 24);
 
-    const oraclePubkey = oracleKeys[0] || '';
+    const oraclePubkey = oracleSigner.getPubkeys()[0] || '';
 
     if (customScript) {
       const validation = validator.validateCustomScript(customScript);
@@ -463,6 +489,12 @@ app.post('/api/tx/submit', async (req, res) => {
 });
 
 // ─── REST API: Games ──────────────────────────────
+app.get('/api/games/active', (req, res) => {
+  const all = db.getAllGames();
+  const active = all.filter(g => g.status === 'waiting');
+  res.json(active);
+});
+
 app.get('/api/games', (req, res) => {
   const { status, type } = req.query;
   let games = db.getAllGames();
@@ -516,9 +548,21 @@ app.post('/api/games/:id/join', async (req, res) => {
     if (game.status !== 'waiting') return res.status(400).json({ error: 'Game not waiting' });
 
     const { playerB, playerBPubkey } = req.body;
+    const simulate = req.body.simulate === true;
+
+    if (simulate) {
+      db.updateGame(game.id, { playerB, playerBPubkey, status: 'playing', startedAt: Date.now(), escrowTxId: 'sim:' + game.id });
+      const user = db.getOrCreateUser(playerB);
+      db.updateUser(playerB, { totalGames: user.totalGames + 1, pubkey: playerBPubkey });
+      broadcastToGame(game.id, 'game-started', { gameId: game.id, playerB });
+      broadcast('game-joined', { gameId: game.id, playerB });
+      return res.json({ game: db.getGame(game.id), simulated: true });
+    }
+
     const playerBUtxos = await rpc.getUtxosByAddress(playerB);
     const utxos = playerBUtxos.entries || playerBUtxos || [];
     const escrowUtxo = indexer.getGameUtxo(game.id);
+    if (!escrowUtxo) return res.status(400).json({ error: 'Escrow not on chain. Join with simulate=true for test mode.' });
 
     const joinTx = txBuilder.buildGameJoinTx({
       escrowUtxo, playerBPubkey, playerBAddr: playerB, playerBUtxos: utxos,
@@ -541,6 +585,67 @@ app.post('/api/games/:id/join', async (req, res) => {
 
 
 // ─── REST API: Game Claim / Payout ─────────────────
+
+// REST move endpoint -- submit moves without WebSocket
+app.post('/api/games/:id/move', (req, res) => {
+  try {
+    const game = db.getGame(req.params.id);
+    if (!game) return res.status(404).json({ error: 'Game not found' });
+    if (game.status !== 'playing') return res.status(400).json({ error: 'Game not in playing state' });
+    const { from, to, piece, fen, player } = req.body;
+    game.moves = game.moves || [];
+    game.moves.push({ from, to, piece, player, timestamp: Date.now() });
+    game.fen = fen || game.fen;
+    db.updateGame(game.id, { moves: game.moves, fen: game.fen });
+    broadcastToGame(game.id, 'game-move', { gameId: game.id, from, to, piece, fen: game.fen, player });
+    res.json({ game, move: { from, to, piece, fen: game.fen } });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// REST checkmate endpoint
+app.post('/api/games/:id/checkmate', async (req, res) => {
+  try {
+    const game = db.getGame(req.params.id);
+    if (!game) return res.status(404).json({ error: 'Game not found' });
+    const { winner, loser, fen } = req.body;
+    db.updateGame(game.id, { winner, status: 'finished', endedAt: Date.now(), fen });
+    broadcastToGame(game.id, 'game-over', { gameId: game.id, winner, reason: 'checkmate' });
+    // Try real settlement
+    try {
+      let escrowUtxo = indexer.getGameUtxo(game.id);
+      if (!escrowUtxo) escrowUtxo = await oracleSigner.findEscrowUtxo(game.escrowScriptHex);
+      if (escrowUtxo) {
+        oracleSigner.settleGameOnChain(game, escrowUtxo, winner).then(r => {
+          console.log('[API] Checkmate settled on-chain:', r.txId);
+        }).catch(e => console.error('[API] Checkmate settle failed:', e.message));
+      }
+    } catch(e) { console.error('[API] Checkmate settle error:', e.message); }
+    settlement.settleGame(game.id, winner).catch(e => console.error('Settle error:', e));
+    res.json({ game: db.getGame(game.id), winner, reason: 'checkmate' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// REST resign (mirrors WebSocket game-resign for API testing)
+app.post('/api/games/:id/resign', (req, res) => {
+  try {
+    const game = db.getGame(req.params.id);
+    if (!game) return res.status(404).json({ error: 'Game not found' });
+    if (game.status !== 'playing') return res.status(400).json({ error: 'Game not playing' });
+    const { player } = req.body;
+    const winner = player === game.playerA ? game.playerB : game.playerA;
+    db.updateGame(game.id, { winner, status: 'finished', endedAt: Date.now() });
+    broadcastToGame(game.id, 'game-over', { gameId: game.id, winner, reason: 'resignation' });
+    settlement.settleGame(game.id, winner).catch(e => console.error('[API] Resign settle error:', e.message));
+    res.json({ game: db.getGame(game.id), resigned: true, winner });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.post('/api/games/:id/claim', async (req, res) => {
   try {
     const game = db.getGame(req.params.id);
@@ -548,8 +653,33 @@ app.post('/api/games/:id/claim', async (req, res) => {
     if (game.status !== 'finished') return res.status(400).json({ error: 'Game not finished' });
     if (game.settleTxId) return res.json({ txId: game.settleTxId, message: 'Already settled' });
     if (!game.winner) return res.status(400).json({ error: 'No winner determined' });
-    const result = await settlement.settleGame(game.id, game.winner);
-    res.json({ txId: result.txId, message: 'Payout sent to wallet' });
+    // Attempt real on-chain settlement via oracle signer
+    try {
+      // Find escrow UTXO on chain
+      let escrowUtxo = indexer.getGameUtxo(game.id);
+      if (!escrowUtxo) {
+        escrowUtxo = await oracleSigner.findEscrowUtxo(game.escrowScriptHex);
+      }
+      if (escrowUtxo) {
+        // Real on-chain settlement
+        const result = await oracleSigner.settleGameOnChain(game, escrowUtxo, game.winner);
+        db.updateGame(game.id, { settleTxId: result.txId, status: 'finished' });
+        const winnerUser = db.getOrCreateUser(game.winner);
+        db.updateUser(winnerUser.addr, { gamesWon: winnerUser.gamesWon + 1 });
+        return res.json({ txId: result.txId, message: 'On-chain payout sent', payout: result.payout, fee: result.fee });
+      }
+    } catch (e) {
+      console.error('[API] On-chain claim failed, falling back:', e.message);
+    }
+    // Fallback: if escrowTxId starts with 'sim:', simulate
+    if ((game.escrowTxId || '').startsWith('sim:')) {
+      const txId = 'sim-settle-' + game.id;
+      db.updateGame(game.id, { settleTxId: txId });
+      const winnerUser = db.getOrCreateUser(game.winner);
+      db.updateUser(winnerUser.addr, { gamesWon: winnerUser.gamesWon + 1 });
+      return res.json({ txId, message: 'Simulated payout sent (no on-chain UTXO)' });
+    }
+    res.status(400).json({ error: 'Cannot settle: no escrow UTXO found on chain' });
   } catch (e) {
     console.error('[API] Claim error:', e.message);
     res.status(500).json({ error: e.message });
