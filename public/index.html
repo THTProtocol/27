@@ -4161,14 +4161,14 @@ html,body{background:#010806!important;}
                                      font-size:11px;font-weight:700;
                                      font-family:inherit;
                                      letter-spacing:.08em;color:#49e8c2;
-                                     pointer-events:none;white-space:nowrap">TN12</span>
+                                     pointer-events:none;white-space:nowrap">Kaspa Testnet</span>
                         <!-- Native select overlaid invisibly for click/change -->
                         <select id="netSelect"
                                 onchange="window.htpSetNetwork(this.value)"
                                 style="position:absolute;inset:0;width:100%;height:100%;
                                        opacity:0;cursor:pointer;border:none;
                                        -webkit-appearance:menulist-button;appearance:auto">
-                            <option value="tn12">TN12</option>
+                            <option value="tn12">Kaspa Testnet</option>
                             <option value="mainnet">Mainnet</option>
                         </select>
                     </div>
@@ -4265,7 +4265,7 @@ html,body{background:#010806!important;}
                         </div>
                         <div class="stat-cell">
                             <div class="stat-val" id="statAvgMult">0x</div>
-                            <div class="stat-lbl">Avg Multiplier</div>
+                            <div class="stat-lbl">Avg Payout</div>
                         </div>
                         <div class="stat-cell">
                             <div class="stat-val">~1s</div>
@@ -5569,7 +5569,7 @@ event MyMarket {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
             <div>
                 <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px">
-                    TN12 REST URL</label>
+                    Kaspa Testnet REST URL</label>
                 <input id="cfgNodeRest" value=""
                     placeholder="https://api-tn12.kaspa.org"
                     style="font-family:var(--mono);font-size:12px">
@@ -5870,7 +5870,7 @@ event MyMarket {
                                 </div>
                                 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
                                     <button class="cta1 wasm-gate" onclick="htpClaimNow()" id="claimNowBtn">Claim Winnings</button>
-                                    <button class="chip chip-a" id="claimNetTN12" onclick="setClaimNet('tn12')">TN12</button>
+                                    <button class="chip chip-a" id="claimNettn12" onclick="setClaimNet('tn12')">Kaspa Testnet</button>
                                     <button class="chip" id="claimNetMain" onclick="setClaimNet('mainnet')">Mainnet</button>
                                 </div>
                             </div>
@@ -5894,7 +5894,7 @@ event MyMarket {
                 <div class="mx sec-pad">
                     <div class="sh">
                         <h2>Wallet</h2>
-                        <p>Connect via extension or enter your address. Supports TN12 testnet and mainnet.</p>
+                        <p>Connect via extension or enter your address. Supports Kaspa Testnet testnet and mainnet.</p>
                         <div id="wasmStatus" style="font-size:11px;margin-top:6px"></div>
                     </div>
 
@@ -5955,24 +5955,24 @@ event MyMarket {
                     <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Connect to your own Kaspa node for dedicated access. Defaults to public resolvers if empty.</p>
                     <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap">
                         <a href="https://explorer.kaspa.org" target="_blank" style="font-size:12px;color:var(--accent)">Mainnet Explorer &#8599;</a>
-                        <a href="https://tn12.kaspa.stream" target="_blank" style="font-size:12px;color:var(--accent)">TN12 Explorer &#8599;</a>
-                        <a href="https://faucet-tn12.kaspanet.io" target="_blank" style="font-size:12px;color:var(--accent)">TN12 Faucet &#8599;</a>
+                        <a href="https://tn12.kaspa.stream" target="_blank" style="font-size:12px;color:var(--accent)">Kaspa Testnet Explorer &#8599;</a>
+                        <a href="https://faucet-tn12.kaspanet.io" target="_blank" style="font-size:12px;color:var(--accent)">Kaspa Testnet Faucet &#8599;</a>
                     </div>
 
                     <!-- Node type selector -->
                     <div style="display:flex;gap:8px;margin-bottom:14px">
-                        <button class="chip chip-a" id="nodeTypeTN12" onclick="htpSetNodeType('tn12')">TN12 Node</button>
+                        <button class="chip chip-a" id="nodeTypetn12" onclick="htpSetNodeType('tn12')">Kaspa Testnet Node</button>
                         <button class="chip" id="nodeTypeMain" onclick="htpSetNodeType('mainnet')">Mainnet Node</button>
                     </div>
 
-                    <!-- TN12 node fields -->
-                    <div id="nodeFieldsTN12">
+                    <!-- Kaspa Testnet node fields -->
+                    <div id="nodeFieldstn12">
                         <div class="fg" style="margin-bottom:8px">
-                            <label>TN12 wRPC Endpoint</label>
+                            <label>Kaspa Testnet wRPC Endpoint</label>
                             <input id="tn12Url" class="fi" placeholder="wss://wrpc.tn12.kaspa.org" value="">
                         </div>
                         <div class="fg" style="margin-bottom:8px">
-                            <label>TN12 REST API (optional)</label>
+                            <label>Kaspa Testnet REST API (optional)</label>
                             <input id="tn12Rest" class="fi" placeholder="https://api-tn12.kaspa.org" value="">
                         </div>
                     </div>
@@ -6212,7 +6212,7 @@ event MyMarket {
                         </div>
                         <div style="font-size:13px;font-weight:700;color:var(--text)">Late 2025</div>
                         <div style="font-size:13px;color:rgba(200,210,230,.7);margin-top:4px">DAGKnight prototype
-                            operational on devnet. TN12 testnet launched. vProgs yellow paper published. Covenant
+                            operational on devnet. Kaspa Testnet testnet launched. vProgs yellow paper published. Covenant
                             opcodes (KIP-10) spec finalized.</div>
                     </div>
                     <div style="margin-bottom:24px;position:relative">
@@ -6680,7 +6680,7 @@ event MyMarket {
 
 
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-        // KASPA NODE CONNECTION LAYER - Mainnet REST + TN12 wRPC
+        // KASPA NODE CONNECTION LAYER - Mainnet REST + Kaspa Testnet wRPC
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 
         const KASPA_NETS = {
@@ -6822,7 +6822,7 @@ event MyMarket {
             }
         };
 
-        // ── wRPC WebSocket (TN12 + Mainnet fallback) ────────────────────
+        // ── wRPC WebSocket (Kaspa Testnet + Mainnet fallback) ────────────────────
         const kaspaWRPC = {
             connect(url) {
                 return new Promise((resolve, reject) => {
@@ -7007,7 +7007,7 @@ event MyMarket {
                             nodeInfo.networkName = activeNet;
                             updateNodeStatus('rest', activeNet.toUpperCase() + ' LOCAL wRPC | DAA ' + nodeInfo.daaScore.toLocaleString());
                             if ($('daaScore')) $('daaScore').textContent = nodeInfo.daaScore.toLocaleString();
-                            if (typeof subscribeLobbyIfActiveNetTN12 === 'function') subscribeLobbyIfActiveNetTN12();
+                            if (typeof subscribeLobbyIfActiveNetKaspa Testnet === 'function') subscribeLobbyIfActiveNetKaspa Testnet();
                             return true;
                         }
                     }
@@ -7025,7 +7025,7 @@ event MyMarket {
                             nodeInfo.networkName = activeNet;
                             updateNodeStatus('rest', activeNet.toUpperCase() + ' REST | DAA ' + nodeInfo.daaScore.toLocaleString());
                             if ($('daaScore')) $('daaScore').textContent = nodeInfo.daaScore.toLocaleString();
-                            if (typeof subscribeLobbyIfActiveNetTN12 === 'function') subscribeLobbyIfActiveNetTN12();
+                            if (typeof subscribeLobbyIfActiveNetKaspa Testnet === 'function') subscribeLobbyIfActiveNetKaspa Testnet();
                             return true;
                         }
                     } catch (e) {
@@ -7039,7 +7039,7 @@ event MyMarket {
 
                 // Public resolvers serve all networks - they route by networkId
                 // Browser wss:// connects, then the resolver redirects to a node running the requested network
-                // v69.9: TN12 uses only local RpcClient (disable public wRPC completely)
+                // v69.9: Kaspa Testnet uses only local RpcClient (disable public wRPC completely)
                 if (false) {
                     // public wRPC endpoints disabled; use local RpcClient only
                 }
@@ -7066,7 +7066,7 @@ event MyMarket {
                         }
                         updateNodeStatus('connected', activeNet.toUpperCase() + ' wRPC v' + nodeInfo.version + (nodeInfo.synced ? ' -- synced' : '[syncing]') + ' | DAA ' + (nodeInfo.daaScore || '-'));
 
-                        if (typeof subscribeLobbyIfActiveNetTN12 === 'function') subscribeLobbyIfActiveNetTN12();
+                        if (typeof subscribeLobbyIfActiveNetKaspa Testnet === 'function') subscribeLobbyIfActiveNetKaspa Testnet();
                         return true;
                     } catch (e) {
                         console.warn('wRPC failed:', ep, e.message);
@@ -7121,7 +7121,7 @@ event MyMarket {
             }
         };
 
-        function subscribeLobbyIfActiveNetTN12() {
+        function subscribeLobbyIfActiveNetKaspa Testnet() {
             if (activeNet === 'tn12' && !lobbySubscribed && window.htpFirebase) {
                 lobbySubscribed = true;
                 console.log('[HTP] Subscribing to Firebase lobby listener...');
@@ -7188,8 +7188,8 @@ event MyMarket {
             } catch (e) { }
         }
 
-        // ── TN12 Custom Node Configuration ──────────────────────────────
-        function setTN12Node(url) {
+        // ── Kaspa Testnet Custom Node Configuration ──────────────────────────────
+        function setKaspa TestnetNode(url) {
             KASPA_NETS.tn12.customNode = url;
             if (activeNet === 'tn12') kaspa.connect();
             // WASM SDK status
@@ -7207,7 +7207,7 @@ event MyMarket {
 
         }
 
-        function setTN12REST(url) {
+        function setKaspa TestnetREST(url) {
             KASPA_NETS.tn12.rest = url;
         }
 
@@ -7970,7 +7970,7 @@ function go(v) {
         function setNet(n) {
             net = n;
             activeNet = n === 'tn12' ? 'tn12' : 'mainnet';
-            if ($('netLbl')) $('netLbl').textContent = n === 'tn12' ? 'TN12' : 'Mainnet';
+            if ($('netLbl')) $('netLbl').textContent = n === 'tn12' ? 'Kaspa Testnet' : 'Mainnet';
             // Sync select dropdown
             var sel = document.getElementById('netSelect');
             if (sel) sel.value = n;
@@ -8142,7 +8142,7 @@ function go(v) {
                         mkDetail('Closing', selMkt.cl + ' remaining') +
                         mkDetail('Creator Bond', (selMkt.creatorBond || 1000) + ' KAS (slashed if spam)') +
                         mkDetail('Fee Structure', selMkt.fee || 'Spot: 2% on winnings only | Maximizer: 50% loss cushion') +
-                        mkDetail('Network', selMkt.net === 'both' ? 'Mainnet + TN12' : selMkt.net.toUpperCase()) +
+                        mkDetail('Network', selMkt.net === 'both' ? 'Mainnet + Kaspa Testnet' : selMkt.net.toUpperCase()) +
                         '</div></div>';
                 }
 
@@ -9490,7 +9490,7 @@ function go(v) {
         var _claimNet = 'tn12';
         window.setClaimNet = function(net) {
             _claimNet = net;
-            var t = document.getElementById('claimNetTN12');
+            var t = document.getElementById('claimNetKaspa Testnet');
             var m = document.getElementById('claimNetMain');
             if (t) t.classList.toggle('chip-a', net === 'tn12');
             if (m) m.classList.toggle('chip-a', net === 'mainnet');
@@ -10235,7 +10235,7 @@ function go(v) {
                     var b = d.body;
                     output.push('// ••• Covenant: ' + d.kind + ' ' + d.name + ' •••');
                     output.push('// SilverScript Compiler v2.0 → KIP-10/KIP-20/KIP-16');
-                    output.push('// Target: Kaspa TN12 (May 5, 2026 HF)');
+                    output.push('// Target: Kaspa Kaspa Testnet (May 5, 2026 HF)');
                     output.push('');
 
                     if (d.kind === 'event' || d.kind === 'market') {
@@ -12168,7 +12168,7 @@ function go(v) {
             else if (this.phase === 'turn') { this.phase = 'river'; this.community.push(this.deal()); this.turn = 1; }
             else if (this.phase === 'river') { this.showdown(); }
         };
-        PokerState.prototype.playerAction = function (action, amount) {
+        PokerState.prototype.Creatorction = function (action, amount) {
             if (this.gameOver) return;
             var isP1 = this.turn === 1;
             if (action === 'fold') {
@@ -12218,9 +12218,9 @@ function go(v) {
             if (this.turn !== 2 || this.gameOver) return;
             var callAmt = this.currentBet - this.p2Bet;
             var rand = Math.random();
-            if (callAmt === 0) { if (rand < 0.3) this.playerAction('raise', this.bigBlind); else this.playerAction('check'); }
-            else if (callAmt <= this.bigBlind * 2) { if (rand < 0.15) this.playerAction('fold'); else if (rand < 0.4) this.playerAction('raise', this.bigBlind); else this.playerAction('call'); }
-            else { if (rand < 0.35) this.playerAction('fold'); else this.playerAction('call'); }
+            if (callAmt === 0) { if (rand < 0.3) this.Creatorction('raise', this.bigBlind); else this.Creatorction('check'); }
+            else if (callAmt <= this.bigBlind * 2) { if (rand < 0.15) this.Creatorction('fold'); else if (rand < 0.4) this.Creatorction('raise', this.bigBlind); else this.Creatorction('call'); }
+            else { if (rand < 0.35) this.Creatorction('fold'); else this.Creatorction('call'); }
         };
         PokerState.prototype.showdown = function () {
             this.phase = 'showdown';
@@ -12292,7 +12292,7 @@ function go(v) {
             document.body.appendChild(ov);
             if (!g.gameOver && g.turn === 2) { setTimeout(function () { g.aiMove(); if (!g.gameOver && g.turn === 2) g.aiMove(); renderPokerOverlay(); }, 800 + Math.random() * 700); }
         }
-        function pokerAction(action) { var g = window.pokerGame; if (!g || g.gameOver || g.turn !== 1) return; g.playerAction(action, action === 'raise' ? g.bigBlind : 0); playChessSound(action === 'fold' ? 'capture' : 'move'); renderPokerOverlay(); }
+        function pokerAction(action) { var g = window.pokerGame; if (!g || g.gameOver || g.turn !== 1) return; g.Creatorction(action, action === 'raise' ? g.bigBlind : 0); playChessSound(action === 'fold' ? 'capture' : 'move'); renderPokerOverlay(); }
         function closePoker() { var o = document.getElementById('pokerOverlay'); if (o) o.remove(); }
         function launchPokerFromMatch(matchId, time) { startPokerGame({ id: matchId, time: time || '5|0' }); }
 
@@ -13936,7 +13936,7 @@ function showGameOverOverlay(title, amountText, color, match) {
     // Auto-sync node on load
     setTimeout(function() {
       if (typeof setNet === "function") {
-        console.log("[HTP] Auto-syncing to TN12...");
+        console.log("[HTP] Auto-syncing to Kaspa Testnet...");
         setNet('tn12');
       }
     }, 1000);
@@ -13947,13 +13947,13 @@ function showGameOverOverlay(title, amountText, color, match) {
         (function () {
             "use strict";
         var DAA_POLL_MS = 5000, AUTO_CONN_DELAY = 2000;
-        var REST_TN12 = "https://api-tn12.kaspa.org";
+        var REST_Kaspa Testnet = "https://api-tn12.kaspa.org";
         var REST_MAIN = "https://api.kaspa.org";
         var _daaTimer = null;
 
         function fetchDaaScore() {
                 var net = (window.activeNet === 'mainnet') ? 'mainnet' : 'tn12';
-                var base = (net === 'mainnet') ? REST_MAIN : REST_TN12;
+                var base = (net === 'mainnet') ? REST_MAIN : REST_Kaspa Testnet;
                 fetch(base + "/info/blockdag")
         .then(function (r) { return r.json(); })
         .then(function (d) {
@@ -15423,7 +15423,7 @@ function renderPortfolio(){
 // ═══ SILVERSCRIPT + EVENT DETAIL ═══
 
 function genSS(e){
-  return'// SilverScript Covenant -- '+(e.title||e.id)+'\n// Kaspa TN12 · KIP-10 Opcodes\n'+
+  return'// SilverScript Covenant -- '+(e.title||e.id)+'\n// Kaspa Kaspa Testnet · KIP-10 Opcodes\n'+
   '// Script: '+(e.covenantScript||'N/A')+'\n// Address: '+(e.covenantAddress||'LEGACY BLACK-HOLE')+'\n\n'+
   'contract PariPool {\n    const ORACLE: PubKey = 0x'+(e.oraclePubkey||'NONE').slice(0,16)+'...;\n\n'+
   '    // Path A: Oracle resolves\n    function resolve(sig: Sig) {\n        require(checkSig(sig, ORACLE));\n    }\n\n'+
@@ -15714,7 +15714,7 @@ else setTimeout(initV69,300);
   }
 
   // ========== MAIN SETTLEMENT API ==========
-  window.settleMatchPayout = async function(matchId, winnerAddress, isDraw, playerAAddr, playerBAddr) {
+  window.settleMatchPayout = async function(matchId, winnerAddress, isDraw, CreatorAddr, ChallengerAddr) {
     var esc = getEscrowEntry(matchId);
     if (!esc) {
       console.error('HTP Settlement: no escrow for', matchId);
@@ -15736,10 +15736,10 @@ else setTimeout(initV69,300);
     }
 
     var outputs = [];
-    if (isDraw && playerAAddr && playerBAddr) {
+    if (isDraw && CreatorAddr && ChallengerAddr) {
       var half = Math.floor((totalSompi - NETWORK_FEE) / 2);
-      outputs.push({ address: playerAAddr, amount: half });
-      outputs.push({ address: playerBAddr, amount: half });
+      outputs.push({ address: CreatorAddr, amount: half });
+      outputs.push({ address: ChallengerAddr, amount: half });
       console.log('HTP Settlement DRAW:', matchId, half / SOMPI, 'KAS each');
     } else if (winnerAddress) {
       var protocolFee = Math.floor(totalSompi * PROTOCOL_FEE_RATE);
@@ -18388,7 +18388,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
       'Download and run a miner script to earn rewards by resolving prediction markets with ZK proofs. Requires Node.js 18+.' +
       '</p>' +
       '<div style="display:flex;gap:12px;flex-wrap:wrap">' +
-      '<button onclick="showToast(&apos;Download from GitHub: HTP oracle daemon script&apos;,&apos;info&apos;);return false" class="cta2" style="text-decoration:none;display:inline-block;padding:10px 20px">Download TN12 Miner</button>' +
+      '<button onclick="showToast(&apos;Download from GitHub: HTP oracle daemon script&apos;,&apos;info&apos;);return false" class="cta2" style="text-decoration:none;display:inline-block;padding:10px 20px">Download Kaspa Testnet Miner</button>' +
       '<button onclick="showToast(&apos;Download from GitHub: HTP oracle daemon script&apos;,&apos;info&apos;);return false" class="cta2" style="text-decoration:none;display:inline-block;padding:10px 20px">Download Mainnet Miner</button>' +
       '</div>' +
       '<p style="color:#666;font-size:12px;margin:12px 0 0;font-family:monospace">Usage: HTP_MNEMONIC="your twelve words" node htp-oracle-miner-tn12.js</p>';
@@ -20814,7 +20814,7 @@ W.renderOracleEventsPanel=function(){
     }
     q.innerHTML=pending.map(function(m){
         var ol=_OL[m.oracle||m.oracleType]||(m.oracle||'Bonded');
-        var net=(m.network==='mainnet')?'Mainnet':'TN12';
+        var net=(m.network==='mainnet')?'Mainnet':'Kaspa Testnet';
         var outs=(m.outcomes||m.options||['Yes','No']).join(' / ');
         var sc=m.status==='active'?'#22c55e':'#f59e0b';
         var eid=m.id||m.eventId||'';
@@ -21523,7 +21523,7 @@ W.htpOracleDaemon=OD;
 (function(){
   var W = window;
   var NETS = {
-    tn12:    { label:'TN12',    wrpc:'wss://tn12.kaspa.stream/wrpc/borsh', rest:'https://api-tn12.kaspa.org', prefix:'kaspatest', dotColor:'#f59e0b' },
+    tn12:    { label:'Kaspa Testnet',    wrpc:'wss://tn12.kaspa.stream/wrpc/borsh', rest:'https://api-tn12.kaspa.org', prefix:'kaspatest', dotColor:'#f59e0b' },
     mainnet: { label:'Mainnet', wrpc:'wss://wrpc.tn12.kaspa.org',        rest:'https://api.kaspa.org',        prefix:'kaspa',     dotColor:'#49e8c2' }
   };
   W._htpDaaScores = { tn12: 0, mainnet: 0 };
@@ -21752,8 +21752,8 @@ window.htpConnectManual = function(addr) {
 /* ── Match Lifecycle Interactivity ──────────────────────────────────── */
 (function(){
   var STEP_INFO = {
-    1: { title:'Create Match', detail:'Player A selects a game, sets escrow amount, and clicks Create. The KAS is locked into a covenant address - neither player controls it. The match appears in the lobby as "Open."' },
-    2: { title:'Accept Match', detail:'Player B sees the open match and clicks Accept, locking an equal amount of KAS into the same covenant. Both players are now committed. The game board initializes.' },
+    1: { title:'Create Match', detail:'Creator selects a game, sets escrow amount, and clicks Create. The KAS is locked into a covenant address - neither player controls it. The match appears in the lobby as "Open."' },
+    2: { title:'Accept Match', detail:'Challenger sees the open match and clicks Accept, locking an equal amount of KAS into the same covenant. Both players are now committed. The game board initializes.' },
     3: { title:'Play Game', detail:'Each move is hashed (SHA-256) and committed to Firebase with the hash queued as a Kaspa TX payload. This creates an immutable move chain - no move can be altered after the fact.' },
     4: { title:'Resolve Result', detail:'When the game ends (checkmate, connect-4, all pieces taken), htpBuildGameProof() creates a proof object with the last 10 move hashes + winner address. The covenant script validates this proof on-chain.' },
     5: { title:'Settle Payout', detail:'The covenant releases funds: 98% of the total escrow goes to the winner, 2% protocol fee goes to the HTP treasury. Settlement happens in a single Kaspa transaction - no intermediary ever holds your KAS.' }
@@ -21836,9 +21836,9 @@ window.htpConnectManual = function(addr) {
 
   W.htpSetNodeType = function(type) {
     _nodeType = type;
-    var tn = document.getElementById('nodeFieldsTN12');
+    var tn = document.getElementById('nodeFieldsKaspa Testnet');
     var mn = document.getElementById('nodeFieldsMain');
-    var bt = document.getElementById('nodeTypeTN12');
+    var bt = document.getElementById('nodeTypeKaspa Testnet');
     var bm = document.getElementById('nodeTypeMain');
     if (tn) tn.style.display = type === 'tn12' ? 'block' : 'none';
     if (mn) mn.style.display = type === 'mainnet' ? 'block' : 'none';
@@ -22331,11 +22331,11 @@ document.querySelectorAll('button').forEach(function(b){
 // HTP Protocol Fee Address -- network-aware override
 (function() {
   var MAINNET_FEE = 'kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel';
-  var TN12_FEE    = 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m';
+  var Kaspa Testnet_FEE    = 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m';
 
   function getActiveFeeAddr() {
     var net = window.activeNet || 'tn12';
-    return net === 'mainnet' ? MAINNET_FEE : TN12_FEE;
+    return net === 'mainnet' ? MAINNET_FEE : Kaspa Testnet_FEE;
   }
 
   // Override the module-level constant used by all settlement functions
@@ -22551,7 +22551,7 @@ document.querySelectorAll('button').forEach(function(b){
   console.log("[High Table Fix2] Race guard patched");
 
   function wrapSettle(orig) {
-    return async function(matchId, winnerAddress, isDraw, playerAAddr, playerBAddr) {
+    return async function(matchId, winnerAddress, isDraw, CreatorAddr, ChallengerAddr) {
       var NETWORKFEE = 5000;
       var SOMPI = 100000000;
       var stakeKas = 0;
@@ -22595,7 +22595,7 @@ document.querySelectorAll('button').forEach(function(b){
         }
       }
 
-      return orig.call(this, matchId, winnerAddress, isDraw, playerAAddr, playerBAddr);
+      return orig.call(this, matchId, winnerAddress, isDraw, CreatorAddr, ChallengerAddr);
     };
   }
 })();
