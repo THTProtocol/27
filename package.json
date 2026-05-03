@@ -21,15 +21,28 @@
     "stress:games": "node scripts/stress-skill-games.mjs"
   },
   "dependencies": {
+    "@dfns/kaspa-wasm": "^0.14.1",
+    "bech32": "^2.0.0",
+    "bip39": "^3.1.0",
+    "blakejs": "^1.2.1",
+    "chess.js": "^1.4.0",
     "dotenv": "^16.4.7",
+    "ed25519-hd-key": "^1.3.0",
     "express": "^4.21.1",
+    "tweetnacl": "^1.0.3",
     "ws": "^8.18.0"
   },
-  "devDependencies": {},
   "engines": {
     "node": ">=18.0.0"
   },
-  "keywords": ["kaspa", "prediction-market", "covenants", "blockdag", "chess", "silverscript"],
+  "keywords": [
+    "kaspa",
+    "prediction-market",
+    "covenants",
+    "blockdag",
+    "chess",
+    "silverscript"
+  ],
   "author": "High Table Protocol",
   "license": "MIT"
 }

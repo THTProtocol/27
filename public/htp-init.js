@@ -272,7 +272,7 @@
   };
 
   function fetchConfig() {
-    var base = (window.HTP_SERVER_URL || '').replace(/\/ws$/, '');
+    var base = (typeof window !== 'undefined' && window.HTP_SERVER_URL) || 'https://178.105.76.81';
     fetch(base + '/api/config', { signal: AbortSignal.timeout(5000) })
       .then(function(r) { return r.json(); })
       .then(function(cfg) {
@@ -282,12 +282,9 @@
         }
       })
       .catch(function() {
-        var proto = location.protocol === 'https:' ? 'wss' : 'ws';
-        var fallback = proto + '://' + location.host + '/ws';
-        console.warn('[HTP] /api/config failed, trying fallback:', fallback);
-        initServerWs(fallback);
+        initServerWs('wss://178.105.76.81/ws');
+        return;
       });
-  }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fetchConfig);
   else fetchConfig();
@@ -351,7 +348,7 @@
     window.addEventListener('htp:server:connected', function() { setStatusDot('live'); });
     window.addEventListener('htp:server:disconnected', function() { setStatusDot('down'); });
     // Also probe the backend periodically. A successful /api/config = live.
-    var base = (window.HTP_SERVER_URL || '').replace(/\/ws$/, '') || (location.protocol + '//' + location.host);
+    var base = (typeof window !== 'undefined' && window.HTP_SERVER_URL) || 'https://178.105.76.81';
     function probe() {
       try {
         fetch(base + '/api/config', { signal: AbortSignal.timeout(4000) })
@@ -435,4 +432,41 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
+})();
+
+/* --- DAA counter poller --- */
+(function() {
+  var daaEl = document.getElementById('daaScore');
+  if (!daaEl) return;
+  function refreshDaa() {
+    var cached = window.htpDaaScore;
+    if (cached !== undefined && cached !== null) {
+      daaEl.textContent = Number(cached).toLocaleString();
+    } else if (daaEl.textContent === '-' || daaEl.textContent === 'syncing...') {
+      daaEl.textContent = 'syncing...';
+    }
+    setTimeout(refreshDaa, 3000);
+  }
+  refreshDaa();
+})();
+
+/* --- Overview stats from API --- */
+(function() {
+  function fetchStats() {
+    fetch('/api/stats')
+      .then(function(r) { return r.json(); })
+      .then(function(s) {
+        var pool = document.getElementById('statPool');
+        var mkts = document.getElementById('statMarkets');
+        var entr = document.getElementById('statEntrants');
+        var mult = document.getElementById('statAvgMult');
+        if (pool) pool.textContent = (s.totalVolumeSompi ? (Number(s.totalVolumeSompi)/1e8).toLocaleString() : '0');
+        if (mkts) mkts.textContent = String(s.openMarkets || 0);
+        if (entr) entr.textContent = String(s.totalUsers || 0);
+        if (mult) mult.textContent = '--';
+      })
+      .catch(function() {});
+    setTimeout(fetchStats, 15000);
+  }
+  if (document.getElementById('statPool')) fetchStats();
 })();

@@ -7923,29 +7923,11 @@ event MyMarket {
             m.created = m.created || '2026-03-01';
         });
 
-        // Seed demo events for testing
-        (function seedDemo(){
-            if(mkts.length === 0){
-                [
-                  { id:'demo-001', title:'Will Kaspa reach $1 before end of 2025?', cat:'Crypto', st:'open',
-                    yP:67, nP:33, pool:15000, ent:42, cl:'6d 23h', net:'both', src:'CoinGecko', img:'',
-                    creatorBond:1000, desc:'Binary parimutuel on Kaspa price.',
-                    fee:'Spot: 2% | Maximizer: 50% cushion', resolution:'Bonded + CoinGecko',
-                    deadline:'2025-12-31', created:'2026-05-01' },
-                  { id:'demo-002', title:'Will Bitcoin hit $120K this year?', cat:'Crypto', st:'open',
-                    yP:54, nP:46, pool:32000, ent:88, cl:'14d 5h', net:'both', src:'CoinGecko', img:'',
-                    creatorBond:1000, desc:'Binary parimutuel on Bitcoin ATH.',
-                    fee:'Spot: 2% | Maximizer: 50% cushion', resolution:'Bonded + CoinGecko',
-                    deadline:'2026-12-31', created:'2026-05-01' }
-                ].forEach(function(d){ mkts.push(d); });
-                try { localStorage.setItem('htp_markets', JSON.stringify(mkts)); } catch(e){}
-            }
-        })();
-        // Bridge: expose mkts so all external scripts (markets-ui, wallet-fix, demo-match) share same array
+        // No fake demo events - all markets come from server API or localStorage
         window.mkts = mkts;
         window.htpMarkets = mkts;
         window._htpMarkets = mkts;
-        window._htpAddMarket = function(m){
+window._htpAddMarket = function(m){
             if(!mkts.find(function(x){ return x.id===m.id; })){
                 mkts.push(m);
                 window.mkts = mkts; window.htpMarkets = mkts; window._htpMarkets = mkts;
