@@ -3931,6 +3931,8 @@ body::before {
   display: none !important;
 }
 
+
+.stat-val{min-height:1.2em;transition:opacity .3s}
 </style>
 
 <style>
@@ -4252,19 +4254,19 @@ html,body{background:#010806!important;}
                 <div class="mx">
                     <div class="stats-strip">
                         <div class="stat-cell">
-                            <div class="stat-val" id="statPool">0</div>
+                            <div class="stat-val" id="statPool">--</div>
                             <div class="stat-lbl">Total Pool (KAS)</div>
                         </div>
                         <div class="stat-cell">
-                            <div class="stat-val" id="statMarkets">0</div>
+                            <div class="stat-val" id="statMarkets">--</div>
                             <div class="stat-lbl">Active Markets</div>
                         </div>
                         <div class="stat-cell">
-                            <div class="stat-val" id="statEntrants">0</div>
+                            <div class="stat-val" id="statEntrants">--</div>
                             <div class="stat-lbl">Positions Taken</div>
                         </div>
                         <div class="stat-cell">
-                            <div class="stat-val" id="statAvgMult">0x</div>
+                            <div class="stat-val" id="statAvgMult">--</div>
                             <div class="stat-lbl">Avg Payout</div>
                         </div>
                         <div class="stat-cell">
@@ -9608,6 +9610,21 @@ function go(v) {
         };
 
         window.htpClaimNow = async function() {
+            // If a matchId input is present, delegate to claimGameFromServer
+            var matchIdEl = document.getElementById('claimMatchId');
+            var matchId = matchIdEl ? matchIdEl.value.trim() : '';
+            if (matchId) {
+              if (typeof claimGameFromServer === 'function') {
+                var btn = document.getElementById('claimNowBtn');
+                if (btn) { btn.disabled = true; btn.textContent = 'Claiming...'; }
+                var resultEl = document.getElementById('claimNowResult');
+                if (resultEl) { resultEl.style.display = 'block'; resultEl.innerHTML = 'Claiming match ' + matchId + '...'; }
+                return claimGameFromServer(matchId);
+              }
+              var resultEl = document.getElementById('claimNowResult');
+              if (resultEl) { resultEl.style.display = 'block'; resultEl.innerHTML = 'claimGameFromServer not available. Refresh the page.'; }
+              return;
+            }
             var escrowTxid  = (document.getElementById('claimEscrowTxid')  || {}).value.trim();
             var outcomeTxid = (document.getElementById('claimOutcomeTxid') || {}).value.trim();
             var claimAddr   = (document.getElementById('claimToAddr')       || {}).value.trim() || window.walletAddress;
