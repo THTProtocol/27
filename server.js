@@ -551,7 +551,7 @@ app.post('/api/games/:id/join', async (req, res) => {
     const simulate = req.body.simulate === true;
 
     if (simulate) {
-      db.updateGame(game.id, { playerB, playerBPubkey, status: 'playing', startedAt: Date.now(), escrowTxId: 'sim:' + game.id });
+      db.updateGame(game.id, { playerB, playerBPubkey, status: 'playing', startedAt: Date.now() });
       const user = db.getOrCreateUser(playerB);
       db.updateUser(playerB, { totalGames: user.totalGames + 1, pubkey: playerBPubkey });
       broadcastToGame(game.id, 'game-started', { gameId: game.id, playerB });

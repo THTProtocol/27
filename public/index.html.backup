@@ -22632,38 +22632,5 @@ window.addEventListener('htp:balance:updated', function(e) {
 <script src="htp-skill-v3.js"></script>
 <script src="htp-markets-ui.js"></script>
 <script src="htp-demo-match.js"></script>
-<script>
-// DAA counter -- poll the cached value every 3s
-(function(){
-  var daaEl = document.getElementById('daaScore');
-  if (!daaEl) return;
-  setInterval(function(){
-    if (window.htpDaaScore && daaEl) daaEl.textContent = window.htpDaaScore.toLocaleString();
-  }, 3000);
-})();
-</script>
-<script>
-// Live stats poller -- replaces hardcoded zeros with real API data every 15s
-(function(){
-  function refreshStats(){
-    fetch('/api/stats')
-      .then(function(r){ return r.json(); })
-      .then(function(s){
-        var p = document.getElementById('statPool');
-        var m = document.getElementById('statMarkets');
-        var e = document.getElementById('statEntrants');
-        var a = document.getElementById('statAvgMult');
-        if (p) p.textContent = ((s.totalVolumeSompi || 0) / 100000000).toLocaleString();
-        if (m) m.textContent = s.openMarkets || 0;
-        if (e) e.textContent = s.totalGames || 0;
-        if (a) a.textContent = s.totalVolumeSompi > 0 ? ((s.totalVolumeSompi / 1e8) / Math.max(1, s.totalGames)).toFixed(1) + 'x' : '0x';
-      })
-      .catch(function(){});
-  }
-  setInterval(refreshStats, 15000);
-  refreshStats();
-})();
-</script>
-
 </body>
 </html>
