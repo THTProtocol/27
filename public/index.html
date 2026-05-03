@@ -7009,7 +7009,7 @@ event MyMarket {
                             nodeInfo.networkName = activeNet;
                             updateNodeStatus('rest', activeNet.toUpperCase() + ' LOCAL wRPC | DAA ' + nodeInfo.daaScore.toLocaleString());
                             if ($('daaScore')) $('daaScore').textContent = nodeInfo.daaScore.toLocaleString();
-                            if (typeof subscribeLobbyIfActiveNetKaspa Testnet === 'function') subscribeLobbyIfActiveNetKaspa Testnet();
+                            if (typeof subscribeLobbyIfActiveNetTN12 === 'function') subscribeLobbyIfActiveNetTN12();
                             return true;
                         }
                     }
@@ -7027,7 +7027,7 @@ event MyMarket {
                             nodeInfo.networkName = activeNet;
                             updateNodeStatus('rest', activeNet.toUpperCase() + ' REST | DAA ' + nodeInfo.daaScore.toLocaleString());
                             if ($('daaScore')) $('daaScore').textContent = nodeInfo.daaScore.toLocaleString();
-                            if (typeof subscribeLobbyIfActiveNetKaspa Testnet === 'function') subscribeLobbyIfActiveNetKaspa Testnet();
+                            if (typeof subscribeLobbyIfActiveNetTN12 === 'function') subscribeLobbyIfActiveNetTN12();
                             return true;
                         }
                     } catch (e) {
@@ -7068,7 +7068,7 @@ event MyMarket {
                         }
                         updateNodeStatus('connected', activeNet.toUpperCase() + ' wRPC v' + nodeInfo.version + (nodeInfo.synced ? ' -- synced' : '[syncing]') + ' | DAA ' + (nodeInfo.daaScore || '-'));
 
-                        if (typeof subscribeLobbyIfActiveNetKaspa Testnet === 'function') subscribeLobbyIfActiveNetKaspa Testnet();
+                        if (typeof subscribeLobbyIfActiveNetTN12 === 'function') subscribeLobbyIfActiveNetTN12();
                         return true;
                     } catch (e) {
                         console.warn('wRPC failed:', ep, e.message);
@@ -7123,7 +7123,7 @@ event MyMarket {
             }
         };
 
-        function subscribeLobbyIfActiveNetKaspa Testnet() {
+        function subscribeLobbyIfActiveNetTN12() {
             if (activeNet === 'tn12' && !lobbySubscribed && window.htpFirebase) {
                 lobbySubscribed = true;
                 console.log('[HTP] Subscribing to Firebase lobby listener...');
@@ -7191,7 +7191,7 @@ event MyMarket {
         }
 
         // ── Kaspa Testnet Custom Node Configuration ──────────────────────────────
-        function setKaspa TestnetNode(url) {
+        function setTN12Node(url) {
             KASPA_NETS.tn12.customNode = url;
             if (activeNet === 'tn12') kaspa.connect();
             // WASM SDK status
@@ -7209,7 +7209,7 @@ event MyMarket {
 
         }
 
-        function setKaspa TestnetREST(url) {
+        function setTN12REST(url) {
             KASPA_NETS.tn12.rest = url;
         }
 
@@ -9492,7 +9492,7 @@ function go(v) {
         var _claimNet = 'tn12';
         window.setClaimNet = function(net) {
             _claimNet = net;
-            var t = document.getElementById('claimNetKaspa Testnet');
+            var t = document.getElementById('claimNetTN12');
             var m = document.getElementById('claimNetMain');
             if (t) t.classList.toggle('chip-a', net === 'tn12');
             if (m) m.classList.toggle('chip-a', net === 'mainnet');
@@ -13964,13 +13964,13 @@ function showGameOverOverlay(title, amountText, color, match) {
         (function () {
             "use strict";
         var DAA_POLL_MS = 5000, AUTO_CONN_DELAY = 2000;
-        var REST_Kaspa Testnet = "https://api-tn12.kaspa.org";
+        var REST_TN12 = "https://api-tn12.kaspa.org";
         var REST_MAIN = "https://api.kaspa.org";
         var _daaTimer = null;
 
         function fetchDaaScore() {
                 var net = (window.activeNet === 'mainnet') ? 'mainnet' : 'tn12';
-                var base = (net === 'mainnet') ? REST_MAIN : REST_Kaspa Testnet;
+                var base = (net === 'mainnet') ? REST_MAIN : REST_TN12;
                 fetch(base + "/info/blockdag")
         .then(function (r) { return r.json(); })
         .then(function (d) {
@@ -21853,9 +21853,9 @@ window.htpConnectManual = function(addr) {
 
   W.htpSetNodeType = function(type) {
     _nodeType = type;
-    var tn = document.getElementById('nodeFieldsKaspa Testnet');
+    var tn = document.getElementById('nodeFieldsTN12');
     var mn = document.getElementById('nodeFieldsMain');
-    var bt = document.getElementById('nodeTypeKaspa Testnet');
+    var bt = document.getElementById('nodeTypeTN12');
     var bm = document.getElementById('nodeTypeMain');
     if (tn) tn.style.display = type === 'tn12' ? 'block' : 'none';
     if (mn) mn.style.display = type === 'mainnet' ? 'block' : 'none';
@@ -22348,11 +22348,11 @@ document.querySelectorAll('button').forEach(function(b){
 // HTP Protocol Fee Address -- network-aware override
 (function() {
   var MAINNET_FEE = 'kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel';
-  var Kaspa Testnet_FEE    = 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m';
+  var TN12_FEE    = 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m';
 
   function getActiveFeeAddr() {
     var net = window.activeNet || 'tn12';
-    return net === 'mainnet' ? MAINNET_FEE : Kaspa Testnet_FEE;
+    return net === 'mainnet' ? MAINNET_FEE : TN12_FEE;
   }
 
   // Override the module-level constant used by all settlement functions
@@ -22663,7 +22663,7 @@ window.addEventListener('htp:balance:updated', function(e) {
 // Live stats poller -- replaces hardcoded zeros with real API data every 15s
 (function(){
   function refreshStats(){
-    fetch('https://178.105.76.81/api/stats')
+    fetch('/api/stats')
       .then(function(r){ return r.json(); })
       .then(function(s){
         var p = document.getElementById('statPool');
