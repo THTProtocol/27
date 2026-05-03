@@ -1313,3 +1313,19 @@ handleWsEvent = function(event, data) {
 };
 
 console.log('[HIGH TABLE] v8.0 initialized');
+
+async function claimGameFromServer(gameId) {
+  try {
+    showToast('Requesting payout...', 'info');
+    const resp = await fetch('/api/games/' + gameId + '/claim', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+    const data = await resp.json();
+    if (data.alreadySettled) { showToast('Already settled. TX: ' + data.txId, 'success'); return; }
+    if (data.error) { showToast('Error: ' + data.error, 'error'); return; }
+    if (!data.pskt) { showToast('No PSKT returned from server', 'error'); return; }
+    if (!window.kasware) { showToast('KasWare wallet required — install at kasware.xyz', 'error'); return; }
+    showToast('Sign the payout in KasWare...', 'info');
+    const txId = await window.kasware.signAndBroadcastPskt(data.pskt);
+    await fetch('/api/games/' + gameId + '/settled', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({txId, winner: data.winner})});
+    showToast('Payout sent! View TX: <a href="https://explorer-tn12.kaspa.org/txs/' + txId + '" target="_blank">' + txId.slice(0,12) + '...</a>', 'success');
+  } catch(e) { showToast('Claim failed: ' + e.message, 'error'); }
+}
