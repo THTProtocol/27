@@ -22646,7 +22646,7 @@ window.addEventListener('htp:balance:updated', function(e) {
 // Live stats poller -- replaces hardcoded zeros with real API data every 15s
 (function(){
   function refreshStats(){
-    fetch('/api/stats')
+    fetch('https://178.105.76.81/api/stats')
       .then(function(r){ return r.json(); })
       .then(function(s){
         var p = document.getElementById('statPool');
