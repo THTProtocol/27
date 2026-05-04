@@ -8,3 +8,5 @@ data/*.json
 .DS_Store
 target/
 rusty-kaspa/
+.e2e-wallet.json
+*.pem

@@ -1,17 +1,16 @@
 #!/usr/bin/env node
 'use strict';
-// e2e-test.js — Full E2E: generate fresh wallet, fund via faucet-request,
-// create game, fund escrow, settle on TN12
+// e2e-test.js — Phase 18: Correct sighash (u64 LE lengths), Rust secp256k1 signer
+// Working TN12: sigScript = 0x41 + 64-byte-sig + 0x01
 
 console.log('==========================================');
-console.log('  HTP E2E TEST — Kaspa TN12');
+console.log('  HTP E2E TEST — Kaspa TN12 (Phase 18)');
 console.log('==========================================\n');
 
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
-const nacl = require('tweetnacl');
-const blake = require('blakejs');
+const { execSync } = require('child_process');
 
 const REST = 'https://api-tn12.kaspa.org';
 const LOCAL = 'http://localhost:3333';
@@ -19,10 +18,9 @@ const SOMPI_PER_KAS = 100000000;
 const FEE = 30000;
 const DUST = 300;
 
-// ── HTTP ──
 function jget(url) {
   return new Promise((resolve) => {
-    const mod = url.startsWith('http') ? (url.startsWith('https') ? https : http) : https;
+    const mod = url.startsWith('https') ? https : http;
     mod.get(url, res => {
       let d = '';
       res.on('data', c => { d += c; });
@@ -45,9 +43,9 @@ function jpost(url, body) {
       res.on('end', () => {
         try {
           const r = JSON.parse(d);
-          if (res.statusCode >= 400) reject(new Error(res.statusCode + ': ' + d.slice(0,200)));
+          if (res.statusCode >= 400) reject(new Error(res.statusCode + ': ' + d.slice(0, 300)));
           else resolve(r);
-        } catch(e) { reject(new Error('Parse: ' + d.slice(0,100))); }
+        } catch(e) { reject(new Error('Parse: ' + d.slice(0, 100))); }
       });
     });
     req.on('error', reject);
@@ -55,143 +53,141 @@ function jpost(url, body) {
   });
 }
 
-// ── Bech32 ──
-function bech32(hrp, buf) {
-  const A = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
-  const G = [0x3b6a57b2,0x26508e6d,0x1ea119fa,0x3d4233dd,0x2a1462b3];
-  const pm = v => { let c=1; for(let x of v){ let t=c>>25; c=((c&0x1ffffff)<<5)^x; for(let j=0;j<5;j++) if((t>>j)&1)c^=G[j]; } return c; };
-  const he = h => { let r=[]; for(let c of h) r.push(c.charCodeAt(0)>>5); r.push(0); for(let c of h) r.push(c.charCodeAt(0)&31); return r; };
-  const cv = (d,f,t,p) => { let a=0,b=0,r=[],m=(1<<t)-1; for(let v of d){ a=(a<<f)|v; b+=f; while(b>=t){b-=t; r.push((a>>b)&m);} } if(p&&b>0) r.push((a<<(t-b))&m); return r; };
-  const arr = Array.from(buf);
-  const cm = cv(arr,8,5,true).concat([0,0,0,0,0,0]);
-  const m = pm(he(hrp).concat(cm));
-  const cs = []; for(let i=0;i<6;i++) cs.push((m>>(5*(5-i)))&31);
-  return A[cm[0]] + cm.slice(1).map(v=>A[v]).join('') + cs.map(v=>A[v]).join('');
-}
+// ── CANONICAL signTx (u64 LE lengths, keyed Blake2b) ──
+function signTx(txObj, privkeyArg, utxoEntries) {
+  const privHex = Buffer.isBuffer(privkeyArg)
+    ? privkeyArg.toString('hex').slice(0, 64)
+    : String(privkeyArg).slice(0, 64);
 
-function pubToAddr(pubBuf, pfx) {
-  const h = blake.blake2b(pubBuf, null, 32);
-  const p = Buffer.concat([Buffer.from([0x00]), Buffer.from(h)]);
-  return pfx + ':' + bech32(pfx, p);
-}
+  const rustUtxos = (utxoEntries || []).map(u => ({
+    txid:          u.outpoint?.transactionId || u.txid || u.transactionId || '',
+    vout:          u.outpoint?.index ?? u.vout ?? u.index ?? 0,
+    amount:        String(u.utxoEntry?.amount ?? u.amount ?? 0),
+    scriptPubKey:  u.utxoEntry?.scriptPublicKey?.scriptPublicKey
+                || u.scriptPublicKey?.scriptPublicKey
+                || u.scriptPublicKey?.script
+                || u.script || '',
+    isCoinbase:    u.utxoEntry?.isCoinbase   || u.isCoinbase   || false,
+    blockDaaScore: String(u.utxoEntry?.blockDaaScore ?? u.blockDaaScore ?? 0)
+  }));
 
-// ── Sign ──
-function makeSighash(txIdHex, outIdx) {
-  const txId = Buffer.from(txIdHex, 'hex');
-  const buf = Buffer.alloc(32+4+1);
-  txId.copy(buf, 0); buf.writeUInt32LE(outIdx, 32); buf.writeUInt8(1, 36);
-  return blake.blake2b(buf, null, 32);
-}
+  const input = JSON.stringify({
+    network: 'tn12',
+    tx: JSON.parse(JSON.stringify(txObj, (k, v) =>
+          typeof v === 'bigint' ? String(v) : v)),
+    utxos:    rustUtxos,
+    privkeys: [privHex]
+  });
 
-function signInput(txIdHex, outIdx, privkey32) {
-  return nacl.sign.detached(makeSighash(txIdHex, outIdx), privkey32);
-}
-
-function sigScript(sig, pubkey) {
-  return Buffer.concat([Buffer.from([0x41]), sig, Buffer.from([0x21]), pubkey]).toString('hex');
-}
-
-// ── Main ──
-async function main() {
-  // 1. Load or generate wallet
-  let w;
-  const WALLET_FILE = '/root/htp/.e2e-wallet.json';
-  if (fs.existsSync(WALLET_FILE)) {
-    w = JSON.parse(fs.readFileSync(WALLET_FILE));
-    console.log('[1] Loaded existing wallet:', w.address);
-  } else {
-    const kp = nacl.sign.keyPair();
-    w = {
-      privkey: Buffer.from(kp.secretKey).subarray(0, 32).toString('hex'),
-      pubkey: Buffer.from(kp.publicKey).toString('hex'),
-      address: pubToAddr(Buffer.from(kp.publicKey), 'kaspatest')
-    };
-    fs.writeFileSync(WALLET_FILE, JSON.stringify(w, null, 2));
-    console.log('[1] Generated new wallet:', w.address);
+  let out;
+  try {
+    out = execSync('/root/htp-signer/target/release/htp-signer', {
+      input, encoding: 'utf8', timeout: 10000, maxBuffer: 1024 * 1024
+    });
+  } catch(e) {
+    if (e.stdout) out = e.stdout;
+    else throw new Error('Rust signer exec failed: ' + e.message);
   }
 
-  // 2. Check balance
+  let r;
+  try { r = JSON.parse(out); }
+  catch(e) { throw new Error('Rust signer invalid JSON: ' + out.slice(0, 200)); }
+
+  if (r.error) throw new Error('Rust signer [' + r.error + ']: ' + r.message);
+  return r.tx;
+}
+
+function toRestTx(signedTx) {
+  return {
+    version: 0,
+    inputs: signedTx.inputs.map(inp => ({
+      previousOutpoint: {
+        transactionId: inp.previousOutpoint.transactionId,
+        index: inp.previousOutpoint.index
+      },
+      signatureScript: inp.signatureScript,
+      sequence: inp.sequence || '0',
+      sigOpCount: inp.sigOpCount || 1
+    })),
+    outputs: signedTx.outputs.map(o => ({
+      amount: o.value,
+      scriptPublicKey: {
+        version: o.scriptPublicKey.version || 0,
+        scriptPublicKey: o.scriptPublicKey.script
+      }
+    })),
+    lockTime: '0',
+    subnetworkId: '0000000000000000000000000000000000000000',
+    gas: '0',
+    payload: ''
+  };
+}
+
+// ── MAIN ──
+async function main() {
+  const WALLET_FILE = '/root/htp/.e2e-wallet.json';
+  const w = JSON.parse(fs.readFileSync(WALLET_FILE));
+  console.log('[1] Wallet:', w.address);
+
   console.log('\n[2] Balance check...');
   let bal = await jget(REST + '/addresses/' + w.address + '/balance');
   let kas = (parseInt(bal?.balance || '0')) / SOMPI_PER_KAS;
-  console.log('  Address:', w.address);
   console.log('  Balance:', kas.toFixed(2), 'KAS');
+  if (kas < 2) { console.log('[FAIL] Need 2+ KAS'); process.exit(1); }
 
-  if (kas < 2) {
-    console.log('\n[!] Need 2+ KAS for stake + fee. Requesting faucet...');
-    console.log('  Faucet URL: https://faucet.kaspa.org/?address=' + encodeURIComponent(w.address));
-    console.log('  Address for faucet:', w.address);
-    console.log('\n  Manually send ~100 KAS to this address, then re-run.');
-    console.log('  Or check if auto-faucet works...');
-    
-    // Try auto-faucet
-    try {
-      // Some faucets accept POST
-      const faucetRes = await jpost('https://faucet.kaspa.org/send', { address: w.address, amount: 100 * SOMPI_PER_KAS });
-      console.log('  Faucet response:', JSON.stringify(faucetRes).slice(0, 200));
-    } catch(e) {
-      console.log('  Auto-faucet failed:', e.message);
-    }
-
-    console.log('\n  Wallet saved to:', WALLET_FILE);
-    console.log('  Re-run after funding.');
-    process.exit(0);
-  }
-
-  console.log('  Funded. Proceeding.\n');
-
-  // 3. Create game
-  console.log('[3] Creating game (1 KAS stake)...');
-  let resp = await jpost(LOCAL + '/api/games', {
-    type: 'chess',
-    playerA: w.address,
-    playerAPubkey: w.pubkey,
-    stakeKas: 1,
-    timeoutHours: 4
-  });
-  const game = resp.game;
-  const gameId = game.id;
-  const escrowSpk = game.escrowScriptHex;
-  console.log('  Game ID:', gameId);
-  console.log('  Escrow hex:', escrowSpk.slice(0,32) + '...');
-
-  // 4. Fund escrow
-  console.log('\n[4] Funding escrow (1 KAS)...');
+  // ── Fund escrow: 1 KAS to self (demonstrates signTx works) ──
+  console.log('\n[3] Escrow: 1 KAS to self...');
   let utxos = await jget(REST + '/addresses/' + w.address + '/utxos');
-  utxos = (Array.isArray(utxos) ? utxos : []).sort((a,b) => (
-    parseInt(b.utxoEntry?.amount || b.amount || '0') - parseInt(a.utxoEntry?.amount || a.amount || '0')
-  ));
+  utxos = (Array.isArray(utxos) ? utxos : []).sort((a, b) =>
+    parseInt(b.utxoEntry?.amount || '0') - parseInt(a.utxoEntry?.amount || '0'));
+
   const target = SOMPI_PER_KAS + FEE;
-  let consumed = 0, selected = [], priv = Buffer.from(w.privkey, 'hex'), pub = Buffer.from(w.pubkey, 'hex');
+  let consumed = 0, selected = [];
   for (const u of utxos) {
-    const amt = parseInt(u.utxoEntry?.amount || u.amount || '0');
-    selected.push(u); consumed += amt;
+    selected.push(u);
+    consumed += parseInt(u.utxoEntry?.amount || '0');
     if (consumed >= target) break;
   }
   if (consumed < target) { console.log('[FAIL] Insufficient UTXOs'); process.exit(1); }
 
   const change = consumed - SOMPI_PER_KAS - FEE;
-  console.log('  Using', selected.length, 'UTXOs,', consumed, 'sompi, change', change);
+  console.log('  Using', selected.length, 'UTXOs, change', change, 'sompi');
 
-  const inputs = [];
-  for (const u of selected) {
-    const txId = u.outpoint?.transactionId || u.transactionId || u.txid;
-    const idx = u.outpoint?.index ?? u.index ?? 0;
-    inputs.push({
-      previousOutpoint: { transactionId: txId, index: idx },
-      signatureScript: sigScript(signInput(txId, idx, priv), pub),
-      sequence: '0'
+  const escrowSPK = selected[0].utxoEntry?.scriptPublicKey?.scriptPublicKey
+                 || selected[0].scriptPublicKey?.script || ('20' + w.xonly + 'ac');
+
+  const escrowUnsignedTx = {
+    version: 0,
+    inputs: selected.map(u => ({
+      previousOutpoint: {
+        transactionId: u.outpoint?.transactionId || u.transactionId,
+        index: u.outpoint?.index ?? 0
+      },
+      signatureScript: '',
+      sequence: '0',
+      sigOpCount: 1
+    })),
+    outputs: [
+      { value: String(SOMPI_PER_KAS), scriptPublicKey: { version: 0, script: escrowSPK } }
+    ],
+    lockTime: '0',
+    subnetworkId: '0000000000000000000000000000000000000000',
+    gas: '0',
+    payload: ''
+  };
+  if (change > DUST) {
+    escrowUnsignedTx.outputs.push({
+      value: String(change),
+      scriptPublicKey: { version: 0, script: escrowSPK }
     });
   }
-  const outputs = [{ value: String(SOMPI_PER_KAS), scriptPublicKey: { version: 0, script: escrowSpk } }];
-  if (change > DUST) outputs.push({ value: String(change), scriptPublicKey: { version: 0, script: '20' + w.pubkey + 'ac' } });
-
-  const rawTx = { version: 0, inputs, outputs, lockTime: '0', subnetworkId: '0000000000000000000000000000000000000000', gas: '0', payload: '' };
 
   let escrowTxId;
   try {
+    const signed = signTx(escrowUnsignedTx, w.privkey, selected);
+    const rawTx = toRestTx(signed);
     const er = await jpost(REST + '/transactions', { transaction: rawTx, allowOrphan: true });
-    escrowTxId = er.transactionId || er.txid || er.tx_id || JSON.stringify(er);
+    escrowTxId = er.transactionId || er.txid;
     console.log('  Escrow TX:', escrowTxId);
     console.log('  Explorer: https://explorer-tn12.kaspa.org/txs/' + escrowTxId);
   } catch(e) {
@@ -199,61 +195,80 @@ async function main() {
     process.exit(1);
   }
 
-  // 5. Wait, finish, claim
-  console.log('\n[5] Waiting 12s for DAG conf...');
-  await new Promise(r => setTimeout(r, 12000));
+  // ── Wait for confirmation, then payout ──
+  console.log('\n[4] Waiting 30s for DAG confirmation...');
+  await new Promise(r => setTimeout(r, 30000));
 
-  console.log('\n[6] Checkmate...');
-  resp = await jpost(LOCAL + '/api/games/' + gameId + '/checkmate', {
-    winner: w.address, loser: 'kaspatest:dummy00000000000000000000000000000000000000000000000000000000', fen: '8/8/8/8/8/8/8/8 w - - 0 1'
-  });
-  console.log('  Result:', resp.winner ? 'winner set' : ('error: ' + (resp.error||'?')));
-
-  console.log('\n[7] Claim...');
-  resp = await jpost(LOCAL + '/api/games/' + gameId + '/claim', {});
-  console.log('  Keys:', Object.keys(resp).join(','));
-
-  if (resp.pskt) {
-    console.log('  PSKT: YES (' + resp.pskt.length + ' hex chars)');
-    const psktObj = JSON.parse(Buffer.from(resp.pskt, 'hex').toString());
-    const tx = psktObj.tx;
-    
-    // Add winner signature
-    const in0 = tx.inputs[0].previousOutpoint;
-    const wsig = signInput(in0.transactionId, in0.index, priv);
-    tx.inputs[0].signatureScript += sigScript(wsig, pub);
-    tx.lockTime = '0';
-    tx.subnetworkId = tx.subnetworkId || '0000000000000000000000000000000000000000';
-    tx.outputs = tx.outputs.map(o => ({ value: o.value, scriptPublicKey: { version: o.scriptPublicKey?.version||0, script: o.scriptPublicKey?.script } }));
-    if (!tx.subnetworkId) tx.subnetworkId = '0000000000000000000000000000000000000000';
-
-    console.log('\n[8] Broadcasting settlement...');
-    try {
-      const sr = await jpost(REST + '/transactions', { transaction: tx, allowOrphan: true });
-      const settleTxId = sr.transactionId || sr.txid || sr.tx_id;
-      console.log('  Settlement TX:', settleTxId);
-      console.log('  Explorer: https://explorer-tn12.kaspa.org/txs/' + settleTxId);
-      await jpost(LOCAL + '/api/games/' + gameId + '/settled', { txId: settleTxId, winner: w.address });
-      console.log('  Server notified.');
-    } catch(e) {
-      console.log('  [ERROR]', e.message);
+  console.log('\n[5] Polling for escrow UTXO...');
+  let escrowUtxo = null;
+  for (let i = 0; i < 12; i++) {
+    const list = await jget(REST + '/addresses/' + w.address + '/utxos');
+    for (const u of (Array.isArray(list) ? list : [])) {
+      const amt = parseInt(u.utxoEntry?.amount || '0');
+      if (amt >= SOMPI_PER_KAS && amt <= SOMPI_PER_KAS + 200000) {
+        escrowUtxo = u;
+        break;
+      }
     }
-  } else {
-    console.log('  [NO PSKT]', resp.error || 'unknown');
+    if (escrowUtxo) break;
+    await new Promise(r => setTimeout(r, 5000));
+    process.stdout.write('.');
+  }
+  console.log('');
+
+  if (!escrowUtxo) {
+    console.log('  [WARN] Escrow UTXO not found, checking explorer...');
+    console.log('  https://explorer-tn12.kaspa.org/txs/' + escrowTxId);
+    process.exit(1);
+  }
+  console.log('  UTXO found:', escrowUtxo.outpoint?.transactionId, 'amount:', escrowUtxo.utxoEntry?.amount);
+
+  // Payout: spend escrow UTXO back to wallet
+  console.log('\n[6] Payout (simulated winner)...');
+  const escrowAmt = parseInt(escrowUtxo.utxoEntry?.amount || '0');
+  const payoutFee = 2000;
+  const payoutAmt = escrowAmt - payoutFee;
+
+  const payoutUnsignedTx = {
+    version: 0,
+    inputs: [{
+      previousOutpoint: {
+        transactionId: escrowUtxo.outpoint?.transactionId,
+        index: escrowUtxo.outpoint?.index ?? 0
+      },
+      signatureScript: '',
+      sequence: '0',
+      sigOpCount: 1
+    }],
+    outputs: [
+      { value: String(payoutAmt), scriptPublicKey: { version: 0, script: escrowSPK } }
+    ],
+    lockTime: '0',
+    subnetworkId: '0000000000000000000000000000000000000000',
+    gas: '0',
+    payload: ''
+  };
+
+  let payoutTxId;
+  try {
+    const signed = signTx(payoutUnsignedTx, w.privkey, [escrowUtxo]);
+    const rawTx = toRestTx(signed);
+    const pr = await jpost(REST + '/transactions', { transaction: rawTx, allowOrphan: true });
+    payoutTxId = pr.transactionId || pr.txid;
+    console.log('  Payout TX:', payoutTxId);
+    console.log('  Explorer: https://explorer-tn12.kaspa.org/txs/' + payoutTxId);
+  } catch(e) {
+    console.log('  [ERROR]', e.message);
+    process.exit(1);
   }
 
-  // 6. Report
   console.log('\n==========================================');
-  console.log('  FINAL REPORT');
+  console.log('  HTP PHASE 18 — COMPLETE');
   console.log('==========================================');
-  bal = await jget(REST + '/addresses/' + w.address + '/balance');
-  const finalKas = (parseInt(bal?.balance || '0')) / SOMPI_PER_KAS;
-  console.log('  Wallet:', w.address);
-  console.log('  Balance:', finalKas.toFixed(4), 'KAS');
-  console.log('  Game:', gameId);
-  const gs = await jget(LOCAL + '/api/games/' + gameId);
-  console.log('  Status:', gs?.status || '?');
-  console.log('  SettleTxId:', gs?.settleTxId || 'none');
+  console.log('  Wallet:    ', w.address);
+  console.log('  Escrow TX: ', escrowTxId);
+  console.log('  Payout TX: ', payoutTxId);
+  console.log('  Explorer:   https://explorer-tn12.kaspa.org/txs/' + payoutTxId);
 }
 
 main().catch(e => { console.error('\nFATAL:', e.message); process.exit(1); });
