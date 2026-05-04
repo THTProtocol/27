@@ -9,4 +9,6 @@ data/*.json
 target/
 rusty-kaspa/
 .e2e-wallet.json
+.server-wallet.json
 *.pem
+27/
