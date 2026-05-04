@@ -12,3 +12,4 @@ rusty-kaspa/
 .server-wallet.json
 *.pem
 27/
+serviceAccountKey.json
