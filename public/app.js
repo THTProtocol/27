@@ -695,20 +695,20 @@ async function createGame() {
   btn.textContent = 'Creating...';
 
   try {
+    const privkey = app.wallet.privkey || sessionStorage.getItem('htp_privkey');
     const result = await apiFetch('/api/games', {
       method: 'POST',
       body: JSON.stringify({
         type,
         playerA: app.wallet.address,
-        playerAPubkey: app.wallet.pubkey,
         stakeKas,
+        privkey,
         timeControl,
         timeoutHours,
       }),
     });
 
-    const { txId } = await app.wallet.signAndBroadcast(result.pskt);
-    toast('Game created! Waiting for opponent...', 'success');
+    toast('Game created! Escrow TX: ' + (result.escrowTxId || '').slice(0,12) + '...', 'success');
     closeModal();
     navigateTo('game', result.game.id);
   } catch (e) {
