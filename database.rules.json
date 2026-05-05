@@ -1,12 +1,9 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null",
-    "matches": {
-      "$matchId": {
-        ".validate": "newData.hasChildren(['id','status','playerA','playerB'])",
-        "status": { ".validate": "newData.isString()" }
-      }
+    ".read": true,
+    ".write": true,
+    "games": {
+      ".validate": "newData.hasChildren(['id','type','playerA','status'])"
     }
   }
 }

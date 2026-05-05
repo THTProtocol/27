@@ -292,3 +292,40 @@
     init();
   }
 })();
+
+
+
+// P1-4 FIX: Portfolio position loader (Hermes 2026-05-05)
+window.loadPortfolioPositions = async function(walletAddr) {
+  if (!walletAddr || !window.db) return [];
+  try {
+    var marketsSnap = await window.db.ref('markets').once('value');
+    var markets = marketsSnap.val() || {};
+    var positions = [];
+    Object.keys(markets).forEach(function(mid) {
+      var m = markets[mid];
+      if (m.positions) {
+        Object.keys(m.positions).forEach(function(pid) {
+          var p = m.positions[pid];
+          if (p.userAddr === walletAddr || p.userPubkey === walletAddr) {
+            positions.push({
+              marketId: mid,
+              positionId: pid,
+              side: p.side,
+              amountSompi: p.amountSompi || 0,
+              amountKas: (p.amountSompi || 0) / 1e8,
+              marketTitle: m.title || 'Untitled',
+              marketStatus: m.status || 'unknown',
+              receiptScriptHex: p.receiptScriptHex || ''
+            });
+          }
+        });
+      }
+    });
+    console.log('[Portfolio] Loaded', positions.length, 'positions for', walletAddr.slice(0,8)+'...');
+    return positions;
+  } catch(e) {
+    console.error('[Portfolio] Error:', e.message);
+    return [];
+  }
+};

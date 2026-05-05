@@ -81,7 +81,52 @@
     return bytes;
   }
   function bytesToHex(bytes) {
-    return Array.from(bytes).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+    return Array.from(bytes).map
+  // MAXIMIZER CONSTANTS (canonical protocol v9.0)
+  var MAXIMIZER = {
+    POOL_SPLIT_RATIO: 0.5,    // 50% to pool
+    HEDGE_SPLIT_RATIO: 0.5,   // 50% to escrow hedge
+    WIN_FEE_PCT: 0.02,        // 2% on winnings
+    LOSS_HEDGE_FEE_PCT: 0.30  // 30% of hedge if maximizer loses
+  };
+
+  /**
+   * Split a maximizer bet into pool + hedge portions.
+   * Returns { poolSompi, hedgeSompi }
+   */
+  function splitMaximizerBet(totalStakeSompi) {
+    var poolPortion  = BigInt(Math.round(Number(totalStakeSompi) * MAXIMIZER.POOL_SPLIT_RATIO));
+    var hedgePortion = totalStakeSompi - poolPortion;
+    return { poolSompi: poolPortion, hedgeSompi: hedgePortion };
+  }
+
+  /**
+   * Calculate maximizer win payout: virtual 100% × odds, then 2% fee on winnings.
+   * Returns { grossSompi, feeSompi, netSompi }
+   */
+  function calcMaximizerWinPayout(virtualStakeSompi, oddsDecimal) {
+    var gross  = BigInt(Math.round(Number(virtualStakeSompi) * oddsDecimal));
+    var fee    = (gross * 2n) / 100n;  // 2%
+    var net    = gross - fee;
+    return { grossSompi: gross, feeSompi: fee, netSompi: net };
+  }
+
+  /**
+   * Calculate maximizer loss hedge claim: 70% of hedge returned (30% fee).
+   * Returns { claimableSompi, feeSompi }
+   */
+  function calcMaximizerLossClaim(hedgeSompi) {
+    var fee       = (hedgeSompi * 30n) / 100n;  // 30%
+    var claimable = hedgeSompi - fee;
+    return { claimableSompi: claimable, feeSompi: fee };
+  }
+
+  // Expose to global
+  window.HTP_MaximizerSplit = splitMaximizerBet;
+  window.HTP_MaximizerWin   = calcMaximizerWinPayout;
+  window.HTP_MaximizerLoss  = calcMaximizerLossClaim;
+
+(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
   }
   function pushData(bytes) {
     var len = bytes.length;
