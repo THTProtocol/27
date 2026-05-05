@@ -1,5 +1,4 @@
-//! HTP Server — Axum HTTP/WS backend (Phase 8 rebuild)
-//! Endpoints: health, metrics, config, games, proof, chess, c4, checkers, zk, covenant
+//! HTP Server - Axum HTTP/WS backend (Phase 8 clean)
 
 mod routes;
 mod state;
@@ -54,18 +53,15 @@ async fn main() {
         .route("/api/zk/prove", post(routes::zk_prove))
         .route("/api/zk/status", get(routes::zk_status_handler))
         .route("/api/covenant/register", post(routes::covenant_register))
-        .route("/api/covenant/{match_id}/advance", post(routes::covenant_advance))
-        .route("/api/covenant/{match_id}", get(routes::covenant_get))
+        .route("/api/covenant/{mid}/advance", post(routes::covenant_advance))
+        .route("/api/covenant/{mid}", get(routes::covenant_get))
         .route("/ws", get(ws::ws_handler))
         .layer(cors)
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(tower_http::limit::RequestBodyLimitLayer::new(64 * 1024))
         .with_state(state);
 
-    let port: u16 = std::env::var("PORT")
-        .unwrap_or_else(|_| "3000".into())
-        .parse()
-        .expect("PORT must be a number");
+    let port: u16 = std::env::var("PORT").unwrap_or_else(|_| "3000".into()).parse().expect("PORT must be number");
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     tracing::info!("[HTP Server] Listening on {}", addr);
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();

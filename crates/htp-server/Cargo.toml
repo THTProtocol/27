@@ -3,7 +3,7 @@ name = "htp-server"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
-description = "High Table Protocol Axum HTTP/WS server — replaces server.js"
+description = "High Table Protocol Axum HTTP/WS server"
 
 [[bin]]
 name = "htp-server"
@@ -22,15 +22,9 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
-
-# State management
-dashmap = "6"
-
-# WebSocket
-tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
-
-# Env
-dotenvy = "0.15"
 sha2 = { workspace = true }
 hex = { workspace = true }
 shakmaty = { workspace = true }
+dashmap = "6"
+tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
+dotenvy = "0.15"

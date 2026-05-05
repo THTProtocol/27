@@ -4,8 +4,7 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use htp_games::{
     tictactoe::TicTacToe, connect4::Connect4, checkers::Checkers,
-    blackjack::BlackjackGame, poker::PokerGame,
-    GameStatus, GameOutcome,
+    blackjack::BlackjackGame, poker::PokerGame, GameStatus, GameOutcome,
 };
 use tokio::sync::{Mutex, broadcast};
 use std::sync::Arc;

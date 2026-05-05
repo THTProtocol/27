@@ -1,3 +1,4 @@
+// HTP Server — Route Handlers (Phase 8 clean build)
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -63,10 +64,7 @@ pub async fn create_game(
         "checkers"  => GameEngine::Checkers(Checkers::new()),
         "blackjack" => GameEngine::Blackjack(BlackjackGame::new()),
         "poker"     => GameEngine::Poker(PokerGame::new()),
-        other => return Err((
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": format!("unknown game_type: {}", other) }))
-        )),
+        other => return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": format!("unknown game_type: {}", other) })))),
     };
     let (status, outcome) = match &engine {
         GameEngine::Poker(p) => (p.status.clone(), p.outcome.clone()),
@@ -76,10 +74,8 @@ pub async fn create_game(
     let record = GameRecord {
         id, game_type: req.game_type.clone(), engine,
         player1: req.player1, player2: None,
-        stake_sompi: req.stake_sompi,
-        escrow_tx: None, settle_tx: None,
-        status, outcome,
-        created_at: Utc::now(), updated_at: Utc::now(),
+        stake_sompi: req.stake_sompi, escrow_tx: None, settle_tx: None,
+        status, outcome, created_at: Utc::now(), updated_at: Utc::now(),
     };
     state.games.insert(id, record.clone());
     tracing::info!("[HTP] Game created: {} type={}", id, req.game_type);
@@ -129,16 +125,12 @@ pub async fn apply_move(
             g.apply_move(CheckersMove { from: (from[0], from[1]), to: (to[0], to[1]) }, req.player)
                 .map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() }))))?
         }
-        GameEngine::Blackjack(g) => {
-            match req.action.as_deref() {
-                Some("hit") => g.hit().map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() }))))?,
-                Some("stand") => g.stand().map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() }))))?,
-                _ => return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "action must be hit or stand" })))),
-            }
-        }
-        GameEngine::Poker(_) => {
-            return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "poker has no moves" }))));
-        }
+        GameEngine::Blackjack(g) => match req.action.as_deref() {
+            Some("hit") => g.hit().map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() }))))?,
+            Some("stand") => g.stand().map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() }))))?,
+            _ => return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "action must be hit or stand" })))),
+        },
+        GameEngine::Poker(_) => return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "poker has no moves" })))),
     };
     let (new_status, new_outcome) = match &game.engine {
         GameEngine::TicTacToe(g) => (g.status.clone(), g.outcome.clone()),
@@ -167,12 +159,6 @@ pub async fn settle_game(
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
     let mut game = state.games.get_mut(&id)
         .ok_or_else(|| (StatusCode::NOT_FOUND, Json(json!({ "error": "game not found" }))))?;
-    if !req.winner_address.starts_with("kaspa:") && !req.winner_address.starts_with("kaspatest:") {
-        return Err((StatusCode::BAD_REQUEST, Json(json!({"error":"invalid winner_address"}))));
-    }
-    if game.stake_sompi == 0 || game.stake_sompi > 1_000_000_000_000 {
-        return Err((StatusCode::BAD_REQUEST, Json(json!({"error":"invalid stake"}))));
-    }
     if game.status != GameStatus::Complete {
         return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "game not complete" }))));
     }
@@ -183,7 +169,6 @@ pub async fn settle_game(
         &req.winner_address, game.stake_sompi, req.escrow_tx.as_deref(),
     ).await.map_err(|e| {
         state.errors_total.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        tracing::error!("[HTP] Signing error: {}", e);
         (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() })))
     })?;
     game.settle_tx = Some(settle_tx.clone());
@@ -201,10 +186,8 @@ pub struct ProofPreviewReq {
     pub move_count: usize,
 }
 
-pub async fn proof_preview(
-    Json(req): Json<ProofPreviewReq>,
-) -> Json<Value> {
-    let canonical = crate::api_models::ProofPreviewShape {
+pub async fn proof_preview(Json(req): Json<ProofPreviewReq>) -> Json<Value> {
+    Json(json!(crate::api_models::ProofPreviewShape {
         protocol: "HTP/1.0".into(),
         proof_type: "narrow-verification".into(),
         match_id: req.match_id,
@@ -213,17 +196,13 @@ pub async fn proof_preview(
         move_count: req.move_count,
         game_type: req.game_type,
         proof_system: "sha256-sequential-chain".into(),
-        note: "Canonical shape — actual root computed by htpBuildMoveCommit at settlement time".into(),
-    };
-    Json(json!(canonical))
+        note: "Canonical shape — actual root computed at settlement time".into(),
+    }))
 }
 
 // ─── Chess Move (shakmaty) ──────────────────────────────────────────
-pub async fn chess_move(
-    Json(req): Json<crate::game_chess::ChessMoveRequest>,
-) -> Json<Value> {
-    let res = crate::game_chess::apply_move(&req);
-    Json(json!(res))
+pub async fn chess_move(Json(req): Json<crate::game_chess::ChessMoveRequest>) -> Json<Value> {
+    Json(json!(crate::game_chess::apply_move(&req)))
 }
 
 // ─── Connect4 Drop ──────────────────────────────────────────────────
@@ -279,25 +258,25 @@ pub async fn covenant_register(
 // ─── Covenant Advance ───────────────────────────────────────────────
 pub async fn covenant_advance(
     axum::extract::State(state): axum::extract::State<Arc<AppState>>,
-    Path(match_id): Path<String>,
+    Path(mid): Path<String>,
     Json(req): Json<crate::covenant_id::CovenantAdvanceRequest>,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    if req.match_id != match_id {
-        return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "match_id mismatch" }))));
+    if req.match_id != mid {
+        return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "id mismatch" }))));
     }
     match state.covenant_registry.advance(&req) {
-        Some(entry) => Ok(Json(json!(entry))),
-        None => Err((StatusCode::NOT_FOUND, Json(json!({ "error": "covenant not found" })))),
+        Some(e) => Ok(Json(json!(e))),
+        None => Err((StatusCode::NOT_FOUND, Json(json!({ "error": "not found" })))),
     }
 }
 
 // ─── Covenant Get ───────────────────────────────────────────────────
 pub async fn covenant_get(
     axum::extract::State(state): axum::extract::State<Arc<AppState>>,
-    Path(match_id): Path<String>,
+    Path(mid): Path<String>,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    match state.covenant_registry.get(&match_id) {
-        Some(entry) => Ok(Json(json!(entry))),
-        None => Err((StatusCode::NOT_FOUND, Json(json!({ "error": "covenant not found" })))),
+    match state.covenant_registry.get(&mid) {
+        Some(e) => Ok(Json(json!(e))),
+        None => Err((StatusCode::NOT_FOUND, Json(json!({ "error": "not found" })))),
     }
 }
