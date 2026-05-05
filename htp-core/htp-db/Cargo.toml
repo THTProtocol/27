@@ -1,0 +1,13 @@
+[package]
+name = "htp-db"
+version.workspace = true
+edition.workspace = true
+description = "HTP Database — SQLite backed, ports lib/db.js"
+
+[dependencies]
+rusqlite = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }

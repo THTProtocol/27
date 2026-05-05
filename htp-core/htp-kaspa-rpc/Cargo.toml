@@ -1,0 +1,12 @@
+[package]
+name = "htp-kaspa-rpc"
+version.workspace = true
+edition.workspace = true
+description = "HTP Kaspa REST API client — ports lib/kaspa-rpc.js"
+
+[dependencies]
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
