@@ -47,6 +47,7 @@ pub struct AppState {
     pub settlement_mutex: DashMap<String, Arc<Mutex<()>>>,
     /// Already-settled game IDs (SHA-256 hashes stored here)
     pub settled_hashes: DashMap<String, String>,
+    pub started_at: std::time::Instant,
 }
 
 impl AppState {
@@ -56,6 +57,7 @@ impl AppState {
             rooms: DashMap::new(),
             settlement_mutex: DashMap::new(),
             settled_hashes: DashMap::new(),
+            started_at: std::time::Instant::now(),
         }
     }
 

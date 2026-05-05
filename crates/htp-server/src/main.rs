@@ -11,6 +11,10 @@ mod routes;
 mod state;
 mod ws;
 mod signing;
+mod observability;
+mod proof_commit;
+mod settlement_guard;
+mod api_models;
 
 use axum::{
     Router,

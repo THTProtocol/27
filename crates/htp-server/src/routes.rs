@@ -233,3 +233,36 @@ pub async fn settle_game(
         "status": "settled",
     })))
 }
+// ─── Proof Preview ─────────────────────────────────────────────────────────
+#[derive(Deserialize)]
+pub struct ProofPreviewReq {
+    pub match_id: String,
+    pub winner: String,
+    pub game_type: String,
+    pub move_count: usize,
+}
+
+pub async fn proof_preview(
+    Json(req): Json<ProofPreviewReq>,
+) -> Json<Value> {
+    let canonical = crate::api_models::ProofPreviewShape {
+        protocol: "HTP/1.0".into(),
+        proof_type: "narrow-verification".into(),
+        match_id: req.match_id,
+        root: format!("sha256:{}", "0".repeat(64)),
+        winner: req.winner,
+        move_count: req.move_count,
+        game_type: req.game_type,
+        proof_system: "sha256-sequential-chain".into(),
+        note: "Canonical shape — actual root computed by htpBuildMoveCommit at settlement time".into(),
+    };
+    Json(json!(canonical))
+}
+
+// ─── Proof Preview ─────────────────────────────────────────────────────────
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+pub struct ProofPreviewReq {
+    pub match_id: String,
+    pub winner: String,

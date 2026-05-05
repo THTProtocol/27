@@ -36,6 +36,7 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
     let (local_tx, mut local_rx) = tokio::sync::mpsc::unbounded_channel::<String>();
     let mut joined: Vec<String> = Vec::new();
     let mut my_addr: String = String::new(); // tracked for forfeit
+    let connected_at = std::time::Instant::now();
 
     loop {
         tokio::select! {
@@ -86,6 +87,7 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
 
                                 if !joined.contains(&gid) {
                                     joined.push(gid.clone());
+                                    tracing::info!("[WS] connect  addr={} rooms={}", &addr[..addr.len().min(16)], joined.len());
                                     let (btx, mut brx) = broadcast::channel(256);
                                     state.rooms.insert(gid.clone(), btx);
                                     let tx2 = local_tx.clone();
@@ -149,6 +151,15 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
             }
         }
     }
+
+    let duration_ms = connected_at.elapsed().as_millis();
+    let addr_display = if my_addr.is_empty() { "anon" } else { &my_addr };
+    tracing::info!(
+        "[WS] disconnect addr={} duration_ms={} rooms={}",
+        &addr_display[..addr_display.len().min(16)],
+        duration_ms,
+        joined.len()
+    );
 
     // Disconnect forfeit: 60s timeout for each active game room
     let disconnected_addr = my_addr;
