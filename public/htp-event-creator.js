@@ -1,3 +1,6 @@
+// Maximizer config
+var maximizerLimit=0,expectedVolume=0,maximizerEnabled=false;
+
 // =============================================================================
 // htp-event-creator.js – Prediction Market Event Creation
 // Validates form, constructs escrow TX, writes to Firebase /markets/{marketId}

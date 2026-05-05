@@ -222,6 +222,20 @@ async function createLobbyMatch(game, timeControl, stake, seriesLen, existingId)
     return match;
 }
 
+  // P1-1 FIX: Maximizer cap enforcement (Hermes 2026-05-05)
+  window.checkBetMaximizer = async function(eventId, betAmountKas, useMaximizer) {
+    if (!useMaximizer) return { allowed: true };
+    if (typeof HTPFee === "undefined" || !HTPFee.checkMaximizerCap) {
+      return { allowed: true, reason: "cap check unavailable (non-fatal)" };
+    }
+    try {
+      var db = firebase.database();
+      var snap = await db.ref("events/" + eventId).once("value");
+      var event = snap.val() || {};
+      return HTPFee.checkMaximizerCap(event, betAmountKas);
+    } catch(e) { return { allowed: true, reason: "cap check error" }; }
+  };
+
 window.createMatchWithLobby = createMatchWithLobby;
 window.joinLobbyMatch = joinLobbyMatch;
 
