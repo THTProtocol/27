@@ -15,7 +15,6 @@ mod signing;
 use axum::{
     Router,
     routing::{get, post},
-    middleware,
 };
 use std::net::SocketAddr;
 use tower_http::{
@@ -44,6 +43,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(routes::health))
+        .route("/metrics", get(routes::metrics_handler))
         .route("/api/games", post(routes::create_game))
         .route("/api/games/{id}", get(routes::get_game))
         .route("/api/games/{id}/move", post(routes::apply_move))
@@ -52,6 +52,7 @@ async fn main() {
         .route("/ws", get(ws::ws_handler))
         .layer(cors)
         .layer(TraceLayer::new_for_http())
+        .layer(tower_http::limit::RequestBodyLimitLayer::new(64 * 1024))
         .with_state(state);
 
     let port: u16 = std::env::var("PORT")

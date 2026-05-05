@@ -1,12 +1,19 @@
 {
   "rules": {
-    "lobby":   { ".read": true,  ".write": true },
+    "lobby":   { ".read": true, ".write": true },
     "matches": {
       ".read": true, ".write": true,
-      ".indexOn": ["status", "network", "player"]
+      ".indexOn": ["status", "network", "player1", "player2"]
     },
-    "events":  { ".read": true,  ".write": false, ".indexOn": ["status"] },
-    "markets": { ".read": true,  ".write": false, ".indexOn": ["status"] },
-    "kaspa":   { ".read": true,  ".write": true }
+    "events": {
+      ".read": true, ".write": "auth != null",
+      ".indexOn": ["status", "category"]
+    },
+    "markets": {
+      ".read": true, ".write": "auth != null",
+      ".indexOn": ["status"]
+    },
+    "oracle":  { ".read": true, ".write": true },
+    "kaspa":   { ".read": true, ".write": true }
   }
 }

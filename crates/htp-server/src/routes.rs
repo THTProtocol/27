@@ -24,6 +24,18 @@ pub async fn health() -> Json<Value> {
     Json(json!({ "status": "ok", "version": env!("CARGO_PKG_VERSION"), "engine": "rust" }))
 }
 
+// ─── Metrics ───────────────────────────────────────────────────────────────
+pub async fn metrics_handler(
+    axum::extract::State(state): axum::extract::State<Arc<AppState>>,
+) -> Json<Value> {
+    Json(json!({
+        "active_games":    state.games.len(),
+        "active_rooms":    state.rooms.len(),
+        "settled_matches": state.settled_hashes.len(),
+        "uptime_check":    "ok"
+    }))
+}
+
 // ─── Config ────────────────────────────────────────────────────────────────
 pub async fn config() -> Json<Value> {
     let host = std::env::var("HTP_HOST").unwrap_or_else(|_| "178.105.76.81".to_string());
@@ -176,6 +188,22 @@ pub async fn settle_game(
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
     let mut game = state.games.get_mut(&id)
         .ok_or_else(|| (StatusCode::NOT_FOUND, Json(json!({ "error": "game not found" }))))?;
+
+    // Input validation: winner address must be valid Kaspa bech32
+    if !req.winner_address.starts_with("kaspa:") && !req.winner_address.starts_with("kaspatest:") {
+        return Err((StatusCode::BAD_REQUEST,
+            Json(json!({"error": "invalid_input", "field": "winner_address", "expected": "kaspa:... or kaspatest:..."}))));
+    }
+
+    // Stake validation: must be non-zero and within reasonable bounds
+    if game.stake_sompi == 0 {
+        return Err((StatusCode::BAD_REQUEST,
+            Json(json!({"error": "invalid_input", "field": "stake_sompi", "reason": "zero stake"}))));
+    }
+    if game.stake_sompi > 1_000_000_000_000 {
+        return Err((StatusCode::BAD_REQUEST,
+            Json(json!({"error": "invalid_input", "field": "stake_sompi", "reason": "exceeds max (1M KAS)"}))));
+    }
 
     if game.status != GameStatus::Complete {
         return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "game not complete yet" }))));
