@@ -24,6 +24,17 @@ pub async fn health() -> Json<Value> {
     Json(json!({ "status": "ok", "version": env!("CARGO_PKG_VERSION"), "engine": "rust" }))
 }
 
+// ─── Config ────────────────────────────────────────────────────────────────
+pub async fn config() -> Json<Value> {
+    let host = std::env::var("HTP_HOST").unwrap_or_else(|_| "178.105.76.81".to_string());
+    Json(json!({
+        "wsUrl": format!("wss://{}/ws", host),
+        "network": "tn12",
+        "version": "rust-1.0"
+    }))
+}
+
+
 // ─── Create game ──────────────────────────────────────────────────────────
 #[derive(Deserialize)]
 pub struct CreateGameReq {

@@ -1,9 +1,9 @@
 //! HTP Server — Axum HTTP/WS backend replacing server.js
 //! Endpoints:
 //!   POST /api/games          create game
-//!   GET  /api/games/:id      get state
-//!   POST /api/games/:id/move apply move
-//!   POST /api/games/:id/settle  settle payout
+//!   GET  /api/games/{id}      get state
+//!   POST /api/games/{id}/move apply move
+//!   POST /api/games/{id}/settle  settle payout
 //!   GET  /health             liveness
 //!   WS   /ws                 relay channel
 
@@ -45,9 +45,10 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(routes::health))
         .route("/api/games", post(routes::create_game))
-        .route("/api/games/:id", get(routes::get_game))
-        .route("/api/games/:id/move", post(routes::apply_move))
-        .route("/api/games/:id/settle", post(routes::settle_game))
+        .route("/api/games/{id}", get(routes::get_game))
+        .route("/api/games/{id}/move", post(routes::apply_move))
+        .route("/api/games/{id}/settle", post(routes::settle_game))
+        .route("/api/config", get(routes::config))
         .route("/ws", get(ws::ws_handler))
         .layer(cors)
         .layer(TraceLayer::new_for_http())
