@@ -1,0 +1,33 @@
+# Linguist classification — HTP repository language stats hygiene
+# Docs and generated files should not count toward language percentages
+
+# Documentation files
+docs/** linguist-documentation
+**/*.md linguist-documentation
+**/*.txt linguist-documentation
+
+# Generated and bundled files
+public/**/*.map linguist-generated
+*.min.js linguist-generated
+**/dist/** linguist-generated
+**/coverage/** linguist-generated
+**/target/** linguist-generated
+
+# Vendored and third-party assets
+public/vendor/** linguist-vendored
+public/assets/** linguist-vendored
+node_modules/** linguist-vendored
+
+# Binary / generated data files
+*.bin linguist-generated
+*.pb.go linguist-generated
+*.pb.cc linguist-generated
+*.pb.h linguist-generated
+
+# Ensure Rust files are detected
+*.rs text linguist-language=Rust
+Cargo.toml linguist-language=Rust
+Cargo.lock linguist-language=Rust
+
+# Ensure JavaScript detection
+*.js text linguist-language=JavaScript
