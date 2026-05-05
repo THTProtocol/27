@@ -170,6 +170,26 @@
       // Chain TX is optional -- Firebase proof is the primary record
       console.warn('[HTP ZK] Chain TX failed (optional), Firebase proof recorded:', e.message);
     }
+    // Upgrade: call Rust Groth16 prover if server available
+    try {
+      var zkRes = await fetch("https://178.105.76.81/api/zk/prove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          match_id: matchId,
+          move_count: commitData.moveCount,
+          commit_root: commitData.root,
+          winner: commitData.winner,
+          winner_nonce: Date.now()
+        })
+      });
+      if (zkRes.ok) {
+        var zk = await zkRes.json();
+        console.log("[HTP ZK] Groth16 proof generated: " + zk.curve + " " + zk.proof_hex.substring(0,16) + "...");
+        window.htpProofStore = window.htpProofStore || {};
+        window.htpProofStore[matchId] = Object.assign(window.htpProofStore[matchId] || {}, zk);
+      }
+    } catch(e) { console.warn("[HTP ZK] Groth16 server unavailable, using SHA-256 fallback"); }
 
     return { root: commitData.root, txId: txId, status: 'committed' };
   };
