@@ -1,2 +1,0 @@
-pkill: only one pattern can be provided
-Try `pkill --help' for more information.
