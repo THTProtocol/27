@@ -16,3 +16,4 @@ serviceAccountKey.json
 
 public/*.backup
 public/*.bak
+serviceAccountKey.json\n.env\n.server-wallet.json\n.e2e-wallet.json\n.htp-server-address.json
