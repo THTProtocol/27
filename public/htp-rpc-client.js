@@ -17,6 +17,7 @@
 
   var SOMPI_PER_KAS    = 100000000n;
   var MAX_BACKOFF_MS   = 30000;
+  var MAX_RETRIES       = 10;
   var BASE_BACKOFF_MS  = 2000;
 
   /* ══ State ════════════════════════════════════════════════════════════════ */
@@ -195,6 +196,11 @@
 
   function scheduleRetry() {
     if (_retryTimer) return;
+    if (_retryCount >= MAX_RETRIES) {
+      console.warn('[HTPRpc] Max retries reached (' + MAX_RETRIES + '), going offline');
+      window.dispatchEvent(new Event('htp:rpc:permanent-disconnect'));
+      return;
+    }
     var delay = backoffMs();
     _retryCount++;
     console.log('[HTPRpc] Retry #' + _retryCount + ' in ' + Math.round(delay / 1000) + 's');
