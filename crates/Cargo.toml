@@ -2,7 +2,6 @@
 resolver = "2"
 members = [
     "htp-firebase-sync",
-    "mirofish-bridge",
     "htp-daemon",
     "kaspa-tn12-sighash",
     "htp-server",
@@ -14,6 +13,9 @@ members = [
 edition = "2021"
 rust-version = "1.75.0"
 version = "0.1.0"
+authors = ["HTP Protocol Contributors"]
+homepage = "https://github.com/THTProtocol/27"
+repository = "https://github.com/THTProtocol/27"
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
