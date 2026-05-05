@@ -65,7 +65,7 @@
 
   // Network-specific treasury addresses. Use getFeeDest(networkId) to select.
   var MAINNET_TREASURY = 'kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel';
-  var TESTNET_TREASURY = 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m';
+  var TESTNET_TREASURY = 'kaspa:qr6vs4wy4m3za6mzchj05x3902qrtklkyn8s0u8g2gv6mrctzdzx7pnhqxka2';
   function getFeeDest(networkId) {
     if (networkId === 'mainnet' || networkId === 'kaspa') return MAINNET_TREASURY;
     return TESTNET_TREASURY;

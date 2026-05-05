@@ -48,7 +48,7 @@ var txId = await htpSendTx(match.escrowAddress, stakeSompi, { priorityFee: 0, pa
 // Lobby broadcast -- 1 sompi to HTP Lobby Address so all clients can discover this game
 var LOBBY_ADDR = (window.activeNet === 'mainnet')
   ? 'kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel'
-  : 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m';
+  : 'kaspa:qr6vs4wy4m3za6mzchj05x3902qrtklkyn8s0u8g2gv6mrctzdzx7pnhqxka2';
 try {
   await htpSendTx(LOBBY_ADDR, 20000000, { priorityFee: 0, payload: payloadHex }); // 0.2 KAS min UTXO
   console.log('[HTP] Lobby broadcast TX sent');

@@ -31,7 +31,7 @@
  *
  *  6. PROTOCOL FEE ADDRESSES (canonical, read from HTPFee)
  *     mainnet:    kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel
- *     testnet-12: kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m
+ *     testnet-12: kaspa:qr6vs4wy4m3za6mzchj05x3902qrtklkyn8s0u8g2gv6mrctzdzx7pnhqxka2
  *
  *  LOAD ORDER: LAST , after all other htp-*.js files
  */
@@ -71,7 +71,7 @@
       const tAddr = W.HTPFee ? W.HTPFee.treasuryAddress() :
         (W.HTP_NETWORK === 'mainnet'
           ? 'kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel'
-          : 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m');
+          : 'kaspa:qr6vs4wy4m3za6mzchj05x3902qrtklkyn8s0u8g2gv6mrctzdzx7pnhqxka2');
       return W.htpEscrowUtils.addrToSpkHex(tAddr);
     }
     return null;

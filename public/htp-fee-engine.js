@@ -18,7 +18,7 @@
  *
  * TREASURY:
  *   mainnet:    kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel
- *   testnet-12: kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m
+ *   testnet-12: kaspa:qr6vs4wy4m3za6mzchj05x3902qrtklkyn8s0u8g2gv6mrctzdzx7pnhqxka2
  *
  * LOAD ORDER: after htp-init.js (reads window.HTP_NETWORK)
  *             before htp-covenant-escrow-v2.js, htp-events-v3.js
@@ -30,8 +30,8 @@
   // ── Treasury addresses (canonical, one place) ──────────────────────────
   var TREASURY = {
     'mainnet':    'kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel',
-    'tn12':       'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m',
-    'testnet-12': 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m',
+    'tn12':       'kaspa:qr6vs4wy4m3za6mzchj05x3902qrtklkyn8s0u8g2gv6mrctzdzx7pnhqxka2',
+    'testnet-12': 'kaspa:qr6vs4wy4m3za6mzchj05x3902qrtklkyn8s0u8g2gv6mrctzdzx7pnhqxka2',
   };
 
   // ── Fee constants (change here, nowhere else) ──────────────────────────
