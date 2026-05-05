@@ -8,7 +8,6 @@ data/*.json
 .DS_Store
 target/
 rusty-kaspa/
-.e2e-wallet.json
 .server-wallet.json
 *.pem
 27/
@@ -16,4 +15,3 @@ serviceAccountKey.json
 
 public/*.backup
 public/*.bak
-serviceAccountKey.json\n.env\n.server-wallet.json\n.e2e-wallet.json\n.htp-server-address.json
