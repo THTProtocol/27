@@ -66,8 +66,8 @@
     try { p = localStorage.getItem('htpNetwork'); } catch(e) { p = null; }
     if (p && NETWORK_MAP[p]) { window.HTP_NETWORK = p; window.activeNet = NETWORK_MAP[p]; return; }
     // 3. Default: TN12 (testnet) until mainnet covenants go live
-    window.HTP_NETWORK = 'tn12';
-    window.activeNet   = NETWORK_MAP.tn12;
+    window.HTP_NETWORK = 'mainnet';
+    window.activeNet   = NETWORK_MAP.mainnet;
   }
   detectNetwork();
 
