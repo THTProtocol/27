@@ -44,13 +44,13 @@
 
   // ── Network helper ─────────────────────────────────────────────────────
   // Reads window.HTP_NETWORK set by htp-init.js.
-  // Default: 'tn12' (matches htp-init.js default , NOT mainnet).
+  // Default: 'mainnet'.
   function networkKey() {
-    return W.HTP_NETWORK || 'tn12';
+    return W.HTP_NETWORK || 'mainnet';
   }
 
   function treasuryAddress() {
-    return TREASURY[networkKey()] || TREASURY['tn12'];
+    return TREASURY[networkKey()] || TREASURY['mainnet'];
   }
 
   // ── Sompi helpers (used by escrow + oracle) ────────────────────────────

@@ -6,7 +6,7 @@
   'use strict';
 
   var KEYWORDS = ['DEFINE', 'MARKET', 'ESCROW', 'SETTLEMENT', 'SEND', 'TO', 'FOR', 'EACH', 'IN', 'AND', 'OR', 'KAS'];
-  var TREASURY = 'kaspatest:qpyfz03k...354m';
+  var TREASURY = 'kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel';
   var FEE_BPS = 200;
 
   function escapeHtml(str) {
