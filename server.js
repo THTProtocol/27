@@ -607,9 +607,20 @@ app.post('/api/games/:id/move', (req, res) => {
       return res.json(result);
     }
 
+    // Blackjack / Poker actions via GameManager
+    if (game.type === 'blackjack' || game.type === 'poker') {
+      const result = gameManager.handleAction(game.id, player, req.body.action, req.body.data || {});
+      if (result.error) return res.status(400).json(result);
+      if (result.finished) {
+        db.updateGame(game.id, { status: 'finished', winner: result.winner, endedAt: Date.now() });
+        broadcastToGame(game.id, 'game-over', { gameId: game.id, winner: result.winner, reason: result.reason || 'game-over' });
+      }
+      return res.json(result);
+    }
+
     // Generic move store for other game types
     game.moves = game.moves || [];
-    game.moves.push({ position, player, timestamp: Date.now() });
+    game.moves.push({ position, player, action: req.body.action, timestamp: Date.now() });
     db.updateGame(game.id, { moves: game.moves });
     broadcastToGame(game.id, 'game-move', { gameId: game.id, position, player });
     res.json({ game });

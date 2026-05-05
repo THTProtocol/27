@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HTP Games</title>
+<style>
+:root { --bg: #060a16; --card: rgba(6,10,22,0.85); --accent: #49e8c2; --gold: #f0a040; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background: var(--bg); color:#e2e8f0; font-family:Inter,sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:1.5rem; }
+h1 { color:var(--gold); font-size:1.5rem; margin-bottom:1rem; }
+.card { background:var(--card); border:1px solid rgba(148,163,184,0.12); border-radius:12px; padding:1.5rem; margin:0.75rem 0; width:100%; max-width:640px; }
+.btn { display:inline-block; padding:0.6rem 1.5rem; margin:0.4rem 0.25rem; border:none; border-radius:8px; cursor:pointer; font-size:0.9rem; font-weight:600; }
+.btn-primary { background:var(--accent); color:#060a16; }
+.btn-danger { background:#e04040; color:#fff; }
+.btn-sm { padding:0.35rem 0.9rem; font-size:0.8rem; }
+input,select { width:100%; padding:0.65rem; margin:0.4rem 0; background:rgba(255,255,255,0.05); border:1px solid rgba(148,163,184,0.18); border-radius:8px; color:#e2e8f0; font-size:0.9rem; }
+label { font-size:0.85rem; opacity:0.8; margin-top:0.5rem; display:block; }
+.grid-3 { display:grid; grid-template-columns:repeat(3,80px); gap:6px; justify-content:center; margin:1.5rem 0; }
+.cell { width:80px; height:80px; background:rgba(255,255,255,0.06); border:1px solid rgba(148,163,184,0.15); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:1.8rem; font-weight:700; cursor:pointer; transition:0.15s; }
+.cell:hover { background:rgba(73,232,194,0.1); border-color:var(--accent); }
+.cell.X { color:var(--accent); }
+.cell.O { color:var(--gold); }
+.cell.taken { cursor:not-allowed; opacity:0.6; }
+#game-status { text-align:center; padding:0.75rem; border-radius:8px; margin:0.75rem 0; font-weight:600; }
+.status-playing { background:rgba(73,232,194,0.08); color:var(--accent); }
+.status-won { background:rgba(73,232,194,0.12); color:var(--accent); font-size:1.1rem; }
+.status-draw { background:rgba(240,160,64,0.1); color:var(--gold); }
+.status-lost { background:rgba(224,64,64,0.1); color:#e04040; }
+#ws-indicator { font-size:0.75rem; padding:0.3rem 0.7rem; border-radius:12px; display:inline-block; margin-bottom:0.5rem; }
+.ws-on { background:rgba(73,232,194,0.15); color:var(--accent); }
+.ws-off { background:rgba(224,64,64,0.15); color:#e04040; }
+nav { margin-bottom:1rem; }
+nav a { color:var(--accent); text-decoration:none; margin:0 0.6rem; font-weight:500; font-size:0.9rem; }
+a { color:var(--accent); }
+pre { background:rgba(0,0,0,0.3); padding:0.75rem; border-radius:8px; overflow-x:auto; font-size:0.8rem; }
+.spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,0.2); border-top-color:var(--accent); border-radius:50%; animation:spin 0.6s linear infinite; vertical-align:middle; margin-right:6px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/index.html">Home</a>
+  <a href="/wallet.html">Wallet</a>
+  <a href="/game.html">Play</a>
+</nav>
+
+<h1>Play HTP Games</h1>
+<span id="ws-indicator" class="ws-off">WS: disconnected</span>
+
+<div id="create-panel" class="card">
+  <h2 style="color:var(--gold);font-size:1.1rem">Create Game</h2>
+  <label>Game Type</label>
+  <select id="game-type">
+    <option value="tictactoe">Tic-Tac-Toe</option>
+    <option value="blackjack">Blackjack</option>
+  </select>
+  <label>Stake (KAS)</label>
+  <input id="game-stake" type="number" value="0.01" min="0.001" step="0.01">
+  <div style="text-align:right;margin-top:0.75rem">
+    <button class="btn btn-primary" onclick="createGame()">Create & Stake</button>
+  </div>
+  <div id="create-status"></div>
+</div>
+
+<div id="game-panel" class="card" style="display:none">
+  <h2 id="game-title" style="color:var(--gold);font-size:1.1rem"></h2>
+  <div id="game-status"></div>
+  <div id="game-board"></div>
+  <div id="game-actions" style="text-align:center;margin-top:1rem"></div>
+  <pre id="game-info" style="font-size:0.7rem;margin-top:0.5rem;display:none"></pre>
+</div>
+
+<script>
+// ─── State ──────────────────────────────────────────
+const REST = 'https://178.105.76.81/api';
+const WS_URL = 'wss://178.105.76.81/ws';
+let ws = null;
+let game = null;
+let myAddr = null;
+let myPrivkey = null;
+
+function getKey() {
+  myPrivkey = sessionStorage.getItem('htp_privkey');
+  if (!myPrivkey) {
+    document.getElementById('create-status').innerHTML = '<p style="color:red">No key saved. Go to <a href="wallet.html">Wallet</a> first.</p>';
+    return null;
+  }
+  return myPrivkey;
+}
+
+// ─── WebSocket ──────────────────────────────────────
+function connectWS() {
+  try {
+    ws = new WebSocket(WS_URL);
+    ws.onopen = () => {
+      document.getElementById('ws-indicator').className = 'ws-on';
+      document.getElementById('ws-indicator').textContent = 'WS: connected';
+    };
+    ws.onclose = () => {
+      document.getElementById('ws-indicator').className = 'ws-off';
+      document.getElementById('ws-indicator').textContent = 'WS: disconnected';
+      setTimeout(connectWS, 3000);
+    };
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.event === 'game-state-update' && msg.data.gameId === game?.id) {
+          renderBoard(msg.data.state);
+        } else if (msg.event === 'game-over' && msg.data.gameId === game?.id) {
+          handleGameOver(msg.data);
+        }
+      } catch {}
+    };
+  } catch(e) {}
+}
+
+// ─── Create Game ────────────────────────────────────
+async function createGame() {
+  const pk = getKey();
+  if (!pk) return;
+
+  const type = document.getElementById('game-type').value;
+  const stake = parseFloat(document.getElementById('game-stake').value || '0.01');
+  const statusEl = document.getElementById('create-status');
+  statusEl.innerHTML = '<span class="spinner"></span>Creating game on TN12...';
+
+  try {
+    const resp = await fetch(REST + '/games', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, stakeKas: stake, privkey: pk })
+    });
+    const data = await resp.json();
+    if (resp.status >= 400) throw new Error(data.error);
+
+    game = data.game;
+    statusEl.innerHTML = '<p class="status-ok">Game created! Escrow TX: <a href="https://explorer-tn12.kaspa.org/txs/' + data.escrowTxId + '" target="_blank">' + (data.escrowTxId || '').slice(0,14) + '...</a></p>';
+    document.getElementById('create-panel').style.display = 'none';
+    document.getElementById('game-panel').style.display = 'block';
+    document.getElementById('game-title').textContent = type.toUpperCase() + ' #' + game.id.slice(0,8);
+    document.getElementById('game-info').style.display = 'block';
+    document.getElementById('game-info').textContent = 'Escrow TX: ' + data.escrowTxId;
+
+    // Join room via WS
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'join-game', gameId: game.id }));
+
+    // Auto-join to start
+    await joinGame(game.id);
+  } catch(e) {
+    statusEl.innerHTML = '<p style="color:red">Error: ' + e.message + '</p>';
+  }
+}
+
+async function joinGame(gameId) {
+  try {
+    const resp = await fetch(REST + '/games/' + gameId + '/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerB: 'opponent' })
+    });
+    const data = await resp.json();
+    game = data.game;
+    loadBoard();
+  } catch(e) {
+    console.log('Join error (may be expected):', e.message);
+    // Game might already be playing
+    loadBoard();
+  }
+}
+
+// ─── Load / Render Board ────────────────────────────
+async function loadBoard() {
+  if (!game) return;
+  try {
+    const resp = await fetch(REST + '/games/' + game.id);
+    const g = await resp.json();
+    game = g;
+
+    const state = game.boardState ? JSON.parse(typeof game.boardState === 'string' ? game.boardState : JSON.stringify(game.boardState)) : null;
+    if (state) renderBoard(state);
+
+    document.getElementById('game-title').textContent = (game.type || 'GAME').toUpperCase() + ' #' + game.id.slice(0,8);
+    if (game.winner) handleGameOver({ winner: game.winner });
+  } catch(e) {}
+}
+
+function renderBoard(state) {
+  if (!state) return;
+  const boardEl = document.getElementById('game-board');
+
+  if (state.board) { // TicTacToe
+    const sym = state.board.map((c, i) => {
+      const cls = c ? 'cell ' + c + ' taken' : 'cell';
+      return '<div class="' + cls + '" onclick="' + (c ? '' : 'playMove(' + i + ')') + '">' + (c || '') + '</div>';
+    }).join('');
+    boardEl.innerHTML = '<div class="grid-3">' + sym + '</div>';
+  }
+}
+
+function playMove(pos) {
+  if (!game || game.winner) return;
+  const pk = getKey();
+  if (!pk) return;
+
+  fetch(REST + '/games/' + game.id + '/move', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ position: pos, player: game.playerA })
+  }).then(r => r.json()).then(r => {
+    if (r.state) renderBoard(r.state);
+    if (r.finished) handleGameOver(r);
+  }).catch(e => console.log('Move error:', e));
+}
+
+function handleGameOver(data) {
+  const statusEl = document.getElementById('game-status');
+  if (data.winner === game?.playerA) {
+    statusEl.className = 'status-won';
+    statusEl.textContent = 'You won!';
+  } else if (data.winner === 'draw') {
+    statusEl.className = 'status-draw';
+    statusEl.textContent = 'Draw!';
+  } else {
+    statusEl.className = 'status-lost';
+    statusEl.textContent = 'Opponent won.';
+  }
+
+  // Offer settle
+  document.getElementById('game-actions').innerHTML =
+    '<button class="btn btn-primary" onclick="settleGame()">Claim Payout on TN12</button>';
+}
+
+async function settleGame() {
+  if (!game) return;
+  const pk = getKey();
+  if (!pk) return;
+
+  document.getElementById('game-status').textContent = 'Settling on TN12...';
+  try {
+    const resp = await fetch(REST + '/games/' + game.id + '/settle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ privkey: pk })
+    });
+    const data = await resp.json();
+    if (resp.status >= 400) throw new Error(data.error);
+
+    document.getElementById('game-status').innerHTML =
+      'Payout TX: <a href="' + data.explorerUrl + '" target="_blank">' + (data.settleTxId || '').slice(0,14) + '...</a>';
+  } catch(e) {
+    document.getElementById('game-status').textContent = 'Settle error: ' + e.message;
+  }
+}
+
+// Init
+connectWS();
+getKey();
+</script>
+</body>
+</html>
