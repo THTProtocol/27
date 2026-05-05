@@ -8,6 +8,17 @@
 
 ## Architecture
 
+| Layer | Technology | Role |
+|-------|-----------|------|
+| Frontend | Firebase Hosting (static) | HTML/JS/WASM UI |
+| Game Relay | **Rust (Axum + Tokio)** | WebSocket rooms, /api/config, /api/stats |
+| Blockchain | Kaspa WASM SDK (browser) | Wallets, UTXO, TX signing |
+| Match State | Firebase Realtime DB | Lobby, oracle, ZK attestation |
+| Covenants | Rusty-Kaspa (TN12) | Escrow logic |
+
+The Rust server replaces the previous Node.js server.js entirely.
+Build: `cd crates/htp-server && cargo build --release`
+
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                        HIGH TABLE v8.0                           │
