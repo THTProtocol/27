@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "htp-firebase-sync",
     "mirofish-bridge",
     "htp-daemon",
     "kaspa-tn12-sighash",

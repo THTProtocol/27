@@ -1,0 +1,17 @@
+name: HTP CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates
+      - name: cargo test
+        run: cd crates && cargo test --workspace
+      - name: cargo clippy
+        run: cd crates && cargo clippy --workspace -- -D warnings
+      - name: cargo build release
+        run: cd crates && cargo build --release

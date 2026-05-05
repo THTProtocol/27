@@ -1540,6 +1540,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "htp-firebase-sync"
+version = "0.1.0"
+dependencies = [
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "htp-games"
 version = "0.1.0"
 dependencies = [
