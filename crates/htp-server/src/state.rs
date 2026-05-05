@@ -3,15 +3,14 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use htp_games::{
-    tictactoe::TicTacToe,
-    connect4::Connect4,
-    checkers::Checkers,
-    blackjack::BlackjackGame,
-    poker::PokerGame,
+    tictactoe::TicTacToe, connect4::Connect4, checkers::Checkers,
+    blackjack::BlackjackGame, poker::PokerGame,
     GameStatus, GameOutcome,
 };
 use tokio::sync::{Mutex, broadcast};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::RwLock;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "game_type", rename_all = "snake_case")]
@@ -41,13 +40,14 @@ pub struct GameRecord {
 
 pub struct AppState {
     pub games: DashMap<Uuid, GameRecord>,
-    /// Per-game broadcast channels for WS relay
     pub rooms: DashMap<String, broadcast::Sender<String>>,
-    /// Per-match settlement mutex — prevents double-payout races
     pub settlement_mutex: DashMap<String, Arc<Mutex<()>>>,
-    /// Already-settled game IDs (SHA-256 hashes stored here)
     pub settled_hashes: DashMap<String, String>,
     pub started_at: std::time::Instant,
+    pub errors_total: Arc<AtomicU64>,
+    pub c4_state: RwLock<crate::game_connect4::C4State>,
+    pub checkers_state: RwLock<crate::game_checkers::CheckersState>,
+    pub covenant_registry: crate::covenant_id::CovenantRegistry,
 }
 
 impl AppState {
@@ -58,10 +58,13 @@ impl AppState {
             settlement_mutex: DashMap::new(),
             settled_hashes: DashMap::new(),
             started_at: std::time::Instant::now(),
+            errors_total: Arc::new(AtomicU64::new(0)),
+            c4_state: RwLock::new(crate::game_connect4::C4State::default()),
+            checkers_state: RwLock::new(crate::game_checkers::CheckersState::default()),
+            covenant_registry: crate::covenant_id::CovenantRegistry::new(),
         }
     }
 
-    /// Broadcast a message to all clients subscribed to a game room.
     pub fn broadcast_to_room(&self, game_id: &str, msg: &str) {
         if let Some(tx) = self.rooms.get(game_id) {
             let _ = tx.send(msg.to_string());

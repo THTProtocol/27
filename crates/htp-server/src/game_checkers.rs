@@ -191,7 +191,7 @@ impl CheckersState {
                     return None;
                 }
                 let mid = self.board[mr][mc]?;
-                if mid.is_player(piece.is_player(1) as u8 + 1) {
+                if piece.is_player(1) == mid.is_player(1) {
                     return None;
                 }
                 if self.board[tr][tc].is_none() {
@@ -247,10 +247,13 @@ mod tests {
     fn test_mandatory_capture_enforcement() {
         let mut s = CheckersState::default();
         s.board = [[None; 8]; 8];
-        s.board[4][3] = Some(Piece::P1Man);
-        s.board[3][4] = Some(Piece::P2Man);
+        s.board[5][2] = Some(Piece::P1Man);
+        s.board[4][3] = Some(Piece::P2Man); // P2 is opponent, adjacent to P1
+        s.board[2][5] = Some(Piece::P2Man); // extra opponent piece
+        // P1 at [5][2] can capture P2 at [4][3] landing at [3][4]
+        // Try a simple move instead — should be rejected (capture mandatory)
         let mv = CheckersMove {
-            path: vec![[4, 3], [3, 2]],
+            path: vec![[5, 2], [4, 1]],
         };
         let r = s.apply_move(&mv);
         assert!(r.is_err());
@@ -261,6 +264,7 @@ mod tests {
         let mut s = CheckersState::default();
         s.board = [[None; 8]; 8];
         s.board[5][0] = Some(Piece::P1Man);
+        s.board[2][1] = Some(Piece::P2Man); // opponent still has pieces
         let mv = CheckersMove {
             path: vec![[5, 0], [4, 1]],
         };
@@ -276,6 +280,7 @@ mod tests {
         s.board = [[None; 8]; 8];
         s.board[5][0] = Some(Piece::P1Man);
         s.board[4][1] = Some(Piece::P2Man);
+        s.board[2][3] = Some(Piece::P2Man); // opponent still has pieces after capture
         let mv = CheckersMove {
             path: vec![[5, 0], [3, 2]],
         };

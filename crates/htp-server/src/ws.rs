@@ -82,7 +82,7 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
                                             return;
                                         }
                                     }
-                                    my_addr = addr;
+                                    my_addr = addr.clone();
                                 }
 
                                 if !joined.contains(&gid) {

@@ -1,12 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "htp-firebase-sync",
-    "htp-daemon",
-    "kaspa-tn12-sighash",
     "htp-server",
     "htp-games",
-    "htp-elo",
 ]
 
 [workspace.package]
@@ -14,22 +10,21 @@ edition = "2021"
 rust-version = "1.75.0"
 version = "0.1.0"
 authors = ["HTP Protocol Contributors"]
-homepage = "https://github.com/THTProtocol/27"
-repository = "https://github.com/THTProtocol/27"
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
-axum = "0.7"
+axum = { version = "0.7", features = ["ws"] }
 tower = "0.4"
-tower-http = { version = "0.5", features = ["cors"] }
+tower-http = { version = "0.5", features = ["cors", "trace", "limit"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 thiserror = "1"
 chrono = { version = "0.4", features = ["serde"] }
 sha2 = "0.10"
 hex = "0.4"
-uuid = { version = "1", features = ["v4"] }
-rand = "0.8" 
+uuid = { version = "1", features = ["v4", "serde"] }
+rand = "0.8"
+shakmaty = "0.27"

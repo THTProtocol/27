@@ -11,8 +11,6 @@ path = "src/main.rs"
 
 [dependencies]
 htp-games = { path = "../htp-games" }
-mirofish-bridge = { path = "../mirofish-bridge" }
-
 axum = { workspace = true }
 tokio = { workspace = true }
 tower = { workspace = true }
@@ -33,3 +31,6 @@ tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
 
 # Env
 dotenvy = "0.15"
+sha2 = { workspace = true }
+hex = { workspace = true }
+shakmaty = { workspace = true }

@@ -1,11 +1,5 @@
-//! HTP Server — Axum HTTP/WS backend replacing server.js
-//! Endpoints:
-//!   POST /api/games          create game
-//!   GET  /api/games/{id}      get state
-//!   POST /api/games/{id}/move apply move
-//!   POST /api/games/{id}/settle  settle payout
-//!   GET  /health             liveness
-//!   WS   /ws                 relay channel
+//! HTP Server — Axum HTTP/WS backend (Phase 8 rebuild)
+//! Endpoints: health, metrics, config, games, proof, chess, c4, checkers, zk, covenant
 
 mod routes;
 mod state;
@@ -15,16 +9,15 @@ mod observability;
 mod proof_commit;
 mod settlement_guard;
 mod api_models;
+mod game_chess;
+mod game_connect4;
+mod game_checkers;
+mod zk_proof;
+mod covenant_id;
 
-use axum::{
-    Router,
-    routing::{get, post},
-};
+use axum::{Router, routing::{get, post}};
 use std::net::SocketAddr;
-use tower_http::{
-    cors::{Any, CorsLayer},
-    trace::TraceLayer,
-};
+use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use state::AppState;
 use std::sync::Arc;
@@ -48,14 +41,24 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(routes::health))
         .route("/metrics", get(routes::metrics_handler))
+        .route("/api/stats", get(routes::metrics_handler))
+        .route("/api/config", get(routes::config))
         .route("/api/games", post(routes::create_game))
         .route("/api/games/{id}", get(routes::get_game))
         .route("/api/games/{id}/move", post(routes::apply_move))
         .route("/api/games/{id}/settle", post(routes::settle_game))
-        .route("/api/config", get(routes::config))
+        .route("/api/proof/preview", get(routes::proof_preview))
+        .route("/api/chess/move", post(routes::chess_move))
+        .route("/api/c4/drop", post(routes::c4_drop))
+        .route("/api/checkers/move", post(routes::checkers_move))
+        .route("/api/zk/prove", post(routes::zk_prove))
+        .route("/api/zk/status", get(routes::zk_status_handler))
+        .route("/api/covenant/register", post(routes::covenant_register))
+        .route("/api/covenant/{match_id}/advance", post(routes::covenant_advance))
+        .route("/api/covenant/{match_id}", get(routes::covenant_get))
         .route("/ws", get(ws::ws_handler))
         .layer(cors)
-        .layer(TraceLayer::new_for_http())
+        .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(tower_http::limit::RequestBodyLimitLayer::new(64 * 1024))
         .with_state(state);
 
