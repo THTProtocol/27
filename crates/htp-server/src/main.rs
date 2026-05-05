@@ -15,11 +15,6 @@ mod observability;
 mod proof_commit;
 mod settlement_guard;
 mod api_models;
-mod game_chess;
-mod game_connect4;
-mod game_checkers;
-mod zk_proof;
-mod covenant_id;
 
 use axum::{
     Router,
