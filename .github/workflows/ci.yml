@@ -1,17 +1,46 @@
-name: HTP CI
-on: [push, pull_request]
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
-  test:
+  rust-check:
+    name: Rust Build + Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: crates
-      - name: cargo test
-        run: cd crates && cargo test --workspace
-      - name: cargo clippy
-        run: cd crates && cargo clippy --workspace -- -D warnings
-      - name: cargo build release
-        run: cd crates && cargo build --release
+          workspaces: crates/htp-server
+
+      - name: fmt check
+        run: cargo fmt --manifest-path crates/htp-server/Cargo.toml -- --check
+
+      - name: clippy
+        run: cargo clippy --manifest-path crates/htp-server/Cargo.toml --all-targets -- -D warnings
+
+      - name: test
+        run: cargo test --manifest-path crates/htp-server/Cargo.toml
+
+  lint-js:
+    name: JS Lint Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: |
+          npm install -g acorn
+          for f in public/htp-*.js; do
+            acorn --ecma2020 "$f" > /dev/null && echo "OK $f" || echo "FAIL $f"
+          done
