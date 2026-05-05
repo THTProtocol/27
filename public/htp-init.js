@@ -283,8 +283,8 @@
       })
       .catch(function() {
         initServerWs('wss://178.105.76.81/ws');
-        return;
       });
+  }  // close fetchConfig
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fetchConfig);
   else fetchConfig();
