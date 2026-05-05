@@ -2,8 +2,20 @@
   "rules": {
     ".read": true,
     ".write": true,
-    "games": {
-      ".validate": "newData.hasChildren(['id','type','playerA','status'])"
+    "matches": {
+      "$matchId": {
+        ".validate": "newData.hasChildren(['id','status','playerA','playerB'])",
+        "status": { ".validate": "newData.isString()" }
+      }
+    },
+    "events": {
+      ".indexOn": ["status", "category", "createdAt"]
+    },
+    "markets": {
+      ".indexOn": ["status", "createdAt"]
+    },
+    "lobby": {
+      ".indexOn": ["status", "game", "createdAt"]
     }
   }
 }
