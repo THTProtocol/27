@@ -878,7 +878,7 @@ function renderPortfolioStats(user) {
   const el = document.getElementById('portfolio-stats');
   el.innerHTML =
     '<div class="stat-card"><span class="stat-value">' + (user.totalBets || 0) + '</span><span class="stat-label">Total Bets</span></div>' +
-    '<div class="stat-card"><span class="stat-value">' + formatKas(user.totalWagered) + '</span><span class="stat-label">Total Wagered (KAS)</span></div>' +
+    '<div class="stat-card"><span class="stat-value">' + formatKas(user.totalWagered) + '</span><span class="stat-label">Total Staked (KAS)</span></div>' +
     '<div class="stat-card"><span class="stat-value" style="color:var(--green)">+' + formatKas(user.totalWon) + '</span><span class="stat-label">Total Won (KAS)</span></div>' +
     '<div class="stat-card"><span class="stat-value">' + (user.gamesWon || 0) + '/' + (user.totalGames || 0) + '</span><span class="stat-label">Games Won</span></div>';
 }
@@ -1114,7 +1114,7 @@ function renderVaultContent() {
     '</ul>';
 
   document.getElementById('vault-games').innerHTML =
-    '<p>High Table lets you wager on skill-based games: <strong>Chess, Checkers, and Connect 4</strong>. Every game is backed by an on-chain escrow.</p>' +
+    '<p>High Table lets you compete in skill-based games: <strong>Chess, Checkers, and Connect 4</strong>. Every game is backed by an on-chain escrow.</p>' +
     '<p><strong>How it works:</strong></p>' +
     '<ol style="margin:8px 0 12px 20px;color:var(--text-secondary)">' +
       '<li>Player A creates a game and stakes KAS into an escrow covenant</li>' +
