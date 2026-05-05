@@ -13,3 +13,6 @@ rusty-kaspa/
 *.pem
 27/
 serviceAccountKey.json
+
+public/*.backup
+public/*.bak

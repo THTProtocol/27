@@ -1,21 +1,12 @@
 {
   "rules": {
-    ".read": true,
-    ".write": true,
+    "lobby":   { ".read": true,  ".write": true },
     "matches": {
-      "$matchId": {
-        ".validate": "newData.hasChildren(['id','status','playerA','playerB'])",
-        "status": { ".validate": "newData.isString()" }
-      }
+      ".read": true, ".write": true,
+      ".indexOn": ["status", "network", "player"]
     },
-    "events": {
-      ".indexOn": ["status", "category", "createdAt"]
-    },
-    "markets": {
-      ".indexOn": ["status", "createdAt"]
-    },
-    "lobby": {
-      ".indexOn": ["status", "game", "createdAt"]
-    }
+    "events":  { ".read": true,  ".write": false, ".indexOn": ["status"] },
+    "markets": { ".read": true,  ".write": false, ".indexOn": ["status"] },
+    "kaspa":   { ".read": true,  ".write": true }
   }
 }
