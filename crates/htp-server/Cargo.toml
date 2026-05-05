@@ -1,0 +1,35 @@
+[package]
+name = "htp-server"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "High Table Protocol Axum HTTP/WS server — replaces server.js"
+
+[[bin]]
+name = "htp-server"
+path = "src/main.rs"
+
+[dependencies]
+htp-games = { path = "../htp-games" }
+mirofish-bridge = { path = "../mirofish-bridge" }
+
+axum = { workspace = true }
+tokio = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# State management
+dashmap = "6"
+
+# WebSocket
+tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
+
+# Env
+dotenvy = "0.15"
