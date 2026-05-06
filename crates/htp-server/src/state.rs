@@ -8,6 +8,7 @@ use htp_games::{
 };
 use tokio::sync::{Mutex, broadcast};
 use std::sync::Arc;
+use std::sync::Mutex as StdMutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::RwLock;
 
@@ -48,10 +49,11 @@ pub struct AppState {
     pub c4_state: RwLock<crate::game_connect4::C4State>,
     pub checkers_state: RwLock<crate::game_checkers::CheckersState>,
     pub covenant_registry: crate::covenant_id::CovenantRegistry,
+    pub db: Arc<StdMutex<crate::db::HtpDb>>,
 }
 
 impl AppState {
-    pub fn new() -> Self {
+    pub fn new(db: crate::db::HtpDb) -> Self {
         Self {
             games: DashMap::new(),
             rooms: DashMap::new(),
@@ -62,6 +64,7 @@ impl AppState {
             c4_state: RwLock::new(crate::game_connect4::C4State::default()),
             checkers_state: RwLock::new(crate::game_checkers::CheckersState::default()),
             covenant_registry: crate::covenant_id::CovenantRegistry::new("/root/htp/covenants.db"),
+            db: Arc::new(StdMutex::new(db)),
         }
     }
 

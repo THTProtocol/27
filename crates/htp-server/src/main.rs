@@ -14,6 +14,7 @@ mod game_checkers;
 mod zk_proof;
 mod covenant_id;
 mod oracle;
+mod db;
 
 use axum::{Router, routing::{get, post}};
 use std::net::SocketAddr;
@@ -32,7 +33,12 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let state = Arc::new(AppState::new());
+    let db_path = std::env::var("HTP_DB_PATH").unwrap_or_else(|_| "/root/htp/htp.db".into());
+    let database = match crate::db::HtpDb::open(&db_path) {
+        Ok(d) => { tracing::info!("Database opened: {}", db_path); d }
+        Err(e) => { tracing::error!("Cannot open DB at {}: {}", db_path, e); std::process::exit(1); }
+    };
+    let state = Arc::new(AppState::new(database));
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
