@@ -146,7 +146,7 @@ impl CovenantRegistry {
     pub fn list_active(&self) -> Vec<CovenantEntry> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT match_id, covenant_id, creation_txid, current_txid, generation, player1, player2, stake_sompi, status FROM covenants WHERE status = active"
+            "SELECT match_id, covenant_id, creation_txid, current_txid, generation, player1, player2, stake_sompi, status FROM covenants WHERE status = 'active'"
         ).expect("list_active: prepare failed");
         let rows = stmt.query_map([], |row| {
             Ok(CovenantEntry {
