@@ -13,3 +13,9 @@
 - cargo check --workspace: 0 errors, 37 warnings (cosmetic)
 - htp-server imports htp-games + htp-kaspa-rpc
 
+## PHASE B: COMPLETE — 2026-05-06T20:10:11Z
+- All 4 covenants: 774 lines, 15 entrypoints, 0 stubs
+- TournamentBracket: rewritten from raw assembly to proper Silverscript
+- MaximizerEscrow: added creationTime to state
+- ParimutuelMarket: added hedgeEscrow + timeoutRefund entrypoints
+
