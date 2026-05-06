@@ -2,6 +2,7 @@
 //! Server-side move validation, check/checkmate/draw detection.
 
 use serde::{Deserialize, Serialize};
+use htp_games::{GameStatus, GameOutcome};
 use shakmaty::{Chess, Color, File, Move, Position, Rank, Role, Square};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -148,5 +149,63 @@ mod tests {
         };
         let res = apply_move(&req);
         assert!(!res.legal);
+    }
+}
+
+// ─── Game state wrapper for the main game flow ───────────────────
+
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChessGame {
+    pub fen: String,
+    pub status: GameStatus,
+    pub outcome: GameOutcome,
+    pub move_count: u32,
+    pub moves: Vec<String>,
+}
+
+impl ChessGame {
+    pub fn new() -> Self {
+        Self {
+            fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".into(),
+            status: GameStatus::Active,
+            outcome: GameOutcome::Pending,
+            move_count: 0,
+            moves: Vec::new(),
+        }
+    }
+
+    pub fn apply_chess_move(&mut self, from: &str, to: &str, promotion: Option<&str>) -> ChessMoveResponse {
+        let req = ChessMoveRequest {
+            fen: self.fen.clone(),
+            from: from.to_string(),
+            to: to.to_string(),
+            promotion: promotion.map(String::from),
+        };
+        let res = apply_move(&req);
+        if res.legal {
+            if let Some(ref new_fen) = res.new_fen {
+                self.fen = new_fen.clone();
+            }
+            self.move_count += 1;
+            self.moves.push(format!("{}{}", from, to));
+            match res.result {
+                ChessResult::WhiteWins => {
+                    self.status = GameStatus::Complete;
+                    self.outcome = GameOutcome::Player1Wins;
+                }
+                ChessResult::BlackWins => {
+                    self.status = GameStatus::Complete;
+                    self.outcome = GameOutcome::Player2Wins;
+                }
+                ChessResult::Draw => {
+                    self.status = GameStatus::Complete;
+                    self.outcome = GameOutcome::Draw;
+                }
+                ChessResult::Ongoing => {}
+            }
+        }
+        res
     }
 }

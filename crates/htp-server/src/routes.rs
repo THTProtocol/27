@@ -64,11 +64,13 @@ pub async fn create_game(
         "checkers"  => GameEngine::Checkers(Checkers::new()),
         "blackjack" => GameEngine::Blackjack(BlackjackGame::new()),
         "poker"     => GameEngine::Poker(PokerGame::new()),
+        "chess"     => GameEngine::Chess(crate::game_chess::ChessGame::new()),
         other => return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": format!("unknown game_type: {}", other) })))),
     };
     let (status, outcome) = match &engine {
         GameEngine::Poker(p) => (p.status.clone(), p.outcome.clone()),
         GameEngine::Blackjack(b) => (b.status.clone(), b.outcome.clone()),
+        GameEngine::Chess(c) => (c.status.clone(), c.outcome.clone()),
         _ => (GameStatus::Active, GameOutcome::Pending),
     };
     let record = GameRecord {
@@ -131,6 +133,7 @@ pub async fn apply_move(
             _ => return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "action must be hit or stand" })))),
         },
         GameEngine::Poker(_) => return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "poker has no moves" })))),
+        GameEngine::Chess(_) => return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "use /api/games/{id}/chess-move for chess" })))),
     };
     let (new_status, new_outcome) = match &game.engine {
         GameEngine::TicTacToe(g) => (g.status.clone(), g.outcome.clone()),
@@ -138,6 +141,7 @@ pub async fn apply_move(
         GameEngine::Checkers(g) => (g.status.clone(), g.outcome.clone()),
         GameEngine::Blackjack(g) => (g.status.clone(), g.outcome.clone()),
         GameEngine::Poker(g) => (g.status.clone(), g.outcome.clone()),
+        GameEngine::Chess(g) => (g.status.clone(), g.outcome.clone()),
     };
     game.status = new_status;
     game.outcome = new_outcome.clone();
@@ -278,5 +282,54 @@ pub async fn covenant_get(
     match state.covenant_registry.get(&mid) {
         Some(e) => Ok(Json(json!(e))),
         None => Err((StatusCode::NOT_FOUND, Json(json!({ "error": "not found" })))),
+    }
+}
+
+
+// ─── Chess Game Move (game-scoped) ─────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct ChessGameMoveReq {
+    pub from: String,
+    pub to: String,
+    pub promotion: Option<String>,
+}
+
+pub async fn chess_game_move(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<Uuid>,
+    Json(req): Json<ChessGameMoveReq>,
+) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
+    let mut game = state.games.get_mut(&id)
+        .ok_or_else(|| (StatusCode::NOT_FOUND, Json(json!({"error":"game not found"}))))?;
+    let (legal, new_fen, result, is_check, new_status, new_outcome) = {
+        if let GameEngine::Chess(ref mut chess) = game.engine {
+            let res = chess.apply_chess_move(&req.from, &req.to, req.promotion.as_deref());
+            (res.legal, res.new_fen, res.result, res.is_check, chess.status.clone(), chess.outcome.clone())
+        } else {
+            return Err((StatusCode::BAD_REQUEST, Json(json!({"error":"not a chess game"}))));
+        }
+    };
+    game.status = new_status;
+    game.outcome = new_outcome;
+    game.updated_at = chrono::Utc::now();
+    Ok(Json(json!({"legal": legal, "new_fen": new_fen, "result": result, "is_check": is_check})))
+}
+
+// ─── Kaspa Balance Lookup ──────────────────────────────────────────
+
+pub async fn kaspa_balance(
+    Path(address): Path<String>,
+) -> Json<Value> {
+    let rpc_url = std::env::var("KASPA_REST_URL")
+        .unwrap_or_else(|_| "https://api-tn12.kaspa.org".into());
+    let rpc = htp_kaspa_rpc::KaspaRpc::new(rpc_url.clone());
+    match rpc.get_balance(&address).await {
+        Ok(bal) => Json(json!({
+            "address": address,
+            "balance_sompi": bal.balance,
+            "source": rpc_url
+        })),
+        Err(e) => Json(json!({"error": format!("rpc error: {}", e), "address": address}))
     }
 }

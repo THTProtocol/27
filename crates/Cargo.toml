@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["htp-server", "htp-games"]
+members = ["htp-server", "htp-games", "htp-db", "htp-kaspa-rpc"]
 
 [workspace.package]
 edition = "2021"
@@ -24,3 +24,5 @@ hex = "0.4"
 uuid = { version = "1", features = ["v4", "serde"] }
 rand = "0.8"
 shakmaty = "0.27"
+rusqlite = { version = "0.31", features = ["bundled"] }
+reqwest = { version = "0.12", features = ["json"] }

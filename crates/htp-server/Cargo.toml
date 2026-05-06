@@ -28,3 +28,6 @@ shakmaty = { workspace = true }
 dashmap = "6"
 tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
 dotenvy = "0.15"
+rusqlite = { workspace = true }
+
+htp-kaspa-rpc = { path = "../htp-kaspa-rpc" }

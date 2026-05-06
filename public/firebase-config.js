@@ -34,6 +34,9 @@
     if (window.__htpFirebaseInitialized) return;
     window.__htpFirebaseInitialized = true;
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    firebase.auth().signInAnonymously().catch(function(e) {
+      console.warn('[HTP] anon auth failed:', e.message);
+    });
     var db = firebase.database();
     console.log('%cHTP Firebase ready , hightable420', 'color:#49e8c2;font-weight:bold');
     window.dispatchEvent(new CustomEvent('htp:firebase:ready'));
@@ -275,7 +278,9 @@ writeWalletStat: function(address, matchId, record) {
     initFirebase();
   } else {
     loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js', function() {
-      loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js', initFirebase);
+      loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js', function() {
+        loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js', initFirebase);
+      });
     });
   }
 

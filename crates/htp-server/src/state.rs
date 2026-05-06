@@ -19,6 +19,7 @@ pub enum GameEngine {
     Checkers(Checkers),
     Blackjack(BlackjackGame),
     Poker(PokerGame),
+    Chess(crate::game_chess::ChessGame),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,7 +61,7 @@ impl AppState {
             errors_total: Arc::new(AtomicU64::new(0)),
             c4_state: RwLock::new(crate::game_connect4::C4State::default()),
             checkers_state: RwLock::new(crate::game_checkers::CheckersState::default()),
-            covenant_registry: crate::covenant_id::CovenantRegistry::new(),
+            covenant_registry: crate::covenant_id::CovenantRegistry::new("/root/htp/covenants.db"),
         }
     }
 
