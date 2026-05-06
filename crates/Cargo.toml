@@ -1,6 +1,17 @@
 [workspace]
 resolver = "2"
-members = ["htp-server", "htp-games", "htp-db", "htp-kaspa-rpc"]
+members = [
+    "htp-server",
+    "htp-games",
+    "htp-db",
+    "htp-kaspa-rpc",
+    "htp-settlement",
+    "htp-game-engine",
+    "htp-api",
+    "htp-elo",
+    "htp-firebase-sync",
+    "kaspa-tn12-sighash",
+]
 
 [workspace.package]
 edition = "2021"

@@ -31,3 +31,4 @@ dotenvy = "0.15"
 rusqlite = { workspace = true }
 
 htp-kaspa-rpc = { path = "../htp-kaspa-rpc" }
+reqwest = { workspace = true }

@@ -16,3 +16,6 @@ serviceAccountKey.json
 public/*.backup
 public/*.bak
 research.json
+.e2e-wallet.json
+.htp-server-address.json
+.firebase-ci-token

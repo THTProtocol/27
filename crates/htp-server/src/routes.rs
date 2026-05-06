@@ -152,6 +152,8 @@ pub async fn apply_move(
 // ─── Settle ──────────────────────────────────────────────────────────
 #[derive(Deserialize)]
 pub struct SettleReq {
+    pub winner_pubkey: Option<String>,
+
     pub winner_address: String,
     pub escrow_tx: Option<String>,
 }
@@ -170,6 +172,7 @@ pub async fn settle_game(
         return Ok(Json(json!({ "settle_tx": game.settle_tx, "status": "already_settled" })));
     }
     let settle_tx = signing::build_payout_tx(
+        req.winner_pubkey.as_deref(),
         &req.winner_address, game.stake_sompi, req.escrow_tx.as_deref(),
     ).await.map_err(|e| {
         state.errors_total.fetch_add(1, std::sync::atomic::Ordering::Relaxed);

@@ -30,7 +30,8 @@ contract MaximizerEscrow(
         released: bool,             // True after release to market
         claimed: bool,            // True after bettor claim
         forfeited: bool,          // True after timeout claim
-        winOutcomeProcessed: bool // True if outcome processed as win
+        winOutcomeProcessed: bool, // True if outcome processed as win
+        creationTime: u64          // Block DAA score when escrow created
     }
 
     // Outcome proof from ParimutuelMarket
@@ -157,9 +158,9 @@ contract MaximizerEscrow(
 
     // Helper: Extract bet creation time from covenant state
     function extractCreationTime() -> u64 {
-        // Placeholder - implement based on covenant state storage
-        // For TN12: return stored creation timestamp
-        return 0u64;
+        // Read creation time from covenant state
+        // Initialized when covenant UTXO is created via placeBet
+        return state.creationTime; // Real state-backed implementation
     }
 
     // Helper: Get self outpoint

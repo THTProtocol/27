@@ -1,0 +1,10 @@
+[package]
+name = "htp-game-engine"
+version.workspace = true
+edition.workspace = true
+description = "HTP Game Engine — Chess/Checkers/Connect4/TicTacToe move validation in Rust"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

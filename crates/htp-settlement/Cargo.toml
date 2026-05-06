@@ -1,0 +1,15 @@
+[package]
+name = "htp-settlement"
+version.workspace = true
+edition.workspace = true
+description = "HTP Settlement Engine — ports lib/settlement.js"
+
+[dependencies]
+htp-db = { path = "../htp-db" }
+htp-kaspa-rpc = { path = "../htp-kaspa-rpc" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+tokio = { workspace = true }
