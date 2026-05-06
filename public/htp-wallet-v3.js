@@ -486,6 +486,7 @@
       try { localStorage.setItem('htpPlayerId', accounts[0]); } catch(e) {}
       htpWalletV3.updateUI();
       window.dispatchEvent(new CustomEvent('htp:wallet:connected', { detail: { address: accounts[0] } }));
+      htpWalletV3.refreshBalance();
     } else { htpWalletV3.disconnect(); }
   }
 
@@ -502,6 +503,7 @@
       if (session) {
         window.connectedAddress = session.address;
         window.htpAddress = session.address;
+        htpWalletV3.refreshBalance();
         this.updateUI();
       }
       this.setupListeners();
@@ -541,6 +543,7 @@
           try { localStorage.setItem('htpPlayerId', address); } catch(e) {}
           this.updateUI();
           window.dispatchEvent(new CustomEvent('htp:wallet:connected', { detail: { address: address, wallet: type } }));
+          htpWalletV3.refreshBalance();
           console.log('[HTP Wallet V3] Connected:', type, address);
           return true;
         }
@@ -578,6 +581,7 @@
         if (input) input.value = '';
         setTimeout(() => this.toggleMnemonicPanel(), 1200);
         window.dispatchEvent(new CustomEvent('htp:wallet:connected', { detail: { address: result.address } }));
+        htpWalletV3.refreshBalance();
       } else {
         if (status) { status.style.cssText = 'display:block;background:rgba(239,68,68,0.1);color:#ef4444;border-left:3px solid #ef4444;padding:10px;border-radius:6px;font-size:12px'; status.textContent = result.error; }
       }
@@ -598,6 +602,7 @@
       window.htpAddress = addr;
       this.updateUI();
       window.dispatchEvent(new CustomEvent('htp:wallet:connected', { detail: { address: addr } }));
+      htpWalletV3.refreshBalance();
     },
 
     disconnect() {
