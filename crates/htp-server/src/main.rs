@@ -13,6 +13,7 @@ mod game_connect4;
 mod game_checkers;
 mod zk_proof;
 mod covenant_id;
+mod oracle;
 
 use axum::{Router, routing::{get, post}};
 use std::net::SocketAddr;
@@ -56,6 +57,9 @@ async fn main() {
         .route("/api/covenant/register", post(routes::covenant_register))
         .route("/api/covenant/:mid/advance", post(routes::covenant_advance))
         .route("/api/covenant/:mid", get(routes::covenant_get))
+        .route("/api/games/:id/propose",      post(routes::propose_settle))
+        .route("/api/markets/:id/attest-payout", post(routes::attest_payout))
+        .route("/api/proof-commit",           post(routes::proof_commit_route))
         .route("/ws", get(ws::ws_handler))
         .layer(cors)
         .layer(tower_http::trace::TraceLayer::new_for_http())

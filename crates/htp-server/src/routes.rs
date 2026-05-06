@@ -336,3 +336,55 @@ pub async fn kaspa_balance(
         Err(e) => Json(json!({"error": format!("rpc error: {}", e), "address": address}))
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// ORACLE ATTESTATION ROUTES
+// Server acts as HTP_ARBITER — signs outcomes, does NOT move money.
+// Covenant proposeSettle verifies arbiter sig on-chain.
+// ═══════════════════════════════════════════════════════════════
+
+pub async fn propose_settle(
+    State(state): State<Arc<AppState>>,
+    Path(game_id): Path<String>,
+    Json(req): Json<crate::oracle::ProposeSettleReq>,
+) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
+    let default_root = "0".repeat(64);
+    let proof_root = req.proof_root.as_deref().unwrap_or(&default_root);
+    let path = req.settlement_path.as_deref().unwrap_or("B");
+    let arbiter_addr = std::env::var("PROTOCOL_ADDRESS")
+        .unwrap_or_else(|_| "kaspatest:qpx6f5j2zpe4hlwv9yn8hl0mze4k9ffp6ft0fm3w68wp6cft6f8mjdtt0qzyj".into());
+    let hash = crate::oracle::build_attestation(&game_id, &req.winner, proof_root);
+    tracing::info!("[ARBITER] proposeSettle game={} winner={} path={}", game_id, req.winner, path);
+    Ok(Json(json!({
+        "game_id": game_id, "winner": req.winner, "proof_root": proof_root,
+        "attestation_hash": hash, "arbiter": arbiter_addr,
+        "settlement_path": path, "status": "attested"
+    })))
+}
+
+pub async fn attest_payout(
+    State(_state): State<Arc<AppState>>,
+    Path(market_id): Path<String>,
+    Json(req): Json<crate::oracle::AttestPayoutReq>,
+) -> Json<Value> {
+    let hash = crate::oracle::build_payout_attestation(&market_id, &req.claimer, req.amount);
+    let arbiter_addr = std::env::var("PROTOCOL_ADDRESS")
+        .unwrap_or_else(|_| "kaspatest:qpx6f5j2zpe4hlwv9yn8hl0mze4k9ffp6ft0fm3w68wp6cft6f8mjdtt0qzyj".into());
+    tracing::info!("[ARBITER] attestPayout market={} claimer={} amount={}", market_id, req.claimer, req.amount);
+    Json(json!({
+        "market_id": market_id, "claimer": req.claimer, "amount": req.amount,
+        "attestation_hash": hash, "arbiter": arbiter_addr, "status": "attested"
+    }))
+}
+
+pub async fn proof_commit_route(
+    Json(req): Json<crate::oracle::ProofCommitReq>,
+) -> Json<Value> {
+    match crate::oracle::build_proof_root(&req.moves) {
+        None => Json(json!({"error":"no moves","proof_root":"0".repeat(64)})),
+        Some(root) => Json(json!({
+            "game_id": req.game_id, "move_count": req.moves.len(),
+            "proof_root": root, "proof_system": "sha256-sequential-chain"
+        }))
+    }
+}
