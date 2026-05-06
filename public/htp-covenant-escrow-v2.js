@@ -623,4 +623,124 @@
   };
 
   console.log('[HTP Escrow v3.0] loaded | USE_P2SH:', USE_P2SH, '| network:', W.htpNetwork || '(not yet set)');
+
+  /* ═══════════════════════════════════════════════════════════════
+   * SETTLEMENT FLOW — wired to /api/games/:id/propose
+   * ═══════════════════════════════════════════════════════════════ */
+
+  async function htpProposeSettle(gameId, winnerAddress, proofRoot, path) {
+    if (!gameId || !winnerAddress) {
+      console.error('[HTP] proposeSettle: missing gameId or winnerAddress');
+      return null;
+    }
+    try {
+      var apiBase = (W.HTP_CONFIG && W.HTP_CONFIG.API_ORIGIN) ? W.HTP_CONFIG.API_ORIGIN.replace(/\/+$/, '') : '';
+      var url = apiBase + '/api/games/' + gameId + '/propose';
+      var resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          winner: winnerAddress,
+          proof_root: proofRoot || null,
+          settlement_path: path || 'B'
+        })
+      });
+      if (!resp.ok) { console.error('[HTP] proposeSettle HTTP', resp.status); return null; }
+      var data = await resp.json();
+
+      // Store attestation in Firebase for dispute tracking
+      if (W.firebase && W.firebase.database) {
+        try {
+          await W.firebase.database().ref('games/' + gameId + '/settlement').set({
+            winner:           data.winner,
+            attestation_hash: data.attestation_hash,
+            arbiter:          data.arbiter,
+            settlement_path:  data.settlement_path,
+            proposed_at:      Date.now(),
+            status:           'PENDING_SETTLE',
+            dispute_deadline: Date.now() + (2 * 24 * 60 * 60 * 1000)
+          });
+        } catch(fbErr) { console.warn('[HTP] Firebase settlement write failed:', fbErr); }
+      }
+
+      console.log('[HTP] proposeSettle OK:', data.attestation_hash.slice(0,16) + '...');
+      return data;
+    } catch(e) {
+      console.error('[HTP] proposeSettle failed:', e);
+      return null;
+    }
+  }
+
+  async function htpFinalizeSettle(gameId) {
+    if (!W.firebase || !W.firebase.database) {
+      console.error('[HTP] Firebase not available for finalize');
+      return { error: 'no_firebase' };
+    }
+    try {
+      var snap = await W.firebase.database().ref('games/' + gameId + '/settlement').once('value');
+      var s = snap.val();
+      if (!s) { console.error('[HTP] no settlement record for', gameId); return { error: 'no_record' }; }
+
+      var deadline = s.dispute_deadline;
+      if (Date.now() < deadline) {
+        var mins = Math.ceil((deadline - Date.now()) / 60000);
+        console.warn('[HTP] dispute window open —', mins, 'min remaining');
+        return { error: 'dispute_window_open', minutes_remaining: mins };
+      }
+
+      await W.firebase.database().ref('games/' + gameId + '/settlement/status').set('SETTLED');
+      console.log('[HTP] finalizeSettle:', gameId, 'settled');
+      return { status: 'SETTLED', game_id: gameId };
+    } catch(e) {
+      console.error('[HTP] finalizeSettle failed:', e);
+      return null;
+    }
+  }
+
+  async function htpChallengeSettle(gameId, challengerAddress) {
+    if (!W.firebase || !W.firebase.database) return { error: 'no_firebase' };
+    try {
+      await W.firebase.database().ref('games/' + gameId + '/settlement').update({
+        status:      'DISPUTED',
+        challenger:  challengerAddress || 'unknown',
+        disputed_at: Date.now()
+      });
+      console.warn('[HTP] settlement DISPUTED by', challengerAddress);
+      return { status: 'DISPUTED' };
+    } catch(e) {
+      console.error('[HTP] challenge failed:', e);
+      return null;
+    }
+  }
+
+  function renderSettlementStatus(settlement, gameId) {
+    if (!settlement) return '<p class="muted">No settlement pending</p>';
+    var deadline = settlement.dispute_deadline;
+    var now = Date.now();
+    var remaining = deadline - now;
+    var status = settlement.status;
+    var colors = { PENDING_SETTLE: '#f5a623', SETTLED: '#7ed321', DISPUTED: '#d0021b' };
+    var gid = gameId || settlement.game_id || '';
+
+    var html = '<div class="settlement-status" style="border-left:3px solid ' + (colors[status]||'#ccc') + ';padding:8px 12px;margin:8px 0">';
+    html += '<span class="status-label" style="font-weight:bold">' + (status||'?').replace(/_/g,' ') + '</span>';
+    if (remaining > 0) html += '<span class="countdown"> — ' + Math.ceil(remaining/3600000) + 'h remaining</span>';
+    html += '<div class="attestation" style="font-size:0.85em;margin-top:4px">Arbiter: <code>' + (settlement.attestation_hash||'pending').slice(0,16) + '...</code></div>';
+    if (status === 'PENDING_SETTLE' && remaining > 0) {
+      html += '<button onclick="window.htpChallengeSettle(\'' + gid + '\', window.connectedAddress)" style="margin-top:6px;background:#d0021b;color:#fff;border:none;padding:4px 12px;border-radius:4px;cursor:pointer">Dispute</button>';
+    }
+    if (remaining <= 0 && status === 'PENDING_SETTLE') {
+      html += '<button onclick="window.htpFinalizeSettle(\'' + gid + '\')" style="margin-top:6px;background:#7ed321;color:#fff;border:none;padding:4px 12px;border-radius:4px;cursor:pointer">Finalize Settlement</button>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  W.htpProposeSettle    = htpProposeSettle;
+  W.htpFinalizeSettle   = htpFinalizeSettle;
+  W.htpChallengeSettle  = htpChallengeSettle;
+  W.renderSettlementStatus = renderSettlementStatus;
+
+  console.log('[HTP Escrow v3.0] Settlement flow loaded — propose/finalize/challenge routes active');
+
 })(window);

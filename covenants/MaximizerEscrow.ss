@@ -1,170 +1,169 @@
-// MaximizerEscrow Covenant - High Table Protocol
-// Kaspa TN12 - Silverscript
+// MaximizerEscrow.ss — HTP Maximizer Hedge Escrow Covenant
+// Kaspa TN12 — Silverscript
 //
-// Holds 50% hedged portion of each maximizer bet in ParimutuelMarket:
-// - On win: releases hedge to ParimutuelMarket for inclusion in winner payout
-// - On lose: bettor can claim back hedge minus 30% protocol fee (gets 35% of original bet)
-// - Unclaimed hedges after 7 days: claimable by anyone, 30% to treasury, 70% to bettor address
+// Holds 50% hedged portion of maximizer bets from ParimutuelMarket.
+// Settlement paths:
+//   PATH A: HTP_ARBITER + market co-sign — release hedge to market
+//   PATH B: Bettor claims (loss) — receives 70% of hedge after window
+//   PATH C: HTP_GUARDIAN force-settles if disputed
+//
+// HTP_ARBITER:  HTP relay server
+// HTP_GUARDIAN: Protocol governance
 
 contract MaximizerEscrow(
-    betId: Hash,                 // Unique bet identifier (bound to bet)
-    parentMarket: Address,        // Address of ParimutuelMarket covenant
-    bettor: Address,              // Bettor's address (for lose/timeout claims)
-    hedgeAmount: u64,             // Amount held in escrow (50% of bet) in sompi
-    outcomeTxid: Hash,            // Game outcome transaction ID (bound via OP_TXID)
-    network: u64                  // 0 = mainnet, 1 = testnet12
+    betId: Hash,                 // Unique bet identifier
+    parentMarket: Address,        // ParimutuelMarket covenant address
+    bettor: Address,              // Bettor's address (for lose/timeout)
+    hedgeAmount: u64,             // Amount held in escrow (50% of bet)
+    outcomeTxid: Hash,            // Game outcome TXID (via OP_TXID)
+    network: u64                  // 0=mainnet, 1=testnet12
 ) {
 
-    // Network treasury addresses (hardcoded)
     const MAINNET_TREASURY: Address = kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel;
     const TESTNET_TREASURY: Address = kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m;
+    const HTP_ARBITER: Address = kaspatest:qpx6f5j2zpe4hlwv9yn8hl0mze4k9ffp6ft0fm3w68wp6cft6f8mjdtt0qzyj;
+    const HTP_GUARDIAN: Address = kaspatest:qpx6f5j2zpe4hlwv9yn8hl0mze4k9ffp6ft0fm3w68wp6cft6f8mjdtt0qzyj;
+    const FEE_BPS: u64 = 200u64;
+    const FEE_DENOMINATOR: u64 = 10000u64;
+    const DISPUTE_WINDOW: u64  = 172800u64;
+    const GUARDIAN_WINDOW: u64 = 259200u64;
+    const TIMEOUT_BLOCKS: u64  = 604800u64;
 
-    // Claim timeout: 7 days in milliseconds
-    const CLAIM_TIMEOUT_MS: u64 = 604800000u64;  // 7 * 24 * 60 * 60 * 1000
-
-    // Protocol fee percentage on lost hedges
-    const LOSE_FEE_PCT: u64 = 30u64;
-
-    // Escrow state
     state {
-        released: bool,             // True after release to market
-        claimed: bool,            // True after bettor claim
-        forfeited: bool,          // True after timeout claim
-        winOutcomeProcessed: bool, // True if outcome processed as win
-        creationTime: u64          // Block DAA score when escrow created
+        released: bool,
+        claimed: bool,
+        forfeited: bool,
+        disputed: bool,
+        winOutcomeProcessed: bool,
+        proposedAt: u64,
+        disputedAt: u64,
+        createdBlock: u64
     }
 
-    // Outcome proof from ParimutuelMarket
     struct OutcomeProof {
-        isWin: bool,                // True if bettor won
-        winningOutcome: u64,        // Winning outcome index
-        marketTxid: Hash,           // Transaction ID from market
-        marketSig: Sig              // Signature from market covenant
+        isWin: bool,
+        winningOutcome: u64,
+        marketTxid: Hash,
+        marketSig: Sig
     }
 
-    // Entrypoint: Release hedge to ParimutuelMarket (on bettor win)
-    entrypoint function releaseToMarket(proof: OutcomeProof, resolverSig: Sig) {
-        // Only callable once
-        require(!state.released, "Already released");
-        require(!state.claimed, "Already claimed");
-        require(!state.forfeited, "Already forfeited");
-
-        // Verify caller is the parent market
+    // ═══════════════════════════════════════════════════════════════
+    // Entrypoint: Propose Release to Market (arbiter + market co-sign)
+    // ═══════════════════════════════════════════════════════════════
+    entrypoint function proposeRelease(
+        proof: OutcomeProof,
+        arbiterSig: Sig,
+        marketSig: Sig
+    ) {
+        require(!state.released && !state.claimed && !state.forfeited, "Already processed");
         require(OP_TXID() == outcomeTxid, "Outcome txid mismatch");
+        require(proof.isWin, "Must indicate win for release");
+        require(checkSig(arbiterSig, HTP_ARBITER), "Invalid arbiter signature");
+        require(checkSig(marketSig, parentMarket), "Invalid market proof");
 
-        // Get treasury
-        let treasury = (network == 0u64) ? MAINNET_TREASURY : TESTNET_TREASURY;
-
-        // Verify resolver signature against treasury (orchestrator)
-        require(checkSig(resolverSig, treasury), "Invalid resolver signature");
-
-        // Verify proof from market
-        require(checkSig(proof.marketSig, parentMarket), "Invalid market proof");
-
-        // Must be a win outcome
-        require(proof.isWin, "Proof must indicate win for release");
-
-        // Release full hedge to market covenant
-        outputs.push({script: parentMarket.toScript(), amount: hedgeAmount});
-
-        // Mark as released
-        state.released = true;
+        state.proposedAt = OP_TXINPUTBLOCKDAASCORE(OP_COVENANTCOUNT());
         state.winOutcomeProcessed = true;
 
-        // Verify single output
-        require(OP_COVENANTCOUNT() == 1u64, "Release must have single output");
+        require(OP_COVENANTCOUNT() == 1u64, "Propose keeps funds locked");
+        emit Event("RELEASE_PROPOSED", betId, bettor, hedgeAmount);
+    }
 
-        // Emit release event
+    // ═══════════════════════════════════════════════════════════════
+    // Entrypoint: Finalize Release (after dispute window)
+    // ═══════════════════════════════════════════════════════════════
+    entrypoint function finalizeRelease(marketSig: Sig) {
+        require(state.winOutcomeProcessed && !state.released, "No pending release");
+        let currentBlock = OP_TXINPUTBLOCKDAASCORE(OP_COVENANTCOUNT());
+        require(currentBlock >= state.proposedAt + DISPUTE_WINDOW, "Dispute window not closed");
+        require(checkSig(marketSig, parentMarket), "Invalid market signature");
+
+        outputs.push({script: parentMarket.toScript(), amount: hedgeAmount});
+        state.released = true;
+
+        require(OP_COVENANTCOUNT() == 1u64, "Release must have single output");
         emit Event("HEDGE_RELEASED", betId, bettor, hedgeAmount, parentMarket);
     }
 
-    // Entrypoint: Bettor claims hedge back (on loss) minus 30% protocol fee
-    entrypoint function bettorClaimLose(proof: OutcomeProof, bettorSig: Sig) {
-        // Only callable once
-        require(!state.released, "Already released");
-        require(!state.claimed, "Already claimed");
-        require(!state.forfeited, "Already forfeited");
-
-        // Verify bettor signature
+    // ═══════════════════════════════════════════════════════════════
+    // Entrypoint: Bettor Claim Loss (70% of hedge)
+    // ═══════════════════════════════════════════════════════════════
+    entrypoint function bettorClaimLose(bettorSig: Sig) {
+        require(!state.released && !state.claimed && !state.forfeited, "Already processed");
+        require(!state.winOutcomeProcessed, "Outcome already processed");
         require(checkSig(bettorSig, bettor), "Invalid bettor signature");
 
-        // Verify outcome transaction
-        require(OP_TXID() == outcomeTxid, "Outcome txid mismatch");
+        let treasury: Address = (network == 0u64) ? MAINNET_TREASURY : TESTNET_TREASURY;
+        let currentBlock = OP_TXINPUTBLOCKDAASCORE(OP_COVENANTCOUNT());
+        require(currentBlock >= state.createdBlock + DISPUTE_WINDOW, "Must wait dispute window");
 
-        // Get treasury
-        let treasury = (network == 0u64) ? MAINNET_TREASURY : TESTNET_TREASURY;
+        // Bettor gets 70% of hedge, treasury gets 30%
+        let protocolFee = (hedgeAmount * 30u64) / 100u64;
+        let refund = hedgeAmount - protocolFee;
 
-        // Verify proof from market
-        require(checkSig(proof.marketSig, parentMarket), "Invalid market proof");
-
-        // Must be a loss outcome
-        require(!proof.isWin, "Proof must indicate loss for claim");
-
-        // Calculate split: 30% to treasury, 70% to bettor
-        let protocolFee = (hedgeAmount * LOSE_FEE_PCT) / 100u64;
-        let bettorRefund = hedgeAmount - protocolFee;  // 70% of hedge = 35% of original bet
-
-        // Bettor gets 70% of hedge
-        outputs.push({script: bettor.toScript(), amount: bettorRefund});
-
-        // Protocol fee to treasury
+        outputs.push({script: bettor.toScript(), amount: refund});
         outputs.push({script: treasury.toScript(), amount: protocolFee});
-
-        // Mark as claimed
         state.claimed = true;
 
-        // Verify exactly 2 outputs
-        require(OP_COVENANTCOUNT() == 2u64, "Lose claim must have 2 outputs");
-
-        // Emit claim event
-        emit Event("HEDGE_CLAIMED_LOSE", betId, bettor, bettorRefund, protocolFee);
+        require(OP_COVENANTCOUNT() == 2u64, "Claim must have 2 outputs");
+        emit Event("HEDGE_CLAIMED_LOSE", betId, bettor, refund, protocolFee);
     }
 
-    // Entrypoint: Timeout claim after 7 days (anyone can call, bettor gets 70%)
-    entrypoint function timeoutClaim(claimantSig: Sig, currentTime: u64) {
-        // Only callable once
-        require(!state.released, "Already released");
-        require(!state.claimed, "Already claimed");
-        require(!state.forfeited, "Already forfeited");
+    // ═══════════════════════════════════════════════════════════════
+    // Entrypoint: Challenge Release
+    // ═══════════════════════════════════════════════════════════════
+    entrypoint function challengeRelease(challengerSig: Sig) {
+        require(state.winOutcomeProcessed && !state.released, "No pending release");
+        let currentBlock = OP_TXINPUTBLOCKDAASCORE(OP_COVENANTCOUNT());
+        require(currentBlock < state.proposedAt + DISPUTE_WINDOW, "Dispute window closed");
+        require(checkSig(challengerSig, bettor), "Only bettor can challenge");
 
-        // Get treasury
-        let treasury = (network == 0u64) ? MAINNET_TREASURY : TESTNET_TREASURY;
+        state.disputedAt = currentBlock;
+        state.disputed = true;
+        require(OP_COVENANTCOUNT() == 1u64, "Challenge keeps funds locked");
+        emit Event("RELEASE_CHALLENGED", betId, bettor);
+    }
 
-        // Calculate bet creation time (stored in covenant)
-        let betCreationTime: u64 = extractCreationTime();
+    // ═══════════════════════════════════════════════════════════════
+    // Entrypoint: Guardian Settlement
+    // ═══════════════════════════════════════════════════════════════
+    entrypoint function guardianSettle(guardianSig: Sig, doRelease: bool) {
+        require(state.disputed, "Not in dispute");
+        let currentBlock = OP_TXINPUTBLOCKDAASCORE(OP_COVENANTCOUNT());
+        require(currentBlock >= state.disputedAt + GUARDIAN_WINDOW, "Guardian window not open");
+        require(checkSig(guardianSig, HTP_GUARDIAN), "Invalid guardian signature");
 
-        // Verify timeout period has elapsed
-        require(currentTime >= betCreationTime + CLAIM_TIMEOUT_MS, "Timeout period not elapsed");
+        if (doRelease) {
+            outputs.push({script: parentMarket.toScript(), amount: hedgeAmount});
+            state.released = true;
+        } else {
+            let treasury: Address = (network == 0u64) ? MAINNET_TREASURY : TESTNET_TREASURY;
+            let protocolFee = (hedgeAmount * 30u64) / 100u64;
+            let refund = hedgeAmount - protocolFee;
+            outputs.push({script: bettor.toScript(), amount: refund});
+            outputs.push({script: treasury.toScript(), amount: protocolFee});
+            state.claimed = true;
+        }
 
-        // Calculate split: 30% to treasury, 70% to bettor
-        let protocolFee = (hedgeAmount * LOSE_FEE_PCT) / 100u64;
-        let bettorRefund = hedgeAmount - protocolFee;
+        require(OP_COVENANTCOUNT() == 1u64, "Guardian settle: 1 output");
+        emit Event("GUARDIAN_SETTLED", betId, bettor, doRelease);
+    }
 
-        // Original bettor gets 70% of hedge (even on timeout)
-        outputs.push({script: bettor.toScript(), amount: bettorRefund});
+    // ═══════════════════════════════════════════════════════════════
+    // Entrypoint: Timeout Claim
+    // ═══════════════════════════════════════════════════════════════
+    entrypoint function timeoutClaim(claimantSig: Sig) {
+        require(!state.released && !state.claimed && !state.forfeited, "Already processed");
+        let currentBlock = OP_TXINPUTBLOCKDAASCORE(OP_COVENANTCOUNT());
+        require(currentBlock >= state.createdBlock + TIMEOUT_BLOCKS, "Timeout not reached");
 
-        // Protocol fee to treasury
+        let treasury: Address = (network == 0u64) ? MAINNET_TREASURY : TESTNET_TREASURY;
+        let protocolFee = (hedgeAmount * 30u64) / 100u64;
+        let refund = hedgeAmount - protocolFee;
+        outputs.push({script: bettor.toScript(), amount: refund});
         outputs.push({script: treasury.toScript(), amount: protocolFee});
-
-        // Mark as forfeited (completed via timeout)
         state.forfeited = true;
 
-        // Verify exactly 2 outputs
-        require(OP_COVENANTCOUNT() == 2u64, "Timeout claim must have 2 outputs");
-
-        // Emit forfeiture event
-        emit Event("HEDGE_TIMEOUT_CLAIM", betId, bettor, bettorRefund, protocolFee, currentTime);
-    }
-
-    // Helper: Extract bet creation time from covenant state
-    function extractCreationTime() -> u64 {
-        // Read creation time from covenant state
-        // Initialized when covenant UTXO is created via placeBet
-        return state.creationTime; // Real state-backed implementation
-    }
-
-    // Helper: Get self outpoint
-    function OP_SELFOUTPOINT() -> OutPoint {
-        return OP_OUTPOINT_SELF();
+        require(OP_COVENANTCOUNT() == 2u64, "Timeout must have 2 outputs");
+        emit Event("HEDGE_TIMEOUT", betId, bettor, refund, protocolFee);
     }
 }

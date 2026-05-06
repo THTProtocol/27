@@ -12,6 +12,8 @@
 // =============================================================
 (function () {
   'use strict';
+// ── Numeric safety guard ────────────────────────────────
+const safeNum = (v, fallback) => (typeof v === 'number' && !isNaN(v) && v != null) ? v : (fallback || 0);
 
   if (window.__htpGamesSyncInstalled) return;
   window.__htpGamesSyncInstalled = true;

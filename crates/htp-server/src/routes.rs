@@ -388,3 +388,34 @@ pub async fn proof_commit_route(
         }))
     }
 }
+
+// ─── Balance Route ────────────────────────────────────────────────────
+// Queries Kaspa TN12 REST API for address balance.
+
+pub async fn balance_route(
+    Path(address): Path<String>,
+) -> Json<Value> {
+    let tn12 = "https://api-tn12.kaspa.org";
+    let url = format!("{}/addresses/{}/balance", tn12, address);
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .danger_accept_invalid_certs(true)
+        .build()
+        .unwrap_or_default();
+    match client.get(&url).send().await {
+        Ok(resp) => match resp.json::<Value>().await {
+            Ok(data) => {
+                let balance_sompi = data["balance"].as_u64().unwrap_or(0);
+                let balance_kas = balance_sompi as f64 / 100_000_000.0;
+                Json(json!({
+                    "address": address,
+                    "balance_sompi": balance_sompi,
+                    "balance_kas": balance_kas,
+                    "balance_usd": 0.0
+                }))
+            }
+            Err(_) => Json(json!({"address": address, "balance_kas": 0.0, "error": "parse_failed"})),
+        },
+        Err(e) => Json(json!({"address": address, "balance_kas": 0.0, "error": e.to_string()})),
+    }
+}
