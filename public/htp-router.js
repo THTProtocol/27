@@ -3,9 +3,6 @@
    No React. No build. Vanilla JS.
    ══════════════════════════════════════════════ */
 (function(){
-function chr(c){return String.fromCharCode(c);}
-// ── patched: lobby unpacks {count,games}, chrome 39 onclick uses chr() ──
-
   "use strict";
 
   var API   = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || "https://hightable.duckdns.org";
@@ -55,12 +52,8 @@ function chr(c){return String.fromCharCode(c);}
     var data = await api("/api/games");
     var games = (data && Array.isArray(data.games)) ? data.games
               : (Array.isArray(data) ? data : []);
-    if (!games || games.length === 0) {
-      root.innerHTML = page("LOBBY", "No open games yet",
-        "<div class='htp-empty' style='text-align:center;padding:40px 12px'><div style='font-size:48px;color:var(--htp-muted)'>◈</div>" +
-        "<div style='margin-top:12px;color:var(--htp-muted)'>No open matches yet.</div>" +
-        "<button class='htp-btn' style='margin-top:16px' onclick="window.htpRouter.navigate('#/create')">CREATE FIRST MATCH</button></div>");
-      return;
+    if (!games || !Array.isArray(games) || games.length === 0) {
+            games = [];
     }
     var typeIcons = { SkillGame: "♟", TournamentBracket: "◈", ParimutuelMarket: "⬡" };
     var cards = games.map(function(g) {
@@ -228,33 +221,14 @@ function chr(c){return String.fromCharCode(c);}
       var b = await api("/api/balance/" + addr);
       bal = b ? kasFromSompi(b.balance_sompi || 0) : "0.00";
     }
-
-    if (addr) {
-      // Connected view
-      root.innerHTML = page("WALLET", "Your Kaspa identity",
-        "<div class=\"htp-card\" style=\"max-width:500px\">" +
-        "<div style=\"margin-bottom:16px\"><label class=\"htp-label\">Address</label>" +
-        "<div class=\"htp-code\" style=\"word-break:break-all;user-select:all;cursor:text\" onclick=\"navigator.clipboard.writeText(this.textContent);var t=document.createElement('div');t.className='htp-toast');t.textContent='Copied!');document.body.appendChild(t);setTimeout(function(){t.remove()},2000)\">" + addr + "</div></div>" +
-        "<div style=\"margin-bottom:16px\"><label class=\"htp-label\">Balance</label>" +
-        "<strong style=\"font-size:24px;color:var(--htp-gold)\" id=\"htp-wallet-balance\">" + bal + " KAS</strong></div>" +
-        "<div style=\"display:flex;gap:10px;flex-wrap:wrap\">" +
-        "<button class=\"htp-btn htp-btn-ghost\" onclick=\"window.htpWalletV3.disconnect()\">DISCONNECT</button>" +
-        "</div></div>");
-    } else {
-      // Not connected — show import form
-      root.innerHTML = page("WALLET", "Import test wallet",
-        "<div class=\"htp-card\" style=\"max-width:500px\">" +
-        "<div class=\"htp-field\"><label class=\"htp-label\">Mnemonic (12 or 24 words)</label>" +
-        "<textarea id=\"mnemonic-input\" class=\"htp-textarea\" rows=\"3\" placeholder=\"word1 word2 word3 ... word12\" style=\"resize:vertical;min-height:72px\"></textarea></div>" +
-        "<div class=\"htp-field\"><label class=\"htp-label\">OR Private Key (64 hex chars)</label>" +
-        "<input id=\"privkey-input\" class=\"htp-input\" placeholder=\"64 hex characters\"></div>" +
-        "<div id=\"wallet-status\"></div>" +
-        "<div style=\"display:flex;gap:10px;flex-wrap:wrap;margin-top:12px\">" +
-        "<button class=\"htp-btn\" onclick=\"var v=document.getElementById('mnemonic-input').value.trim();if(!v){var s=document.getElementById('wallet-status');if(s)s.innerHTML='Enter a mnemonic phrase');return;}if(typeof htpWalletV3!=='undefined'&&htpWalletV3.importMnemonic)htpWalletV3.importMnemonic()\">IMPORT MNEMONIC</button>" +
-        "<button class=\"htp-btn\" onclick=\"var v=document.getElementById('privkey-input').value.trim();if(!v){var s=document.getElementById('wallet-status');if(s)s.innerHTML='Enter a private key');return;}if(typeof htpWalletV3!=='undefined'&&htpWalletV3.importPrivkey)htpWalletV3.importPrivkey(v)\">IMPORT PRIVATE KEY</button>" +
-        "<button class=\"htp-btn htp-btn-ghost\" onclick=\"if(typeof htpWalletV3!=='undefined'&&htpWalletV3.generateWallet)htpWalletV3.generateWallet()\">GENERATE NEW</button>" +
-        "</div></div>");
-    }
+    root.innerHTML = page("WALLET", "Manage your Kaspa identity",
+      "<div class=\"htp-card\" style=\"max-width:500px\">" +
+      (addr ? "<div style=\"margin-bottom:16px\"><label class=\"htp-label\">Address</label><div class=\"htp-code\" style=\"word-break:break-all\">" + addr + "</div></div>" : "") +
+      "<div style=\"margin-bottom:16px\"><label class=\"htp-label\">Balance</label><strong style=\"font-size:24px;color:var(--htp-gold)\">" + bal + " KAS</strong></div>" +
+      "<button class=\"htp-btn\" onclick=\"try{window.htpWalletV3.importMnemonic()}catch(e){{var t=document.createElement(div);t.className=htp-toast;t.textContent=e.message;document.body.appendChild(t);setTimeout(function(){t.remove()},4000)}}\">IMPORT MNEMONIC</button>" +
+      "<button class=\"htp-btn htp-btn-ghost\" style=\"margin-left:8px\" onclick=\"try{window.htpWalletV3.generateWallet()}catch(e){{var t=document.createElement(div);t.className=htp-toast;t.textContent=e.message;document.body.appendChild(t);setTimeout(function(){t.remove()},4000)}}\">GENERATE WALLET</button>" +
+      (addr ? "<button class=\"htp-btn htp-btn-ghost\" style=\"margin-left:8px\" onclick=\"window.htpWalletV3.disconnect()\">DISCONNECT</button>" : "") +
+      "</div>");
   }
 
   // ════════════════════════════════════════════
@@ -484,6 +458,8 @@ function chr(c){return String.fromCharCode(c);}
       shell.insertBefore(root, shell.firstChild);
     }
     var hash = window.location.hash.replace("#", "") || "lobby";
+  if (!hash || hash === "/" || hash === "#" || hash === "") hash = "#/lobby";
+  hash = (!hash || hash === "/" || hash === "#") ? "/lobby" : hash.replace(/^#/, "");
     var parts = hash.split("/");
     var route = "/" + parts[0];
     var id    = parts[1] || null;

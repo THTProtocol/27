@@ -7946,16 +7946,15 @@ window._htpAddMarket = function(m){
 
         // --- Navigation ---
 function go(v) {
-            document.querySelectorAll('.view').forEach(el => el.classList.remove('show'));
-            $('v-' + v).classList.add('show');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('act', b.dataset.v === v));
-            if ($('evC')) $('evC').style.display = 'none';
+            var map = { overview: '#/lobby', lobby: '#/lobby', wallet: '#/wallet',
+                        create: '#/create', markets: '#/markets', status: '#/status',
+                        admin: '#/admin', docs: '#/docs', skill: '#/lobby', kaspa: '#/status',
+                        oracle: '#/status', portfolio: '#/wallet', terms: '#/docs' };
+            window.location.hash = map[v] || ('#/' + v);
+            document.querySelectorAll('.nav-btn').forEach(function(b) {
+              b.classList.toggle('act', b.dataset.v === v);
+            });
             window.scrollTo(0, 0);
-            var nav = document.querySelector('.hdr-nav');
-            if (nav) nav.classList.remove('open');
-            ['overview','markets','create','skill','oracle','portfolio','wallet','kaspa','terms']
-                .forEach(function(n){ document.body.classList.remove('on-' + n); });
-            document.body.classList.add('on-' + v);
             if (v === 'portfolio') {
                 if (typeof renderSkillPortfolio === 'function') renderSkillPortfolio('skill-portfolio');
                 if (typeof renderClaimableRewards === 'function') renderClaimableRewards('claimsList');
