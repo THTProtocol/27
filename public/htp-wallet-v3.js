@@ -533,73 +533,45 @@
     }
   },
   importMnemonic: async function() {
-    var ta = document.getElementById('mnemonic-input');
-    var phrase = ta ? ta.value.trim() : '';
-    var statusEl = document.getElementById('wallet-status');
-
-    if (!phrase) {
-      var t = document.createElement('div'); t.className = 'htp-toast';
-      t.textContent = 'Paste your 12-word seed phrase first.';
-      document.body.appendChild(t);
-      setTimeout(function(){ t.remove(); }, 3000);
-      return;
-    }
+    var ta = document.getElementById("mnemonic-input");
+    var phrase = ta ? ta.value.trim() : "";
+    var st = document.getElementById("wallet-status");
+    var toast = function(msg, red) {
+      var t = document.createElement("div"); t.className = "htp-toast";
+      if (red) t.style.borderColor = "rgba(255,80,80,0.4)";
+      t.textContent = msg; document.body.appendChild(t);
+      setTimeout(function(){ t.remove(); }, 4000);
+    };
+    if (!phrase) { toast("Paste your seed phrase first."); return; }
     var words = phrase.split(/\s+/).filter(Boolean);
-    if (words.length < 12) {
-      var t2 = document.createElement('div'); t2.className = 'htp-toast';
-      t2.style.borderColor = 'rgba(255,80,80,0.4)';
-      t2.textContent = 'Need 12 words, got ' + words.length + '.';
-      document.body.appendChild(t2);
-      setTimeout(function(){ t2.remove(); }, 3000);
-      return;
-    }
-
-    if (statusEl) statusEl.textContent = 'Deriving address...';
-
+    if (words.length < 12) { toast("Need 12 words, got " + words.length + ".", true); return; }
+    if (st) st.textContent = "Deriving address...";
     try {
-      if (typeof window.kaspaFromMnemonic !== 'function') {
-        throw new Error('WASM not ready — wait 2s and retry');
-      }
-      var result = await window.kaspaFromMnemonic(phrase, 'kaspatest');
-      if (!result || !result.address) {
-        throw new Error('Failed to derive address');
-      }
-      var address = result.address;
-
-      window.connectedAddress = address;
-      window.htpAddress = address;
-      localStorage.setItem('htp_mnemonic_session', JSON.stringify({
-        mnemonic: phrase, address: address, ts: Date.now()
-      }));
-      window.dispatchEvent(new CustomEvent('htp:wallet:connected',
-        { detail: { address: address } }));
-
-      try {
-        var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || 'https://hightable.duckdns.org';
-        var resp = await fetch(base + '/api/balance/' + address, { signal: AbortSignal.timeout(8000) });
-        if (resp.ok) {
-          var d = await resp.json();
-          window.htpBalance = parseFloat(((d.balance_sompi || 0) / 1e8).toFixed(4));
-          var balEl = document.getElementById('htp-wallet-balance');
-          if (balEl) balEl.textContent = window.htpBalance + ' KAS';
-        }
-      } catch(e) { console.warn('[HTP Wallet] Balance error:', e); }
-
-      if (statusEl) statusEl.textContent = 'Connected!';
-
+      if (!window.kaspaSDK || !window.kaspaSDK.Mnemonic)
+        throw new Error("WASM not ready. Wait 2s and retry.");
+      var mn = new window.kaspaSDK.Mnemonic(phrase);
+      var seed = mn.toSeed("");
+      var xkey = window.kaspaSDK.XPrv.fromSeed(seed);
+      var addr = xkey
+        .deriveChild(44, true).deriveChild(111111, true)
+        .deriveChild(0, true).deriveChild(0, false)
+        .deriveChild(0, false)
+        .privateKey.toPublicKey()
+        .toAddress(window.kaspaSDK.NetworkType.Testnet).toString();
+      window.connectedAddress = addr;
+      window.htpAddress = addr;
+      localStorage.setItem("htp_mnemonic_session",
+        JSON.stringify({ mnemonic: phrase, address: addr, ts: Date.now() }));
+      window.dispatchEvent(new CustomEvent("htp:wallet:connected",
+        { detail: { address: addr } }));
+      if (st) st.textContent = "Connected!";
       setTimeout(function() {
-        if (window.htpRouter && typeof window.htpRouter.screenWallet === 'function') {
+        if (window.htpRouter && window.htpRouter.screenWallet)
           window.htpRouter.screenWallet();
-        }
       }, 150);
-
     } catch(err) {
-      if (statusEl) statusEl.textContent = 'Error: ' + err.message;
-      var t3 = document.createElement('div'); t3.className = 'htp-toast';
-      t3.style.borderColor = 'rgba(255,80,80,0.4)';
-      t3.textContent = 'Import failed: ' + err.message;
-      document.body.appendChild(t3);
-      setTimeout(function(){ t3.remove(); }, 5000);
+      if (st) st.textContent = "Error: " + err.message;
+      toast("Import failed: " + err.message, true);
     }
   },
   disconnect: function() {
