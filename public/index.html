@@ -6998,7 +6998,7 @@ event MyMarket {
         const kaspa = {
             async connect() {
                 const cfg = KASPA_NETS[activeNet];
-                updateNodeStatus('connecting', 'Connecting to ' + activeNet + '...');
+                // Status managed by htp-init.js health poll
 
                 // Try WASM RPC first (auto-discovery via Resolver)
                 try {

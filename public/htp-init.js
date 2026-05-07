@@ -359,10 +359,10 @@ window.addEventListener('unhandledrejection',function(e){var m=e.reason&&(e.reas
       lbl.style.cssText = 'font-size:11px;margin-left:6px;color:var(--muted)';
       ns.appendChild(lbl);
     }
-    lbl.textContent = state === 'live' ? 'Live' : (state === 'down' ? 'Reconnecting' : '');
+    lbl.textContent = state === 'live' ? 'Live' : (state === 'down' ? 'Connecting...' : '');
   }
   function initNetStatus() {
-    setStatusDot('idle');
+    setStatusDot('live'); // assume live until health check completes
     window.addEventListener('htp:server:connected', function() { setStatusDot('live'); });
     window.addEventListener('htp:server:disconnected', function() { setStatusDot('down'); });
     // Also probe the backend periodically. A successful /api/config = live.
