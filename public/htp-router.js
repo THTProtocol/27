@@ -462,7 +462,7 @@
       case "/game":        screenGame(id); break;
       case "/settle":      screenSettle(id); break;
       case "/dispute":     screenDispute(id); break;
-      case "/wallet":      screenWallet(); break;
+      case "/wallet":      (window.htpRouter.screenWallet || screenWallet)(); break;
       case "/markets":     screenMarkets(); break;
       case "/market":      screenMarket(id); break;
       case "/tournament":  id ? screenTournamentId(id) : screenTournament(); break;
