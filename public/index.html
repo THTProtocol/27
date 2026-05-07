@@ -4123,7 +4123,7 @@ html,body{background:#010806!important;}
 
         <header class="hdr">
             <div class="hdr-in">
-                <a href="javascript:void(0)" class="hdr-brand" onclick="go('overview');return false">
+                <a href="javascript:void(0)" class="hdr-brand" onclick="go('overview');window.location.hash='#/lobby';return false">
                     <div class="logo"><img
                             id="htp-logo-img" src="" alt="HTP"
                             alt="High Table Protocol" /></div>
@@ -4132,14 +4132,14 @@ html,body{background:#010806!important;}
                 <button class="menu-toggle" onclick="this.nextElementSibling.classList.toggle('open')"
                     aria-label="Menu">&#9776;</button>
                 <nav class="hdr-nav" id="htp-nav">
-                    <button class="nav-btn act" data-v="overview" onclick="go('overview')">Overview</button>
-                    <button class="nav-btn" data-v="markets" onclick="go('markets')">Markets</button>
-                    <button class="nav-btn" data-v="create" onclick="go('create')">Create</button>
-                    <button class="nav-btn" data-v="skill" onclick="go('skill')">Skill</button>
-                    <button class="nav-btn" data-v="oracle" onclick="go('oracle')" data-nav="true">Oracle</button>
-                    <button class="nav-btn" data-v="portfolio" onclick="go('portfolio')">Portfolio</button>
-                    <button class="nav-btn" data-v="wallet" onclick="go('wallet')">Wallet</button>
-                    <button class="nav-btn" data-v="kaspa" onclick="go('kaspa')">Kaspa</button>
+                    <button class="nav-btn act" data-v="overview" onclick="go('overview');window.location.hash='#/lobby'">Overview</button>
+                    <button class="nav-btn" data-v="markets" onclick="go('markets');window.location.hash='#/markets'">Markets</button>
+                    <button class="nav-btn" data-v="create" onclick="go('create');window.location.hash='#/create'">Create</button>
+                    <button class="nav-btn" data-v="skill" onclick="go('skill');window.location.hash='#/lobby'">Skill</button>
+                    <button class="nav-btn" data-v="oracle" onclick="go('oracle');window.location.hash='#/status'" data-nav="true">Oracle</button>
+                    <button class="nav-btn" data-v="portfolio" onclick="go('portfolio');window.location.hash='#/wallet'">Portfolio</button>
+                    <button class="nav-btn" data-v="wallet" onclick="go('wallet');window.location.hash='#/wallet'">Wallet</button>
+                    <button class="nav-btn" data-v="kaspa" onclick="go('kaspa');window.location.hash='#/lobby'">Kaspa</button>
                 </nav>
     <div id="htp-root"></div>
                 <div class="hdr-r">
@@ -4217,9 +4217,9 @@ html,body{background:#010806!important;}
                                         <div class="pill pill-glow">ZK oracles</div>
                                     </div>
                                     <div class="hero-cta">
-                                        <button class="cta1" onclick="go('markets')">Explore Markets</button>
-                                        <button class="cta2" onclick="go('create')">Create Event</button>
-                                        <button class="cta2" onclick="go('kaspa')">Why Kaspa</button>
+                                        <button class="cta1" onclick="go('markets');window.location.hash='#/markets'">Explore Markets</button>
+                                        <button class="cta2" onclick="go('create');window.location.hash='#/create'">Create Event</button>
+                                        <button class="cta2" onclick="go('kaspa');window.location.hash='#/lobby'">Why Kaspa</button>
                                     </div>
                                 </div>
                                 <div>
@@ -4284,7 +4284,7 @@ html,body{background:#010806!important;}
                                 Markets</h2>
                             <p style="margin:0;font-size:13px;color:var(--muted)">Highest pool volume right now.</p>
                         </div>
-                        <button class="cta2" onclick="go('markets')" style="padding:8px 18px;font-size:12px">View
+                        <button class="cta2" onclick="go('markets');window.location.hash='#/markets'" style="padding:8px 18px;font-size:12px">View
                             All</button>
                     </div>
                     <div id="featuredMarkets" class="mg" style="grid-template-columns:repeat(3,1fr)"></div>
@@ -4383,7 +4383,7 @@ html,body{background:#010806!important;}
                         <p>Parimutuel information markets and skill events on Kaspa.</p>
                     </div>
                     <div style="display:flex;gap:10px;margin-bottom:16px"><button class="cta1"
-                            style="padding:9px 20px;font-size:13px" onclick="go('create')">+ Create Event</button></div>
+                            style="padding:9px 20px;font-size:13px" onclick="go('create');window.location.hash='#/create'">+ Create Event</button></div>
                     <div class="fb">
                         <div class="fc" id="catC"></div>
                         <div class="fr">
@@ -6053,7 +6053,7 @@ event MyMarket {
             <div style="font-size:11px;color:var(--dim)">
                 Stake KAS, connect your node, and earn fees by resolving markets on-chain.</div>
         </div>
-        <button onclick="go('oracle')" class="cta1" style="font-size:12px;padding:8px 18px">
+        <button onclick="go('oracle');window.location.hash='#/status'" class="cta1" style="font-size:12px;padding:8px 18px">
             Go to Oracle Dashboard</button>
     </div>
 </div>

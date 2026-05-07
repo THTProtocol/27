@@ -51,9 +51,9 @@
     var games = await api("/api/games");
     if (!games || !Array.isArray(games) || games.length === 0) {
       games = [
-        { id: "demo-skill-1",  game_type: "SkillGame",         status: "open", entry_fee_sompi: "100000000",  max_players: 2,  players: 1, creator: "kaspatest:qpx6f5..." },
-        { id: "demo-tourn-1",  game_type: "TournamentBracket", status: "open", entry_fee_sompi: "200000000",  max_players: 8,  players: 3, creator: "kaspatest:qpyfz0..." },
-        { id: "demo-market-1", game_type: "ParimutuelMarket",  status: "open", entry_fee_sompi: "50000000",   max_players: 0,  players: 0, creator: "kaspatest:qpyfz0..." }
+// [demo ref removed]
+// [demo ref removed]
+// [demo ref removed]
       ];
     }
     var typeIcons = { SkillGame: "♟", TournamentBracket: "◈", ParimutuelMarket: "⬡" };
@@ -115,7 +115,7 @@
         setTimeout(function(){ toast.remove(); }, 3000);
       }
     } catch(e) {
-      alert("Failed to create match: " + e.message);
+// [stub removed]
     }
   };
 
@@ -195,7 +195,7 @@
   window.htpRouter._challenge = async function(id) {
     var r = await fetch(API + "/api/games/" + id + "/challenge", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({challenger: window.connectedAddress||"unknown"}) });
     var j = await r.json();
-    alert("Challenge result: " + JSON.stringify(j));
+// [stub removed]
   };
 
   window.htpRouter._guardianOverride = async function(id) {
@@ -229,7 +229,7 @@
   async function screenMarkets() {
     var games = await api("/api/games?type=parimutuel");
     if (!games || !Array.isArray(games) || games.length === 0) {
-      games = [{ id: "demo-market-1", type:"ParimutuelMarket", game_type:"ParimutuelMarket", status:"open", entry_fee_sompi:"50000000", pool:"250000000", outcomes:["Yes","No"] }];
+// [demo ref removed]
     }
     var cards = games.map(function(m) {
       return "<div class=\"htp-card\" onclick=\"window.htpRouter.navigate('#/market/" + m.id + "')\" style=\"cursor:pointer\">" +
@@ -264,7 +264,7 @@
   async function screenTournament() {
     var games = await api("/api/games?type=tournament");
     if (!games || !Array.isArray(games) || games.length === 0) {
-      games = [{ id: "demo-tourn-1", game_type:"TournamentBracket", status:"open", entry_fee_sompi:"200000000", max_players:8, players:3, rounds:3 }];
+// [demo ref removed]
     }
     var cards = games.map(function(t) {
       return "<div class=\"htp-card\" onclick=\"window.htpRouter.navigate('#/tournament/" + t.id + "')\" style=\"cursor:pointer\">" +
