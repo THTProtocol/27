@@ -549,7 +549,39 @@
       document.body.appendChild(t2); setTimeout(function(){ t2.remove(); }, 3000);
       return;
     }
-    importMnemonicWallet(phrase);
+    var statusEl = document.getElementById('wallet-status');
+    if (statusEl) statusEl.textContent = 'Deriving address...';
+    importMnemonicWallet(phrase).then(function(res) {
+      if (res && res.ok) {
+        window.connectedAddress = res.address;
+        window.htpAddress = res.address;
+        window.htpBalance = parseFloat(res.balance) || 0;
+        localStorage.setItem('htp_mnemonic_session', JSON.stringify({
+          mnemonic: phrase, address: res.address, ts: Date.now()
+        }));
+        window.dispatchEvent(new CustomEvent('htp:wallet:connected',
+          { detail: { address: res.address } }));
+        // Re-render wallet screen with connected state
+        if (window.htpRouter && window.htpRouter.screenWallet)
+          window.htpRouter.screenWallet();
+        else if (window.htpRouter && window.htpRouter.navigate)
+          window.htpRouter.navigate('#/wallet');
+      } else {
+        if (statusEl) statusEl.textContent = 'Error: ' + (res ? res.error : 'Failed');
+        var t = document.createElement('div'); t.className = 'htp-toast';
+        t.style.borderColor = 'rgba(255,80,80,0.4)';
+        t.textContent = 'Import failed: ' + (res ? res.error : 'Unknown error');
+        document.body.appendChild(t);
+        setTimeout(function(){ t.remove(); }, 4000);
+      }
+    }).catch(function(e) {
+      if (statusEl) statusEl.textContent = 'Error: ' + e.message;
+      var t = document.createElement('div'); t.className = 'htp-toast';
+      t.style.borderColor = 'rgba(255,80,80,0.4)';
+      t.textContent = 'Import error: ' + e.message;
+      document.body.appendChild(t);
+      setTimeout(function(){ t.remove(); }, 4000);
+    });
   },
   disconnect: function() {
     localStorage.removeItem("htp_session");
