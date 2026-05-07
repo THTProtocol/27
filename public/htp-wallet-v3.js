@@ -503,49 +503,65 @@
   // v5.0 public aliases for router compatibility
   generateWallet: async function() {
     if (!window.kaspaSDK || !window.kaspaSDK.Mnemonic) {
-      var t = document.createElement('div'); t.className = 'htp-toast';
-      t.textContent = 'WASM SDK not ready. Try again in 2 seconds.';
+      var t = document.createElement("div"); t.className = "htp-toast";
+      t.textContent = "WASM not ready - wait 2s and retry.";
       document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3000);
       return;
     }
     try {
       var mnemonic = window.kaspaSDK.Mnemonic.random();
       var words = mnemonic.phrase;
-      // Show words in a modal before importing
-      var overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center';
-      overlay.innerHTML = '<div style="background:var(--htp-card,#181818);border:1px solid var(--htp-border,#2a2a2a);border-radius:var(--htp-radius,8px);padding:24px;max-width:480px;text-align:center">' +
-        '<h3 style="color:var(--htp-gold,#c9a84c);margin:0 0 8px">SAVE THESE WORDS</h3>' +
-        '<p style="color:var(--htp-muted,#888);font-size:12px;margin:0 0 16px">Write these 12 words down. Never share them.</p>' +
-        '<div style="background:var(--htp-dark,#111);border:1px solid var(--htp-border,#2a2a2a);border-radius:6px;padding:14px;font-family:monospace;font-size:14px;color:var(--htp-gold,#c9a84c);margin-bottom:16px;word-break:break-word">' + words + '</div>' +
-        '<button id="htp-gen-confirm" class="htp-btn" style="margin-right:8px">I SAVED THEM — IMPORT</button>' +
-        '<button id="htp-gen-cancel" class="htp-btn htp-btn-ghost">CANCEL</button></div>';
+      var overlay = document.createElement("div");
+      overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center";
+      overlay.innerHTML = '<div style=\"background:var(--htp-card,#181818);border:1px solid var(--htp-border,#2a2a2a);border-radius:10px;padding:28px;max-width:460px;width:90%;text-align:center\">' +
+        '<h3 style=\"color:var(--htp-gold,#c9a84c);margin:0 0 8px;font-size:16px\">SAVE YOUR SEED PHRASE</h3>' +
+        '<p style=\"color:var(--htp-muted,#888);font-size:11px;margin:0 0 14px\">Write these 12 words down. They cannot be recovered.</p>' +
+        '<div style=\"background:var(--htp-dark,#111);border:1px solid rgba(201,168,76,0.3);border-radius:6px;padding:14px;font-family:monospace;font-size:14px;color:var(--htp-gold,#c9a84c);word-break:break-word;margin-bottom:16px\">' + words + '</div>' +
+        '<button id=\"htp-gen-ok\" class=\"htp-btn\" style=\"margin-right:8px;padding:10px 24px\">I SAVED THEM - IMPORT</button>' +
+        '<button id=\"htp-gen-cancel\" class=\"htp-btn htp-btn-ghost\" style=\"padding:10px 18px\">CANCEL</button></div>';
       document.body.appendChild(overlay);
-      document.getElementById('htp-gen-confirm').onclick = function() {
+      document.getElementById("htp-gen-cancel").onclick = function() { overlay.remove(); };
+      document.getElementById("htp-gen-ok").onclick = function() {
         overlay.remove();
-        // Fill textarea + import
-        var ta = document.getElementById('mnemonic-input');
-        if (ta) ta.value = words;
-        if (typeof htpWalletV3.importMnemonic === 'function') htpWalletV3.importMnemonic();
+        var ta = document.getElementById("mnemonic-input");
+        if (ta) { ta.value = words; htpWalletV3.importMnemonic(); }
       };
-      document.getElementById('htp-gen-cancel').onclick = function() { overlay.remove(); };
     } catch(e) {
-      var t = document.createElement('div'); t.className = 'htp-toast';
-      t.textContent = 'Failed to generate: ' + e.message;
+      var t = document.createElement("div"); t.className = "htp-toast";
+      t.textContent = "Generate failed: " + e.message;
       document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3000);
     }
   },
   importMnemonic: function() {
-    var panel = document.querySelector(".htp-mnemonic-panel");
-    if (panel) { panel.style.display = panel.style.display === "none" ? "block" : "none"; return; }
-    // Fallback: show wallet panel
-    if (typeof htpWalletV3.showWalletPanel === "function") htpWalletV3.showWalletPanel();
+    var ta = document.getElementById("mnemonic-input");
+    var phrase = ta ? ta.value.trim() : "";
+    if (!phrase) {
+      var t = document.createElement("div"); t.className = "htp-toast";
+      t.textContent = "Paste your 12-word mnemonic first.";
+      document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3000);
+      return;
+    }
+    var words = phrase.split(/\s+/).filter(Boolean);
+    if (words.length < 12) {
+      var t2 = document.createElement("div"); t2.className = "htp-toast";
+      t2.style.borderColor = "rgba(255,80,80,0.4)";
+      t2.textContent = "Need 12 words, got " + words.length;
+      document.body.appendChild(t2); setTimeout(function(){ t2.remove(); }, 3000);
+      return;
+    }
+    importMnemonicWallet(phrase);
   },
   disconnect: function() {
     localStorage.removeItem("htp_session");
+    localStorage.removeItem("htp_mnemonic_session");
     window.connectedAddress = null;
     window.htpAddress = null;
+    window.htpBalance = null;
     window.dispatchEvent(new CustomEvent("htp:wallet:disconnected"));
+    var addr = document.getElementById("htp-wallet-address");
+    if (addr) addr.innerHTML = '<span style="color:var(--htp-muted)">No wallet connected</span>';
+    var bal = document.getElementById("htp-wallet-balance");
+    if (bal) bal.textContent = "\u2014 KAS";
   },
   showConnectModal: function() {
     if (typeof htpWalletV3.showWalletPanel === "function") htpWalletV3.showWalletPanel();
