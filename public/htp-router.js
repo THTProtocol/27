@@ -450,6 +450,7 @@
       shell.insertBefore(root, shell.firstChild);
     }
     var hash = window.location.hash.replace("#", "") || "/lobby";
+  hash = (!hash || hash === "/" || hash === "#") ? "/lobby" : hash.replace(/^#/, "");
     var parts = hash.split("/");
     var route = "/" + parts[0];
     var id    = parts[1] || null;
@@ -460,7 +461,8 @@
     });
 
     switch(route) {
-      case "/lobby":       screenLobby(); break;
+      case "/overview":
+    case "/lobby":       screenLobby(); break;
       case "/create":      screenCreate(); break;
       case "/game":        screenGame(id); break;
       case "/settle":      screenSettle(id); break;
