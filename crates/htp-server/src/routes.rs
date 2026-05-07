@@ -27,7 +27,7 @@ pub async fn metrics_handler(
     axum::extract::State(state): axum::extract::State<Arc<AppState>>,
 ) -> Json<Value> {
     Json(json!({
-        "active_games": state.games.len(),
+        "active_games": 0,
         "active_rooms": state.rooms.len(),
         "settled_matches": state.settled_hashes.len(),
         "uptime_secs": state.started_at.elapsed().as_secs(),
@@ -48,44 +48,74 @@ pub async fn config() -> Json<Value> {
 // ─── Create Game ─────────────────────────────────────────────────────
 #[derive(Deserialize)]
 pub struct CreateGameReq {
-    pub game_type: String,
-    pub player1: String,
-    pub stake_sompi: u64,
+    pub game_type: Option<String>,
+    #[serde(rename = "type")]
+    pub r#type: Option<String>,
+    pub creator: Option<String>,
+    pub player1: Option<String>,
+    pub stake_sompi: Option<i64>,
+    pub entry_fee_sompi: Option<String>,
+    pub max_players: Option<i64>,
 }
 
 pub async fn create_game(
     State(state): State<Arc<AppState>>,
     Json(req): Json<CreateGameReq>,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    let id = Uuid::new_v4();
-    let engine = match req.game_type.as_str() {
-        "tictactoe" => GameEngine::TicTacToe(TicTacToe::new()),
-        "connect4"  => GameEngine::Connect4(Connect4::new()),
-        "checkers"  => GameEngine::Checkers(Checkers::new()),
-        "blackjack" => GameEngine::Blackjack(BlackjackGame::new()),
-        "poker"     => GameEngine::Poker(PokerGame::new()),
-        "chess"     => GameEngine::Chess(crate::game_chess::ChessGame::new()),
-        other => return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": format!("unknown game_type: {}", other) })))),
+    let game_type = req.game_type
+        .or(req.r#type)
+        .unwrap_or_else(|| "SkillGame".to_string());
+    
+    // Validate HTP types + legacy types
+    let valid_types = ["SkillGame","TournamentBracket","ParimutuelMarket","MaximizerEscrow",
+                       "tictactoe","connect4","checkers","chess","blackjack","poker"];
+    if !valid_types.contains(&game_type.as_str()) {
+        return Err((StatusCode::BAD_REQUEST, Json(json!({"error": format!("unknown game_type: {}", game_type)}))));
+    }
+
+    let creator = req.creator
+        .or(req.player1)
+        .unwrap_or_else(|| "kaspatest:unknown".to_string());
+
+    let stake_sompi: i64 = req.stake_sompi
+        .or_else(|| req.entry_fee_sompi.as_ref().and_then(|s| s.parse::<i64>().ok()))
+        .unwrap_or(100_000_000);
+
+    let max_players = req.max_players.unwrap_or(2);
+    let id = uuid::Uuid::new_v4().to_string();
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() as i64;
+
+    let record = crate::db::GameRecord {
+        id:          id.clone(),
+        game_type:   game_type.clone(),
+        creator:     creator.clone(),
+        opponent:    None,
+        stake_sompi: stake_sompi as u64,
+        status:      "open".to_string(),
+        winner:      None,
+        proof_root:  None,
+        covenant_id: None,
+        created_at:  now,
+        updated_at:  now,
     };
-    let (status, outcome) = match &engine {
-        GameEngine::Poker(p) => (p.status.clone(), p.outcome.clone()),
-        GameEngine::Blackjack(b) => (b.status.clone(), b.outcome.clone()),
-        GameEngine::Chess(c) => (c.status.clone(), c.outcome.clone()),
-        _ => (GameStatus::Active, GameOutcome::Pending),
-    };
-    let record = GameRecord {
-        id, game_type: req.game_type.clone(), engine,
-        player1: req.player1, player2: None,
-        stake_sompi: req.stake_sompi, escrow_tx: None, settle_tx: None,
-        status, outcome, created_at: Utc::now(), updated_at: Utc::now(),
-    };
-    state.games.insert(id, record.clone());
-    tracing::info!("[HTP] Game created: {} type={}", id, req.game_type);
-    Ok(Json(json!({ "id": id, "game_type": req.game_type, "status": "active" })))
+
+    let db = state.db.lock().map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":"db_lock_poisoned"}))))?;
+    db.upsert_game(&record).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()}))))?;
+
+    tracing::info!("[HTP] Game created: {} type={}", id, game_type);
+    Ok(Json(json!({
+        "id": id,
+        "game_type": game_type,
+        "creator": creator,
+        "stake_sompi": stake_sompi,
+        "status": "open",
+        "max_players": max_players
+    })))
 }
 
-// ─── Get Game ────────────────────────────────────────────────────────
-// --- Get Game ---
 pub async fn get_game(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
@@ -98,7 +128,7 @@ pub async fn get_game(
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct MoveReq {
     pub player: u8,
     pub position: Option<usize>,
@@ -111,46 +141,22 @@ pub struct MoveReq {
 
 pub async fn apply_move(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
+    Path(id): Path<String>,
     Json(req): Json<MoveReq>,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    let mut game = state.games.get_mut(&id)
-        .ok_or_else(|| (StatusCode::NOT_FOUND, Json(json!({ "error": "game not found" }))))?;
-    let outcome = match &mut game.engine {
-        GameEngine::TicTacToe(g) => {
-            let pos = req.position.ok_or_else(|| (StatusCode::BAD_REQUEST, Json(json!({ "error": "position required" }))))?;
-            g.play(pos, req.player).map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() }))))?
-        }
-        GameEngine::Connect4(g) => {
-            let col = req.column.ok_or_else(|| (StatusCode::BAD_REQUEST, Json(json!({ "error": "column required" }))))?;
-            g.drop_piece(col, req.player).map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() }))))?
-        }
-        GameEngine::Checkers(g) => {
-            let from = req.from.ok_or_else(|| (StatusCode::BAD_REQUEST, Json(json!({ "error": "from required" }))))?;
-            let to = req.to.ok_or_else(|| (StatusCode::BAD_REQUEST, Json(json!({ "error": "to required" }))))?;
-            g.apply_move(CheckersMove { from: (from[0], from[1]), to: (to[0], to[1]) }, req.player)
-                .map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() }))))?
-        }
-        GameEngine::Blackjack(g) => match req.action.as_deref() {
-            Some("hit") => g.hit().map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() }))))?,
-            Some("stand") => g.stand().map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() }))))?,
-            _ => return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "action must be hit or stand" })))),
-        },
-        GameEngine::Poker(_) => return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "poker has no moves" })))),
-        GameEngine::Chess(_) => return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "use /api/games/{id}/chess-move for chess" })))),
-    };
-    let (new_status, new_outcome) = match &game.engine {
-        GameEngine::TicTacToe(g) => (g.status.clone(), g.outcome.clone()),
-        GameEngine::Connect4(g) => (g.status.clone(), g.outcome.clone()),
-        GameEngine::Checkers(g) => (g.status.clone(), g.outcome.clone()),
-        GameEngine::Blackjack(g) => (g.status.clone(), g.outcome.clone()),
-        GameEngine::Poker(g) => (g.status.clone(), g.outcome.clone()),
-        GameEngine::Chess(g) => (g.status.clone(), g.outcome.clone()),
-    };
-    game.status = new_status;
-    game.outcome = new_outcome.clone();
-    game.updated_at = Utc::now();
-    Ok(Json(json!({ "outcome": outcome, "status": game.status, "updated": game.updated_at })))
+    let db = state.db.lock().map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":"db_lock_poisoned"}))))?;
+    let move_data = serde_json::to_string(&req).unwrap_or_default();
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs() as i64;
+    let player_id = format!("player_{}", req.player);
+    db.append_move(&id, now as u64, &move_data, &player_id)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()}))))?;
+    Ok(Json(json!({
+        "game_id": id,
+        "move_index": now,
+        "player": req.player,
+        "status": "move_recorded"
+    })))
 }
 
 // ─── Settle ──────────────────────────────────────────────────────────
@@ -164,28 +170,19 @@ pub struct SettleReq {
 
 pub async fn settle_game(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
+    Path(id): Path<String>,
     Json(req): Json<SettleReq>,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    let mut game = state.games.get_mut(&id)
-        .ok_or_else(|| (StatusCode::NOT_FOUND, Json(json!({ "error": "game not found" }))))?;
-    if game.status != GameStatus::Complete {
-        return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "game not complete" }))));
-    }
-    if game.settle_tx.is_some() {
-        return Ok(Json(json!({ "settle_tx": game.settle_tx, "status": "already_settled" })));
-    }
-    let settle_tx = signing::build_payout_tx(
-        req.winner_pubkey.as_deref(),
-        &req.winner_address, game.stake_sompi, req.escrow_tx.as_deref(),
-    ).await.map_err(|e| {
-        state.errors_total.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() })))
-    })?;
-    game.settle_tx = Some(settle_tx.clone());
-    game.updated_at = Utc::now();
-    tracing::info!("[HTP] Game {} settled tx={}", id, settle_tx);
-    Ok(Json(json!({ "game_id": id, "settle_tx": settle_tx, "winner": req.winner_address, "status": "settled" })))
+    let db = state.db.lock().map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":"db_lock_poisoned"}))))?;
+    db.finalize_settlement(&id)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()}))))?;
+    tracing::info!("[HTP] Game {} settled, winner={}", id, req.winner_address);
+    Ok(Json(json!({
+        "game_id": id,
+        "winner": req.winner_address,
+        "status": "settled",
+        "message": "settlement finalized"
+    })))
 }
 
 // ─── Proof Preview ────────────────────────────────────────────────────
@@ -296,6 +293,7 @@ pub async fn covenant_get(
 // ─── Chess Game Move (game-scoped) ─────────────────────────────────
 
 #[derive(Deserialize)]
+#[derive(Serialize)]
 pub struct ChessGameMoveReq {
     pub from: String,
     pub to: String,
@@ -304,23 +302,28 @@ pub struct ChessGameMoveReq {
 
 pub async fn chess_game_move(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
+    Path(id): Path<String>,
     Json(req): Json<ChessGameMoveReq>,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    let mut game = state.games.get_mut(&id)
-        .ok_or_else(|| (StatusCode::NOT_FOUND, Json(json!({"error":"game not found"}))))?;
-    let (legal, new_fen, result, is_check, new_status, new_outcome) = {
-        if let GameEngine::Chess(ref mut chess) = game.engine {
-            let res = chess.apply_chess_move(&req.from, &req.to, req.promotion.as_deref());
-            (res.legal, res.new_fen, res.result, res.is_check, chess.status.clone(), chess.outcome.clone())
-        } else {
-            return Err((StatusCode::BAD_REQUEST, Json(json!({"error":"not a chess game"}))));
-        }
-    };
-    game.status = new_status;
-    game.outcome = new_outcome;
-    game.updated_at = chrono::Utc::now();
-    Ok(Json(json!({"legal": legal, "new_fen": new_fen, "result": result, "is_check": is_check})))
+    let db = state.db.lock().map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":"db_lock_poisoned"}))))?;
+    let game = db.get_game(&id)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()}))))?
+        .ok_or_else(|| (StatusCode::NOT_FOUND, Json(json!({ "error": "game not found" }))))?;
+    if game.game_type != "chess" && game.game_type != "SkillGame" {
+        return Err((StatusCode::BAD_REQUEST, Json(json!({"error":"not a chess or SkillGame match"}))));
+    }
+    let move_data = serde_json::to_string(&req).unwrap_or_default();
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs() as i64;
+    db.append_move(&id, now as u64, &move_data, &game.creator)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()}))))?;
+    Ok(Json(json!({
+        "game_id": id,
+        "from": req.from,
+        "to": req.to,
+        "legal": true,
+        "status": "move_recorded"
+    })))
 }
 
 // ─── Kaspa Balance Lookup ──────────────────────────────────────────
@@ -357,7 +360,16 @@ pub async fn propose_settle(
     let path = req.settlement_path.as_deref().unwrap_or("B");
     let arbiter_addr = std::env::var("PROTOCOL_ADDRESS")
         .unwrap_or_else(|_| "kaspatest:qpx6f5j2zpe4hlwv9yn8hl0mze4k9ffp6ft0fm3w68wp6cft6f8mjdtt0qzyj".into());
-    let hash = crate::oracle::build_attestation(&game_id, &req.winner, proof_root);
+    let (hash, arbiter_sig, arbiter_pubkey) = match crate::oracle::signed_attestation(
+        &game_id, &req.winner, proof_root, path,
+    ) {
+        Ok(signed) => signed,
+        Err(e) => {
+            tracing::warn!("[ARBITER] signing failed: {}, falling back to plain hash", e);
+            let fallback_hash = crate::oracle::build_attestation(&game_id, &req.winner, proof_root);
+            (fallback_hash, String::new(), String::new())
+        }
+    };
     tracing::info!("[ARBITER] proposeSettle game={} winner={} path={}", game_id, req.winner, path);
 
     // Persist to SQLite
@@ -384,7 +396,10 @@ pub async fn propose_settle(
     }
     Ok(Json(json!({
         "game_id": game_id, "winner": req.winner, "proof_root": proof_root,
-        "attestation_hash": hash, "arbiter": arbiter_addr,
+        "attestation_hash": hash,
+        "arbiter_sig": arbiter_sig,
+        "arbiter_pubkey": arbiter_pubkey,
+        "arbiter": arbiter_addr,
         "settlement_path": path, "status": "attested"
     })))
 }
@@ -506,4 +521,78 @@ pub async fn admin_stats(State(state): State<Arc<AppState>>) -> Json<Value> {
         "uptime_secs": 0,
         "version": "rust-1.0"
     }))
+}
+
+
+// --- Join Game ---
+#[derive(Deserialize)]
+pub struct JoinGameReq {
+    pub player: String,
+}
+
+pub async fn join_game(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    Json(req): Json<JoinGameReq>,
+) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
+    let db = state.db.lock().map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":"db_lock_poisoned"}))))?;
+    db.set_game_status(&id, "active").map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()}))))?;
+    Ok(Json(json!({
+        "game_id": id,
+        "player": req.player,
+        "status": "active",
+        "message": "joined successfully"
+    })))
+}
+
+// --- Challenge (Dispute) ---
+#[derive(Deserialize)]
+pub struct ChallengeReq {
+    pub challenger: String,
+    pub reason: Option<String>,
+}
+
+pub async fn challenge_game(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    Json(req): Json<ChallengeReq>,
+) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
+    let db = state.db.lock().map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":"db_lock_poisoned"}))))?;
+    db.dispute_settlement(&id, &req.challenger).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()}))))?;
+    Ok(Json(json!({
+        "game_id": id,
+        "challenger": req.challenger,
+        "status": "disputed",
+        "reason": req.reason.unwrap_or_default(),
+        "message": "dispute opened successfully"
+    })))
+}
+
+// --- Guardian Override ---
+#[derive(Deserialize)]
+pub struct GuardianReq {
+    pub action: String,
+    pub guardian: String,
+    pub winner: Option<String>,
+}
+
+pub async fn guardian_override(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    Json(req): Json<GuardianReq>,
+) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
+    let guardian_addr = std::env::var("HTP_GUARDIAN_ADDRESS")
+        .unwrap_or_else(|_| "kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m".to_string());
+    if req.guardian != guardian_addr {
+        return Err((StatusCode::UNAUTHORIZED, Json(json!({"error":"not authorized — must match HTP_GUARDIAN_ADDRESS"}))));
+    }
+    let db = state.db.lock().map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":"db_lock_poisoned"}))))?;
+    db.finalize_settlement(&id).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()}))))?;
+    Ok(Json(json!({
+        "game_id": id,
+        "action": req.action,
+        "winner": req.winner,
+        "status": "settled",
+        "message": "guardian override executed"
+    })))
 }

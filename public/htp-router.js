@@ -103,7 +103,7 @@
     var max  = document.getElementById("create-max").value;
     var creator = window.connectedAddress || window.htpAddress || prompt("Your Kaspa address:");
     if (!creator) return;
-    var body = { type: type, entry_fee_sompi: String(BigInt(Math.round(parseFloat(fee)*1e8))), max_players: parseInt(max), creator: creator };
+    var body = { game_type: type, entry_fee_sompi: String(BigInt(Math.round(parseFloat(fee)*1e8))), max_players: parseInt(max), creator: creator };
     try {
       var r = await fetch(API + "/api/games", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
       var j = await r.json();
@@ -281,22 +281,44 @@
   // ════════════════════════════════════════════
   async function screenTournamentId(id) {
     var t = await api("/api/games/" + id);
-    root.innerHTML = page("TOURNAMENT", "Bracket #" + id.slice(-8),
-      "<div class=\"htp-card\"><div class=\"htp-code\">" +
-      "BRACKET TREE (ASCII)\n" +
-      "┌── P1 ──┐\n" +
-      "│        ├── W1 ──┐\n" +
-      "└── P2 ──┘        │\n" +
-      "                  ├── CHAMPION\n" +
-      "┌── P3 ──┐        │\n" +
-      "│        ├── W2 ──┘\n" +
-      "└── P4 ──┘\n" +
-      "</div></div>");
+    if (!t) { root.innerHTML = page("TOURNAMENT", "", empty("Tournament not found")); return; }
+    
+    var fee = (t.stake_sompi || 0) / 1e8;
+    var prize = fee * (t.max_players || 8);
+    var players = [];
+    try { 
+      if (t.player_list) players = JSON.parse(t.player_list); 
+      else if (t.players) players = Array.isArray(t.players) ? t.players : [];
+    } catch(e) {}
+    
+    // Build dynamic bracket
+    var slots = t.max_players || 8;
+    var html = '<div class="htp-card" style="margin-bottom:16px">';
+    html += '<table class="htp-table"><tr><th>Type</th><td>Tournament Bracket</td></tr>';
+    html += '<tr><th>Entry Fee</th><td style="color:var(--htp-gold)">' + fee.toFixed(2) + ' KAS</td></tr>';
+    html += '<tr><th>Prize Pool</th><td style="color:var(--htp-gold);font-weight:700">' + prize.toFixed(2) + ' KAS</td></tr>';
+    html += '<tr><th>Players</th><td>' + players.length + '/' + slots + '</td></tr>';
+    html += '<tr><th>Status</th><td>' + badge(t.status) + '</td></tr></table></div>';
+    
+    html += '<div class="htp-card"><h3 style="color:var(--htp-gold);margin-top:0">Bracket</h3>';
+    html += '<table class="htp-table"><thead><tr><th>Slot</th><th>Player</th><th>Status</th></tr></thead><tbody>';
+    for (var i = 0; i < Math.min(slots, 16); i++) {
+      var p = players[i] || null;
+      html += '<tr><td style="font-family:var(--htp-font)">#' + (i+1) + '</td>';
+      html += '<td>' + (p ? '<span style="color:var(--htp-gold)">' + shortAddr(p) + '</span>' : '<span style="color:var(--htp-muted)">Waiting...</span>') + '</td>';
+      html += '<td>' + (p ? '<span class="htp-badge htp-badge-active">SEEDED</span>' : '<span class="htp-badge htp-badge-settled">OPEN</span>') + '</td></tr>';
+    }
+    html += '</tbody></table>';
+    
+    if (t.status === "settled") {
+      html += '<div style="margin-top:16px;padding:12px;background:rgba(201,168,76,0.1);border:1px solid var(--htp-gold);border-radius:var(--htp-radius)">';
+      html += '<strong style="color:var(--htp-gold)">WINNER:</strong> ' + (t.winner ? shortAddr(t.winner) : "Unknown") + '</div>';
+    }
+    
+    html += '</div>';
+    root.innerHTML = page("TOURNAMENT", "Bracket #" + id.slice(-8), html);
   }
 
-  // ════════════════════════════════════════════
-  // 11. #/admin
-  // ════════════════════════════════════════════
   async function screenAdmin() {
     var pass = localStorage.getItem("htpAdminKey");
     if (pass !== "htp-admin-2026") {

@@ -22,7 +22,7 @@ contract MaximizerEscrow(
     const MAINNET_TREASURY: Address = kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel;
     const TESTNET_TREASURY: Address = kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m;
     const HTP_ARBITER: Address = kaspatest:qpx6f5j2zpe4hlwv9yn8hl0mze4k9ffp6ft0fm3w68wp6cft6f8mjdtt0qzyj;
-    const HTP_GUARDIAN: Address = kaspatest:qpx6f5j2zpe4hlwv9yn8hl0mze4k9ffp6ft0fm3w68wp6cft6f8mjdtt0qzyj;
+    const HTP_GUARDIAN: Address = kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m;
     const FEE_BPS: u64 = 200u64;
     const FEE_DENOMINATOR: u64 = 10000u64;
     const DISPUTE_WINDOW: u64  = 172800u64;

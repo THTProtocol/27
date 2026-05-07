@@ -11,6 +11,8 @@
 
 use sha2::{Digest, Sha256};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
+use secp256k1::{Message, Secp256k1, SecretKey, Keypair};
 
 // --- Request / Response types ---
 
@@ -68,6 +70,40 @@ pub struct AttestPayoutResp {
 pub fn build_attestation(game_id: &str, winner: &str, proof_root: &str) -> String {
     let payload = format!("{}:{}:{}:PROPOSE_SETTLE", game_id, winner, proof_root);
     hex::encode(Sha256::digest(payload.as_bytes()))
+}
+
+/// Real secp256k1 Schnorr signing of attestation using ARBITER_PRIVKEY from env.
+/// Returns (attestation_hash, schnorr_signature_hex, pubkey_hex)
+pub fn signed_attestation(
+    game_id: &str,
+    winner: &str,
+    proof_root: &str,
+    path: &str,
+) -> Result<(String, String, String), String> {
+    let privkey_hex = std::env::var("ARBITER_PRIVKEY")
+        .map_err(|_| "ARBITER_PRIVKEY not set in environment".to_string())?;
+    
+    let payload = format!("{}:{}:{}:{}", game_id, winner, proof_root, path);
+    let hash = hex::encode(Sha256::digest(payload.as_bytes()));
+    
+    // Parse private key
+    let secp = Secp256k1::new();
+    let secret_key = SecretKey::from_str(&privkey_hex)
+        .map_err(|e| format!("Invalid ARBITER_PRIVKEY: {}", e))?;
+    let keypair = Keypair::from_secret_key(&secp, &secret_key);
+    let (pubkey, _parity) = keypair.x_only_public_key();
+    
+    // Create message from hash
+    let msg_bytes = hex::decode(&hash).map_err(|e| format!("hex decode: {}", e))?;
+    let msg = Message::from_digest_slice(&msg_bytes)
+        .map_err(|e| format!("message: {}", e))?;
+    
+    // Sign with Schnorr (BIP340)
+    let sig = secp.sign_schnorr(&msg, &keypair);
+    let sig_hex = hex::encode(sig.serialize());
+    let pubkey_hex = hex::encode(pubkey.serialize());
+    
+    Ok((hash, sig_hex, pubkey_hex))
 }
 
 pub fn build_payout_attestation(market_id: &str, claimer: &str, amount: u64) -> String {

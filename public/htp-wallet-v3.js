@@ -497,6 +497,29 @@
   }
 
   window.htpWalletV3 = {
+  // v5.0 public aliases for router compatibility
+  generateWallet: function() {
+    if (typeof htpWalletV3.connect === "function") {
+      htpWalletV3.connect();  // connect triggers wallet selector, user can generate new
+    }
+  },
+  importMnemonic: function() {
+    var panel = document.querySelector(".htp-mnemonic-panel");
+    if (panel) { panel.style.display = panel.style.display === "none" ? "block" : "none"; return; }
+    // Fallback: show wallet panel
+    if (typeof htpWalletV3.showWalletPanel === "function") htpWalletV3.showWalletPanel();
+  },
+  disconnect: function() {
+    localStorage.removeItem("htp_session");
+    window.connectedAddress = null;
+    window.htpAddress = null;
+    window.dispatchEvent(new CustomEvent("htp:wallet:disconnected"));
+  },
+  showConnectModal: function() {
+    if (typeof htpWalletV3.showWalletPanel === "function") htpWalletV3.showWalletPanel();
+    else if (typeof htpWalletV3.connect === "function") htpWalletV3.connect();
+  },
+
     async init() {
       console.log('[HTP Wallet V3] Initialized — 10 wallets registered');
       var session = await loadMnemonicSession();

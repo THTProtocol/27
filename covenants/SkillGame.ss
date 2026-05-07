@@ -34,7 +34,7 @@ contract SkillGame(
 
     // HTP_ARBITER: relay server address (same for TN12 mainnet/guardian)
     const HTP_ARBITER: Address = kaspatest:qpx6f5j2zpe4hlwv9yn8hl0mze4k9ffp6ft0fm3w68wp6cft6f8mjdtt0qzyj;
-    const HTP_GUARDIAN: Address = kaspatest:qpx6f5j2zpe4hlwv9yn8hl0mze4k9ffp6ft0fm3w68wp6cft6f8mjdtt0qzyj;
+    const HTP_GUARDIAN: Address = kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m;
 
     // Protocol fee: 2% (200 basis points)
     const FEE_BPS: u64 = 200u64;

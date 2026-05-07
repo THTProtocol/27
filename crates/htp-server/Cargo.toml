@@ -32,3 +32,5 @@ rusqlite = { workspace = true }
 
 htp-kaspa-rpc = { path = "../htp-kaspa-rpc" }
 reqwest = { workspace = true }
+
+secp256k1 = { workspace = true }

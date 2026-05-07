@@ -4023,57 +4023,6 @@ html,body{background:#010806!important;}
 </style>
 </head>
 <body>
-    <nav id="htp-nav">
-      <span class="htp-logo">▲ HIGH TABLE</span>
-      <div class="htp-nav-links">
-        <a href="#/lobby">Lobby</a>
-        <a href="#/markets">Markets</a>
-        <a href="#/tournament">Brackets</a>
-        <a href="#/create">Create</a>
-        <a href="#/docs">Docs</a>
-        <a href="#/status">Status</a>
-      </div>
-      <div id="htp-wallet-pill">
-        <button class="htp-btn htp-btn-ghost" id="btn-connect-nav">Connect Wallet</button>
-      </div>
-    </nav>
-    <script>
-(function(){
-  var pill = document.getElementById("htp-wallet-pill");
-  var btn  = document.getElementById("btn-connect-nav");
-
-  function showConnected(addr, bal) {
-    if (!pill) return;
-    var short = addr.slice(0,8) + "..." + addr.slice(-6);
-    pill.innerHTML = "<span class="htp-addr" title=""+addr+"">"+short+"</span>" +
-      (bal !== undefined ? " <span class="htp-bal">"+parseFloat(bal).toFixed(2)+" KAS</span>" : "") +
-      " <button class="htp-btn htp-btn-ghost" onclick="window.htpWalletV3.disconnect()">Disconnect</button>";
-  }
-
-  function showDisconnected() {
-    if (!pill) return;
-    pill.innerHTML = "<button class="htp-btn htp-btn-ghost" id="btn-connect-nav" onclick="window.htpWalletV3.showConnectModal()">Connect Wallet</button>";
-  }
-
-  window.addEventListener("htp:wallet:connected", function(e) {
-    var addr = e.detail && e.detail.address;
-    if (addr) {
-      showConnected(addr);
-      if (window.htpWalletV3 && window.htpWalletV3.refreshBalance) {
-        window.htpWalletV3.refreshBalance().then(function(kas) {
-          showConnected(addr, kas);
-        }).catch(function(){});
-      }
-    }
-  });
-
-  window.addEventListener("htp:wallet:disconnected", showDisconnected);
-
-  // If already connected (on page load after wallet auto-connect)
-  var existing = window.connectedAddress || window.htpAddress;
-  if (existing) showConnected(existing);
-})();
-    </script>
     <div class="shell">
 
         <!-- animated BlockDAG background -->
@@ -4182,7 +4131,7 @@ html,body{background:#010806!important;}
                 </a>
                 <button class="menu-toggle" onclick="this.nextElementSibling.classList.toggle('open')"
                     aria-label="Menu">&#9776;</button>
-                <nav class="hdr-nav" id="nav">
+                <nav class="hdr-nav" id="htp-nav">
                     <button class="nav-btn act" data-v="overview" onclick="go('overview')">Overview</button>
                     <button class="nav-btn" data-v="markets" onclick="go('markets')">Markets</button>
                     <button class="nav-btn" data-v="create" onclick="go('create')">Create</button>
@@ -4192,6 +4141,7 @@ html,body{background:#010806!important;}
                     <button class="nav-btn" data-v="wallet" onclick="go('wallet')">Wallet</button>
                     <button class="nav-btn" data-v="kaspa" onclick="go('kaspa')">Kaspa</button>
                 </nav>
+    <div id="htp-root"></div>
                 <div class="hdr-r">
                     <div style="position:relative;display:inline-flex;align-items:center;
                              gap:0;margin-right:4px;
@@ -6638,7 +6588,6 @@ event MyMarket {
   <script src="firebase-database-compat.js"></script>
   <script src="htp-config.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="htp-api-config.js"></script>
   
   <!-- Chess engine -->
   <script src="chess.min.js"></script>
