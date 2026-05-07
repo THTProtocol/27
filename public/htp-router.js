@@ -64,7 +64,7 @@
         badge(g.status) + "</div>" +
         "<div style=\"font-size:11px;color:var(--htp-muted);margin-bottom:10px\">" +
         "Entry: <span style=\"color:var(--htp-gold);font-weight:700\">" + fee + " KAS</span>" +
-        " | Players: " + (g.players||"0") + "/" + (g.max_players||"∞") +
+        " | Players: " + (Array.isArray(g.players) ? g.players.length : (g.opponent ? 2 : 1)) + "/" + (g.max_players||"2") +
         " | Creator: " + shortAddr(g.creator) + "</div>" +
         "<button class=\"htp-btn\" onclick=\"event.stopPropagation();window.htpRouter.navigate('#/game/" + g.id + "')\">Join</button>" +
         "</div>";
@@ -96,12 +96,31 @@
   }
 
   window.htpRouter = window.htpRouter || {};
+
+  function _toast(msg, type) {
+    var d = document.createElement("div");
+    d.className = "htp-toast";
+    if (type === "error") d.style.borderColor = "rgba(255,80,80,0.4)";
+    if (type === "warn")  d.style.borderColor = "rgba(255,180,0,0.4)";
+    if (type === "ok")    { d.style.borderColor = "rgba(0,255,135,0.4)"; d.className += " htp-toast-success"; }
+    d.textContent = msg;
+    document.body.appendChild(d);
+    setTimeout(function(){ d.remove(); }, 4000);
+  }
+  window.htpRouter._toast = _toast;
+
   window.htpRouter._createGame = async function() {
     var type = document.getElementById("create-type").value;
     var fee  = document.getElementById("create-fee").value;
     var max  = document.getElementById("create-max").value;
-    var creator = window.connectedAddress || window.htpAddress || prompt("Your Kaspa address:");
-    if (!creator) return;
+    var creator = window.connectedAddress || window.htpAddress;
+    if (!creator) {
+      var t = document.createElement("div"); t.className = "htp-toast";
+      t.textContent = "Connect wallet first"; document.body.appendChild(t);
+      setTimeout(function(){ t.remove(); }, 3000);
+      window.htpRouter.navigate("#/wallet");
+      return;
+    }
     var body = { game_type: type, entry_fee_sompi: String(BigInt(Math.round(parseFloat(fee)*1e8))), max_players: parseInt(max), creator: creator };
     try {
       var r = await fetch(API + "/api/games", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
@@ -131,7 +150,7 @@
       "<div class=\"htp-card\">" +
       "<table class=\"htp-table\"><tr><th>Type</th><td>" + (g.game_type||g.type||"Match") + "</td></tr>" +
       "<tr><th>Entry Fee</th><td style=\"color:var(--htp-gold);font-weight:700\">" + fee + " KAS</td></tr>" +
-      "<tr><th>Players</th><td>" + (g.players||"0") + "/" + (g.max_players||"∞") + "</td></tr>" +
+      "<tr><th>Players</th><td>" + (Array.isArray(g.players) ? g.players.length : (g.opponent ? 2 : 1)) + "/" + (g.max_players||"2") + "</td></tr>" +
       "<tr><th>Creator</th><td style=\"font-family:var(--htp-font);font-size:11px\">" + (g.creator||"?") + "</td></tr>" +
       "<tr><th>Status</th><td>" + badge(g.status) + "</td></tr>" +
       "</table>" +
