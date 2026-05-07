@@ -300,7 +300,7 @@ window.addEventListener('unhandledrejection',function(e){var m=e.reason&&(e.reas
         }
       })
       .catch(function() {
-        var wsUrl = (window.HTP_CONFIG && window.HTP_CONFIG.WS_URL) || 'wss://hightable.duckdns.org/ws'; initServerWs(wsUrl);
+        var wsUrl = (window.HTP_CONFIG && window.HTP_CONFIG.WS_URL) || 'wss://hightable.duckdns.org/ws'; if(window.location.protocol === 'https:'){ var parts=wsUrl.split('://'); if(parts[0]==='ws') parts[0]='wss'; wsUrl = parts.join('://'); } initServerWs(wsUrl);
       });
   }  // close fetchConfig
 

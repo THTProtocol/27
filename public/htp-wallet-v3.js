@@ -281,12 +281,15 @@
 
   async function fetchBalance(address) {
     try {
-      if (window.htpRpc && window.htpRpc.balance) return await window.htpRpc.balance(address);
-      if (!window.HTP_RPC_URL) return null;
-      var apiUrl = window.HTP_RPC_URL.replace('wss://', 'https://').replace('ws://', 'http://').replace(/\/$/, '');
-      var resp = await fetch(apiUrl.replace('/rpc', '/api') + '/addresses/' + address);
-      if (resp.ok) { var d = await resp.json(); return d.balance || 0; }
-      return null;
+      var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || 'https://hightable.duckdns.org';
+      var resp = await fetch(base + '/api/balance/' + address, { signal: AbortSignal.timeout(8000) });
+      if (!resp.ok) return null;
+      var d = await resp.json();
+      var kas = ((d.balance_sompi || 0) / 1e8).toFixed(4);
+      var el = document.getElementById('htp-wallet-balance');
+      if (el) { el.textContent = kas + ' KAS'; }
+      window.htpBalance = parseFloat(kas);
+      return d.balance_sompi || 0;
     } catch(e) { console.warn('[HTP Wallet] Balance error:', e); return null; }
   }
 
@@ -498,9 +501,38 @@
 
   window.htpWalletV3 = {
   // v5.0 public aliases for router compatibility
-  generateWallet: function() {
-    if (typeof htpWalletV3.connect === "function") {
-      htpWalletV3.connect();  // connect triggers wallet selector, user can generate new
+  generateWallet: async function() {
+    if (!window.kaspaSDK || !window.kaspaSDK.Mnemonic) {
+      var t = document.createElement('div'); t.className = 'htp-toast';
+      t.textContent = 'WASM SDK not ready. Try again in 2 seconds.';
+      document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3000);
+      return;
+    }
+    try {
+      var mnemonic = window.kaspaSDK.Mnemonic.random();
+      var words = mnemonic.phrase;
+      // Show words in a modal before importing
+      var overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center';
+      overlay.innerHTML = '<div style="background:var(--htp-card,#181818);border:1px solid var(--htp-border,#2a2a2a);border-radius:var(--htp-radius,8px);padding:24px;max-width:480px;text-align:center">' +
+        '<h3 style="color:var(--htp-gold,#c9a84c);margin:0 0 8px">SAVE THESE WORDS</h3>' +
+        '<p style="color:var(--htp-muted,#888);font-size:12px;margin:0 0 16px">Write these 12 words down. Never share them.</p>' +
+        '<div style="background:var(--htp-dark,#111);border:1px solid var(--htp-border,#2a2a2a);border-radius:6px;padding:14px;font-family:monospace;font-size:14px;color:var(--htp-gold,#c9a84c);margin-bottom:16px;word-break:break-word">' + words + '</div>' +
+        '<button id="htp-gen-confirm" class="htp-btn" style="margin-right:8px">I SAVED THEM — IMPORT</button>' +
+        '<button id="htp-gen-cancel" class="htp-btn htp-btn-ghost">CANCEL</button></div>';
+      document.body.appendChild(overlay);
+      document.getElementById('htp-gen-confirm').onclick = function() {
+        overlay.remove();
+        // Fill textarea + import
+        var ta = document.getElementById('mnemonic-input');
+        if (ta) ta.value = words;
+        if (typeof htpWalletV3.importMnemonic === 'function') htpWalletV3.importMnemonic();
+      };
+      document.getElementById('htp-gen-cancel').onclick = function() { overlay.remove(); };
+    } catch(e) {
+      var t = document.createElement('div'); t.className = 'htp-toast';
+      t.textContent = 'Failed to generate: ' + e.message;
+      document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3000);
     }
   },
   importMnemonic: function() {
@@ -526,6 +558,7 @@
       if (session) {
         window.connectedAddress = session.address;
         window.htpAddress = session.address;
+        window.dispatchEvent(new CustomEvent('htp:wallet:connected', { detail: { address: session.address } }));
         htpWalletV3.refreshBalance();
         this.updateUI();
       }
@@ -609,6 +642,35 @@
         if (status) { status.style.cssText = 'display:block;background:rgba(239,68,68,0.1);color:#ef4444;border-left:3px solid #ef4444;padding:10px;border-radius:6px;font-size:12px'; status.textContent = result.error; }
       }
     },
+
+  importPrivkey: async function(hexKey) {
+    if (!hexKey || hexKey.length !== 64) {
+      var t = document.createElement('div'); t.className = 'htp-toast';
+      t.textContent = 'Private key must be 64 hex characters';
+      document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3000); return;
+    }
+    if (!window.kaspaSDK) {
+      var t = document.createElement('div'); t.className = 'htp-toast';
+      t.textContent = 'WASM SDK not ready';
+      document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3000); return;
+    }
+    try {
+      var pk = window.kaspaSDK.PrivateKey.fromHex(hexKey);
+      var addr = window.kaspaSDK.Address.fromPublicKey(pk.publicKey(), 'kaspatest');
+      window.connectedAddress = addr.toString();
+      window.htpAddress = addr.toString();
+      sessionStorage.setItem('htpSession', JSON.stringify({address: addr.toString()}));
+      window.dispatchEvent(new CustomEvent('htp:wallet:connected', { detail: { address: addr.toString() } }));
+      htpWalletV3.refreshBalance();
+      var t = document.createElement('div'); t.className = 'htp-toast';
+      t.textContent = 'Imported: ' + addr.toString().slice(0,12) + '...';
+      document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3000);
+    } catch(e) {
+      var t = document.createElement('div'); t.className = 'htp-toast';
+      t.textContent = 'Invalid key: ' + e.message;
+      document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3000);
+    }
+  },
 
     clearMnemonicInput() {
       var input = document.getElementById('mnemonic-input');
