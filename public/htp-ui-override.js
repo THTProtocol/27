@@ -71,6 +71,55 @@ function setupNavPill() {
 // ───────────────────────────────────────────
 // INLINE IMPORT (bypasses wallet-v3.js chain)
 // ───────────────────────────────────────────
+window._htpDoDerive = function(phrase, st) {
+  try {
+    var mn = window.kaspaSDK.Mnemonic.new(phrase);
+    var xPriv = mn.toXPrv('');
+    var dp = window.kaspaSDK.DerivationPath.new("m/44'/111111'/0'/0/0'");
+    var pk = xPriv.derivePrivateKey(dp);
+    var address = window.kaspaSDK.Address.fromPublicKey(
+      pk.publicKey(),
+      window.HTP_PREFIX || 'kaspatest'
+    ).toString();
+
+    window.connectedAddress = address;
+    window.htpAddress = address;
+    localStorage.setItem('htp_mnemonic_session', JSON.stringify({
+      mnemonic: phrase, address: address, ts: Date.now()
+    }));
+    window.dispatchEvent(new CustomEvent('htp:wallet:connected',
+      { detail: { address: address } }));
+
+    try {
+      var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || 'https://hightable.duckdns.org';
+      fetch(base + '/api/balance/' + address, { signal: AbortSignal.timeout(8000) })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(d) {
+          if (d) {
+            window.htpBalance = parseFloat(((d.balance_sompi || 0) / 1e8).toFixed(4));
+            var bel = document.getElementById('htp-wallet-balance');
+            if (bel) bel.textContent = window.htpBalance + ' KAS';
+          }
+        });
+    } catch(err) { console.warn('[HTP] Balance fetch error:', err); }
+
+    if (st) st.textContent = 'Connected!';
+    setTimeout(function() {
+      if (window.htpRouter && typeof window.htpRouter.screenWallet === 'function') {
+        window.htpRouter.screenWallet();
+      }
+    }, 150);
+
+  } catch(err) {
+    if (st) st.textContent = 'Error: ' + err.message;
+    var e3 = document.createElement('div'); e3.className = 'htp-toast';
+    e3.style.borderColor = 'rgba(255,80,80,0.4)';
+    e3.textContent = 'Import failed: ' + err.message;
+    document.body.appendChild(e3);
+    setTimeout(function(){ e3.remove(); }, 5000);
+  }
+};
+
 window._htpImportMnemonic = function() {
   var ta = document.getElementById('mnemonic-input');
   var phrase = ta ? ta.value.trim() : '';
@@ -93,59 +142,13 @@ window._htpImportMnemonic = function() {
 
   if (st) st.textContent = 'Deriving address...';
 
-  if (!window.whenWasmReady) {
+  if (window.wasmReady && window.kaspaSDK && window.kaspaSDK.Mnemonic) {
+    window._htpDoDerive(phrase, st);
+  } else if (window.whenWasmReady) {
+    window.whenWasmReady(function() { window._htpDoDerive(phrase, st); });
+  } else {
     if (st) st.textContent = 'Error: WASM not ready — reload and retry';
-    return;
   }
-
-  window.whenWasmReady(function() {
-    try {
-      var mn = window.kaspaSDK.Mnemonic.new(phrase);
-      var xPriv = mn.toXPrv('');
-      var dp = window.kaspaSDK.DerivationPath.new("m/44'/111111'/0'/0/0'");
-      var pk = xPriv.derivePrivateKey(dp);
-      var address = window.kaspaSDK.Address.fromPublicKey(
-        pk.publicKey(),
-        window.HTP_PREFIX || 'kaspatest'
-      ).toString();
-
-      window.connectedAddress = address;
-      window.htpAddress = address;
-      localStorage.setItem('htp_mnemonic_session', JSON.stringify({
-        mnemonic: phrase, address: address, ts: Date.now()
-      }));
-      window.dispatchEvent(new CustomEvent('htp:wallet:connected',
-        { detail: { address: address } }));
-
-      try {
-        var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || 'https://hightable.duckdns.org';
-        fetch(base + '/api/balance/' + address, { signal: AbortSignal.timeout(8000) })
-          .then(function(r) { return r.ok ? r.json() : null; })
-          .then(function(d) {
-            if (d) {
-              window.htpBalance = parseFloat(((d.balance_sompi || 0) / 1e8).toFixed(4));
-              var bel = document.getElementById('htp-wallet-balance');
-              if (bel) bel.textContent = window.htpBalance + ' KAS';
-            }
-          });
-      } catch(err) { console.warn('[HTP] Balance fetch error:', err); }
-
-      if (st) st.textContent = 'Connected!';
-      setTimeout(function() {
-        if (window.htpRouter && typeof window.htpRouter.screenWallet === 'function') {
-          window.htpRouter.screenWallet();
-        }
-      }, 150);
-
-    } catch(err) {
-      if (st) st.textContent = 'Error: ' + err.message;
-      var e3 = document.createElement('div'); e3.className = 'htp-toast';
-      e3.style.borderColor = 'rgba(255,80,80,0.4)';
-      e3.textContent = 'Import failed: ' + err.message;
-      document.body.appendChild(e3);
-      setTimeout(function(){ e3.remove(); }, 5000);
-    }
-  });
 };
 
 function overrideWalletImport() {
