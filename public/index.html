@@ -4123,7 +4123,7 @@ html,body{background:#010806!important;}
 
         <header class="hdr">
             <div class="hdr-in">
-                <a href="javascript:void(0)" class="hdr-brand" onclick="go('markets');window.location.hash='#/markets';return false">
+                <a href="javascript:void(0)" class="hdr-brand" onclick="go('overview');return false">
                     <div class="logo"><img
                             id="htp-logo-img" src="" alt="HTP"
                             alt="High Table Protocol" /></div>
@@ -4132,17 +4132,16 @@ html,body{background:#010806!important;}
                 <button class="menu-toggle" onclick="this.nextElementSibling.classList.toggle('open')"
                     aria-label="Menu">&#9776;</button>
                 <nav class="hdr-nav" id="htp-nav">
-                    <button class="nav-btn act" data-v="overview" onclick="go('markets');window.location.hash='#/markets'">Overview</button>
-                    <button class="nav-btn" data-v="markets" onclick="go('markets');window.location.hash='#/markets'">Markets</button>
-                    <button class="nav-btn" data-v="create" onclick="go('create');window.location.hash='#/create'">Create</button>
-                    <button class="nav-btn" data-v="skill" onclick="go('skill');window.location.hash='#/skill'">Skill</button>
-                    <button class="nav-btn" data-v="oracle" onclick="go('oracle');window.location.hash='#/oracle'" data-nav="true">Oracle</button>
-                    <button class="nav-btn" data-v="portfolio" onclick="go('portfolio');window.location.hash='#/wallet'">Portfolio</button>
-                    <button class="nav-btn" data-v="wallet" onclick="go('wallet');window.location.hash='#/wallet'">Wallet</button>
-                    <button class="nav-btn" data-v="kaspa" onclick="go('kaspa');window.location.hash='#/kaspa'">Kaspa</button>
+                    <button class="nav-btn act" data-v="overview" onclick="go('overview')">Overview</button>
+                    <button class="nav-btn" data-v="markets" onclick="go('markets')">Markets</button>
+                    <button class="nav-btn" data-v="create" onclick="go('create')">Create</button>
+                    <button class="nav-btn" data-v="skill" onclick="go('skill')">Skill</button>
+                    <button class="nav-btn" data-v="oracle" onclick="go('oracle')" data-nav="true">Oracle</button>
+                    <button class="nav-btn" data-v="portfolio" onclick="go('portfolio')">Portfolio</button>
+                    <button class="nav-btn" data-v="wallet" onclick="go('wallet')">Wallet</button>
+                    <button class="nav-btn" data-v="kaspa" onclick="go('kaspa')">Kaspa</button>
                 </nav>
-    <div id="htp-root"></div>
-                <div class="hdr-r">
+                    <div class="hdr-r">
                     <div style="position:relative;display:inline-flex;align-items:center;
                              gap:0;margin-right:4px;
                              background:rgba(73,232,194,0.06);
@@ -4163,14 +4162,14 @@ html,body{background:#010806!important;}
                                      font-size:11px;font-weight:700;
                                      font-family:inherit;
                                      letter-spacing:.08em;color:#49e8c2;
-                                     pointer-events:none;white-space:nowrap">TN12</span>
+                                     pointer-events:none;white-space:nowrap">Kaspa Testnet</span>
                         <!-- Native select overlaid invisibly for click/change -->
                         <select id="netSelect"
                                 onchange="window.htpSetNetwork(this.value)"
                                 style="position:absolute;inset:0;width:100%;height:100%;
                                        opacity:0;cursor:pointer;border:none;
                                        -webkit-appearance:menulist-button;appearance:auto">
-                            <option value="tn12">TN12</option>
+                            <option value="tn12">Kaspa Testnet</option>
                             <option value="mainnet">Mainnet</option>
                         </select>
                     </div>
@@ -4217,9 +4216,9 @@ html,body{background:#010806!important;}
                                         <div class="pill pill-glow">ZK oracles</div>
                                     </div>
                                     <div class="hero-cta">
-                                        <button class="cta1" onclick="go('markets');window.location.hash='#/markets'">Explore Markets</button>
-                                        <button class="cta2" onclick="go('create');window.location.hash='#/create'">Create Event</button>
-                                        <button class="cta2" onclick="go('kaspa');window.location.hash='#/kaspa'">Why Kaspa</button>
+                                        <button class="cta1" onclick="go('markets')">Explore Markets</button>
+                                        <button class="cta2" onclick="go('create')">Create Event</button>
+                                        <button class="cta2" onclick="go('kaspa')">Why Kaspa</button>
                                     </div>
                                 </div>
                                 <div>
@@ -4254,20 +4253,20 @@ html,body{background:#010806!important;}
                 <div class="mx">
                     <div class="stats-strip">
                         <div class="stat-cell">
-                            <div class="stat-val" id="statPool">0</div>
+                            <div class="stat-val" id="statPool">--</div>
                             <div class="stat-lbl">Total Pool (KAS)</div>
                         </div>
                         <div class="stat-cell">
-                            <div class="stat-val" id="statMarkets">0</div>
+                            <div class="stat-val" id="statMarkets">--</div>
                             <div class="stat-lbl">Active Markets</div>
                         </div>
                         <div class="stat-cell">
-                            <div class="stat-val" id="statEntrants">0</div>
+                            <div class="stat-val" id="statEntrants">--</div>
                             <div class="stat-lbl">Positions Taken</div>
                         </div>
                         <div class="stat-cell">
-                            <div class="stat-val" id="statAvgMult">0x</div>
-                            <div class="stat-lbl">Avg Multiplier</div>
+                            <div class="stat-val" id="statAvgMult">--</div>
+                            <div class="stat-lbl">Avg Payout</div>
                         </div>
                         <div class="stat-cell">
                             <div class="stat-val">~1s</div>
@@ -4284,7 +4283,7 @@ html,body{background:#010806!important;}
                                 Markets</h2>
                             <p style="margin:0;font-size:13px;color:var(--muted)">Highest pool volume right now.</p>
                         </div>
-                        <button class="cta2" onclick="go('markets');window.location.hash='#/markets'" style="padding:8px 18px;font-size:12px">View
+                        <button class="cta2" onclick="go('markets')" style="padding:8px 18px;font-size:12px">View
                             All</button>
                     </div>
                     <div id="featuredMarkets" class="mg" style="grid-template-columns:repeat(3,1fr)"></div>
@@ -4383,7 +4382,7 @@ html,body{background:#010806!important;}
                         <p>Parimutuel information markets and skill events on Kaspa.</p>
                     </div>
                     <div style="display:flex;gap:10px;margin-bottom:16px"><button class="cta1"
-                            style="padding:9px 20px;font-size:13px" onclick="go('create');window.location.hash='#/create'">+ Create Event</button></div>
+                            style="padding:9px 20px;font-size:13px" onclick="go('create')">+ Create Event</button></div>
                     <div class="fb">
                         <div class="fc" id="catC"></div>
                         <div class="fr">
@@ -5781,7 +5780,7 @@ event MyMarket {
                             <div id="matchesList" style="display:grid;gap:10px">
                                 <div style="border:1px dashed rgba(73,232,194,0.12);border-radius:12px;padding:28px;text-align:center">
                                     <p style="margin:0;font-size:13px;color:var(--dim)">No active matches.</p>
-                                    <a href="javascript:void(0)" onclick="go('skill');window.location.hash='#/skill';return false"
+                                    <a href="javascript:void(0)" onclick="go('skill');return false"
                                         style="display:inline-block;margin-top:12px;font-size:12px;font-weight:600;color:#49e8c2;text-decoration:none;padding:6px 16px;border:1px solid rgba(73,232,194,0.25);border-radius:8px">
                                         Create or join a match
                                     </a>
@@ -5812,7 +5811,7 @@ event MyMarket {
                                 <div style="border:1px dashed rgba(73,232,194,0.12);border-radius:12px;padding:28px;text-align:center">
                                     <div style="font-size:24px;margin-bottom:10px;opacity:.4"></div>
                                     <p style="margin:0;font-size:13px;color:var(--dim)">No active event positions.</p>
-                                    <a href="javascript:void(0)" onclick="go('markets');return false"
+                                    <a href="javascript:void(0)" onclick="go('overview');return false"
                                         style="display:inline-block;margin-top:12px;font-size:12px;font-weight:600;color:#49e8c2;text-decoration:none;padding:6px 16px;border:1px solid rgba(73,232,194,0.25);border-radius:8px">
                                         Explore markets
                                     </a>
@@ -6053,7 +6052,7 @@ event MyMarket {
             <div style="font-size:11px;color:var(--dim)">
                 Stake KAS, connect your node, and earn fees by resolving markets on-chain.</div>
         </div>
-        <button onclick="go('oracle');window.location.hash='#/oracle'" class="cta1" style="font-size:12px;padding:8px 18px">
+        <button onclick="go('oracle')" class="cta1" style="font-size:12px;padding:8px 18px">
             Go to Oracle Dashboard</button>
     </div>
 </div>
@@ -6461,7 +6460,7 @@ event MyMarket {
     <footer class="ftr">
         <div class="ftr-in"><span style="font-weight:600">HIGH TABLE PROTOCOL</span>
             <div class="ftr-links"><a href="javascript:void(0)" onclick="go('terms');return false">Terms</a><a href="javascript:void(0)"
-                    onclick="go('kaspa');window.location.hash='#/kaspa';return false">Why Kaspa</a></div>
+                    onclick="go('kaspa');return false">Why Kaspa</a></div>
         </div>
     </footer>
     </div>
@@ -6599,7 +6598,6 @@ event MyMarket {
   
   <!-- HTP Core -->
   <script src="htp-init.js"></script>
-  <script src="htp-router.js"></script>
   <script src="chess.min.js"></script>
   
   <!-- HTP Wallet -->
@@ -7946,15 +7944,20 @@ window._htpAddMarket = function(m){
 
         // --- Navigation ---
 function go(v) {
-            var map = { overview: '#/lobby', lobby: '#/lobby', wallet: '#/wallet',
-                        create: '#/create', markets: '#/markets', status: '#/status',
-                        admin: '#/admin', docs: '#/docs', skill: '#/lobby', kaspa: '#/status',
-                        oracle: '#/status', portfolio: '#/wallet', terms: '#/docs' };
-            window.location.hash = map[v] || ('#/' + v);
+            document.querySelectorAll('.view').forEach(function(el) { el.classList.remove('show'); });
+            var target = document.getElementById('v-' + v);
+            if (target) target.classList.add('show');
             document.querySelectorAll('.nav-btn').forEach(function(b) {
               b.classList.toggle('act', b.dataset.v === v);
             });
+            var evC = document.getElementById('evC');
+            if (evC) evC.style.display = 'none';
             window.scrollTo(0, 0);
+            var nav = document.querySelector('.hdr-nav');
+            if (nav) nav.classList.remove('open');
+            ['overview','markets','create','skill','oracle','portfolio','wallet','kaspa','terms']
+                .forEach(function(n){ document.body.classList.remove('on-' + n); });
+            document.body.classList.add('on-' + v);
             if (v === 'portfolio') {
                 if (typeof renderSkillPortfolio === 'function') renderSkillPortfolio('skill-portfolio');
                 if (typeof renderClaimableRewards === 'function') renderClaimableRewards('claimsList');
@@ -7970,7 +7973,6 @@ function go(v) {
                 if (typeof loadMarkets === 'function') setTimeout(loadMarkets, 80);
             }
         }
-
         function setNet(n) {
             net = n;
             activeNet = n === 'tn12' ? 'tn12' : 'mainnet';
@@ -22632,6 +22634,5 @@ window.addEventListener('htp:balance:updated', function(e) {
 
 <script src="htp-demo-match.js"></script>
 
-<script src="htp-ui-override.js?v=2"></script>
 </body>
 </html>
