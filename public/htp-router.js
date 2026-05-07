@@ -147,8 +147,17 @@
     var addr = window.connectedAddress || window.htpAddress;
     if (!addr) { var t=document.createElement("div");t.className="htp-toast";t.textContent="Connect wallet first";document.body.appendChild(t);setTimeout(function(){t.remove()},3000); return; }
     var r = await fetch(API + "/api/games/" + id + "/join", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({player: addr}) });
-    if (r.ok) { window.htpRouter.navigate("#/game/" + id); }
-    else { var t=document.createElement("div");t.className="htp-toast";t.textContent="Join failed";document.body.appendChild(t);setTimeout(function(){t.remove()},3000); }
+    if (r.ok) {
+      var t=document.createElement("div");t.className="htp-toast htp-toast-success";t.textContent="Joined! Game is now active.";document.body.appendChild(t);setTimeout(function(){t.remove()},4000);
+      window.htpRouter.navigate("#/game/" + id);
+      return;
+    }
+    var body; try { body = await r.json(); } catch(e) { body = {}; }
+    var msg = body.error || ("Status " + r.status);
+    if (r.status === 409) { msg = "Already joined"; }
+    else if (r.status === 404) { msg = "Game no longer available"; }
+    else { msg = "Join failed: " + msg; }
+    var t=document.createElement("div");t.className="htp-toast";t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove()},4000);
   };
 
   // ════════════════════════════════════════════

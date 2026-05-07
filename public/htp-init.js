@@ -249,6 +249,18 @@ window.addEventListener('unhandledrejection',function(e){var m=e.reason&&(e.reas
             if (msg.event === 'game-state-update' && msg.data) window.dispatchEvent(new CustomEvent('htp:game:state', { detail: msg.data }));
             if (msg.event === 'game-over' && msg.data) window.dispatchEvent(new CustomEvent('htp:game:over', { detail: msg.data }));
             if (msg.event === 'action-error' && msg.data) window.dispatchEvent(new CustomEvent('htp:game:error', { detail: msg.data }));
+            if (msg.type === 'game_created') {
+              if (window.htpRouter && window.htpRouter._currentView === 'lobby') { window.htpRouter.renderLobby && window.htpRouter.renderLobby(); }
+            }
+            if (msg.type === 'player_joined' && msg.game_id) {
+              var cv = window.htpRouter ? window.htpRouter._currentView : '';
+              if (cv === 'lobby') { window.htpRouter.renderLobby && window.htpRouter.renderLobby(); }
+              else if (cv.indexOf('game') === 0) { window.htpRouter.renderGame && window.htpRouter.renderGame(msg.game_id); }
+            }
+            if (msg.type === 'settlement_proposed' && msg.arbiter_sig) {
+              var sig = String(msg.arbiter_sig).substring(0,12);
+              var t = document.createElement('div'); t.className = 'htp-toast htp-toast-success'; t.textContent = 'Settlement attested ✓ ' + sig; document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 5000);
+            }
           } catch(err) {}
         };
         ws.onclose = function() {
