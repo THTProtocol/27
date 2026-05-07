@@ -237,16 +237,17 @@
     var addr = window.connectedAddress || window.htpAddress || null;
     var bal = "0.00";
     if (addr) {
-      var b = await api("/api/balance/" + addr);
-      bal = b ? kasFromSompi(b.balance_sompi || 0) : "0.00";
+      try { var b = await api("/api/balance/" + addr); bal = b ? kasFromSompi(b.balance_sompi || 0) : "0.00"; }
+      catch(e) { bal = "error"; }
     }
     root.innerHTML = page("WALLET", "Manage your Kaspa identity",
       "<div class=\"htp-card\" style=\"max-width:500px\">" +
       (addr ? "<div style=\"margin-bottom:16px\"><label class=\"htp-label\">Address</label><div class=\"htp-code\" style=\"word-break:break-all\">" + addr + "</div></div>" : "") +
       "<div style=\"margin-bottom:16px\"><label class=\"htp-label\">Balance</label><strong style=\"font-size:24px;color:var(--htp-gold)\">" + bal + " KAS</strong></div>" +
-      "<button class=\"htp-btn\" onclick=\"try{window.htpWalletV3.importMnemonic()}catch(e){{var t=document.createElement(div);t.className=htp-toast;t.textContent=e.message;document.body.appendChild(t);setTimeout(function(){t.remove()},4000)}}\">IMPORT MNEMONIC</button>" +
-      "<button class=\"htp-btn htp-btn-ghost\" style=\"margin-left:8px\" onclick=\"try{window.htpWalletV3.generateWallet()}catch(e){{var t=document.createElement(div);t.className=htp-toast;t.textContent=e.message;document.body.appendChild(t);setTimeout(function(){t.remove()},4000)}}\">GENERATE WALLET</button>" +
-      (addr ? "<button class=\"htp-btn htp-btn-ghost\" style=\"margin-left:8px\" onclick=\"window.htpWalletV3.disconnect()\">DISCONNECT</button>" : "") +
+      "<textarea id=\"mnemonic-input\" placeholder=\"word1 word2 ... word12\" style=\"width:100%;height:64px;padding:10px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;font-family:monospace;font-size:12px;box-sizing:border-box;resize:vertical;margin-bottom:10px\"></textarea>" +
+      "<button class=\"htp-btn\" style=\"width:100%;margin-bottom:6px\" onclick=\"try{window.htpWalletV3.importMnemonic()}catch(e){}\">IMPORT MNEMONIC</button>" +
+      "<button class=\"htp-btn htp-btn-ghost\" style=\"width:100%;margin-bottom:6px\" onclick=\"try{window.htpWalletV3.generateWallet()}catch(e){}\">GENERATE WALLET</button>" +
+      (addr ? "<button class=\"htp-btn htp-btn-ghost\" style=\"width:100%\" onclick=\"window.htpWalletV3.disconnect()\">DISCONNECT</button>" : "") +
       "</div>");
   }
 
