@@ -222,12 +222,16 @@ function boot() {
   overrideGo();
   ensureHash();
   setupNavPill();
-  overrideWalletImport();
-  installWalletScreen();
 
-  if (window.htpRouter && window.htpRouter.render) {
-    window.htpRouter.render();
+  function tryInstall() {
+    if (window.htpRouter && window.htpRouter.render) {
+      installWalletScreen();
+      window.htpRouter.render();
+    } else {
+      setTimeout(tryInstall, 100);
+    }
   }
+  tryInstall();
 }
 
 if (document.readyState === 'loading') {
