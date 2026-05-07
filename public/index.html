@@ -4135,11 +4135,11 @@ html,body{background:#010806!important;}
                     <button class="nav-btn act" data-v="overview" onclick="go('overview');window.location.hash='#/lobby'">Overview</button>
                     <button class="nav-btn" data-v="markets" onclick="go('markets');window.location.hash='#/markets'">Markets</button>
                     <button class="nav-btn" data-v="create" onclick="go('create');window.location.hash='#/create'">Create</button>
-                    <button class="nav-btn" data-v="skill" onclick="go('skill');window.location.hash='#/lobby'">Skill</button>
-                    <button class="nav-btn" data-v="oracle" onclick="go('oracle');window.location.hash='#/status'" data-nav="true">Oracle</button>
+                    <button class="nav-btn" data-v="skill" onclick="go('skill');window.location.hash='#/skill';window.location.hash='#/lobby'">Skill</button>
+                    <button class="nav-btn" data-v="oracle" onclick="go('oracle');window.location.hash='#/oracle'" data-nav="true">Oracle</button>
                     <button class="nav-btn" data-v="portfolio" onclick="go('portfolio');window.location.hash='#/wallet'">Portfolio</button>
                     <button class="nav-btn" data-v="wallet" onclick="go('wallet');window.location.hash='#/wallet'">Wallet</button>
-                    <button class="nav-btn" data-v="kaspa" onclick="go('kaspa');window.location.hash='#/lobby'">Kaspa</button>
+                    <button class="nav-btn" data-v="kaspa" onclick="go('kaspa');window.location.hash='#/kaspa';window.location.hash='#/lobby'">Kaspa</button>
                 </nav>
     <div id="htp-root"></div>
                 <div class="hdr-r">
@@ -4219,7 +4219,7 @@ html,body{background:#010806!important;}
                                     <div class="hero-cta">
                                         <button class="cta1" onclick="go('markets');window.location.hash='#/markets'">Explore Markets</button>
                                         <button class="cta2" onclick="go('create');window.location.hash='#/create'">Create Event</button>
-                                        <button class="cta2" onclick="go('kaspa');window.location.hash='#/lobby'">Why Kaspa</button>
+                                        <button class="cta2" onclick="go('kaspa');window.location.hash='#/kaspa';window.location.hash='#/lobby'">Why Kaspa</button>
                                     </div>
                                 </div>
                                 <div>
@@ -5781,7 +5781,7 @@ event MyMarket {
                             <div id="matchesList" style="display:grid;gap:10px">
                                 <div style="border:1px dashed rgba(73,232,194,0.12);border-radius:12px;padding:28px;text-align:center">
                                     <p style="margin:0;font-size:13px;color:var(--dim)">No active matches.</p>
-                                    <a href="javascript:void(0)" onclick="go('skill');return false"
+                                    <a href="javascript:void(0)" onclick="go('skill');window.location.hash='#/skill';return false"
                                         style="display:inline-block;margin-top:12px;font-size:12px;font-weight:600;color:#49e8c2;text-decoration:none;padding:6px 16px;border:1px solid rgba(73,232,194,0.25);border-radius:8px">
                                         Create or join a match
                                     </a>
@@ -6053,7 +6053,7 @@ event MyMarket {
             <div style="font-size:11px;color:var(--dim)">
                 Stake KAS, connect your node, and earn fees by resolving markets on-chain.</div>
         </div>
-        <button onclick="go('oracle');window.location.hash='#/status'" class="cta1" style="font-size:12px;padding:8px 18px">
+        <button onclick="go('oracle');window.location.hash='#/oracle'" class="cta1" style="font-size:12px;padding:8px 18px">
             Go to Oracle Dashboard</button>
     </div>
 </div>
@@ -6461,7 +6461,7 @@ event MyMarket {
     <footer class="ftr">
         <div class="ftr-in"><span style="font-weight:600">HIGH TABLE PROTOCOL</span>
             <div class="ftr-links"><a href="javascript:void(0)" onclick="go('terms');return false">Terms</a><a href="javascript:void(0)"
-                    onclick="go('kaspa');return false">Why Kaspa</a></div>
+                    onclick="go('kaspa');window.location.hash='#/kaspa';return false">Why Kaspa</a></div>
         </div>
     </footer>
     </div>

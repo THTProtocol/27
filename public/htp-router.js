@@ -450,6 +450,7 @@
       shell.insertBefore(root, shell.firstChild);
     }
     var hash = window.location.hash.replace("#", "") || "/lobby";
+  if (!hash || hash === "/" || hash === "#" || hash === "") hash = "#/lobby";
   hash = (!hash || hash === "/" || hash === "#") ? "/lobby" : hash.replace(/^#/, "");
     var parts = hash.split("/");
     var route = "/" + parts[0];
