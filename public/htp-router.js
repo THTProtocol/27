@@ -332,7 +332,7 @@
       "<div class=\"htp-card\"><strong>Health:</strong> " + JSON.stringify(health) + "</div>" +
       "<div class=\"htp-card\"><strong>Stats:</strong> " + JSON.stringify(stats) + "</div>" +
       "<div class=\"htp-card\"><strong>Covenants:</strong> " + JSON.stringify(cov) + "</div>" +
-      "<div class=\"htp-card\"><strong>Force Settle:</strong><input id=\"force-id\" class=\"htp-input\" placeholder=\"Game ID\"><button class=\"htp-btn\" style=\"margin-top:8px\" onclick=\"alert('Not implemented')\">TRIGGER</button></div>");
+      "<div class=\"htp-card\"><strong>Force Settle:</strong><input id=\"force-id\" class=\"htp-input\" placeholder=\"Game ID\"><button class=\"htp-btn\" style=\"margin-top:8px\" onclick=\"var d=document.createElement('div');d.className='htp-toast';d.textContent='Force settle requires guardian auth';document.body.appendChild(d);setTimeout(function(){d.remove()},4000)\">TRIGGER</button></div>");
   }
 
   // ════════════════════════════════════════════

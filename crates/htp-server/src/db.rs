@@ -204,6 +204,17 @@ impl HtpDb {
         Ok(())
     }
 
+
+    pub fn set_game_opponent(&self, id: &str, opponent: &str) -> Result<()> {
+        self.conn.execute(
+            "UPDATE games SET opponent = ?2, updated_at = ?3 WHERE id = ?1",
+            params![id, opponent, std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs() as i64],
+        )?;
+        Ok(())
+    }
     // ── Settlements ───────────────────────────────────────────────
 
     pub fn upsert_settlement(&self, s: &SettlementRecord) -> Result<()> {

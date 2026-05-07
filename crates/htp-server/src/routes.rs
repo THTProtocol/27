@@ -106,6 +106,7 @@ pub async fn create_game(
     db.upsert_game(&record).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()}))))?;
 
     tracing::info!("[HTP] Game created: {} type={}", id, game_type);
+    let _ = state.broadcast_to_room(&id, &format!(r#"{{"type":"game_created","game":{{"id":"{}","game_type":"{}","creator":"{}","status":"open"}}}}"#, id, game_type, creator));
     Ok(Json(json!({
         "id": id,
         "game_type": game_type,
@@ -371,6 +372,7 @@ pub async fn propose_settle(
         }
     };
     tracing::info!("[ARBITER] proposeSettle game={} winner={} path={}", game_id, req.winner, path);
+    let _ = state.broadcast_to_room(&game_id, &format!(r#"{{"type":"settlement_proposed","game_id":"{}","winner":"{}","arbiter_sig":"{}","status":"attested"}}"#, game_id, req.winner, arbiter_sig));
 
     // Persist to SQLite
     let now = std::time::SystemTime::now()
@@ -543,12 +545,28 @@ pub async fn join_game(
     Json(req): Json<JoinGameReq>,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
     let db = state.db.lock().map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":"db_lock_poisoned"}))))?;
+    let game = match db.get_game(&id).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()}))))? {
+        Some(g) => g,
+        None => return Err((StatusCode::NOT_FOUND, Json(json!({"error":"game not found"})))),
+    };
+    let player = req.player;
+    if game.creator == player || game.opponent.as_ref() == Some(&player) {
+        return Err((StatusCode::CONFLICT, Json(json!({"error":"already joined"}))));
+    }
+    if game.status != "open" {
+        return Err((StatusCode::CONFLICT, Json(json!({"error":"game not open"}))));
+    }
+    db.set_game_opponent(&id, &player).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()}))))?;
     db.set_game_status(&id, "active").map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()}))))?;
+    let _ = state.broadcast_to_room(&id, &format!(r#"{{"type":"player_joined","game_id":"{}","player":"{}"}}"#, id, player));
+    tracing::info!("[HTP] Player {} joined game {}", player, id);
     Ok(Json(json!({
+        "id": id,
         "game_id": id,
-        "player": req.player,
+        "player": player,
         "status": "active",
-        "message": "joined successfully"
+        "message": "joined successfully",
+        "players": [game.creator, player]
     })))
 }
 
