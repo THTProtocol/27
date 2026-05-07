@@ -540,8 +540,7 @@
     if (!phrase) {
       var t = document.createElement('div'); t.className = 'htp-toast';
       t.textContent = 'Paste your 12-word seed phrase first.';
-      document.body.appendChild(t);
-      setTimeout(function(){ t.remove(); }, 3000);
+      document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3000);
       return;
     }
     var words = phrase.split(/\s+/).filter(Boolean);
@@ -549,8 +548,7 @@
       var t2 = document.createElement('div'); t2.className = 'htp-toast';
       t2.style.borderColor = 'rgba(255,80,80,0.4)';
       t2.textContent = 'Need 12 words, got ' + words.length + '.';
-      document.body.appendChild(t2);
-      setTimeout(function(){ t2.remove(); }, 3000);
+      document.body.appendChild(t2); setTimeout(function(){ t2.remove(); }, 3000);
       return;
     }
 
@@ -558,45 +556,45 @@
 
     try {
       if (!window.kaspaSDK || !window.kaspaSDK.Mnemonic) {
-        throw new Error('WASM not ready — wait 2s and retry');
+        throw new Error('WASM not ready. Wait 2s and retry.');
       }
-      var mn = new window.kaspaSDK.Mnemonic(phrase);
-      var seed = mn.toSeed('');
-      var xkey = window.kaspaSDK.XPrv.fromSeed(seed);
-      var derived = xkey
-        .deriveChild(44, true)
-        .deriveChild(111111, true)
-        .deriveChild(0, true)
-        .deriveChild(0, false)
-        .deriveChild(0, false);
-      var address = derived.privateKey
-        .toPublicKey()
-        .toAddress(window.kaspaSDK.NetworkType.Testnet)
-        .toString();
 
-      window.connectedAddress = address;
-      window.htpAddress = address;
+      var mn = window.kaspaSDK.Mnemonic.new(phrase);
+      var xprv = mn.toXPrv('');
+      var path = window.kaspaSDK.DerivationPath.new("m/44'/111111'/0'/0/0'");
+      var pk = xprv.derivePrivateKey(path);
+      var addr = window.kaspaSDK.Address.fromPublicKey(
+        pk.publicKey(),
+        window.HTP_PREFIX || 'kaspatest'
+      ).toString();
+
+      window.connectedAddress = addr;
+      window.htpAddress = addr;
+
       localStorage.setItem('htp_mnemonic_session', JSON.stringify({
-        mnemonic: phrase, address: address, ts: Date.now()
+        mnemonic: phrase, address: addr, ts: Date.now()
       }));
-      window.dispatchEvent(new CustomEvent('htp:wallet:connected',
-        { detail: { address: address } }));
 
-      if (statusEl) statusEl.textContent = 'Connected!';
+      window.dispatchEvent(new CustomEvent('htp:wallet:connected',
+        { detail: { address: addr } }));
+
+      if (statusEl) statusEl.textContent = 'Connected: ' + addr.slice(0,16) + '...';
 
       setTimeout(function() {
         if (window.htpRouter && typeof window.htpRouter.screenWallet === 'function') {
           window.htpRouter.screenWallet();
+        } else if (window.htpRouter && window.htpRouter.navigate) {
+          window.htpRouter.navigate('#/wallet');
         }
       }, 150);
 
     } catch(err) {
+      console.error('[HTP Wallet] Import error:', err);
       if (statusEl) statusEl.textContent = 'Error: ' + err.message;
       var t3 = document.createElement('div'); t3.className = 'htp-toast';
       t3.style.borderColor = 'rgba(255,80,80,0.4)';
       t3.textContent = 'Import failed: ' + err.message;
-      document.body.appendChild(t3);
-      setTimeout(function(){ t3.remove(); }, 5000);
+      document.body.appendChild(t3); setTimeout(function(){ t3.remove(); }, 5000);
     }
   },
   disconnect: function() {
