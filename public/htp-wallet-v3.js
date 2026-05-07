@@ -264,7 +264,7 @@
       window.whenWasmReady(function() {
         try {
           if (!window.kaspaSDK || !window.kaspaSDK.Mnemonic) { console.error('[HTP Wallet] WASM SDK not ready'); return resolve(null); }
-          var mnemonic = window.kaspaSDK.Mnemonic.new(mnemonicPhrase);
+          var mnemonic = new window.kaspaSDK.Mnemonic(mnemonicPhrase);
           var xPriv = mnemonic.toXPrv('');
           var derivationPath = window.kaspaSDK.DerivationPath.new("m/44'/111111'/0'/0/0'");
           var privateKey = xPriv.derivePrivateKey(derivationPath);
@@ -560,7 +560,7 @@
       if (!window.kaspaSDK || !window.kaspaSDK.Mnemonic) {
         throw new Error('WASM not ready — wait 2s and retry');
       }
-      var mnemonic = window.kaspaSDK.Mnemonic.new(phrase);
+      var mnemonic = new window.kaspaSDK.Mnemonic(phrase);
       var xPriv = mnemonic.toXPrv('');
       var derivationPath = window.kaspaSDK.DerivationPath.new("m/44'/111111'/0'/0/0'");
       var privateKey = xPriv.derivePrivateKey(derivationPath);
