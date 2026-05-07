@@ -8,7 +8,7 @@
  */
 
 window.HTP_CONFIG = window.HTP_CONFIG || {};
-window.HTP_CONFIG.API_ORIGIN = "https://178.105.76.81";
+window.HTP_CONFIG.API_ORIGIN = "https://hightable.duckdns.org";
 
 /**
  * Build a full absolute URL for an HTP API endpoint.

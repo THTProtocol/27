@@ -172,7 +172,7 @@
     }
     // Upgrade: call Rust Groth16 prover if server available
     try {
-      var zkRes = await fetch("https://178.105.76.81/api/zk/prove", {
+      var zkRes = await fetch("https://hightable.duckdns.org/api/zk/prove", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

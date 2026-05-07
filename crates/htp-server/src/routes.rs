@@ -37,7 +37,7 @@ pub async fn metrics_handler(
 
 // ─── Config ──────────────────────────────────────────────────────────
 pub async fn config() -> Json<Value> {
-    let host = std::env::var("HTP_HOST").unwrap_or_else(|_| "178.105.76.81".to_string());
+    let host = std::env::var("HTP_HOST").unwrap_or_else(|_| "hightable.duckdns.org".to_string());
     Json(json!({
         "wsUrl": format!("wss://{}/ws", host),
         "network": "tn12",
@@ -85,16 +85,19 @@ pub async fn create_game(
 }
 
 // ─── Get Game ────────────────────────────────────────────────────────
+// --- Get Game ---
 pub async fn get_game(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
+    Path(id): Path<String>,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    let game = state.games.get(&id)
-        .ok_or_else(|| (StatusCode::NOT_FOUND, Json(json!({ "error": "game not found" }))))?;
-    Ok(Json(serde_json::to_value(&*game).unwrap()))
+    let db = state.db.lock().map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "db_lock_poisoned" }))))?;
+    match db.get_game(&id) {
+        Ok(Some(game)) => Ok(Json(serde_json::to_value(game).unwrap())),
+        Ok(None) => Err((StatusCode::NOT_FOUND, Json(json!({ "error": "game not found" })))),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() })))),
+    }
 }
 
-// ─── Apply Move ──────────────────────────────────────────────────────
 #[derive(Deserialize)]
 pub struct MoveReq {
     pub player: u8,
@@ -104,6 +107,7 @@ pub struct MoveReq {
     pub to: Option<[usize; 2]>,
     pub action: Option<String>,
 }
+
 
 pub async fn apply_move(
     State(state): State<Arc<AppState>>,
@@ -472,4 +476,34 @@ pub async fn get_settlement(
         },
         Err(_) => Json(json!({"error":"db_lock_poisoned"})),
     }
+}
+
+// ─── Covenants Deployed ──────────────────────────────────────────────
+pub async fn covenants_deployed() -> Json<Value> {
+    let data = std::fs::read_to_string("/root/htp/deployed.json")
+        .unwrap_or_else(|_| "{}".to_string());
+    let v: serde_json::Value = serde_json::from_str(&data).unwrap_or(json!({}));
+    Json(v)
+}
+
+// ─── Admin Stats ─────────────────────────────────────────────────────
+pub async fn admin_stats(State(state): State<Arc<AppState>>) -> Json<Value> {
+    let db = state.db.lock().ok();
+    let (total, open, settled) = match db {
+        Some(ref db) => {
+            let games = db.list_games(None).unwrap_or_default();
+            let t = games.len();
+            let o = games.iter().filter(|g| g.status == "open").count();
+            let s = games.iter().filter(|g| g.status == "settled").count();
+            (t, o, s)
+        }
+        None => (0, 0, 0),
+    };
+    Json(json!({
+        "games_total": total,
+        "games_open": open,
+        "games_settled": settled,
+        "uptime_secs": 0,
+        "version": "rust-1.0"
+    }))
 }

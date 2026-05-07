@@ -46,6 +46,8 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(routes::health))
+        .route("/api/admin/stats", get(routes::admin_stats))
+        .route("/api/covenants/deployed", get(routes::covenants_deployed))
         .route("/metrics", get(routes::metrics_handler))
         .route("/api/stats", get(routes::metrics_handler))
         .route("/api/config", get(routes::config))

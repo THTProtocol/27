@@ -7,6 +7,7 @@
 <meta http-equiv="Expires" content="0">
 <meta name="version" content="2026.04.28.v4">
 <title>HIGH TABLE PROTOCOL</title>
+    <link rel="stylesheet" href="htp-theme.css">
 <script>
   // Early global network resolver. Prevents ReferenceError for `net` in nested handlers.
   (function(){
@@ -4022,6 +4023,57 @@ html,body{background:#010806!important;}
 </style>
 </head>
 <body>
+    <nav id="htp-nav">
+      <span class="htp-logo">▲ HIGH TABLE</span>
+      <div class="htp-nav-links">
+        <a href="#/lobby">Lobby</a>
+        <a href="#/markets">Markets</a>
+        <a href="#/tournament">Brackets</a>
+        <a href="#/create">Create</a>
+        <a href="#/docs">Docs</a>
+        <a href="#/status">Status</a>
+      </div>
+      <div id="htp-wallet-pill">
+        <button class="htp-btn htp-btn-ghost" id="btn-connect-nav">Connect Wallet</button>
+      </div>
+    </nav>
+    <script>
+(function(){
+  var pill = document.getElementById("htp-wallet-pill");
+  var btn  = document.getElementById("btn-connect-nav");
+
+  function showConnected(addr, bal) {
+    if (!pill) return;
+    var short = addr.slice(0,8) + "..." + addr.slice(-6);
+    pill.innerHTML = "<span class="htp-addr" title=""+addr+"">"+short+"</span>" +
+      (bal !== undefined ? " <span class="htp-bal">"+parseFloat(bal).toFixed(2)+" KAS</span>" : "") +
+      " <button class="htp-btn htp-btn-ghost" onclick="window.htpWalletV3.disconnect()">Disconnect</button>";
+  }
+
+  function showDisconnected() {
+    if (!pill) return;
+    pill.innerHTML = "<button class="htp-btn htp-btn-ghost" id="btn-connect-nav" onclick="window.htpWalletV3.showConnectModal()">Connect Wallet</button>";
+  }
+
+  window.addEventListener("htp:wallet:connected", function(e) {
+    var addr = e.detail && e.detail.address;
+    if (addr) {
+      showConnected(addr);
+      if (window.htpWalletV3 && window.htpWalletV3.refreshBalance) {
+        window.htpWalletV3.refreshBalance().then(function(kas) {
+          showConnected(addr, kas);
+        }).catch(function(){});
+      }
+    }
+  });
+
+  window.addEventListener("htp:wallet:disconnected", showDisconnected);
+
+  // If already connected (on page load after wallet auto-connect)
+  var existing = window.connectedAddress || window.htpAddress;
+  if (existing) showConnected(existing);
+})();
+    </script>
     <div class="shell">
 
         <!-- animated BlockDAG background -->
@@ -22630,5 +22682,6 @@ window.addEventListener('htp:balance:updated', function(e) {
 })();
 </script>
 
+  <script src="htp-router.js"></script>
 </body>
 </html>

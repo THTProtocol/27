@@ -19,3 +19,16 @@ research.json
 .e2e-wallet.json
 .htp-server-address.json
 .firebase-ci-token
+
+# HTP sensitive / generated
+*.db
+*.db-shm
+*.db-wal
+target/
+node_modules/
+.firebase/
+27/
+certs/
+covenants/compiled/
+/tmp/
+*.DS_Store
