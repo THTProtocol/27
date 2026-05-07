@@ -71,14 +71,15 @@ function init() {
   // 5. BOOT ROUTER
   // ═══════════════════════════════════════════
   if (window.htpRouter && window.htpRouter.init) {
+    installWalletScreen();
     window.htpRouter.init();
   } else {
-    // Router not loaded yet — wait for it
     var attempts = 0;
     var poll = setInterval(function() {
       attempts++;
       if (window.htpRouter && window.htpRouter.init) {
         clearInterval(poll);
+        installWalletScreen();
         window.htpRouter.init();
       } else if (attempts > 20) {
         clearInterval(poll);
@@ -91,7 +92,6 @@ function init() {
 // ═══════════════════════════════════════════
 // 6. SCREENWALLET — clean two-state UI
 // ═══════════════════════════════════════════
-// Override router's screenWallet after router loads
 function installWalletScreen() {
   if (!window.htpRouter) return;
 
@@ -156,11 +156,9 @@ function installWalletScreen() {
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', function() {
     init();
-    installWalletScreen();
   });
 } else {
   init();
-  installWalletScreen();
 }
 
 })();
