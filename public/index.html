@@ -62,7 +62,7 @@
             background-attachment: fixed;
             color: var(--text);
             line-height: 1.6;
-            overflow-x: hidden
+            overflow-x: visible
         }
 
         a {
@@ -258,20 +258,20 @@
             gap: 2px;
             flex-shrink: 1;
             flex-wrap: nowrap;
-            overflow-x: auto;
+            overflow: visible;
         }
         .nav-btn {
             display: inline-flex;
             align-items: center;
-            padding: 6px 12px;
-            border-radius: 7px;
-            font-size: 11px;
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 10px;
             font-weight: 600;
             color: var(--muted);
             background: transparent;
             border: none;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s;
             letter-spacing: 0.04em;
             text-transform: uppercase;
             white-space: nowrap;
@@ -4006,7 +4006,7 @@ html,body{background:#010806!important;}
 @media(max-width:768px){
   .hdr{padding:10px 14px!important;}
   .hdr-nav{gap:4px!important;}
-  .nav-btn{padding:6px 10px!important;font-size:10px!important;}
+  .nav-btn{padding:4px 6px!important;font-size:9px!important;}
   .mx,.sec-pad{padding:14px!important;}
   .sh h2{font-size:22px!important;}
   .card{padding:14px!important;}
@@ -4016,7 +4016,7 @@ html,body{background:#010806!important;}
 }
 @media(max-width:480px){
   .hdr-logo span{display:none!important;}
-  .nav-btn{padding:5px 7px!important;font-size:9px!important;}
+  .nav-btn{padding:3px 5px!important;font-size:8px!important;}
   .sh h2{font-size:18px!important;}
   #wlGrid{grid-template-columns:1fr!important;}
 }
@@ -4136,11 +4136,10 @@ html,body{background:#010806!important;}
                     <button class="nav-btn act" data-v="overview" onclick="go('overview')">Overview</button>
                     <button class="nav-btn" data-v="markets" onclick="go('markets')">Markets</button>
                     <button class="nav-btn" data-v="create" onclick="go('create')">Create</button>
-                    <button class="nav-btn" data-v="skill" onclick="go('skill')">Skill</button>
+                    <button class="nav-btn" data-v="skill" onclick="go('skill')">Games</button>
                     <button class="nav-btn" data-v="oracle" onclick="go('oracle')" data-nav="true">Oracle</button>
                     <button class="nav-btn" data-v="portfolio" onclick="go('portfolio')">Portfolio</button>
                     <button class="nav-btn" data-v="wallet" onclick="go('wallet')">Wallet</button>
-                    <button class="nav-btn" data-v="kaspa" onclick="go('kaspa')">Kaspa</button>
                 </nav>
                     <div class="hdr-r">
                     <div style="position:relative;display:inline-flex;align-items:center;
