@@ -445,9 +445,8 @@
       var shell = document.querySelector(".shell") || document.body;
       shell.insertBefore(root, shell.firstChild);
     }
-    var hash = window.location.hash.replace("#", "") || "markets";
-  if (!hash || hash === "/" || hash === "#" || hash === "") hash = "#/markets";
-  hash = (!hash || hash === "/" || hash === "#") ? "/markets" : hash.replace(/^#/, "");
+    var hash = window.location.hash.replace("#", "").replace(/^\//, "") || "lobby";
+    if (!hash || hash === "/" || hash === "#" || hash === "") hash = "lobby";
     var parts = hash.split("/");
     var route = "/" + parts[0];
     var id    = parts[1] || null;
