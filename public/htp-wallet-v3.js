@@ -540,7 +540,8 @@
     if (!phrase) {
       var t = document.createElement('div'); t.className = 'htp-toast';
       t.textContent = 'Paste your 12-word seed phrase first.';
-      document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3000);
+      document.body.appendChild(t);
+      setTimeout(function(){ t.remove(); }, 3000);
       return;
     }
     var words = phrase.split(/\s+/).filter(Boolean);
@@ -548,7 +549,8 @@
       var t2 = document.createElement('div'); t2.className = 'htp-toast';
       t2.style.borderColor = 'rgba(255,80,80,0.4)';
       t2.textContent = 'Need 12 words, got ' + words.length + '.';
-      document.body.appendChild(t2); setTimeout(function(){ t2.remove(); }, 3000);
+      document.body.appendChild(t2);
+      setTimeout(function(){ t2.remove(); }, 3000);
       return;
     }
 
@@ -556,45 +558,51 @@
 
     try {
       if (!window.kaspaSDK || !window.kaspaSDK.Mnemonic) {
-        throw new Error('WASM not ready. Wait 2s and retry.');
+        throw new Error('WASM not ready — wait 2s and retry');
       }
-
-      var mn = window.kaspaSDK.Mnemonic.new(phrase);
-      var xprv = mn.toXPrv('');
-      var path = window.kaspaSDK.DerivationPath.new("m/44'/111111'/0'/0/0'");
-      var pk = xprv.derivePrivateKey(path);
-      var addr = window.kaspaSDK.Address.fromPublicKey(
-        pk.publicKey(),
+      var mnemonic = window.kaspaSDK.Mnemonic.new(phrase);
+      var xPriv = mnemonic.toXPrv('');
+      var derivationPath = window.kaspaSDK.DerivationPath.new("m/44'/111111'/0'/0/0'");
+      var privateKey = xPriv.derivePrivateKey(derivationPath);
+      var address = window.kaspaSDK.Address.fromPublicKey(
+        privateKey.publicKey(),
         window.HTP_PREFIX || 'kaspatest'
       ).toString();
 
-      window.connectedAddress = addr;
-      window.htpAddress = addr;
-
+      window.connectedAddress = address;
+      window.htpAddress = address;
       localStorage.setItem('htp_mnemonic_session', JSON.stringify({
-        mnemonic: phrase, address: addr, ts: Date.now()
+        mnemonic: phrase, address: address, ts: Date.now()
       }));
-
       window.dispatchEvent(new CustomEvent('htp:wallet:connected',
-        { detail: { address: addr } }));
+        { detail: { address: address } }));
 
-      if (statusEl) statusEl.textContent = 'Connected: ' + addr.slice(0,16) + '...';
+      try {
+        var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || 'https://hightable.duckdns.org';
+        var resp = await fetch(base + '/api/balance/' + address, { signal: AbortSignal.timeout(8000) });
+        if (resp.ok) {
+          var d = await resp.json();
+          window.htpBalance = parseFloat(((d.balance_sompi || 0) / 1e8).toFixed(4));
+          var balEl = document.getElementById('htp-wallet-balance');
+          if (balEl) balEl.textContent = window.htpBalance + ' KAS';
+        }
+      } catch(e) { console.warn('[HTP Wallet] Balance error:', e); }
+
+      if (statusEl) statusEl.textContent = 'Connected!';
 
       setTimeout(function() {
         if (window.htpRouter && typeof window.htpRouter.screenWallet === 'function') {
           window.htpRouter.screenWallet();
-        } else if (window.htpRouter && window.htpRouter.navigate) {
-          window.htpRouter.navigate('#/wallet');
         }
       }, 150);
 
     } catch(err) {
-      console.error('[HTP Wallet] Import error:', err);
       if (statusEl) statusEl.textContent = 'Error: ' + err.message;
       var t3 = document.createElement('div'); t3.className = 'htp-toast';
       t3.style.borderColor = 'rgba(255,80,80,0.4)';
       t3.textContent = 'Import failed: ' + err.message;
-      document.body.appendChild(t3); setTimeout(function(){ t3.remove(); }, 5000);
+      document.body.appendChild(t3);
+      setTimeout(function(){ t3.remove(); }, 5000);
     }
   },
   disconnect: function() {
