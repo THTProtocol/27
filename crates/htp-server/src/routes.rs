@@ -355,6 +355,29 @@ pub async fn propose_settle(
         .unwrap_or_else(|_| "kaspatest:qpx6f5j2zpe4hlwv9yn8hl0mze4k9ffp6ft0fm3w68wp6cft6f8mjdtt0qzyj".into());
     let hash = crate::oracle::build_attestation(&game_id, &req.winner, proof_root);
     tracing::info!("[ARBITER] proposeSettle game={} winner={} path={}", game_id, req.winner, path);
+
+    // Persist to SQLite
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() as i64;
+    match state.db.lock() {
+        Ok(db) => {
+            let _ = db.upsert_settlement(&crate::db::SettlementRecord {
+                game_id:          game_id.clone(),
+                winner:           req.winner.clone(),
+                attestation_hash: hash.clone(),
+                arbiter:          arbiter_addr.clone(),
+                settlement_path:  path.to_string(),
+                status:           "PENDING_SETTLE".into(),
+                proposed_at:      now,
+                finalized_at:     None,
+                dispute_deadline: now + 172800,
+                disputed_by:      None,
+            });
+        }
+        Err(_) => tracing::warn!("DB lock poisoned"),
+    }
     Ok(Json(json!({
         "game_id": game_id, "winner": req.winner, "proof_root": proof_root,
         "attestation_hash": hash, "arbiter": arbiter_addr,
@@ -417,5 +440,36 @@ pub async fn balance_route(
             Err(_) => Json(json!({"address": address, "balance_kas": 0.0, "error": "parse_failed"})),
         },
         Err(e) => Json(json!({"address": address, "balance_kas": 0.0, "error": e.to_string()})),
+    }
+}
+
+
+// --- List Games from SQLite ---
+
+pub async fn list_games(
+    State(state): State<Arc<AppState>>,
+) -> Json<Value> {
+    match state.db.lock() {
+        Ok(db) => match db.list_games(None) {
+            Ok(games) => Json(json!({"games": games, "count": games.len()})),
+            Err(e) => Json(json!({"error": e.to_string()})),
+        },
+        Err(_) => Json(json!({"error":"db_lock_poisoned"})),
+    }
+}
+
+// --- Get Settlement from SQLite ---
+
+pub async fn get_settlement(
+    State(state): State<Arc<AppState>>,
+    Path(game_id): Path<String>,
+) -> Json<Value> {
+    match state.db.lock() {
+        Ok(db) => match db.get_settlement(&game_id) {
+            Ok(Some(s)) => Json(serde_json::to_value(s).unwrap_or_default()),
+            Ok(None) => Json(json!({"error":"not_found","game_id":game_id})),
+            Err(e) => Json(json!({"error": e.to_string()})),
+        },
+        Err(_) => Json(json!({"error":"db_lock_poisoned"})),
     }
 }

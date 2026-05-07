@@ -1,3 +1,5 @@
+// Unhandled rejection suppressor for wallet injection noise
+window.addEventListener('unhandledrejection',function(e){var m=e.reason&&(e.reason.message||String(e.reason))||'';if(/Cannot read|Extension context|wallet not found|User rejected|Object/.test(m)){e.preventDefault();return;}});
 /**
  * htp-init.js  ,  High Table Protocol  ,  v3.0
  *
@@ -225,6 +227,10 @@
  * ============================================================= */
 (function() {
   'use strict';
+  var _htpWsRetries = 0;
+  var _htpWsTimer   = null;
+  var _htpWsMax     = 8;
+  var _htpWsBase    = 3000;
   function initServerWs(wsUrl) {
     if (!wsUrl || window.__htpServerWs) return;
     window.HTP_SERVER_WS_URL = wsUrl;
@@ -247,8 +253,8 @@
         };
         ws.onclose = function() {
           window.__htpServerWs = null;
-          console.warn('[HTP] Server WS closed, retry in 5s');
-          setTimeout(connect, 5000);
+                    _htpWsRetries++; var d = Math.min(_htpWsBase * Math.pow(2, _htpWsRetries), 60000);
+                    clearTimeout(_htpWsTimer); _htpWsTimer = setTimeout(connect, d);
         };
         ws.onerror = function() { try { ws.close(); } catch(e2) {} };
       } catch(e) { console.warn('[HTP] WS error:', e.message); }
@@ -272,7 +278,7 @@
   };
 
   function fetchConfig() {
-    var base = (typeof window !== 'undefined' && window.HTP_SERVER_URL) || 'https://178.105.76.81';
+    var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || 'https://hightable.duckdns.org';
     fetch(base + '/api/config', { signal: AbortSignal.timeout(5000) })
       .then(function(r) { return r.json(); })
       .then(function(cfg) {
@@ -282,7 +288,7 @@
         }
       })
       .catch(function() {
-        initServerWs('wss://178.105.76.81/ws');
+        var wsUrl = (window.HTP_CONFIG && window.HTP_CONFIG.WS_URL) || 'wss://hightable.duckdns.org/ws'; initServerWs(wsUrl);
       });
   }  // close fetchConfig
 
@@ -348,7 +354,7 @@
     window.addEventListener('htp:server:connected', function() { setStatusDot('live'); });
     window.addEventListener('htp:server:disconnected', function() { setStatusDot('down'); });
     // Also probe the backend periodically. A successful /api/config = live.
-    var base = (typeof window !== 'undefined' && window.HTP_SERVER_URL) || 'https://178.105.76.81';
+    var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || 'https://hightable.duckdns.org';
     function probe() {
       try {
         fetch(base + '/api/config', { signal: AbortSignal.timeout(4000) })

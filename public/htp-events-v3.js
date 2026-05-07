@@ -143,7 +143,7 @@
     }
 
     // Debug: dump top-level keys to discover where event data actually lives.
-    db.ref('/').once('value').then(function(snap) {
+    Promise.all([db.ref('events').once('value'), db.ref('markets').once('value')]).then(function(snap) {
       var keys = [];
       snap.forEach(function(child) { keys.push(child.key); });
       console.log('[HTP Events v3] Top-level Firebase keys:', keys.join(', '));

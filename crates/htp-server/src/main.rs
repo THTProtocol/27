@@ -67,6 +67,8 @@ async fn main() {
         .route("/api/markets/:id/attest-payout", post(routes::attest_payout))
         .route("/api/proof-commit",           post(routes::proof_commit_route))
         .route("/api/balance/:address", get(routes::balance_route))
+        .route("/api/games", get(routes::list_games))
+        .route("/api/games/:id/settlement", get(routes::get_settlement))
         .route("/ws", get(ws::ws_handler))
         .layer(cors)
         .layer(tower_http::trace::TraceLayer::new_for_http())
