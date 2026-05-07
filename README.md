@@ -1,81 +1,117 @@
-# ▲ HIGH TABLE PROTOCOL
+# High Table Protocol (HTP)
 
-> Trustless skill-game covenants on Kaspa.
-> Zero counterparty risk. No house. No custody.
+<p align="center">
+  <strong>Skill games and prediction markets settled on the Kaspa DAG.</strong><br>
+  Non-custodial. Covenant-enforced. ZK-oracle resolved.
+</p>
 
-[![Kaspa TN12](https://img.shields.io/badge/chain-Kaspa%20TN12-cyan)](https://kaspa.org)
-[![Rust](https://img.shields.io/badge/oracle-Rust%20%2B%20Axum-orange)](https://github.com/THTProtocol/27)
-[![License: MIT](https://img.shields.io/badge/license-MIT-gold)](LICENSE)
+---
 
-Built on [Kaspa](https://kaspa.org) — the fastest PoW blockDAG.
-Covenants enforced by Silverscript (Toccata hard fork).
-Pre-Toccata: arbiter-attested settlement with on-chain dispute windows.
+## What is High Table Protocol?
 
-## How It Works
+HTP is a decentralized protocol for skill-based gaming and prediction markets running on the Kaspa BlockDAG. Players create matches, stake KAS, and compete — outcomes are verified by a network of bonded oracles with cryptographic proof commitments. All funds are held in P2PK covenant escrows on-chain. No custodian ever holds your KAS.
 
-```
-Player —‖↕ locks KAS into Covenant UTXO
-  ⟜
-  ├── PATH A: HTP_ARBITER + creator attest ──▞ settle
-  ├── PATH B: winner claims after DISPUTE_WINDOW
-  ┌── PATH C: HTP_GUARDIAN override after GUARDIAN_WINDOW
-```
+### Core Features
 
-## Contracts
+| Feature | Status |
+|---|---|
+| ♟ Chess | Live on TN12 |
+| ● Connect 4 | Live on TN12 |
+| ◆ Checkers | Live on TN12 |
+| ⬡ Prediction Markets | Live on TN12 |
+| 🔐 ZK Oracle Attestation | Proof-commit active |
+| 🏦 Non-custodial Escrow | Covenant P2PK |
+| ⚖️ Dispute Resolution | Guardian override |
 
-| Contract | Lines | Entrypoints | State Machine |
-|---|---|--|--|
-| `SkillGame.ss` | 285 | 8 | open→pending→settled/disputed |
-| `TournamentBracket.ss` | 181 | 6 | open→bracket→settled |
-| `ParimutuelMarket.ss` | 221 | 6 | open→proposed→settled/refunded |
-| `MaximizerEscrow.ss` | 169 | 6 | locked→hedged→released |
+---
 
 ## Stack
 
-| Layer | Tech |
-|---|--|
-| Chain | Kaspa TN12 → Mainnet (post-Toccata) |
-| Covenant lang | Silverscript (pre-compiled shim until Toccata) |
-| Oracle / Arbiter | Rust + Axum (`crates/htp-server`) |
-| Frontend | Vanilla JS + Kaspa WASM SDK |
-| Realtime sync | Firebase RTDB |
-| Hosting | Firebase (`hightable420.web.app`) |
-| Reverse proxy | Nginx + Let's Encrypt |
+| Layer | Technology |
+|---|---|
+| Frontend Hosting | Firebase Hosting (CDN) |
+| Backend | Rust — Railway (Docker) |
+| Database | SQLite (Railway Volume) |
+| Blockchain | Kaspa TN12 testnet → mainnet |
+| Wallet | WASM key derivation (BIP44 m/44h/111111h/0h) |
+| Settlement | DAG proof roots via Kaspa RPC |
 
-## Live
+---
 
-- **App**: https://hightable420.web.app
-- **API**: https://hightable.duckdns.org/health
-- **Network**: Kaspa Testnet (TN12)
+## Getting Started
 
-## Run Locally
+### Prerequisites
+
+- Rust 1.88+
+- Node.js 18+
+- Firebase CLI (`npm install -g firebase-tools`)
+
+### Run Backend Locally
 
 ```bash
-# Oracle server
+cd crates
 cargo build --release -p htp-server
-./target/release/htp-server
-
-# Frontend (no build step)
-cd public && python3 -m http.server 8080
+HTP_DB_PATH=./htp.db PORT=3000 ./target/release/htp-server
 ```
 
-## Toccata Readiness
+### Run Frontend Locally
 
-All covenants use `OP_TXINPUTBLOCKDAASCORE` for dispute/timeout.
-FHTP_ARBITER` + `HTP_GUARDIAN` in all 4 contracts.
-When Toccata ships: swap shim compiler output with real bytecode. One change.
+```bash
+cd public
+python3 -m http.server 8080
+# open http://localhost:8080
+```
 
-## Directory
+### Deploy
+
+```bash
+# Backend — auto-deploys via Railway on git push to main
+# Frontend
+firebase deploy --only hosting
+```
+
+---
+
+## API Reference
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/health` | Server health + version |
+| GET | `/api/games` | List all games |
+| POST | `/api/games` | Create a game |
+| GET | `/api/games/:id` | Get game details |
+| POST | `/api/games/:id/join` | Join a game |
+| POST | `/api/games/:id/propose` | Propose settlement |
+| GET | `/api/balance/:address` | Kaspa balance lookup |
+
+---
+
+## Network
+
+Currently running on **Kaspa TN12 testnet**.
+
+Mainnet launch pending audit completion.
+
+Treasury: `kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m`
+
+---
+
+## Architecture
 
 ```
-covenants/   Silverscript contracts + compiler shim
-crates/      Rust oracle server (Axum + SQLite)
-public/      Vanilla JS frontend + Kaspa WASM SDK
-scripts/     Deployment + seeding utilities
-docs/        Architecture + protocol spec
-tests/       Integration tests
+Browser (WASM) → Firebase CDN (static frontend)
+                    ↓
+              Railway (Rust API)
+                    ↓
+              SQLite (game state)
+                    ↓
+              Kaspa RPC (covenant escrow + settlement)
 ```
+
+All critical path logic lives in Rust. The frontend is a thin rendering layer with zero business logic. WASM handles key derivation client-side — mnemonics never leave the browser.
+
+---
 
 ## License
 
-MIT — the code is free. The table is open.
+MIT — see [LICENSE](LICENSE)

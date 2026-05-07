@@ -1,34 +1,38 @@
-node_modules/
-data/*.json
-.env
-.env.local
-.env.*.local
-*.broken
-*.log
-.DS_Store
+# Rust
 target/
-rusty-kaspa/
-.server-wallet.json
-*.pem
-27/
-serviceAccountKey.json
+Cargo.lock
 
-public/*.backup
-public/*.bak
-research.json
-.e2e-wallet.json
-.htp-server-address.json
-.firebase-ci-token
-
-# HTP sensitive / generated
+# Database
 *.db
 *.db-shm
 *.db-wal
-target/
-node_modules/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Firebase
 .firebase/
-27/
-certs/
-covenants/compiled/
+firebase-debug.log
+.firebaserc
+
+# Node
+node_modules/
+
+# Dev scripts (never commit these)
+fix_*.py
+patch_*.py
+check_*.py
+inject_*.py
+htp_v*.py
+railway_*.py
 /tmp/
-*.DS_Store
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
