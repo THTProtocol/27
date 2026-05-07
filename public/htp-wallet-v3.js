@@ -557,17 +557,14 @@
     if (statusEl) statusEl.textContent = 'Deriving address...';
 
     try {
-      if (!window.kaspaSDK || !window.kaspaSDK.Mnemonic) {
+      if (typeof window.kaspaFromMnemonic !== 'function') {
         throw new Error('WASM not ready — wait 2s and retry');
       }
-      var mnemonic = new window.kaspaSDK.Mnemonic(phrase);
-      var xPriv = mnemonic.toXPrv('');
-      var derivationPath = window.kaspaSDK.DerivationPath.new("m/44'/111111'/0'/0/0'");
-      var privateKey = xPriv.derivePrivateKey(derivationPath);
-      var address = window.kaspaSDK.Address.fromPublicKey(
-        privateKey.publicKey(),
-        window.HTP_PREFIX || 'kaspatest'
-      ).toString();
+      var result = await window.kaspaFromMnemonic(phrase, 'kaspatest');
+      if (!result || !result.address) {
+        throw new Error('Failed to derive address');
+      }
+      var address = result.address;
 
       window.connectedAddress = address;
       window.htpAddress = address;
