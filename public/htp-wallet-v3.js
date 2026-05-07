@@ -544,20 +544,34 @@
     };
     if (!phrase) { toast("Paste your seed phrase first."); return; }
     var words = phrase.split(/\s+/).filter(Boolean);
-    if (words.length < 12) { toast("Need 12 words, got " + words.length + ".", true); return; }
+    if (words.length < 12) {
+      toast("Need 12 words, got " + words.length + ".", true); return;
+    }
     if (st) st.textContent = "Deriving address...";
     try {
-      if (!window.kaspaSDK || !window.kaspaSDK.Mnemonic)
+      var addr = null;
+
+      // PATH A: use existing kaspaFromMnemonic helper if available
+      if (typeof window.kaspaFromMnemonic === "function") {
+        var res = await window.kaspaFromMnemonic(phrase, "kaspatest");
+        addr = res && (res.address || res);
+
+      // PATH B: use PrivateKeyGenerator (correct SDK API)
+      } else if (window.kaspaSDK && window.kaspaSDK.Mnemonic) {
+        var sdk = window.kaspaSDK;
+        var mn = new sdk.Mnemonic(phrase);
+        var seed = mn.toSeed("");
+        var xprv = new sdk.XPrv(seed);
+        var keyGen = new sdk.PrivateKeyGenerator(xprv, false, 0n);
+        addr = keyGen.receiveKey(0).toAddress("testnet-12").toString();
+
+      } else {
         throw new Error("WASM not ready. Wait 2s and retry.");
-      var mn = new window.kaspaSDK.Mnemonic(phrase);
-      var seed = mn.toSeed("");
-      var xkey = window.kaspaSDK.XPrv.fromSeed(seed);
-      var addr = xkey
-        .deriveChild(44, true).deriveChild(111111, true)
-        .deriveChild(0, true).deriveChild(0, false)
-        .deriveChild(0, false)
-        .privateKey.toPublicKey()
-        .toAddress(window.kaspaSDK.NetworkType.Testnet).toString();
+      }
+
+      if (!addr || typeof addr !== "string" || addr.length < 10)
+        throw new Error("Derivation returned invalid address: " + addr);
+
       window.connectedAddress = addr;
       window.htpAddress = addr;
       localStorage.setItem("htp_mnemonic_session",
@@ -569,6 +583,7 @@
         if (window.htpRouter && window.htpRouter.screenWallet)
           window.htpRouter.screenWallet();
       }, 150);
+
     } catch(err) {
       if (st) st.textContent = "Error: " + err.message;
       toast("Import failed: " + err.message, true);
