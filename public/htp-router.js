@@ -145,10 +145,10 @@
 
   window.htpRouter._joinGame = async function(id) {
     var addr = window.connectedAddress || window.htpAddress;
-    if (!addr) { alert("Connect wallet first"); return; }
+    if (!addr) { var t=document.createElement("div");t.className="htp-toast";t.textContent="Connect wallet first";document.body.appendChild(t);setTimeout(function(){t.remove()},3000); return; }
     var r = await fetch(API + "/api/games/" + id + "/join", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({player: addr}) });
     if (r.ok) { window.htpRouter.navigate("#/game/" + id); }
-    else { alert("Failed to join"); }
+    else { var t=document.createElement("div");t.className="htp-toast";t.textContent="Join failed";document.body.appendChild(t);setTimeout(function(){t.remove()},3000); }
   };
 
   // ════════════════════════════════════════════
@@ -170,7 +170,7 @@
   window.htpRouter._proposeSettle = async function(id) {
     var w = document.getElementById("settle-winner").value;
     var p = document.getElementById("settle-path").value;
-    if (!w) { alert("Enter winner address"); return; }
+    if (!w) { var t=document.createElement("div");t.className="htp-toast";t.textContent="Enter winner address";document.body.appendChild(t);setTimeout(function(){t.remove()},3000); return; }
     var r = await fetch(API + "/api/games/" + id + "/propose", {
       method: "POST", headers: {"Content-Type":"application/json"},
       body: JSON.stringify({winner: w, proof_root: "0".repeat(64), settlement_path: p})
@@ -200,7 +200,7 @@
 
   window.htpRouter._guardianOverride = async function(id) {
     var r = await fetch(API + "/api/games/" + id + "/guardian", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({action: "override", guardian: window.connectedAddress}) });
-    alert("Guardian override: " + (await r.text()));
+    var txt=await r.text();var t=document.createElement("div");t.className="htp-toast";t.textContent="Guardian: "+txt;document.body.appendChild(t);setTimeout(function(){t.remove()},4000);
   };
 
   // ════════════════════════════════════════════
@@ -217,8 +217,8 @@
       "<div class=\"htp-card\" style=\"max-width:500px\">" +
       (addr ? "<div style=\"margin-bottom:16px\"><label class=\"htp-label\">Address</label><div class=\"htp-code\" style=\"word-break:break-all\">" + addr + "</div></div>" : "") +
       "<div style=\"margin-bottom:16px\"><label class=\"htp-label\">Balance</label><strong style=\"font-size:24px;color:var(--htp-gold)\">" + bal + " KAS</strong></div>" +
-      "<button class=\"htp-btn\" onclick=\"try{window.htpWalletV3.importMnemonic()}catch(e){alert(e.message)}\">IMPORT MNEMONIC</button>" +
-      "<button class=\"htp-btn htp-btn-ghost\" style=\"margin-left:8px\" onclick=\"try{window.htpWalletV3.generateWallet()}catch(e){alert(e.message)}\">GENERATE WALLET</button>" +
+      "<button class=\"htp-btn\" onclick=\"try{window.htpWalletV3.importMnemonic()}catch(e){{var t=document.createElement(div);t.className=htp-toast;t.textContent=e.message;document.body.appendChild(t);setTimeout(function(){t.remove()},4000)}}\">IMPORT MNEMONIC</button>" +
+      "<button class=\"htp-btn htp-btn-ghost\" style=\"margin-left:8px\" onclick=\"try{window.htpWalletV3.generateWallet()}catch(e){{var t=document.createElement(div);t.className=htp-toast;t.textContent=e.message;document.body.appendChild(t);setTimeout(function(){t.remove()},4000)}}\">GENERATE WALLET</button>" +
       (addr ? "<button class=\"htp-btn htp-btn-ghost\" style=\"margin-left:8px\" onclick=\"window.htpWalletV3.disconnect()\">DISCONNECT</button>" : "") +
       "</div>");
   }
@@ -449,7 +449,7 @@
       var shell = document.querySelector(".shell") || document.body;
       shell.insertBefore(root, shell.firstChild);
     }
-    var hash = window.location.hash.replace("#", "") || "/lobby";
+    var hash = window.location.hash.replace("#", "") || "lobby";
   if (!hash || hash === "/" || hash === "#" || hash === "") hash = "#/lobby";
   hash = (!hash || hash === "/" || hash === "#") ? "/lobby" : hash.replace(/^#/, "");
     var parts = hash.split("/");
@@ -457,8 +457,7 @@
     var id    = parts[1] || null;
 
     // Find and highlight active nav link
-    document.querySelectorAll(".htp-nav-links a").forEach(function(a) {
-      a.classList.toggle("active", a.getAttribute("href") === "#/" + parts[0]);
+    document.querySelectorAll(".nav-btn[data-v]").forEach(function(b) { var mapping = { overview: "lobby", markets: "markets", create: "create", wallet: "wallet", oracle: "status", portfolio: "wallet" }; var expected = mapping[b.getAttribute("data-v")] || b.getAttribute("data-v"); b.classList.toggle("act", parts[0] === expected);
     });
 
     switch(route) {
@@ -476,7 +475,7 @@
       case "/docs":        screenDocs(); break;
       case "/tx":          screenTx(id); break;
       case "/status":      screenStatus(); break;
-      default:             root.innerHTML = page("404", "", empty("This table doesn&\#39;t exist") + "<button class=\"htp-btn htp-btn-ghost\" style=\"margin-top:16px\" onclick=\"window.htpRouter.navigate('#/lobby')\">Back to Lobby</button>"); break;
+      default:             window.htpRouter.navigate("#/lobby"); break;
     }
   }
 
