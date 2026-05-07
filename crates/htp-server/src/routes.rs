@@ -502,25 +502,32 @@ pub async fn covenants_deployed() -> Json<Value> {
 }
 
 // ─── Admin Stats ─────────────────────────────────────────────────────
-pub async fn admin_stats(State(state): State<Arc<AppState>>) -> Json<Value> {
-    let db = state.db.lock().ok();
-    let (total, open, settled) = match db {
-        Some(ref db) => {
-            let games = db.list_games(None).unwrap_or_default();
-            let t = games.len();
-            let o = games.iter().filter(|g| g.status == "open").count();
-            let s = games.iter().filter(|g| g.status == "settled").count();
-            (t, o, s)
-        }
-        None => (0, 0, 0),
-    };
-    Json(json!({
+pub async fn admin_stats(
+    State(state): State<Arc<AppState>>,
+    headers: axum::http::HeaderMap,
+) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
+    // Admin key gate
+    let admin_key = std::env::var("HTP_ADMIN_KEY").unwrap_or_else(|_| "htp-admin-2026".to_string());
+    let header_val = headers.get("x-admin-key")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    if header_val != admin_key {
+        return Err((StatusCode::UNAUTHORIZED, Json(json!({"error": "unauthorized", "hint": "set x-admin-key header"}))));
+    }
+
+    let db = state.db.lock().map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":"db_lock_poisoned"}))))?;
+    let games = db.list_games(None).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()}))))?;
+    let total = games.len();
+    let open = games.iter().filter(|g| g.status == "open").count();
+    let settled = games.iter().filter(|g| g.status == "settled").count();
+
+    Ok(Json(json!({
         "games_total": total,
         "games_open": open,
         "games_settled": settled,
         "uptime_secs": 0,
         "version": "rust-1.0"
-    }))
+    })))
 }
 
 

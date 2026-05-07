@@ -254,7 +254,7 @@
       "<select id=\"market-outcome\" class=\"htp-select\">" + ((m.outcomes||["Yes","No"]).map(function(o){return "<option>"+o+"</option>";}).join("")) + "</select></div>" +
       "<div class=\"htp-field\"><label class=\"htp-label\">Amount (KAS)</label>" +
       "<input id=\"market-amount\" class=\"htp-input\" type=\"number\" min=\"0.1\" step=\"0.1\" value=\"0.5\"></div>" +
-      "<button class=\"htp-btn\" onclick=\"alert('TX signing via WASM SDK — build UTXO, sign, broadcast')\">CONFIRM STAKE</button>" +
+      "<button class=\"htp-btn\" onclick=\"window.htpRouter._placeStake('"+id+"')\">CONFIRM STAKE</button>" +
       "</div>");
   }
 
@@ -320,9 +320,9 @@
   }
 
   async function screenAdmin() {
-    var pass = localStorage.getItem("htpAdminKey");
-    if (pass !== "htp-admin-2026") {
-      root.innerHTML = page("ADMIN", "", "<div class=\"htp-card\"><input id=\"admin-pass\" class=\"htp-input\" type=\"password\" placeholder=\"Admin key\"><button class=\"htp-btn\" style=\"margin-top:10px\" onclick=\"localStorage.setItem('htpAdminKey',document.getElementById('admin-pass').value);window.htpRouter.navigate('#/admin')\">UNLOCK</button></div>");
+    var pass = sessionStorage.getItem("htpAdminKey");
+    if (!pass || pass.length < 8) {
+      root.innerHTML = page("ADMIN", "", "<div class=\"htp-card\"><input id=\"admin-pass\" class=\"htp-input\" type=\"password\" placeholder=\"Admin key\"><button class=\"htp-btn\" style=\"margin-top:10px\" onclick=\"sessionStorage.setItem('htpAdminKey',document.getElementById('admin-pass').value);window.htpRouter.navigate('#/admin')\">UNLOCK</button></div>");
       return;
     }
     var health = await api("/health");
@@ -391,6 +391,54 @@
   }
 
   // ════════════════════════════════════════════
+  
+  // ▸ Market stake submission (wallet flow)
+  window.htpRouter._placeStake = async function(id) {
+    var addr = window.connectedAddress || window.htpAddress;
+    if (!addr) {
+      try { if (window.htpWalletV3 && window.htpWalletV3.showConnectModal) window.htpWalletV3.showConnectModal(); } catch(e) {}
+      var toast = document.createElement("div"); toast.className = "htp-toast";
+      toast.textContent = "Connect wallet first"; document.body.appendChild(toast);
+      setTimeout(function(){ toast.remove(); }, 3000); return;
+    }
+    var outcomeEl = document.getElementById("market-outcome");
+    var amountEl  = document.getElementById("market-amount");
+    if (!outcomeEl || !amountEl) {
+      var toast = document.createElement("div"); toast.className = "htp-toast";
+      toast.textContent = "Form elements missing"; document.body.appendChild(toast);
+      setTimeout(function(){ toast.remove(); }, 3000); return;
+    }
+    var outcome = outcomeEl.value;
+    var amount  = parseFloat(amountEl.value || "0.5");
+    if (isNaN(amount) || amount <= 0) {
+      var toast = document.createElement("div"); toast.className = "htp-toast";
+      toast.textContent = "Invalid amount"; document.body.appendChild(toast);
+      setTimeout(function(){ toast.remove(); }, 3000); return;
+    }
+    var sompi = String(Math.round(amount * 1e8));
+    // Use htpApi for the call
+    var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || "https://hightable.duckdns.org";
+    try {
+      var r = await fetch(base + "/api/games/" + id + "/join", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({player: addr, outcome: outcome, stake_sompi: sompi})
+      });
+      var j = await r.json();
+      if (j && j.message) {
+        var toast = document.createElement("div"); toast.className = "htp-toast";
+        toast.textContent = "Stake recorded — " + j.message;
+        document.body.appendChild(toast);
+        setTimeout(function(){ toast.remove(); }, 3000);
+      }
+    } catch(e) {
+      var toast = document.createElement("div"); toast.className = "htp-toast";
+      toast.textContent = "Failed: " + e.message;
+      document.body.appendChild(toast);
+      setTimeout(function(){ toast.remove(); }, 3000);
+    }
+  };
+
   // ROUTER ENGINE
   // ════════════════════════════════════════════
   function render() {

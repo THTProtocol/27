@@ -6584,38 +6584,40 @@ event MyMarket {
        ======================================================== -->
   
   <!-- Firebase -->
+  <script src="htp-config.js"></script>
   <script src="firebase-app-compat.js"></script>
   <script src="firebase-database-compat.js"></script>
-  <script src="htp-config.js"></script>
   <script src="firebase-config.js"></script>
   
   <!-- Chess engine -->
-  <script src="chess.min.js"></script>
+  <script src="htp-wallet-v3.js"></script>
   <!-- Patch chess.js isCheck/isCheckmate availability before any chess UI loads -->
-  <script src="htp-chess-ischeck-fix.js"></script>
+  <script src="htp-rpc-client.js"></script>
   
   <!-- Kaspa WASM SDK (must load BEFORE wasm-loader) -->
-  <script src="kaspa-wasm-sdk-inline.js"></script>
+  <script src="htp-events-v3.js"></script>
   
   <!-- HTP Core -->
   <script src="htp-init.js"></script>
-  <script src="htp-wasm-loader.js"></script>
-  <script src="htp-rpc-client.js"></script>
+  <script src="htp-router.js"></script>
+  <script src="chess.min.js"></script>
   
   <!-- HTP Wallet -->
-  <script src="htp-wallet-v3.js"></script>
-  <script src="htp-wallet-logos.js"></script>
+  <script src="htp-chess-ischeck-fix.js"></script>
+  <script src="kaspa-wasm-sdk-inline.js"></script>
   
   <!-- HTP Game Modules -->
+  <script src="htp-wasm-loader.js"></script>
+  <script src="htp-wallet-logos.js"></script>
   <script src="htp-board-engine.js"></script>
   <script src="htp-chess-ui.js"></script>
   <script src="htp-chess-dnd.js"></script>
   <script src="htp-chess-sync.js"></script>
   <script src="htp-c4-animation.js"></script>
-  <script src="htp-checkers-multijump.js"></script>
-  <script src="htp-games-sync.js"></script>
   
   <!-- HTP Protocol -->
+  <script src="htp-checkers-multijump.js"></script>
+  <script src="htp-games-sync.js"></script>
   <script src="htp-covenant-escrow-v2.js"></script>
   <script src="htp-covenants.js"></script>
   <script src="htp-fee-engine.js"></script>
@@ -6623,24 +6625,22 @@ event MyMarket {
   <script src="htp-settlement-overlay.js"></script>
   <script src="htp-settlement-preview.js"></script>
   <script src="htp-utxo-mutex.js"></script>
-  <script src="htp-cancel-flow.js"></script>
-  <script src="htp-match-deadline.js"></script>
   
   <!-- HTP UI -->
+  <script src="htp-cancel-flow.js"></script>
+  <script src="htp-match-deadline.js"></script>
   <script src="htp-maximizer-ui.js"></script>
   <script src="htp-blockdag-viz.js"></script>
   <script src="htp-silverscript-live.js"></script>
 <script src="htp-zk-settlement.js"></script>
-  <script src="htp-zk-pipeline.js"></script>
-  <script src="htp-oracle-sync.js"></script>
   
   <!-- HTP Events -->
+  <script src="htp-zk-pipeline.js"></script>
+  <script src="htp-oracle-sync.js"></script>
   <script src="htp-events.js"></script>
-  <script src="htp-events-v3.js"></script>
-  <script src="htp-event-creator.js"></script>
   
   <!-- Logo (base64 JPEG from original design) -->
-  <script src="htp-logo-data.js"></script>
+  <script src="htp-event-creator.js"></script>
 
     <script>
         // === HTP v70.0: localStorage quota protection ===
@@ -22595,9 +22595,9 @@ window.addEventListener('htp:balance:updated', function(e) {
 });
 </script>
 
+  <script src="htp-logo-data.js"></script>
 <script src="htp-skill-v3.js"></script>
 <script src="htp-markets-ui.js"></script>
-<script src="htp-demo-match.js"></script>
 <script>
 // DAA counter -- poll the cached value every 3s
 (function(){
@@ -22631,6 +22631,6 @@ window.addEventListener('htp:balance:updated', function(e) {
 })();
 </script>
 
-  <script src="htp-router.js"></script>
+<script src="htp-demo-match.js"></script>
 </body>
 </html>
