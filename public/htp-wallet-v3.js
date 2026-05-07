@@ -532,56 +532,72 @@
       document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3000);
     }
   },
-  importMnemonic: function() {
-    var ta = document.getElementById("mnemonic-input");
-    var phrase = ta ? ta.value.trim() : "";
+  importMnemonic: async function() {
+    var ta = document.getElementById('mnemonic-input');
+    var phrase = ta ? ta.value.trim() : '';
+    var statusEl = document.getElementById('wallet-status');
+
     if (!phrase) {
-      var t = document.createElement("div"); t.className = "htp-toast";
-      t.textContent = "Paste your 12-word mnemonic first.";
-      document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3000);
+      var t = document.createElement('div'); t.className = 'htp-toast';
+      t.textContent = 'Paste your 12-word seed phrase first.';
+      document.body.appendChild(t);
+      setTimeout(function(){ t.remove(); }, 3000);
       return;
     }
     var words = phrase.split(/\s+/).filter(Boolean);
     if (words.length < 12) {
-      var t2 = document.createElement("div"); t2.className = "htp-toast";
-      t2.style.borderColor = "rgba(255,80,80,0.4)";
-      t2.textContent = "Need 12 words, got " + words.length;
-      document.body.appendChild(t2); setTimeout(function(){ t2.remove(); }, 3000);
+      var t2 = document.createElement('div'); t2.className = 'htp-toast';
+      t2.style.borderColor = 'rgba(255,80,80,0.4)';
+      t2.textContent = 'Need 12 words, got ' + words.length + '.';
+      document.body.appendChild(t2);
+      setTimeout(function(){ t2.remove(); }, 3000);
       return;
     }
-    var statusEl = document.getElementById('wallet-status');
+
     if (statusEl) statusEl.textContent = 'Deriving address...';
-    importMnemonicWallet(phrase).then(function(res) {
-      if (res && res.ok) {
-        window.connectedAddress = res.address;
-        window.htpAddress = res.address;
-        window.htpBalance = parseFloat(res.balance) || 0;
-        localStorage.setItem('htp_mnemonic_session', JSON.stringify({
-          mnemonic: phrase, address: res.address, ts: Date.now()
-        }));
-        window.dispatchEvent(new CustomEvent('htp:wallet:connected',
-          { detail: { address: res.address } }));
-        // Re-render wallet screen with connected state
-        if (window.htpRouter && window.htpRouter.screenWallet)
-          window.htpRouter.screenWallet();
-        else if (window.htpRouter && window.htpRouter.navigate)
-          window.htpRouter.navigate('#/wallet');
-      } else {
-        if (statusEl) statusEl.textContent = 'Error: ' + (res ? res.error : 'Failed');
-        var t = document.createElement('div'); t.className = 'htp-toast';
-        t.style.borderColor = 'rgba(255,80,80,0.4)';
-        t.textContent = 'Import failed: ' + (res ? res.error : 'Unknown error');
-        document.body.appendChild(t);
-        setTimeout(function(){ t.remove(); }, 4000);
+
+    try {
+      if (!window.kaspaSDK || !window.kaspaSDK.Mnemonic) {
+        throw new Error('WASM not ready — wait 2s and retry');
       }
-    }).catch(function(e) {
-      if (statusEl) statusEl.textContent = 'Error: ' + e.message;
-      var t = document.createElement('div'); t.className = 'htp-toast';
-      t.style.borderColor = 'rgba(255,80,80,0.4)';
-      t.textContent = 'Import error: ' + e.message;
-      document.body.appendChild(t);
-      setTimeout(function(){ t.remove(); }, 4000);
-    });
+      var mn = new window.kaspaSDK.Mnemonic(phrase);
+      var seed = mn.toSeed('');
+      var xkey = window.kaspaSDK.XPrv.fromSeed(seed);
+      var derived = xkey
+        .deriveChild(44, true)
+        .deriveChild(111111, true)
+        .deriveChild(0, true)
+        .deriveChild(0, false)
+        .deriveChild(0, false);
+      var address = derived.privateKey
+        .toPublicKey()
+        .toAddress(window.kaspaSDK.NetworkType.Testnet)
+        .toString();
+
+      window.connectedAddress = address;
+      window.htpAddress = address;
+      localStorage.setItem('htp_mnemonic_session', JSON.stringify({
+        mnemonic: phrase, address: address, ts: Date.now()
+      }));
+      window.dispatchEvent(new CustomEvent('htp:wallet:connected',
+        { detail: { address: address } }));
+
+      if (statusEl) statusEl.textContent = 'Connected!';
+
+      setTimeout(function() {
+        if (window.htpRouter && typeof window.htpRouter.screenWallet === 'function') {
+          window.htpRouter.screenWallet();
+        }
+      }, 150);
+
+    } catch(err) {
+      if (statusEl) statusEl.textContent = 'Error: ' + err.message;
+      var t3 = document.createElement('div'); t3.className = 'htp-toast';
+      t3.style.borderColor = 'rgba(255,80,80,0.4)';
+      t3.textContent = 'Import failed: ' + err.message;
+      document.body.appendChild(t3);
+      setTimeout(function(){ t3.remove(); }, 5000);
+    }
   },
   disconnect: function() {
     localStorage.removeItem("htp_session");
