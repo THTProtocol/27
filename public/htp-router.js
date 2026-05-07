@@ -45,38 +45,6 @@
   }
 
   // ════════════════════════════════════════════
-  // 1. #/lobby
-  // ════════════════════════════════════════════
-  async function screenLobby() {
-    window.htpCurrentView = "lobby";
-    var data = await api("/api/games");
-    var games = (data && Array.isArray(data.games)) ? data.games
-              : (Array.isArray(data) ? data : []);
-    if (!games || !Array.isArray(games) || games.length === 0) {
-            games = [];
-    }
-    var typeIcons = { SkillGame: "♟", TournamentBracket: "◈", ParimutuelMarket: "⬡" };
-    var cards = games.map(function(g) {
-      var fee = kasFromSompi(g.entry_fee_sompi || g.entry_fee || 0);
-      return "<div class=\"htp-card\" style=\"cursor:pointer\" onclick=\"window.htpRouter.navigate('#/game/" + g.id + "')\">" +
-        "<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:10px\">" +
-        "<strong>" + (typeIcons[g.game_type]||"◆") + " " + (g.game_type||"Match") + "</strong>" +
-        badge(g.status) + "</div>" +
-        "<div style=\"font-size:11px;color:var(--htp-muted);margin-bottom:10px\">" +
-        "Entry: <span style=\"color:var(--htp-gold);font-weight:700\">" + fee + " KAS</span>" +
-        " | Players: " + (Array.isArray(g.players) ? g.players.length : (g.opponent ? 2 : 1)) + "/" + (g.max_players||"2") +
-        " | Creator: " + shortAddr(g.creator) + "</div>" +
-        "<button class=\"htp-btn\" onclick=\"event.stopPropagation();window.htpRouter.navigate('#/game/" + g.id + "')\">Join</button>" +
-        "</div>";
-    }).join("");
-    root.innerHTML = page("LOBBY", "Open matches on Kaspa Testnet — no house, no custody",
-      "<div class=\"htp-grid\">" + cards + "</div>");
-    // Poll every 10s
-    clearInterval(timers.lobby);
-    timers.lobby = setInterval(screenLobby, 10000);
-  }
-
-  // ════════════════════════════════════════════
   // 2. #/create
   // ════════════════════════════════════════════
   function screenCreate() {
@@ -477,20 +445,20 @@
       var shell = document.querySelector(".shell") || document.body;
       shell.insertBefore(root, shell.firstChild);
     }
-    var hash = window.location.hash.replace("#", "") || "lobby";
-  if (!hash || hash === "/" || hash === "#" || hash === "") hash = "#/lobby";
-  hash = (!hash || hash === "/" || hash === "#") ? "/lobby" : hash.replace(/^#/, "");
+    var hash = window.location.hash.replace("#", "") || "markets";
+  if (!hash || hash === "/" || hash === "#" || hash === "") hash = "#/markets";
+  hash = (!hash || hash === "/" || hash === "#") ? "/markets" : hash.replace(/^#/, "");
     var parts = hash.split("/");
     var route = "/" + parts[0];
     var id    = parts[1] || null;
 
     // Find and highlight active nav link
-    document.querySelectorAll(".nav-btn[data-v]").forEach(function(b) { var mapping = { overview: "lobby", markets: "markets", create: "create", wallet: "wallet", oracle: "status", portfolio: "wallet" }; var expected = mapping[b.getAttribute("data-v")] || b.getAttribute("data-v"); b.classList.toggle("act", parts[0] === expected);
+    document.querySelectorAll(".nav-btn[data-v]").forEach(function(b) { var mapping = { overview: "markets", markets: "markets", create: "create", wallet: "wallet", oracle: "status", portfolio: "wallet" }; var expected = mapping[b.getAttribute("data-v")] || b.getAttribute("data-v"); b.classList.toggle("act", parts[0] === expected);
     });
 
     switch(route) {
       case "/overview":
-    case "/lobby":       screenLobby(); break;
+    case "/lobby":       screenMarkets(); break;
       case "/create":      screenCreate(); break;
       case "/game":        screenGame(id); break;
       case "/settle":      screenSettle(id); break;
@@ -503,7 +471,7 @@
       case "/docs":        screenDocs(); break;
       case "/tx":          screenTx(id); break;
       case "/status":      screenStatus(); break;
-      default:             window.htpRouter.navigate("#/lobby"); break;
+      default:             window.htpRouter.navigate("#/markets"); break;
     }
   }
 
