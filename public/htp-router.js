@@ -5,7 +5,7 @@
 (function(){
   "use strict";
 
-  var API   = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || "https://hightable.duckdns.org";
+  var API   = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || "https://hightable.pro";
   var root  = null;
   var cache = {};
   var timers = {};
@@ -372,7 +372,7 @@
     var r = document.getElementById("htp-root");
     if (!r) return;
     r.innerHTML = "<div class=htp-screen><h2>Status</h2><pre id=st>Loading...</pre></div>";
-    var api = (window.HTP_CONFIG&&window.HTP_CONFIG.API_ORIGIN)||"https://hightable.duckdns.org";
+    var api = (window.HTP_CONFIG&&window.HTP_CONFIG.API_ORIGIN)||"https://hightable.pro";
     fetch(api+"/api/oracle/network").then(function(r){return r.json()}).then(function(d){
       var e=document.getElementById("st");if(e)e.textContent=JSON.stringify(d,null,2);
     }).catch(function(){});
@@ -403,7 +403,7 @@
     }
     var sompi = String(Math.round(amount * 1e8));
     // Use htpApi for the call
-    var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || "https://hightable.duckdns.org";
+    var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || "https://hightable.pro";
     try {
       var r = await fetch(base + "/api/games/" + id + "/join", {
         method: "POST",
