@@ -500,4 +500,17 @@ async function screenOracle() {
 }
 window.screenOracle = screenOracle;
 
+  window.screenAdmin = screenAdmin;
+  window.screenCreate = screenCreate;
+  window.screenDispute = screenDispute;
+  window.screenDocs = screenDocs;
+  window.screenGame = screenGame;
+  window.screenMarket = screenMarket;
+  window.screenMarkets = screenMarkets;
+  window.screenSettle = screenSettle;
+  window.screenStatus = screenStatus;
+  window.screenTournament = screenTournament;
+  window.screenTournamentId = screenTournamentId;
+  window.screenTx = screenTx;
+  window.screenWallet = screenWallet;
 })();

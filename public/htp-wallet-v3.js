@@ -281,7 +281,7 @@
 
   async function fetchBalance(address) {
     try {
-      var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || 'https://hightable.duckdns.org';
+      var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || 'https://hightable.pro';
       var resp = await fetch(base + '/api/balance/' + address, { signal: AbortSignal.timeout(8000) });
       if (!resp.ok) return null;
       var d = await resp.json();

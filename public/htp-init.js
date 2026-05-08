@@ -290,7 +290,7 @@ window.addEventListener('unhandledrejection',function(e){var m=e.reason&&(e.reas
   };
 
   function fetchConfig() {
-    var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || 'https://hightable.duckdns.org';
+    var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || 'https://hightable.pro';
     fetch(base + '/api/config', { signal: AbortSignal.timeout(5000) })
       .then(function(r) { return r.json(); })
       .then(function(cfg) {
@@ -300,7 +300,7 @@ window.addEventListener('unhandledrejection',function(e){var m=e.reason&&(e.reas
         }
       })
       .catch(function() {
-        var wsUrl = (window.HTP_CONFIG && window.HTP_CONFIG.WS_URL) || 'wss://hightable.duckdns.org/ws'; if(window.location.protocol === 'https:'){ var parts=wsUrl.split('://'); if(parts[0]==='ws') parts[0]='wss'; wsUrl = parts.join('://'); } initServerWs(wsUrl);
+        var wsUrl = (window.HTP_CONFIG && window.HTP_CONFIG.WS_URL) || 'wss://hightable.pro/ws'; if(window.location.protocol === 'https:'){ var parts=wsUrl.split('://'); if(parts[0]==='ws') parts[0]='wss'; wsUrl = parts.join('://'); } initServerWs(wsUrl);
       });
   }  // close fetchConfig
 
@@ -366,7 +366,7 @@ window.addEventListener('unhandledrejection',function(e){var m=e.reason&&(e.reas
     window.addEventListener('htp:server:connected', function() { setStatusDot('live'); });
     window.addEventListener('htp:server:disconnected', function() { setStatusDot('down'); });
     // Also probe the backend periodically. A successful /api/config = live.
-    var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || 'https://hightable.duckdns.org';
+    var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || 'https://hightable.pro';
     function probe() {
       try {
         fetch(base + '/api/config', { signal: AbortSignal.timeout(4000) })

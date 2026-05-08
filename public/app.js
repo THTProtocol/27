@@ -5,7 +5,7 @@
 // ============================================================
 
 const API = '';
-const WS_URL = 'wss://hightable.duckdns.org/ws';
+const WS_URL = 'wss://hightable.pro/ws';
 
 const app = {
   wallet: new WalletUI(),
