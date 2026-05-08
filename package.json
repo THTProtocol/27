@@ -5,9 +5,16 @@
   "private": true,
   "scripts": {
     "build": "cd crates && cargo build --release -p htp-server",
-    "start": "./target/release/htp-server",
+    "build:settler": "cd crates && cargo build --release -p htp-settler",
+    "start": "pm2 start infra/pm2-ecosystem.config.js",
     "check": "cd crates && cargo check --workspace",
-    "deploy:frontend": "firebase deploy --only hosting"
+    "deploy": "cd public && npx vercel --prod",
+    "logs": "pm2 logs",
+    "status": "pm2 list"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "express": "^4.18.2"
   },
   "keywords": ["kaspa", "blockdag", "skill-games", "prediction-markets", "covenants", "rust"],
   "author": "High Table Protocol Contributors",
