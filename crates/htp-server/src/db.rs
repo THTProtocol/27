@@ -115,9 +115,6 @@ impl HtpDb {
             );
             
 
-        // ═══════════════════════════════════════════
-        // HTP ORACLE NETWORK TABLES
-        // ═══════════════════════════════════════════
         CREATE TABLE IF NOT EXISTS htp_events (
             id TEXT PRIMARY KEY,
             title TEXT NOT NULL,
@@ -201,6 +198,17 @@ impl HtpDb {
             verified_txid TEXT,
             submitted_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
             verified_at INTEGER
+        );
+
+        
+        CREATE TABLE IF NOT EXISTS htp_payouts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id TEXT NOT NULL,
+            recipient TEXT NOT NULL,
+            payout_type TEXT NOT NULL DEFAULT 'oracle_fee',
+            amount_sompi INTEGER NOT NULL DEFAULT 0,
+            txid TEXT DEFAULT '',
+            created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
         );
 
         CREATE TABLE IF NOT EXISTS htp_protocol_fees (
@@ -586,6 +594,18 @@ impl HtpDb {
             }))
         })?;
         rows.collect()
+    }
+
+    
+    pub fn record_payout_db(
+        &self, event_id: &str, recipient: &str,
+        payout_type: &str, amount: i64,
+    ) -> rusqlite::Result<()> {
+        self.conn.execute(
+            "INSERT INTO htp_payouts (event_id, recipient, payout_type, amount_sompi)              VALUES (?1, ?2, ?3, ?4)",
+            rusqlite::params![event_id, recipient, payout_type, amount],
+        )?;
+        Ok(())
     }
 
     pub fn get_oracle_network_stats(&self) -> rusqlite::Result<serde_json::Value> {

@@ -790,3 +790,160 @@ pub async fn settle_event_handler(
         "note": "Zero protocol fee. Only challenge slashes generate revenue."
     })))
 }
+
+
+// ═══════════════════════════════════════════════════════
+// HTP ORACLE CHALLENGE ROUTES
+// ═══════════════════════════════════════════════════════
+
+/// POST /api/challenge — file a challenge against an attestation
+pub async fn submit_challenge_handler(
+    State(state): State<Arc<AppState>>,
+    Json(b): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let event_id = b["event_id"].as_str().unwrap_or("");
+    let attestation_id = b["attestation_id"].as_i64().unwrap_or(0);
+    let challenger = b["challenger_pubkey"].as_str().unwrap_or("");
+    let stake = b["challenger_stake_sompi"].as_i64().unwrap_or(0);
+    let wrong_attestor = b["wrong_attestor_pubkey"].as_str().unwrap_or("");
+    let proof_type = b["proof_type"].as_str().unwrap_or("counter_url");
+    let proof_data = b["proof_data"].as_str().unwrap_or("{}");
+    let counter = b["counter_outcome"].as_str().unwrap_or("");
+
+    let min_stake = crate::oracle::MIN_CHALLENGE_STAKE_SOMPI as i64;
+    if stake < min_stake {
+        return Err((StatusCode::BAD_REQUEST,
+            format!("Minimum challenge stake is {} KAS ({} sompi). Got {} sompi.",
+                min_stake / 100_000_000, min_stake, stake)));
+    }
+
+    let db = state.db.lock().map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+
+    // Verify attestation exists
+    let att_exists: bool = db.conn.query_row(
+        "SELECT COUNT(*) > 0 FROM htp_attestations WHERE id=?1 AND event_id=?2",
+        rusqlite::params![attestation_id, event_id],
+        |r| r.get(0),
+    ).unwrap_or(false);
+
+    if !att_exists {
+        return Err((StatusCode::NOT_FOUND, "attestation not found".into()));
+    }
+
+    // Insert challenge
+    db.conn.execute(
+        "INSERT INTO htp_challenges \
+         (event_id, attestation_id, challenger_pubkey, challenger_stake_sompi, \
+          wrong_attestor_pubkey, proof_type, proof_data, counter_outcome) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        rusqlite::params![event_id, attestation_id, challenger, stake,
+            wrong_attestor, proof_type, proof_data, counter],
+    ).map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+
+    let challenge_id = db.conn.last_insert_rowid();
+
+    tracing::info!("Challenge #{} filed for event {} against attestation #{} by {} (stake {} KAS)",
+        challenge_id, event_id, attestation_id,
+        &challenger[..challenger.len().min(16)],
+        stake as f64 / 1e8);
+
+    Ok(Json(serde_json::json!({
+        "challenge_id": challenge_id,
+        "event_id": event_id,
+        "attestation_id": attestation_id,
+        "challenger": challenger,
+        "stake_sompi": stake,
+        "stake_kas": stake as f64 / 1e8,
+        "status": "pending",
+        "message": "Challenge filed. Resolution: upheld (attestor slashed) or rejected (challenger loses stake).",
+        "fee_model": {
+            "if_upheld": "50% bond slashed: 98% challenger, 2% protocol",
+            "if_rejected": "100% stake lost: 98% accused, 2% protocol"
+        }
+    })))
+}
+
+/// POST /api/challenge/:id/resolve — resolve a challenge
+pub async fn resolve_challenge_handler(
+    State(state): State<Arc<AppState>>,
+    Path(challenge_id): Path<i64>,
+    Json(b): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let upheld = b["upheld"].as_bool().unwrap_or(false);
+
+    let db = state.db.lock().map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+
+    // Get challenge details
+    let (event_id, wrong_attestor, challenger, stake): (String, String, String, i64) = db.conn.query_row(
+        "SELECT event_id, wrong_attestor_pubkey, challenger_pubkey, challenger_stake_sompi \
+         FROM htp_challenges WHERE id=?1 AND status='pending'",
+        rusqlite::params![challenge_id],
+        |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+    ).map_err(|_| (StatusCode::NOT_FOUND, "challenge not found or already resolved".into()))?;
+
+    let (slash, challenger_reward, protocol_cut) = if upheld {
+        // Get the wrong attestor's bond
+        let bond: i64 = db.conn.query_row(
+            "SELECT bond_sompi FROM htp_oracle_operators WHERE pubkey=?1",
+            rusqlite::params![wrong_attestor],
+            |r| r.get(0),
+        ).unwrap_or(0);
+
+        let (s, r, c) = crate::oracle::compute_slash_upheld(bond as u64);
+
+        // Slash the wrong attestor
+        let _ = db.slash_operator_db(&wrong_attestor, s as i64);
+
+        // Log protocol fee
+        let _ = db.conn.execute(
+            "INSERT INTO htp_protocol_fees \
+             (event_id, fee_type, gross_sompi, fee_bps, fee_sompi, net_sompi) \
+             VALUES (?1, 'challenge_upheld', ?2, ?3, ?4, 0)",
+            rusqlite::params![event_id, s as i64, crate::oracle::SLASH_PROTOCOL_BPS as i64, c as i64],
+        );
+
+        (s as i64, r as i64, c as i64)
+    } else {
+        // Rejected: challenger loses their stake
+        let (accused_comp, protocol_cut) = crate::oracle::compute_slash_rejected(stake as u64);
+
+        // Compensate the wrongly-accused attestor
+        let _ = db.conn.execute(
+            "UPDATE htp_oracle_operators SET bond_sompi = bond_sompi + ?1 WHERE pubkey = ?2",
+            rusqlite::params![accused_comp as i64, wrong_attestor],
+        );
+
+        // Log protocol fee
+        let _ = db.conn.execute(
+            "INSERT INTO htp_protocol_fees \
+             (event_id, fee_type, gross_sompi, fee_bps, fee_sompi, net_sompi) \
+             VALUES (?1, 'challenge_rejected', ?2, ?3, ?4, 0)",
+            rusqlite::params![event_id, stake, crate::oracle::SLASH_PROTOCOL_BPS as i64, protocol_cut as i64],
+        );
+
+        (stake, accused_comp as i64, protocol_cut as i64)
+    };
+
+    // Mark challenge resolved
+    db.conn.execute(
+        "UPDATE htp_challenges SET status=?1, bond_slashed_sompi=?2, \
+         challenger_reward_sompi=?3, protocol_fee_sompi=?4, \
+         resolved_at=strftime('%s','now') \
+         WHERE id=?5",
+        rusqlite::params![
+            if upheld { "upheld" } else { "rejected" },
+            slash, challenger_reward, protocol_cut, challenge_id
+        ],
+    ).map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+
+    Ok(Json(serde_json::json!({
+        "challenge_id": challenge_id,
+        "upheld": upheld,
+        "status": if upheld { "upheld" } else { "rejected" },
+        "slash_sompi": slash,
+        "challenger_reward_sompi": challenger_reward,
+        "protocol_cut_sompi": protocol_cut,
+        "wrong_attestor": &wrong_attestor[..wrong_attestor.len().min(20)],
+        "challenger": &challenger[..challenger.len().min(20)]
+    })))
+}

@@ -36,3 +36,17 @@ Thumbs.db
 # Build artifacts
 dist/
 build/
+# Secrets / wallets
+.e2e-wallet.json
+.firebase-ci-token
+.htp-server-address.json
+.server-wallet.json
+.firebase/hosting.cHVibGlj.cache
+# Temporary / junk
+27/
+data/*.json
+research.json
+public/.htp-router.js.swp
+public/*.bak.*
+scripts/add_mobile.py
+scripts/clean_frontpage.py

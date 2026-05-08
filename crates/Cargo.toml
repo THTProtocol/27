@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "htp-oracle-node",
     "htp-server",
     "htp-games",
     "htp-db",
