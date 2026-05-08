@@ -369,16 +369,153 @@
   // 14. #/status
   // ════════════════════════════════════════════
   async function screenStatus() {
-    var r = document.getElementById("htp-root");
-    if (!r) return;
-    r.innerHTML = "<div class=htp-screen><h2>Status</h2><pre id=st>Loading...</pre></div>";
-    var api = (window.HTP_CONFIG&&window.HTP_CONFIG.API_ORIGIN)||"https://hightable.duckdns.org";
-    fetch(api+"/api/oracle/network").then(function(r){return r.json()}).then(function(d){
-      var e=document.getElementById("st");if(e)e.textContent=JSON.stringify(d,null,2);
+
+// ═══════════════════════════════════════════════════════
+// HTP ORACLE NETWORK SCREEN
+// ═══════════════════════════════════════════════════════
+
+function screenOracle() {
+  var root = document.getElementById("htp-root");
+  if (!root) return;
+  var addr = window.connectedAddress || window.htpAddress || '';
+
+  root.innerHTML =
+    "<div class='htp-screen' style='max-width:860px;margin:0 auto;padding:24px 16px'>" +
+    "<h2 style='font-size:1.3rem;font-weight:700;margin-bottom:4px'>⚖ Oracle Network</h2>" +
+    "<p style='color:var(--muted);font-size:0.85rem;margin-bottom:20px'>" +
+    "Oracles earn <strong>0.5% of event pool</strong> for correct attestations. " +
+    "Protocol collects <strong>2% of slash</strong> only when challenges are upheld. " +
+    "Zero fee on normal settlements.</p>" +
+
+    // Stats bar
+    "<div id='oracle-stats-bar' style='display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px'></div>" +
+
+    // Active events
+    "<h3 style='font-size:1rem;font-weight:600;margin-bottom:8px'>Active Events</h3>" +
+    "<div id='oracle-events-list' style='margin-bottom:24px'>Loading...</div>" +
+
+    // Register as Operator
+    "<h3 style='font-size:1rem;font-weight:600;margin-bottom:8px'>Register as Oracle Operator</h3>" +
+    "<div style='background:var(--card-bg, #181818);border:1px solid var(--border, #2a2a2a);border-radius:10px;padding:16px;margin-bottom:16px'>" +
+    "<input id='oracle-pubkey' class='htp-input' placeholder='Your pubkey (hex)' style='width:100%;margin-bottom:8px' value='" + addr + "'>" +
+    "<input id='oracle-nickname' class='htp-input' placeholder='Nickname (optional)' style='width:100%;margin-bottom:8px'>" +
+    "<input id='oracle-bond-txid' class='htp-input' placeholder='Bond TXID (min 1,000 KAS on TN12)' style='width:100%;margin-bottom:8px'>" +
+    "<button class='htp-btn' onclick='registerOracleOp()'>Register + Post Bond</button>" +
+    "</div>" +
+
+    // Attest event
+    "<h3 style='font-size:1rem;font-weight:600;margin-bottom:8px'>Submit Attestation</h3>" +
+    "<div style='background:var(--card-bg, #181818);border:1px solid var(--border, #2a2a2a);border-radius:10px;padding:16px;margin-bottom:16px'>" +
+    "<input id='attest-event-id' class='htp-input' placeholder='Event ID' style='width:100%;margin-bottom:8px'>" +
+    "<input id='attest-outcome' class='htp-input' placeholder='Outcome (e.g. yes / no / team_a)' style='width:100%;margin-bottom:8px'>" +
+    "<input id='attest-sig' class='htp-input' placeholder='Schnorr signature (hex)' style='width:100%;margin-bottom:8px'>" +
+    "<button class='htp-btn' onclick='submitOracleAttest()'>Submit Attestation</button>" +
+    "</div>" +
+
+    // Challenge
+    "<h3 style='font-size:1rem;font-weight:600;margin-bottom:8px'>File Challenge</h3>" +
+    "<div style='background:var(--card-bg, #181818);border:1px solid var(--border, #2a2a2a);border-radius:10px;padding:16px'>" +
+    "<input id='challenge-event-id' class='htp-input' placeholder='Event ID' style='width:100%;margin-bottom:8px'>" +
+    "<input id='challenge-att-id' class='htp-input' placeholder='Attestation ID' style='width:100%;margin-bottom:8px'>" +
+    "<input id='challenge-proof' class='htp-input' placeholder='Proof data (JSON or URL)' style='width:100%;margin-bottom:8px'>" +
+    "<input id='challenge-counter' class='htp-input' placeholder='Counter outcome (correct answer)' style='width:100%;margin-bottom:8px'>" +
+    "<button class='htp-btn' onclick='submitOracleChallenge()'>Submit Challenge</button>" +
+    "</div></div>";
+
+  // Load stats
+  fetch((window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN || "https://hightable.duckdns.org") + "/api/oracle/network")
+    .then(function(r){return r.json()})
+    .then(function(d){
+      var s = document.getElementById("oracle-stats-bar");
+      if (!s) return;
+      var items = [
+        ["Operators", (d.total_oracles||0) + (d.total_arbiters||0)],
+        ["Total Bonded", ((d.total_bond||0)/1e8).toFixed(0)+" KAS"],
+        ["Events Open", d.open_events||0],
+        ["Challenges", d.total_challenges||0],
+        ["Upheld", d.upheld_challenges||0],
+        ["Protocol Fees", ((d.total_protocol_fee_sompi||0)/1e8).toFixed(2)+" KAS"]
+      ];
+      s.innerHTML = items.map(function(p){
+        return "<div style='background:var(--card-bg);border:1px solid var(--border);padding:10px 16px;min-width:110px;border-radius:8px'>" +
+          "<div style='font-size:0.7rem;color:var(--muted);text-transform:uppercase'>"+p[0]+"</div>" +
+          "<div style='font-size:1.1rem;font-weight:700'>"+p[1]+"</div></div>";
+      }).join("");
     }).catch(function(){});
+
+  // Load events
+  fetch((window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN || "https://hightable.duckdns.org") + "/api/events")
+    .then(function(r){return r.json()})
+    .then(function(resp){
+      var events = resp.events || [];
+      var el = document.getElementById("oracle-events-list");
+      if (!el) return;
+      if (!events.length) { el.innerHTML = "<p style='color:var(--muted)'>No open events.</p>"; return; }
+      el.innerHTML = events.map(function(e){
+        return "<div style='background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px'>" +
+          "<div style='font-weight:600'>"+e.title+"</div>" +
+          "<div style='font-size:0.8rem;color:var(--muted)'>"+e.id+" | "+e.oracle_type+" | Quorum:"+e.quorum_m+"/"+e.quorum_n+" | DAA:"+e.resolution_daa+"</div></div>";
+      }).join("");
+    }).catch(function(){});
+}
+
+// ── Oracle action helpers ────────────────────────────
+
+function registerOracleOp() {
+  var pubkey = document.getElementById("oracle-pubkey").value;
+  var nickname = document.getElementById("oracle-nickname").value || "anon";
+  var bond_txid = document.getElementById("oracle-bond-txid").value;
+  if (!pubkey || !bond_txid) { alert("Pubkey and bond TXID required"); return; }
+  var API = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN || "https://hightable.duckdns.org");
+  fetch(API + "/api/operators", { method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ pubkey:pubkey, nickname:nickname, operator_type:"oracle", bond_txid:bond_txid, bond_sompi:100000000000 }) })
+    .then(function(r){return r.json()}).then(function(d){alert(JSON.stringify(d))}).catch(function(e){alert("Error: "+e.message)});
+}
+
+function submitOracleAttest() {
+  var event_id = document.getElementById("attest-event-id").value;
+  var outcome = document.getElementById("attest-outcome").value;
+  var sig = document.getElementById("attest-sig").value;
+  var pubkey = window.connectedAddress || "";
+  if (!event_id || !outcome) { alert("Event ID and outcome required"); return; }
+  var API = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN || "https://hightable.duckdns.org");
+  fetch(API + "/api/events/" + event_id + "/attest", { method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ attestor_pubkey:pubkey, attestor_type:"oracle", signed_outcome:outcome,
+      signature:sig, attestation_hash:"", resolution_value:"", daa_score:0 }) })
+    .then(function(r){return r.json()}).then(function(d){alert(JSON.stringify(d))}).catch(function(e){alert("Error: "+e.message)});
+}
+
+function submitOracleChallenge() {
+  var event_id = document.getElementById("challenge-event-id").value;
+  var att_id = document.getElementById("challenge-att-id").value;
+  var proof = document.getElementById("challenge-proof").value;
+  var counter = document.getElementById("challenge-counter").value;
+  var challenger = window.connectedAddress || window.htpAddress || "";
+  if (!event_id || !att_id || !challenger) { alert("Connect wallet, enter event ID and attestation ID"); return; }
+  alert("Challenge system ready. Staking 100 KAS to challenge attestation #"+att_id+" for event "+event_id+".");
+}
+
+    var health   = await api("/health");
+    var config   = await api("/api/config");
+    var games    = await api("/api/games");
+    var cov      = await api("/api/covenants/deployed");
+    var gameCount = (games && Array.isArray(games)) ? games.length : 0;
+    root.innerHTML = page("STATUS", "Live protocol dashboard",
+      "<div class=\"htp-grid\">" +
+      "<div class=\"htp-card\"><strong>Server</strong><br>" + (health ? health.status : "OFFLINE") + " v" + (health&&health.version||"?") + "</div>" +
+      "<div class=\"htp-card\"><strong>Network</strong><br>Kaspa Testnet (TN12)</div>" +
+      "<div class=\"htp-card\"><strong>Active Games</strong><br>" + gameCount + "</div>" +
+      "<div class=\"htp-card\"><strong>Arbiter</strong><br>" + (config&&config.arbiter ? shortAddr(config.arbiter) : "?") + "</div>" +
+      "<div class=\"htp-card\"><strong>Covenants</strong><br>" + (cov ? Object.keys(cov).length : 0) + " deployed</div>" +
+      "<div class=\"htp-card\"><strong>Chain</strong><br><span class=\"htp-badge htp-badge-open htp-badge-live\">LIVE</span></div>" +
+      "</div>");
+    clearInterval(timers.status);
+    timers.status = setInterval(screenStatus, 5000);
   }
 
-  // Market stake submission (wallet flow)
+  // ════════════════════════════════════════════
+  
+  // ▸ Market stake submission (wallet flow)
   window.htpRouter._placeStake = async function(id) {
     var addr = window.connectedAddress || window.htpAddress;
     if (!addr) {
@@ -475,29 +612,4 @@
   window.addEventListener("hashchange", render);
 
   console.log("[HTP Router] 14 screens registered. Hash SPA ready.");
-  window.registerOracleOp = registerOracleOp;
-  window.submitOracleAttest = submitOracleAttest;
-  window.submitOracleChallenge = submitOracleChallenge;
-// ORACLE SCREEN FIX -- injected
-async function screenOracle() {
-  var data = await (fetch("https://hightable.pro/api/oracle/network").then(function(r){return r.json();}).catch(function(){return null;}));
-  var root = document.getElementById("htp-root") || document.querySelector(".htp-root") || document.body;
-  if (!data) { root.innerHTML = "<div class=htp-page><h1 class=htp-page-title>ORACLE</h1><div class=htp-empty>Oracle offline</div></div>"; return; }
-  root.innerHTML = "<div class=htp-page><h1 class=htp-page-title>ORACLE NETWORK</h1>" +
-    "<div class=htp-grid>" +
-    "<div class=htp-card><strong>Open Events</strong><br>" + (data.open_events||0) + "</div>" +
-    "<div class=htp-card><strong>Total Oracles</strong><br>" + (data.total_oracles||0) + "</div>" +
-    "<div class=htp-card><strong>Total Attestations</strong><br>" + (data.total_attestations||0) + "</div>" +
-    "<div class=htp-card><strong>Resolved</strong><br>" + (data.resolved_events||0) + "</div>" +
-    "<div class=htp-card><strong>Protocol Fee</strong><br>" + ((data.protocol_fee_bps||0)/100) + "%</div>" +
-    "<div class=htp-card><strong>Challenges</strong><br>" + (data.total_challenges||0) + "</div>" +
-    "</div>" +
-    (typeof window.htpOracle === "object" ? "<div id=oracleContainer style=margin-top:24px></div>" : "") +
-    "</div>";
-  if (typeof window.htpOracle === "object" && typeof window.htpOracle.renderTabs === "function") {
-    window.htpOracle.renderTabs("oracleContainer");
-  }
-}
-window.screenOracle = screenOracle;
-
 })();

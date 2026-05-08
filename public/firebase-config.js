@@ -7,7 +7,7 @@
 
   var firebaseConfig = {
     apiKey:            "AIzaSyA9n5AMFgmCL861rmqE_6ajBBEC5BboPd8",
-    authDomain:        "hightable420.firebaseapp.com",
+    authDomain:        "hightable.pro",
     databaseURL:       "https://hightable420-default-rtdb.europe-west1.firebasedatabase.app",
     projectId:         "hightable420",
     storageBucket:     "hightable420.firebasestorage.app",

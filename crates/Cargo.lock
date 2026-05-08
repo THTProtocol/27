@@ -741,6 +741,7 @@ dependencies = [
  "clap",
  "dotenvy",
  "hex",
+ "rand 0.8.6",
  "reqwest",
  "secp256k1",
  "serde",
