@@ -514,3 +514,30 @@ window.screenOracle = screenOracle;
   window.screenTx = screenTx;
   window.screenWallet = screenWallet;
 })();
+(async function loadDashboardStats() {
+  try {
+    const BASE = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || "https://hightable.pro";
+    const [gamesRes, eventsRes, ordersRes] = await Promise.all([
+      fetch(BASE + "/api/games").then(r => r.json()).catch(() => ({})),
+      fetch(BASE + "/api/events").then(r => r.json()).catch(() => ({})),
+      fetch(BASE + "/api/orders/stats").then(r => r.json()).catch(() => ({}))
+    ]);
+    const gamesCount = gamesRes.count ?? (Array.isArray(gamesRes) ? gamesRes.length : 0);
+    const eventsCount = (eventsRes.events || []).length;
+    const totalPool = (ordersRes.total_volume_sompi || 0) / 1e8;
+    const els = {
+      "[data-stat='total-pool']": totalPool.toFixed(2) + " KAS",
+      "[data-stat='active-markets']": eventsCount,
+      "[data-stat='positions']": gamesCount,
+      ".stat-total-pool": totalPool.toFixed(2) + " KAS",
+      ".stat-active-markets": eventsCount,
+      ".stat-games": gamesCount,
+      "#stat-pool": totalPool.toFixed(2) + " KAS",
+      "#stat-markets": eventsCount,
+      "#stat-games": gamesCount,
+    };
+    for (const [sel, val] of Object.entries(els)) {
+      document.querySelectorAll(sel).forEach(el => { el.textContent = val; });
+    }
+  } catch(e) {}
+})();
