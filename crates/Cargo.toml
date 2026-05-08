@@ -1,17 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
-    "htp-oracle-node",
     "htp-server",
     "htp-games",
-    "htp-db",
     "htp-kaspa-rpc",
-    "htp-settlement",
-    "htp-game-engine",
-    "htp-api",
-    "htp-elo",
-    "htp-firebase-sync",
-    "kaspa-tn12-sighash",
 ]
 
 [workspace.package]
