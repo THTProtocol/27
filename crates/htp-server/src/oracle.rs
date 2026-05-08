@@ -134,3 +134,38 @@ pub fn build_proof_root(moves: &[String]) -> Option<String> {
     }
     Some(hex::encode(&latest))
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// HTP ORACLE FEE MATH
+// ═══════════════════════════════════════════════════════════════
+
+pub const ORACLE_FEE_BPS: u64 = 50;       // 0.5% of gross event pool
+pub const SLASH_PROTOCOL_BPS: u64 = 200;  // 2% of slash
+
+/// Oracle pool fee: 0.5% of gross event pool → M quorum signers
+pub fn compute_oracle_fee(gross_pot: u64, quorum_m: u64) -> (u64, u64) {
+    if gross_pot == 0 || quorum_m == 0 { return (0, 0); }
+    let total = (gross_pot * ORACLE_FEE_BPS) / 10_000;
+    (total, total / quorum_m)
+}
+
+/// Challenge UPHELD: slash 50% of bond. Protocol 2%, challenger 98%.
+pub fn compute_slash_upheld(bond: u64) -> (u64, u64, u64) {
+    let slash = bond / 2;
+    let protocol = (slash * SLASH_PROTOCOL_BPS) / 10_000;
+    (slash, slash - protocol, protocol)
+}
+
+/// Challenge REJECTED: challenger loses stake. Protocol 2%, accused 98%.
+pub fn compute_slash_rejected(stake: u64) -> (u64, u64) {
+    let protocol = (stake * SLASH_PROTOCOL_BPS) / 10_000;
+    (stake - protocol, protocol)
+}
+
+/// Protocol treasury address from env
+pub fn protocol_address() -> String {
+    std::env::var("PROTOCOL_ADDRESS")
+        .or_else(|_| std::env::var("HTP_GUARDIAN_ADDRESS"))
+        .unwrap_or_else(|_| "kaspatest:PROTOCOL_NOT_SET".to_string())
+}

@@ -81,6 +81,7 @@ async fn main() {
         .route("/api/operators", axum::routing::get(routes::list_operators_handler).post(routes::register_operator_handler))
         .route("/api/oracle/network", axum::routing::get(routes::oracle_network_stats_handler))
 
+        .route("/api/events/:id/settle", axum::routing::post(routes::settle_event_handler))
         .route("/ws", get(ws::ws_handler))
         .layer(cors)
         .layer(tower_http::trace::TraceLayer::new_for_http())

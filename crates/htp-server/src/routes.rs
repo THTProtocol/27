@@ -740,3 +740,53 @@ pub async fn oracle_network_stats_handler(
     let stats = db.get_oracle_network_stats().map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
     Ok(Json(stats))
 }
+
+pub async fn settle_event_handler(
+    State(state): State<Arc<AppState>>,
+    Path(event_id): Path<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let db = state.db.lock().map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+
+    let gross_pot: i64 = db.conn.query_row(
+        "SELECT gross_pot_sompi FROM htp_events WHERE id=?1",
+        rusqlite::params![event_id], |r| r.get(0)
+    ).unwrap_or(0);
+
+    let quorum_m: i64 = db.conn.query_row(
+        "SELECT quorum_m FROM htp_events WHERE id=?1",
+        rusqlite::params![event_id], |r| r.get(0)
+    ).unwrap_or(2);
+
+    let (total_fee, per_oracle) = crate::oracle::compute_oracle_fee(
+        gross_pot as u64, quorum_m as u64
+    );
+
+    // Get winning outcome attestors
+    let attestations = db.get_attestations_for_event_db(&event_id)
+        .map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+
+    let mut paid = 0;
+    for att in &attestations {
+        if let Some(pk) = att["pubkey"].as_str() {
+            let _ = db.conn.execute(
+                "INSERT OR IGNORE INTO htp_payouts (event_id,recipient,payout_type,amount_sompi)
+                 VALUES (?1,?2,'oracle_fee',?3)",
+                rusqlite::params![event_id, pk, per_oracle as i64],
+            );
+            paid += 1;
+        }
+    }
+
+    db.conn.execute(
+        "UPDATE htp_events SET status='resolved', resolved_at=strftime('%s','now') WHERE id=?1",
+        rusqlite::params![event_id],
+    ).map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+
+    Ok(Json(serde_json::json!({
+        "event_id": event_id, "status": "resolved",
+        "gross_pot_sompi": gross_pot, "total_oracle_fee_sompi": total_fee,
+        "per_oracle_sompi": per_oracle, "attestors_paid": paid,
+        "protocol_fee_sompi": 0,
+        "note": "Zero protocol fee. Only challenge slashes generate revenue."
+    })))
+}
