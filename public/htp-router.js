@@ -475,8 +475,29 @@
   window.addEventListener("hashchange", render);
 
   console.log("[HTP Router] 14 screens registered. Hash SPA ready.");
-  window.screenOracle = screenOracle;
   window.registerOracleOp = registerOracleOp;
   window.submitOracleAttest = submitOracleAttest;
   window.submitOracleChallenge = submitOracleChallenge;
+// ORACLE SCREEN FIX -- injected
+async function screenOracle() {
+  var data = await (fetch("https://hightable.pro/api/oracle/network").then(function(r){return r.json();}).catch(function(){return null;}));
+  var root = document.getElementById("htp-root") || document.querySelector(".htp-root") || document.body;
+  if (!data) { root.innerHTML = "<div class=htp-page><h1 class=htp-page-title>ORACLE</h1><div class=htp-empty>Oracle offline</div></div>"; return; }
+  root.innerHTML = "<div class=htp-page><h1 class=htp-page-title>ORACLE NETWORK</h1>" +
+    "<div class=htp-grid>" +
+    "<div class=htp-card><strong>Open Events</strong><br>" + (data.open_events||0) + "</div>" +
+    "<div class=htp-card><strong>Total Oracles</strong><br>" + (data.total_oracles||0) + "</div>" +
+    "<div class=htp-card><strong>Total Attestations</strong><br>" + (data.total_attestations||0) + "</div>" +
+    "<div class=htp-card><strong>Resolved</strong><br>" + (data.resolved_events||0) + "</div>" +
+    "<div class=htp-card><strong>Protocol Fee</strong><br>" + ((data.protocol_fee_bps||0)/100) + "%</div>" +
+    "<div class=htp-card><strong>Challenges</strong><br>" + (data.total_challenges||0) + "</div>" +
+    "</div>" +
+    (typeof window.htpOracle === "object" ? "<div id=oracleContainer style=margin-top:24px></div>" : "") +
+    "</div>";
+  if (typeof window.htpOracle === "object" && typeof window.htpOracle.renderTabs === "function") {
+    window.htpOracle.renderTabs("oracleContainer");
+  }
+}
+window.screenOracle = screenOracle;
+
 })();
