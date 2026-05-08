@@ -34,7 +34,7 @@ fn sign(keypair: &Keypair, hash_hex: &str) -> Result<String> {
     let bytes = hex::decode(hash_hex)?;
     let arr: [u8; 32] = bytes.try_into().map_err(|_| anyhow!("hash must be 32 bytes"))?;
     let msg = Message::from_digest_slice(&arr)?;
-    let sig = secp.sign_schnorr(&msg, keypair);
+    let sig = secp.sign_schnorr_with_rng(&msg, keypair, &mut rand::thread_rng());
     Ok(hex::encode(sig.as_ref()))
 }
 
