@@ -1,52 +1,81 @@
-# Rust
+# ── Rust ────────────────────────────────────────────
 target/
-Cargo.lock
+# Keep Cargo.lock for binaries (reproducible builds)
+# Cargo.lock  ← intentionally tracked
 
-# Database
+# ── Database ────────────────────────────────────────
 *.db
 *.db-shm
 *.db-wal
+data/
 
-# Environment
+# ── Environment ─────────────────────────────────────
 .env
 .env.*
 !.env.example
 
-# Firebase
-.firebase/
-firebase-debug.log
-.firebaserc
-
-# Node
+# ── Node ────────────────────────────────────────────
 node_modules/
 
-# Dev scripts (never commit these)
+# ── Firebase (dead - replaced by Vercel/Hetzner) ────
+.firebase/
+.firebaserc
+firebase.json
+database.rules.json
+deployed.json
+firebase-debug.log
+.firebase-ci-token
+
+# ── Vercel internal ─────────────────────────────────
+.vercel/
+
+# ── Certs (managed by Let's Encrypt on server) ──────
+certs/
+*.pem
+*.key
+*.crt
+
+# ── Docker (optional, keep Dockerfile/compose) ──────
+docker/
+
+# ── Dead submodules ──────────────────────────────────
+rusty-kaspa
+
+# ── Backup / temp Rust files ─────────────────────────
+*.backup
+*.bak
+*.bak.*
+crates/htp-server/src/routes_part1.rs
+crates/htp-server/src/routes_part2.rs
+crates/htp-server/src/routes.rs.backup
+
+# ── Temp frontend files ───────────────────────────────
+public/.gitignore
+public/vercel.json
+public/*.bak.*
+public/*.swp
+
+# ── Dev/patch scripts ────────────────────────────────
 fix_*.py
 patch_*.py
 check_*.py
 inject_*.py
 htp_v*.py
 railway_*.py
-/tmp/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Build artifacts
-dist/
-build/
-# Secrets / wallets
-.e2e-wallet.json
-.firebase-ci-token
-.htp-server-address.json
-.server-wallet.json
-.firebase/hosting.cHVibGlj.cache
-# Temporary / junk
-27/
-data/*.json
-research.json
-public/.htp-router.js.swp
-public/*.bak.*
 scripts/add_mobile.py
 scripts/clean_frontpage.py
+
+# ── Secrets / wallets ────────────────────────────────
+.e2e-wallet.json
+.htp-server-address.json
+.server-wallet.json
+
+# ── Misc junk ────────────────────────────────────────
+27/
+research.json
+tmp/
+/tmp/
+.DS_Store
+Thumbs.db
+dist/
+build/
