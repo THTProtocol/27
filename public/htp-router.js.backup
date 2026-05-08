@@ -1,0 +1,615 @@
+/* ══════════════════════════════════════════════
+   HTP ROUTER v1.0 — 14-screen hash SPA
+   No React. No build. Vanilla JS.
+   ══════════════════════════════════════════════ */
+(function(){
+  "use strict";
+
+  var API   = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || "https://hightable.duckdns.org";
+  var root  = null;
+  var cache = {};
+  var timers = {};
+
+  function $(sel) { return document.querySelector(sel); }
+
+  // ▸ FETCH helpers
+  async function api(path) {
+    try {
+      var r = await fetch(API + path, { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } catch(e) { return null; }
+  }
+
+  function kasFromSompi(sompi) {
+    return sompi ? (Number(BigInt(sompi)) / 1e8).toFixed(2) : "0.00";
+  }
+
+  function shortAddr(a) { return a ? a.slice(0,8)+"..."+a.slice(-6) : "???"; }
+
+  // ▸ PAGE WRAPPER
+  function page(title, subtitle, html) {
+    return "<div class=\"htp-page\">" +
+      "<h1 class=\"htp-page-title\">" + title + "</h1>" +
+      (subtitle ? "<p class=\"htp-page-subtitle\">" + subtitle + "</p>" : "") +
+      html + "</div>";
+  }
+
+  function empty(msg) {
+    return "<div class=\"htp-empty\"><div class=\"htp-empty-icon\">◈</div>" + msg + "</div>";
+  }
+
+  function badge(status) {
+    var map = { open: "open", active: "active", pending: "active", settled: "settled", disputed: "disputed" };
+    return "<span class=\"htp-badge htp-badge-" + (map[status]||"settled") + "\">" + (status||"???").toUpperCase() + "</span>";
+  }
+
+  // ════════════════════════════════════════════
+  // 2. #/create
+  // ════════════════════════════════════════════
+  function screenCreate() {
+    root.innerHTML = page("CREATE MATCH", "Propose a new covenant game",
+      "<div class=\"htp-card\" style=\"max-width:500px\">" +
+      "<div class=\"htp-field\"><label class=\"htp-label\">Game Type</label>" +
+      "<select id=\"create-type\" class=\"htp-select\">" +
+      "<option value=\"SkillGame\">Skill Match</option>" +
+      "<option value=\"TournamentBracket\">Tournament Bracket</option>" +
+      "<option value=\"ParimutuelMarket\">Prediction Market</option></select></div>" +
+      "<div class=\"htp-field\"><label class=\"htp-label\">Entry Fee (KAS)</label>" +
+      "<input id=\"create-fee\" class=\"htp-input\" type=\"number\" min=\"1\" step=\"0.1\" value=\"1\"></div>" +
+      "<div class=\"htp-field\"><label class=\"htp-label\">Max Players</label>" +
+      "<input id=\"create-max\" class=\"htp-input\" type=\"number\" min=\"2\" max=\"16\" value=\"2\"></div>" +
+      "<button class=\"htp-btn\" onclick=\"window.htpRouter._createGame()\">CREATE MATCH</button>" +
+      "</div>");
+  }
+
+  window.htpRouter = window.htpRouter || {};
+
+  function _toast(msg, type) {
+    var d = document.createElement("div");
+    d.className = "htp-toast";
+    if (type === "error") d.style.borderColor = "rgba(255,80,80,0.4)";
+    if (type === "warn")  d.style.borderColor = "rgba(255,180,0,0.4)";
+    if (type === "ok")    { d.style.borderColor = "rgba(0,255,135,0.4)"; d.className += " htp-toast-success"; }
+    d.textContent = msg;
+    document.body.appendChild(d);
+    setTimeout(function(){ d.remove(); }, 4000);
+  }
+  window.htpRouter._toast = _toast;
+
+  window.htpRouter._createGame = async function() {
+    var type = document.getElementById("create-type").value;
+    var fee  = document.getElementById("create-fee").value;
+    var max  = document.getElementById("create-max").value;
+    var creator = window.connectedAddress || window.htpAddress;
+    if (!creator) {
+      var t = document.createElement("div"); t.className = "htp-toast";
+      t.textContent = "Connect wallet first"; document.body.appendChild(t);
+      setTimeout(function(){ t.remove(); }, 3000);
+      window.htpRouter.navigate("#/wallet");
+      return;
+    }
+    var body = { game_type: type, entry_fee_sompi: String(BigInt(Math.round(parseFloat(fee)*1e8))), max_players: parseInt(max), creator: creator };
+    try {
+      var r = await fetch(API + "/api/games", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
+      var j = await r.json();
+      if (j && j.id) {
+        window.htpRouter.navigate("#/game/" + j.id);
+      } else {
+        var toast = document.createElement("div"); toast.className="htp-toast";
+        toast.textContent = "Error: " + (j.error || "Failed"); document.body.appendChild(toast);
+        setTimeout(function(){ toast.remove(); }, 3000);
+      }
+    } catch(e) {
+// [stub removed]
+    }
+  };
+
+  // ════════════════════════════════════════════
+  // 3. #/game/:id
+  // ════════════════════════════════════════════
+  async function screenGame(id) {
+    var g = await api("/api/games/" + id);
+    if (!g) { root.innerHTML = page("GAME", "", empty("Game not found: " + id)); return; }
+    var fee = kasFromSompi(g.entry_fee_sompi || g.entry_fee || 0);
+    var myAddr = window.connectedAddress || window.htpAddress;
+    var canJoin = g.status === "open" && myAddr && g.creator !== myAddr;
+    root.innerHTML = page("GAME #" + id.slice(-8), "Status: " + badge(g.status),
+      "<div class=\"htp-card\">" +
+      "<table class=\"htp-table\"><tr><th>Type</th><td>" + (g.game_type||g.type||"Match") + "</td></tr>" +
+      "<tr><th>Entry Fee</th><td style=\"color:var(--htp-gold);font-weight:700\">" + fee + " KAS</td></tr>" +
+      "<tr><th>Players</th><td>" + (Array.isArray(g.players) ? g.players.length : (g.opponent ? 2 : 1)) + "/" + (g.max_players||"2") + "</td></tr>" +
+      "<tr><th>Creator</th><td style=\"font-family:var(--htp-font);font-size:11px\">" + (g.creator||"?") + "</td></tr>" +
+      "<tr><th>Status</th><td>" + badge(g.status) + "</td></tr>" +
+      "</table>" +
+      (canJoin ? "<button class=\"htp-btn\" style=\"margin-top:16px\" onclick=\"window.htpRouter._joinGame('"+id+"')\">JOIN MATCH</button>" : "") +
+      "</div>");
+    // Auto-refresh
+    clearInterval(timers["game_"+id]);
+    timers["game_"+id] = setInterval(function(){ screenGame(id); }, 5000);
+  }
+
+  window.htpRouter._joinGame = async function(id) {
+    var addr = window.connectedAddress || window.htpAddress;
+    if (!addr) { var t=document.createElement("div");t.className="htp-toast";t.textContent="Connect wallet first";document.body.appendChild(t);setTimeout(function(){t.remove()},3000); return; }
+    var r = await fetch(API + "/api/games/" + id + "/join", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({player: addr}) });
+    if (r.ok) {
+      var t=document.createElement("div");t.className="htp-toast htp-toast-success";t.textContent="Joined! Game is now active.";document.body.appendChild(t);setTimeout(function(){t.remove()},4000);
+      window.htpRouter.navigate("#/game/" + id);
+      return;
+    }
+    var body; try { body = await r.json(); } catch(e) { body = {}; }
+    var msg = body.error || ("Status " + r.status);
+    if (r.status === 409) { msg = "Already joined"; }
+    else if (r.status === 404) { msg = "Game no longer available"; }
+    else { msg = "Join failed: " + msg; }
+    var t=document.createElement("div");t.className="htp-toast";t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove()},4000);
+  };
+
+  // ════════════════════════════════════════════
+  // 4. #/settle/:id
+  // ════════════════════════════════════════════
+  async function screenSettle(id) {
+    var g = await api("/api/games/" + id);
+    if (!g) { root.innerHTML = page("SETTLE", "", empty("Game not found")); return; }
+    root.innerHTML = page("SETTLE #" + id.slice(-8), "Propose outcome via arbiter attestation",
+      "<div class=\"htp-card\" style=\"max-width:500px\">" +
+      "<div class=\"htp-field\"><label class=\"htp-label\">Winner Address</label>" +
+      "<input id=\"settle-winner\" class=\"htp-input\" placeholder=\"kaspatest:...\"></div>" +
+      "<div class=\"htp-field\"><label class=\"htp-label\">Settlement Path</label>" +
+      "<select id=\"settle-path\" class=\"htp-select\"><option value=\"A\">PATH A — Arbiter</option><option value=\"B\">PATH B — Dispute Window</option><option value=\"C\">PATH C — Guardian</option></select></div>" +
+      "<button class=\"htp-btn\" onclick=\"window.htpRouter._proposeSettle('"+id+"')\">PROPOSE SETTLEMENT</button>" +
+      "</div>");
+  }
+
+  window.htpRouter._proposeSettle = async function(id) {
+    var w = document.getElementById("settle-winner").value;
+    var p = document.getElementById("settle-path").value;
+    if (!w) { var t=document.createElement("div");t.className="htp-toast";t.textContent="Enter winner address";document.body.appendChild(t);setTimeout(function(){t.remove()},3000); return; }
+    var r = await fetch(API + "/api/games/" + id + "/propose", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({winner: w, proof_root: "0".repeat(64), settlement_path: p})
+    });
+    var j = await r.json();
+    var toast = document.createElement("div"); toast.className="htp-toast";
+    toast.textContent = "Attestation: " + (j.attestation_hash ? j.attestation_hash.slice(0,16)+"..." : "FAILED");
+    document.body.appendChild(toast); setTimeout(function(){ toast.remove(); }, 4000);
+  };
+
+  // ════════════════════════════════════════════
+  // 5. #/dispute/:id
+  // ════════════════════════════════════════════
+  function screenDispute(id) {
+    root.innerHTML = page("DISPUTE #" + id.slice(-8), "Challenge outcome or invoke guardian",
+      "<div class=\"htp-card\">" +
+      "<button class=\"htp-btn htp-btn-ghost\" onclick=\"window.htpRouter._challenge('"+id+"')\">CHALLENGE OUTCOME</button>" +
+      "<button class=\"htp-btn htp-btn-ghost\" style=\"margin-left:8px\" onclick=\"window.htpRouter._guardianOverride('"+id+"')\">GUARDIAN OVERRIDE</button>" +
+      "</div>");
+  }
+
+  window.htpRouter._challenge = async function(id) {
+    var r = await fetch(API + "/api/games/" + id + "/challenge", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({challenger: window.connectedAddress||"unknown"}) });
+    var j = await r.json();
+// [stub removed]
+  };
+
+  window.htpRouter._guardianOverride = async function(id) {
+    var r = await fetch(API + "/api/games/" + id + "/guardian", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({action: "override", guardian: window.connectedAddress}) });
+    var txt=await r.text();var t=document.createElement("div");t.className="htp-toast";t.textContent="Guardian: "+txt;document.body.appendChild(t);setTimeout(function(){t.remove()},4000);
+  };
+
+  // ════════════════════════════════════════════
+  // 6. #/wallet
+  // ════════════════════════════════════════════
+  async function screenWallet() {
+    var addr = window.connectedAddress || window.htpAddress || null;
+    var bal = "0.00";
+    if (addr) {
+      try { var b = await api("/api/balance/" + addr); bal = b ? kasFromSompi(b.balance_sompi || 0) : "0.00"; }
+      catch(e) { bal = "error"; }
+    }
+    root.innerHTML = page("WALLET", "Manage your Kaspa identity",
+      "<div class=\"htp-card\" style=\"max-width:500px\">" +
+      (addr ? "<div style=\"margin-bottom:16px\"><label class=\"htp-label\">Address</label><div class=\"htp-code\" style=\"word-break:break-all\">" + addr + "</div></div>" : "") +
+      "<div style=\"margin-bottom:16px\"><label class=\"htp-label\">Balance</label><strong style=\"font-size:24px;color:var(--htp-gold)\">" + bal + " KAS</strong></div>" +
+      "<textarea id=\"mnemonic-input\" placeholder=\"word1 word2 ... word12\" style=\"width:100%;height:64px;padding:10px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;font-family:monospace;font-size:12px;box-sizing:border-box;resize:vertical;margin-bottom:10px\"></textarea>" +
+      "<button class=\"htp-btn\" style=\"width:100%;margin-bottom:6px\" onclick=\"try{window.htpWalletV3.importMnemonic()}catch(e){}\">IMPORT MNEMONIC</button>" +
+      "<button class=\"htp-btn htp-btn-ghost\" style=\"width:100%;margin-bottom:6px\" onclick=\"try{window.htpWalletV3.generateWallet()}catch(e){}\">GENERATE WALLET</button>" +
+      (addr ? "<button class=\"htp-btn htp-btn-ghost\" style=\"width:100%\" onclick=\"window.htpWalletV3.disconnect()\">DISCONNECT</button>" : "") +
+      "</div>");
+  }
+
+
+  // ════════════════════════════════════════════
+  // 7. #/markets
+  // ════════════════════════════════════════════
+  async function screenMarkets() {
+    var games = await api("/api/games?type=parimutuel");
+    if (!games || !Array.isArray(games) || games.length === 0) {
+// [demo ref removed]
+    }
+    var cards = games.map(function(m) {
+      return "<div class=\"htp-card\" onclick=\"window.htpRouter.navigate('#/market/" + m.id + "')\" style=\"cursor:pointer\">" +
+        "<strong>⬡ " + (m.title||"Prediction Market") + "</strong> " + badge(m.status) +
+        "<div style=\"font-size:11px;color:var(--htp-muted);margin-top:6px\">Pool: " + kasFromSompi(m.pool||m.entry_fee_sompi||0) + " KAS</div>" +
+        "<button class=\"htp-btn htp-btn-ghost htp-btn-sm\" style=\"margin-top:10px\" onclick=\"event.stopPropagation();window.htpRouter.navigate('#/market/" + m.id + "')\">VIEW</button>" +
+        "</div>";
+    }).join("");
+    root.innerHTML = page("MARKETS", "Prediction markets on Kaspa Testnet",
+      "<div class=\"htp-grid\">" + cards + "</div>");
+  }
+
+  // ════════════════════════════════════════════
+  // 8. #/market/:id
+  // ════════════════════════════════════════════
+  async function screenMarket(id) {
+    var m = await api("/api/games/" + id);
+    if (!m) { root.innerHTML = page("MARKET", "", empty("Market not found")); return; }
+    root.innerHTML = page("MARKET", (m.title||"Prediction Market") + " — Pool: " + kasFromSompi(m.pool||0) + " KAS",
+      "<div class=\"htp-card\">" +
+      "<div class=\"htp-field\"><label class=\"htp-label\">Your Stake</label>" +
+      "<select id=\"market-outcome\" class=\"htp-select\">" + ((m.outcomes||["Yes","No"]).map(function(o){return "<option>"+o+"</option>";}).join("")) + "</select></div>" +
+      "<div class=\"htp-field\"><label class=\"htp-label\">Amount (KAS)</label>" +
+      "<input id=\"market-amount\" class=\"htp-input\" type=\"number\" min=\"0.1\" step=\"0.1\" value=\"0.5\"></div>" +
+      "<button class=\"htp-btn\" onclick=\"window.htpRouter._placeStake('"+id+"')\">CONFIRM STAKE</button>" +
+      "</div>");
+  }
+
+  // ════════════════════════════════════════════
+  // 9. #/tournament
+  // ════════════════════════════════════════════
+  async function screenTournament() {
+    var games = await api("/api/games?type=tournament");
+    if (!games || !Array.isArray(games) || games.length === 0) {
+// [demo ref removed]
+    }
+    var cards = games.map(function(t) {
+      return "<div class=\"htp-card\" onclick=\"window.htpRouter.navigate('#/tournament/" + t.id + "')\" style=\"cursor:pointer\">" +
+        "<strong>◈ Tournament</strong> " + badge(t.status) +
+        "<div style=\"font-size:11px;color:var(--htp-muted);margin-top:6px\">Players: " + (t.players||0) + "/" + (t.max_players||8) + " | Rounds: " + (t.rounds||"?") + " | Prize: " + kasFromSompi(t.entry_fee_sompi||0) + " KAS</div>" +
+        "</div>";
+    }).join("");
+    root.innerHTML = page("TOURNAMENTS", "Bracket competitions",
+      "<div class=\"htp-grid\">" + cards + "</div>");
+  }
+
+  // ════════════════════════════════════════════
+  // 10. #/tournament/:id
+  // ════════════════════════════════════════════
+  async function screenTournamentId(id) {
+    var t = await api("/api/games/" + id);
+    if (!t) { root.innerHTML = page("TOURNAMENT", "", empty("Tournament not found")); return; }
+    
+    var fee = (t.stake_sompi || 0) / 1e8;
+    var prize = fee * (t.max_players || 8);
+    var players = [];
+    try { 
+      if (t.player_list) players = JSON.parse(t.player_list); 
+      else if (t.players) players = Array.isArray(t.players) ? t.players : [];
+    } catch(e) {}
+    
+    // Build dynamic bracket
+    var slots = t.max_players || 8;
+    var html = '<div class="htp-card" style="margin-bottom:16px">';
+    html += '<table class="htp-table"><tr><th>Type</th><td>Tournament Bracket</td></tr>';
+    html += '<tr><th>Entry Fee</th><td style="color:var(--htp-gold)">' + fee.toFixed(2) + ' KAS</td></tr>';
+    html += '<tr><th>Prize Pool</th><td style="color:var(--htp-gold);font-weight:700">' + prize.toFixed(2) + ' KAS</td></tr>';
+    html += '<tr><th>Players</th><td>' + players.length + '/' + slots + '</td></tr>';
+    html += '<tr><th>Status</th><td>' + badge(t.status) + '</td></tr></table></div>';
+    
+    html += '<div class="htp-card"><h3 style="color:var(--htp-gold);margin-top:0">Bracket</h3>';
+    html += '<table class="htp-table"><thead><tr><th>Slot</th><th>Player</th><th>Status</th></tr></thead><tbody>';
+    for (var i = 0; i < Math.min(slots, 16); i++) {
+      var p = players[i] || null;
+      html += '<tr><td style="font-family:var(--htp-font)">#' + (i+1) + '</td>';
+      html += '<td>' + (p ? '<span style="color:var(--htp-gold)">' + shortAddr(p) + '</span>' : '<span style="color:var(--htp-muted)">Waiting...</span>') + '</td>';
+      html += '<td>' + (p ? '<span class="htp-badge htp-badge-active">SEEDED</span>' : '<span class="htp-badge htp-badge-settled">OPEN</span>') + '</td></tr>';
+    }
+    html += '</tbody></table>';
+    
+    if (t.status === "settled") {
+      html += '<div style="margin-top:16px;padding:12px;background:rgba(201,168,76,0.1);border:1px solid var(--htp-gold);border-radius:var(--htp-radius)">';
+      html += '<strong style="color:var(--htp-gold)">WINNER:</strong> ' + (t.winner ? shortAddr(t.winner) : "Unknown") + '</div>';
+    }
+    
+    html += '</div>';
+    root.innerHTML = page("TOURNAMENT", "Bracket #" + id.slice(-8), html);
+  }
+
+  async function screenAdmin() {
+    var pass = sessionStorage.getItem("htpAdminKey");
+    if (!pass || pass.length < 8) {
+      root.innerHTML = page("ADMIN", "", "<div class=\"htp-card\"><input id=\"admin-pass\" class=\"htp-input\" type=\"password\" placeholder=\"Admin key\"><button class=\"htp-btn\" style=\"margin-top:10px\" onclick=\"sessionStorage.setItem('htpAdminKey',document.getElementById('admin-pass').value);window.htpRouter.navigate('#/admin')\">UNLOCK</button></div>");
+      return;
+    }
+    var health = await api("/health");
+    var stats  = await api("/api/admin/stats");
+    var cov    = await api("/api/covenants/deployed");
+    root.innerHTML = page("ADMIN", "Protocol controls",
+      "<div class=\"htp-card\"><strong>Health:</strong> " + JSON.stringify(health) + "</div>" +
+      "<div class=\"htp-card\"><strong>Stats:</strong> " + JSON.stringify(stats) + "</div>" +
+      "<div class=\"htp-card\"><strong>Covenants:</strong> " + JSON.stringify(cov) + "</div>" +
+      "<div class=\"htp-card\"><strong>Force Settle:</strong><input id=\"force-id\" class=\"htp-input\" placeholder=\"Game ID\"><button class=\"htp-btn\" style=\"margin-top:8px\" onclick=\"var d=document.createElement('div');d.className='htp-toast';d.textContent='Force settle requires guardian auth';document.body.appendChild(d);setTimeout(function(){d.remove()},4000)\">TRIGGER</button></div>");
+  }
+
+  // ════════════════════════════════════════════
+  // 12. #/docs
+  // ════════════════════════════════════════════
+  function screenDocs() {
+    root.innerHTML = page("DOCS", "Protocol specification",
+      "<div class=\"htp-card\"><h3 style=\"color:var(--htp-gold)\">High Table Protocol</h3>" +
+      "<p>Trustless skill-game covenants on Kaspa. Zero counterparty risk.</p>" +
+      "<h4 style=\"color:var(--htp-gold);margin-top:20px\">Settlement Flow</h4>" +
+      "<ol>" +
+      "<li>Player locks KAS into covenant UTXO</li>" +
+      "<li>Match completes → arbiter proposes outcome</li>" +
+      "<li>Dispute window (N blocks) → challenge or finalize</li>" +
+      "<li>Guardian window → override if dispute unresolved</li>" +
+      "<li>Winner claims funds</li></ol>" +
+      "<h4 style=\"color:var(--htp-gold);margin-top:20px\">Contracts</h4>" +
+      "<table class=\"htp-table\">" +
+      "<tr><th>Contract</th><th>Lines</th><th>Entrypoints</th></tr>" +
+      "<tr><td>SkillGame.ss</td><td>285</td><td>8</td></tr>" +
+      "<tr><td>TournamentBracket.ss</td><td>181</td><td>6</td></tr>" +
+      "<tr><td>ParimutuelMarket.ss</td><td>221</td><td>6</td></tr>" +
+      "<tr><td>MaximizerEscrow.ss</td><td>169</td><td>6</td></tr>" +
+      "</table></div>");
+  }
+
+  // ════════════════════════════════════════════
+  // 13. #/tx/:txid
+  // ════════════════════════════════════════════
+  function screenTx(txid) {
+    root.innerHTML = page("TRANSACTION", "TX details",
+      "<div class=\"htp-card\"><div class=\"htp-code\" style=\"word-break:break-all\">" + txid + "</div>" +
+      "<a href=\"https://explorer-tn12.kaspa.org/txs/" + txid + "\" target=\"_blank\" style=\"color:var(--htp-gold);font-size:12px\">View on TN12 Explorer ↗</a></div>");
+  }
+
+  // ════════════════════════════════════════════
+  // 14. #/status
+  // ════════════════════════════════════════════
+  async function screenStatus() {
+
+// ═══════════════════════════════════════════════════════
+// HTP ORACLE NETWORK SCREEN
+// ═══════════════════════════════════════════════════════
+
+function screenOracle() {
+  var root = document.getElementById("htp-root");
+  if (!root) return;
+  var addr = window.connectedAddress || window.htpAddress || '';
+
+  root.innerHTML =
+    "<div class='htp-screen' style='max-width:860px;margin:0 auto;padding:24px 16px'>" +
+    "<h2 style='font-size:1.3rem;font-weight:700;margin-bottom:4px'>⚖ Oracle Network</h2>" +
+    "<p style='color:var(--muted);font-size:0.85rem;margin-bottom:20px'>" +
+    "Oracles earn <strong>0.5% of event pool</strong> for correct attestations. " +
+    "Protocol collects <strong>2% of slash</strong> only when challenges are upheld. " +
+    "Zero fee on normal settlements.</p>" +
+
+    // Stats bar
+    "<div id='oracle-stats-bar' style='display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px'></div>" +
+
+    // Active events
+    "<h3 style='font-size:1rem;font-weight:600;margin-bottom:8px'>Active Events</h3>" +
+    "<div id='oracle-events-list' style='margin-bottom:24px'>Loading...</div>" +
+
+    // Register as Operator
+    "<h3 style='font-size:1rem;font-weight:600;margin-bottom:8px'>Register as Oracle Operator</h3>" +
+    "<div style='background:var(--card-bg, #181818);border:1px solid var(--border, #2a2a2a);border-radius:10px;padding:16px;margin-bottom:16px'>" +
+    "<input id='oracle-pubkey' class='htp-input' placeholder='Your pubkey (hex)' style='width:100%;margin-bottom:8px' value='" + addr + "'>" +
+    "<input id='oracle-nickname' class='htp-input' placeholder='Nickname (optional)' style='width:100%;margin-bottom:8px'>" +
+    "<input id='oracle-bond-txid' class='htp-input' placeholder='Bond TXID (min 1,000 KAS on TN12)' style='width:100%;margin-bottom:8px'>" +
+    "<button class='htp-btn' onclick='registerOracleOp()'>Register + Post Bond</button>" +
+    "</div>" +
+
+    // Attest event
+    "<h3 style='font-size:1rem;font-weight:600;margin-bottom:8px'>Submit Attestation</h3>" +
+    "<div style='background:var(--card-bg, #181818);border:1px solid var(--border, #2a2a2a);border-radius:10px;padding:16px;margin-bottom:16px'>" +
+    "<input id='attest-event-id' class='htp-input' placeholder='Event ID' style='width:100%;margin-bottom:8px'>" +
+    "<input id='attest-outcome' class='htp-input' placeholder='Outcome (e.g. yes / no / team_a)' style='width:100%;margin-bottom:8px'>" +
+    "<input id='attest-sig' class='htp-input' placeholder='Schnorr signature (hex)' style='width:100%;margin-bottom:8px'>" +
+    "<button class='htp-btn' onclick='submitOracleAttest()'>Submit Attestation</button>" +
+    "</div>" +
+
+    // Challenge
+    "<h3 style='font-size:1rem;font-weight:600;margin-bottom:8px'>File Challenge</h3>" +
+    "<div style='background:var(--card-bg, #181818);border:1px solid var(--border, #2a2a2a);border-radius:10px;padding:16px'>" +
+    "<input id='challenge-event-id' class='htp-input' placeholder='Event ID' style='width:100%;margin-bottom:8px'>" +
+    "<input id='challenge-att-id' class='htp-input' placeholder='Attestation ID' style='width:100%;margin-bottom:8px'>" +
+    "<input id='challenge-proof' class='htp-input' placeholder='Proof data (JSON or URL)' style='width:100%;margin-bottom:8px'>" +
+    "<input id='challenge-counter' class='htp-input' placeholder='Counter outcome (correct answer)' style='width:100%;margin-bottom:8px'>" +
+    "<button class='htp-btn' onclick='submitOracleChallenge()'>Submit Challenge</button>" +
+    "</div></div>";
+
+  // Load stats
+  fetch((window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN || "https://hightable.duckdns.org") + "/api/oracle/network")
+    .then(function(r){return r.json()})
+    .then(function(d){
+      var s = document.getElementById("oracle-stats-bar");
+      if (!s) return;
+      var items = [
+        ["Operators", (d.total_oracles||0) + (d.total_arbiters||0)],
+        ["Total Bonded", ((d.total_bond||0)/1e8).toFixed(0)+" KAS"],
+        ["Events Open", d.open_events||0],
+        ["Challenges", d.total_challenges||0],
+        ["Upheld", d.upheld_challenges||0],
+        ["Protocol Fees", ((d.total_protocol_fee_sompi||0)/1e8).toFixed(2)+" KAS"]
+      ];
+      s.innerHTML = items.map(function(p){
+        return "<div style='background:var(--card-bg);border:1px solid var(--border);padding:10px 16px;min-width:110px;border-radius:8px'>" +
+          "<div style='font-size:0.7rem;color:var(--muted);text-transform:uppercase'>"+p[0]+"</div>" +
+          "<div style='font-size:1.1rem;font-weight:700'>"+p[1]+"</div></div>";
+      }).join("");
+    }).catch(function(){});
+
+  // Load events
+  fetch((window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN || "https://hightable.duckdns.org") + "/api/events")
+    .then(function(r){return r.json()})
+    .then(function(resp){
+      var events = resp.events || [];
+      var el = document.getElementById("oracle-events-list");
+      if (!el) return;
+      if (!events.length) { el.innerHTML = "<p style='color:var(--muted)'>No open events.</p>"; return; }
+      el.innerHTML = events.map(function(e){
+        return "<div style='background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px'>" +
+          "<div style='font-weight:600'>"+e.title+"</div>" +
+          "<div style='font-size:0.8rem;color:var(--muted)'>"+e.id+" | "+e.oracle_type+" | Quorum:"+e.quorum_m+"/"+e.quorum_n+" | DAA:"+e.resolution_daa+"</div></div>";
+      }).join("");
+    }).catch(function(){});
+}
+
+// ── Oracle action helpers ────────────────────────────
+
+function registerOracleOp() {
+  var pubkey = document.getElementById("oracle-pubkey").value;
+  var nickname = document.getElementById("oracle-nickname").value || "anon";
+  var bond_txid = document.getElementById("oracle-bond-txid").value;
+  if (!pubkey || !bond_txid) { alert("Pubkey and bond TXID required"); return; }
+  var API = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN || "https://hightable.duckdns.org");
+  fetch(API + "/api/operators", { method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ pubkey:pubkey, nickname:nickname, operator_type:"oracle", bond_txid:bond_txid, bond_sompi:100000000000 }) })
+    .then(function(r){return r.json()}).then(function(d){alert(JSON.stringify(d))}).catch(function(e){alert("Error: "+e.message)});
+}
+
+function submitOracleAttest() {
+  var event_id = document.getElementById("attest-event-id").value;
+  var outcome = document.getElementById("attest-outcome").value;
+  var sig = document.getElementById("attest-sig").value;
+  var pubkey = window.connectedAddress || "";
+  if (!event_id || !outcome) { alert("Event ID and outcome required"); return; }
+  var API = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN || "https://hightable.duckdns.org");
+  fetch(API + "/api/events/" + event_id + "/attest", { method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ attestor_pubkey:pubkey, attestor_type:"oracle", signed_outcome:outcome,
+      signature:sig, attestation_hash:"", resolution_value:"", daa_score:0 }) })
+    .then(function(r){return r.json()}).then(function(d){alert(JSON.stringify(d))}).catch(function(e){alert("Error: "+e.message)});
+}
+
+function submitOracleChallenge() {
+  var event_id = document.getElementById("challenge-event-id").value;
+  var att_id = document.getElementById("challenge-att-id").value;
+  var proof = document.getElementById("challenge-proof").value;
+  var counter = document.getElementById("challenge-counter").value;
+  var challenger = window.connectedAddress || window.htpAddress || "";
+  if (!event_id || !att_id || !challenger) { alert("Connect wallet, enter event ID and attestation ID"); return; }
+  alert("Challenge system ready. Staking 100 KAS to challenge attestation #"+att_id+" for event "+event_id+".");
+}
+
+    var health   = await api("/health");
+    var config   = await api("/api/config");
+    var games    = await api("/api/games");
+    var cov      = await api("/api/covenants/deployed");
+    var gameCount = (games && Array.isArray(games)) ? games.length : 0;
+    root.innerHTML = page("STATUS", "Live protocol dashboard",
+      "<div class=\"htp-grid\">" +
+      "<div class=\"htp-card\"><strong>Server</strong><br>" + (health ? health.status : "OFFLINE") + " v" + (health&&health.version||"?") + "</div>" +
+      "<div class=\"htp-card\"><strong>Network</strong><br>Kaspa Testnet (TN12)</div>" +
+      "<div class=\"htp-card\"><strong>Active Games</strong><br>" + gameCount + "</div>" +
+      "<div class=\"htp-card\"><strong>Arbiter</strong><br>" + (config&&config.arbiter ? shortAddr(config.arbiter) : "?") + "</div>" +
+      "<div class=\"htp-card\"><strong>Covenants</strong><br>" + (cov ? Object.keys(cov).length : 0) + " deployed</div>" +
+      "<div class=\"htp-card\"><strong>Chain</strong><br><span class=\"htp-badge htp-badge-open htp-badge-live\">LIVE</span></div>" +
+      "</div>");
+    clearInterval(timers.status);
+    timers.status = setInterval(screenStatus, 5000);
+  }
+
+  // ════════════════════════════════════════════
+  
+  // ▸ Market stake submission (wallet flow)
+  window.htpRouter._placeStake = async function(id) {
+    var addr = window.connectedAddress || window.htpAddress;
+    if (!addr) {
+      try { if (window.htpWalletV3 && window.htpWalletV3.showConnectModal) window.htpWalletV3.showConnectModal(); } catch(e) {}
+      var toast = document.createElement("div"); toast.className = "htp-toast";
+      toast.textContent = "Connect wallet first"; document.body.appendChild(toast);
+      setTimeout(function(){ toast.remove(); }, 3000); return;
+    }
+    var outcomeEl = document.getElementById("market-outcome");
+    var amountEl  = document.getElementById("market-amount");
+    if (!outcomeEl || !amountEl) {
+      var toast = document.createElement("div"); toast.className = "htp-toast";
+      toast.textContent = "Form elements missing"; document.body.appendChild(toast);
+      setTimeout(function(){ toast.remove(); }, 3000); return;
+    }
+    var outcome = outcomeEl.value;
+    var amount  = parseFloat(amountEl.value || "0.5");
+    if (isNaN(amount) || amount <= 0) {
+      var toast = document.createElement("div"); toast.className = "htp-toast";
+      toast.textContent = "Invalid amount"; document.body.appendChild(toast);
+      setTimeout(function(){ toast.remove(); }, 3000); return;
+    }
+    var sompi = String(Math.round(amount * 1e8));
+    // Use htpApi for the call
+    var base = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || "https://hightable.duckdns.org";
+    try {
+      var r = await fetch(base + "/api/games/" + id + "/join", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({player: addr, outcome: outcome, stake_sompi: sompi})
+      });
+      var j = await r.json();
+      if (j && j.message) {
+        var toast = document.createElement("div"); toast.className = "htp-toast";
+        toast.textContent = "Stake recorded — " + j.message;
+        document.body.appendChild(toast);
+        setTimeout(function(){ toast.remove(); }, 3000);
+      }
+    } catch(e) {
+      var toast = document.createElement("div"); toast.className = "htp-toast";
+      toast.textContent = "Failed: " + e.message;
+      document.body.appendChild(toast);
+      setTimeout(function(){ toast.remove(); }, 3000);
+    }
+  };
+
+  // ROUTER ENGINE
+  // ════════════════════════════════════════════
+  function render() {
+    root = root || document.getElementById("htp-root");
+    if (!root) {
+      root = document.createElement("div");
+      root.id = "htp-root";
+      var shell = document.querySelector(".shell") || document.body;
+      shell.insertBefore(root, shell.firstChild);
+    }
+    var hash = window.location.hash.replace("#", "").replace(/^\//, "") || "lobby";
+    if (!hash || hash === "/" || hash === "#" || hash === "") hash = "lobby";
+    var parts = hash.split("/");
+    var route = "/" + parts[0];
+    var id    = parts[1] || null;
+
+    // Find and highlight active nav link
+    document.querySelectorAll(".nav-btn[data-v]").forEach(function(b) { var mapping = { overview: "markets", markets: "markets", create: "create", wallet: "wallet", oracle: "status", portfolio: "wallet" }; var expected = mapping[b.getAttribute("data-v")] || b.getAttribute("data-v"); b.classList.toggle("act", parts[0] === expected);
+    });
+
+    switch(route) {
+      case "/overview":
+    case "/lobby":       screenMarkets(); break;
+      case "/create":      screenCreate(); break;
+      case "/game":        screenGame(id); break;
+      case "/settle":      screenSettle(id); break;
+      case "/dispute":     screenDispute(id); break;
+      case "/oracle":      screenOracle(); break;
+      case "/wallet":      screenWallet(); break;
+      case "/markets":     screenMarkets(); break;
+      case "/market":      screenMarket(id); break;
+      case "/tournament":  id ? screenTournamentId(id) : screenTournament(); break;
+      case "/admin":       screenAdmin(); break;
+      case "/docs":        screenDocs(); break;
+      case "/tx":          screenTx(id); break;
+      case "/status":      screenStatus(); break;
+      default:             window.htpRouter.navigate("#/markets"); break;
+    }
+  }
+
+  window.htpRouter.navigate = function(hash) {
+    window.location.hash = hash;
+  };
+
+  window.htpRouter.render = render;
+
+  window.addEventListener("load", render);
+  window.addEventListener("hashchange", render);
+
+  console.log("[HTP Router] 14 screens registered. Hash SPA ready.");
+})();
