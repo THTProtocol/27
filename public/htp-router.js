@@ -461,6 +461,7 @@
       case "/docs":        screenDocs(); break;
       case "/tx":          screenTx(id); break;
       case "/status":      screenStatus(); break;
+      case "/orders":     screenOrders(); break;
       default:             window.htpRouter.navigate("#/markets"); break;
     }
   }
@@ -479,6 +480,96 @@
   window.submitOracleAttest = submitOracleAttest;
   window.submitOracleChallenge = submitOracleChallenge;
 // ORACLE SCREEN FIX -- injected
+// Orders screen
+var ordersTimer = null;
+async function screenOrders() {
+  var root = document.getElementById("htp-root");
+  if (!root) return;
+  var B = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || "https://hightable.pro";
+  root.innerHTML = "<div class=htp-screen style=max-width:860px;margin:0 auto;padding:24px 16px>" +
+    "<h2>Open Orders</h2>" +
+    "<p style=color:var(--muted);font-size:0.85rem;margin-bottom:16px>Post or match orders. TN12 testnet.</p>" +
+    "<button class=htp-btn style=margin-bottom:16px onclick=screenOrderCreate()>+ Create Order</button>" +
+    "<div id=orders-stats style=display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px></div>" +
+    "<div id=orders-list>Loading...</div>" +
+    "</div>";
+  clearInterval(ordersTimer);
+  ordersTimer = setInterval(refreshOrders, 10000);
+  refreshOrders();
+}
+async function refreshOrders() {
+  var B = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || "https://hightable.pro";
+  try {
+    var a = await fetch(B + "/api/orders").then(function(r){return r.json();});
+    var b = await fetch(B + "/api/orders/stats").then(function(r){return r.json();});
+    var oo = a.orders || [];
+    var el = document.getElementById("orders-list");
+    var sb = document.getElementById("orders-stats");
+    if (el) {
+      el.innerHTML = oo.length ? oo.map(function(o){
+        return "<div class=htp-card style=display:flex;justify-content:space-between;align-items:center;padding:12px 16px;margin-bottom:8px>" +
+          "<div><span class=htp-badge>" + (o.order_type||"game") + "</span> " +
+          "<span style=font-weight:600>" + (o.game_type||"") + "</span> " +
+          "<span style=color:var(--muted);font-size:0.8rem>" + (o.stake_sompi/1e8).toFixed(2) + " KAS</span></div>" +
+          "<button class=htp-btn htp-btn-sm data-order=" + o.id + ">Match</button></div>";
+      }).join("") : "<p style=color:var(--muted)>No open orders.</p>";
+      el.onclick = function(e) {
+        var btn = e.target.closest("[data-order]");
+        if (btn) matchOrder(btn.getAttribute("data-order"));
+      };
+    }
+    if (sb) sb.innerHTML = [
+      ["Open", b.open_count||0],
+      ["Volume", ((b.total_volume_sompi||0)/1e8).toFixed(2)+" KAS"]
+    ].map(function(p){
+      return "<div style=background:var(--card-bg);border:1px solid var(--border);padding:10px 16px;min-width:100px;border-radius:8px>" +
+        "<div style=font-size:0.7rem;color:var(--muted);text-transform:uppercase>"+p[0]+"</div>" +
+        "<div style=font-size:1.1rem;font-weight:700>"+p[1]+"</div></div>";
+    }).join("");
+  } catch(e) {}
+}
+window.matchOrder = async function(orderId) {
+  var addr = window.connectedAddress || window.htpAddress || "";
+  if (!addr) { alert("Connect wallet first"); return; }
+  var B = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || "https://hightable.pro";
+  try {
+    var r = await fetch(B + "/api/orders/" + orderId + "/match", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ matcher: addr }) });
+    var d = await r.json();
+    if (d.match_id) { alert("Matched! ID: " + d.match_id); refreshOrders(); }
+    else alert("Error: " + JSON.stringify(d));
+  } catch(e) { alert("Match failed: " + e.message); }
+};
+function screenOrderCreate() {
+  var root = document.getElementById("htp-root");
+  if (!root) return;
+  var addr = window.connectedAddress || window.htpAddress || "";
+  root.innerHTML = "<div class=htp-screen style=max-width:860px;margin:0 auto;padding:24px 16px>" +
+    "<h2>Create Order</h2>" +
+    "<div class=htp-card style=padding:16px>" +
+    "<input id=oc-addr class=htp-input style=width:100%;margin-bottom:8px placeholder=\"Your address\" value=\"" + addr + "\">" +
+    "<select id=oc-type class=htp-input style=width:100%;margin-bottom:8px><option value=game>Skill Game</option><option value=event>Prediction</option></select>" +
+    "<input id=oc-game class=htp-input style=width:100%;margin-bottom:8px placeholder=\"Game (chess/checkers/poker)\">" +
+    "<input id=oc-stake class=htp-input type=number style=width:100%;margin-bottom:12px placeholder=\"Stake KAS\" step=0.01 min=0.01>" +
+    "<button class=htp-btn onclick=submitOrder()>Submit</button>" +
+    "<button class=htp-btn htp-btn-ghost style=margin-left:8px onclick=screenOrders()>Back</button>" +
+    "</div></div>";
+}
+window.submitOrder = async function() {
+  var addr = document.getElementById("oc-addr").value;
+  var order_type = document.getElementById("oc-type").value;
+  var game_type = document.getElementById("oc-game").value;
+  var stake = parseFloat(document.getElementById("oc-stake").value);
+  if (!addr || !game_type || isNaN(stake) || stake <= 0) { alert("Fill all fields"); return; }
+  var B = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || "https://hightable.pro";
+  try {
+    var r = await fetch(B + "/api/orders", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ creator: addr, order_type: order_type, game_type: game_type, stake_sompi: Math.floor(stake*1e8), network: "tn12" }) });
+    var d = await r.json();
+    if (d.id) { alert("Order posted: " + d.id); screenOrders(); }
+    else alert("Error: " + JSON.stringify(d));
+  } catch(e) { alert("Submit failed: " + e.message); }
+};
+
+// Oracle screen
 async function screenOracle() {
   var data = await (fetch("https://hightable.pro/api/oracle/network").then(function(r){return r.json();}).catch(function(){return null;}));
   var root = document.getElementById("htp-root") || document.querySelector(".htp-root") || document.body;
@@ -513,6 +604,8 @@ window.screenOracle = screenOracle;
   window.screenTournamentId = screenTournamentId;
   window.screenTx = screenTx;
   window.screenWallet = screenWallet;
+  window.screenOrders = screenOrders;
+  window.screenOrderCreate = screenOrderCreate;
 })();
 (async function loadDashboardStats() {
   try {
@@ -540,4 +633,6 @@ window.screenOracle = screenOracle;
       document.querySelectorAll(sel).forEach(el => { el.textContent = val; });
     }
   } catch(e) {}
+  window.screenOrders = screenOrders;
+  window.screenOrderCreate = screenOrderCreate;
 })();
