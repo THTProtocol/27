@@ -1,14 +1,41 @@
 ---
 name: Bug Report
-about: Report a bug in HTP
+about: Something broken in HTP
+title: '[BUG] '
 labels: bug
+assignees: ''
 ---
-**Describe the bug**
 
-**Console output / error**
+## What happened?
 
-**Network** (mainnet / tn12)
+<!-- Clear description of the bug -->
 
-**Wallet used**
+## Steps to reproduce
 
-**Steps to reproduce**
+1. 
+2. 
+3. 
+
+## Expected behavior
+
+## Actual behavior
+
+## Environment
+
+- OS: 
+- Rust version (`rustc --version`): 
+- Node version (`node --version`): 
+- HTP commit: 
+- Network: `testnet-12` / `mainnet`
+
+## Relevant logs
+
+```
+
+```
+
+## API response (if applicable)
+
+```json
+
+```

@@ -1,17 +1,31 @@
 <div align="center">
 
-<img src="https://user-gen-media-assets.s3.amazonaws.com/gpt4o_images/8c591225-60dc-4cca-91d4-0a9bb106e1a0.png" alt="High Table Protocol" width="100%">
+```
+██╗  ██╗██╗ ██████╗ ██╗  ██╗    ████████╗ █████╗ ██████╗ ██╗     ███████╗
+██║  ██║██║██╔════╝ ██║  ██║    ╚══██╔══╝██╔══██╗██╔══██╗██║     ██╔════╝
+███████║██║██║  ███╗███████║       ██║   ███████║██████╔╝██║     █████╗  
+██╔══██║██║██║   ██║██╔══██║       ██║   ██╔══██║██╔══██╗██║     ██╔══╝  
+██║  ██║██║╚██████╔╝██║  ██║       ██║   ██║  ██║██████╔╝███████╗███████╗
+╚═╝  ╚═╝╚═╝ ╚═════╝ ╚═╝  ╚═╝       ╚═╝   ╚═╝  ╚═╝╚═════╝ ╚══════╝╚══════╝
+
+██████╗ ██████╗  ██████╗ ████████╗ ██████╗  ██████╗ ██████╗ ██╗     
+██╔══██╗██╔══██╗██╔═══██╗╚══██╔══╝██╔═══██╗██╔════╝██╔═══██╗██║     
+██████╔╝██████╔╝██║   ██║   ██║   ██║   ██║██║     ██║   ██║██║     
+██╔═══╝ ██╔══██╗██║   ██║   ██║   ██║   ██║██║     ██║   ██║██║     
+██║     ██║  ██║╚██████╔╝   ██║   ╚██████╔╝╚██████╗╚██████╔╝███████╗
+╚═╝     ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝  ╚═════╝ ╚═════╝╚══════╝
+```
 
 **Trustless skill games and information markets on the Kaspa BlockDAG.**
 
 *Non-custodial · Covenant-enforced · Oracle-resolved · Built in Rust*
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-70a5fd.svg?style=flat-square)](LICENSE)
-[![Rust](https://img.shields.io/badge/rust-1.75%2B-f74c00.svg?style=flat-square&logo=rust)](https://rust-lang.org)
-[![Kaspa](https://img.shields.io/badge/kaspa-TN12%20→%20mainnet-49e8c2.svg?style=flat-square)](https://kaspa.org)
-[![Axum](https://img.shields.io/badge/backend-axum%20%2B%20sqlite-a8b5c4.svg?style=flat-square)](https://github.com/tokio-rs/axum)
-[![Status](https://img.shields.io/badge/status-live%20testnet-brightgreen.svg?style=flat-square)](https://hightable.pro)
-[![Site](https://img.shields.io/badge/🌐-hightable.pro-49e8c2.svg?style=flat-square)](https://hightable.pro)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://rustup.rs)
+[![Kaspa](https://img.shields.io/badge/kaspa-TN12%20→%20mainnet-70C7BA.svg)](https://kaspa.org)
+[![Backend](https://img.shields.io/badge/backend-axum%20%2B%20sqlite-blue.svg)](crates/htp-server)
+[![Status](https://img.shields.io/badge/status-live%20testnet-brightgreen.svg)](https://hightable.pro)
+[![Website](https://img.shields.io/badge/website-hightable.pro-gold.svg)](https://hightable.pro)
 
 </div>
 
@@ -19,60 +33,22 @@
 
 ## What is High Table Protocol?
 
-High Table Protocol is a **trustless coordination layer** for skill-based competition and information markets built on the [Kaspa BlockDAG](https://kaspa.org).
+High Table Protocol (HTP) is a **trustless coordination layer** for skill-based competition and information markets built on the [Kaspa BlockDAG](https://kaspa.org).
 
-Participants stake KAS to compete in skill games, or signal their conviction on real-world outcomes. Settlement is enforced by cryptographic escrow — no custodian, no counterparty risk.
+The Kaspa BlockDAG is the referee — no house, no custodian, no trust required. Players wager directly against each other. Outcomes are attested by a bonded, slashable oracle network and enforced by Kaspa covenants. Payouts are automatic and non-custodial.
 
-```
- participant_a ──┬
-                 ├──▶  P2PK escrow (Kaspa UTXO)  ──▶  winner receives stake
- participant_b ──┘              ▲
-                      oracle quorum attests        2% → treasury
-                      outcome (m-of-n Schnorr)
-                      settled on the GHOSTDAG
-```
-
-> Live on **Kaspa Testnet 12 (TN12)**. Mainnet deployment pending covenant opcode activation in the **Toccata hard fork**.
-
----
-
-## Core Concepts
-
-### Skill Games
-Two participants lock equal stakes into a P2PK covenant escrow. A verified game engine runs server-side. When the game concludes, the protocol arbiter key signs the settlement transaction — releasing funds to the winner. No manual intervention, no dispute resolution theatre.
-
-### Information Markets
-Participants allocate stake to signal their view on a future outcome (price levels, protocol events, real-world facts). A bonded oracle network independently attests the resolution. When quorum is reached, the market settles automatically. Stake is redistributed proportionally to participants who signalled correctly.
-
-### Covenant Escrow
-Funds are locked in **Kaspa P2PK UTXOs** with two spend paths: a winner-claim path (arbiter + winner signatures) and a DAA-score timeout refund. Until Toccata activates on mainnet, settlement uses server-side Schnorr signing with an isolated arbiter key. The GHOSTDAG consensus provides sub-second block inclusion; finality is probabilistic and converges within seconds.
-
----
-
-## Protocol Stack
-
-| Layer | Technology | Notes |
-|---|---|---|
-| **Frontend** | Vanilla JS + rusty-kaspa WASM | BIP44 key derivation in-browser, no framework |
-| **Backend** | Rust · Axum · SQLite | 35+ REST endpoints + WebSocket relay |
-| **DAG Layer** | Kaspa BlockDAG — GHOSTDAG consensus | 10 BPS, sub-second inclusion, DAA-score timelocks |
-| **Wallet** | WASM BIP44 `m/44h/111111h/0h` | KasWare · Kastle · Kaspium · mnemonic import |
-| **Settlement** | P2PK covenants · secp256k1 Schnorr | Rust-native via `secp256k1` crate |
-| **Oracles** | Bonded operator network · ECDSA attest | m-of-n quorum, slash-on-dishonesty |
-| **Infra** | Hetzner VPS · Nginx · PM2 | Falkenstein DE · Let's Encrypt TLS |
-
----
-
-## Games & Markets
+Built on Kaspa's BlockDAG — the world's fastest UTXO ledger — HTP settles wagers in seconds, not minutes, with no mempool congestion.
 
 ```
-♟  Chess               —  full rules engine (shakmaty), move validation, checkmate
-●  Connect 4           —  gravity logic, win detection, 6×7 board
-◆  Checkers            —  multi-jump, king promotion, forced-capture rules
-○  Tic-Tac-Toe         —  server-authoritative reference implementation
-🃏  Texas Hold’em       —  engine complete, Rust backend port in progress
-🂡  Blackjack           —  multi-deck engine complete, Rust backend port in progress
-⬡  Information Markets  —  parimutuel allocation, bonded oracle resolution
+Player A ──┐                          ┌── Payout A
+           ├── Covenant UTXO Lock ────┤
+Player B ──┘   (BlockDAG-enforced)    └── Payout B
+                      │
+               Oracle Quorum
+               (m-of-n bonded)
+                      │
+               Winner attested
+               on the BlockDAG
 ```
 
 ---
@@ -80,261 +56,491 @@ Funds are locked in **Kaspa P2PK UTXOs** with two spend paths: a winner-claim pa
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                       hightable.pro                             │
-│  Browser (JS + WASM)                                            │
-│    ├── /                →  static SPA (Nginx)                   │
-│    ├── /api/orders/*    →  Node.js order book :3001             │
-│    ├── /api/*           →  Rust htp-server :3000 (Axum)         │
-│    └── /ws              →  WebSocket relay :3000                 │
-│                                                                 │
-│  Rust Backend (htp-server)                                      │
-│    ├── game engines     —  chess · checkers · connect4 · ttt    │
-│    ├── oracle module    —  attestation · quorum · slash          │
-│    ├── settlement       —  arbiter signing · UTXO broadcast      │
-│    └── WebSocket relay  —  real-time move fan-out               │
-│                                                                 │
-│  Node.js (htp-orders)     —  order book :3001                   │
-│  Storage  —  SQLite /root/htp/data/htp.db                       │
-└─────────────────────────────────────────────────────────────────┘
-                           │
-             Kaspa TN12  —  GHOSTDAG consensus
-             api-tn12.kaspa.org · ws-tn12.kaspa.org
-             10 BPS · sub-second block inclusion · DAA-score timelocks
+┌─────────────────────────────────────────────────────────────┐
+│                    hightable.pro                            │
+│              (nginx → Vercel CDN mirror)                    │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ HTTPS
+┌─────────────────────────▼───────────────────────────────────┐
+│              htp-server  (Rust / Axum)  :3000               │
+│  ┌──────────┐ ┌─────────┐ ┌──────────┐ ┌────────────────┐  │
+│  │  Games   │ │ Oracle  │ │Maximizer │ │  Auto-Settler  │  │
+│  │  Engine  │ │ Network │ │   Pools  │ │  (30s ticker)  │  │
+│  └────┬─────┘ └────┬────┘ └────┬─────┘ └───────┬────────┘  │
+│       └────────────┴───────────┴───────────────┘            │
+│                         SQLite                              │
+│                   /root/htp/htp.db                          │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────────┐
+│           htp-orders  (Node.js / Express)  :3001            │
+│         P2P wager matching · order book · stats             │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ gRPC / WS
+┌──────────────────────────────▼──────────────────────────────┐
+│              Kaspa Node  (rusty-kaspa)                      │
+│              TN12 testnet → mainnet migration               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Crate Layout
+
+```
+crates/
+├── htp-server/        # Axum HTTP server, all REST routes
+├── htp-core/          # Protocol types, covenant logic, UTXO builder
+├── htp-games/         # Game engines: chess, poker, checkers, connect4
+├── htp-oracle/        # Oracle registration, attestation, slashing
+├── htp-wallet/        # Kaspa wallet integration, tx signing
+└── htp-wasm/          # WASM bindings for browser wallet
+
+public/
+├── index.html         # Single-page shell
+└── htp-router.js      # Hash router + all screen components
+
+orders-api.js          # Node.js P2P order matching service
+covenants/             # KaspaSilver covenant scripts
+docs/                  # Protocol specs, oracle design, covenant math
+scripts/               # Deploy, migrate, seed scripts
+infra/                 # nginx config, PM2 ecosystem, systemd units
 ```
 
 ---
 
-## Repository Layout
+## Protocol Components
+
+### Games Engine
+
+Supported game types with on-chain covenant enforcement:
+
+| Game | Type | Outcome Determination |
+|------|------|------------------------|
+| Chess | 1v1 skill | Oracle quorum |
+| Poker | Multi-player | Oracle quorum + hand eval |
+| Checkers | 1v1 skill | Oracle quorum |
+| Connect 4 | 1v1 skill | Oracle quorum |
+| Prediction Market | Information | Oracle quorum |
+
+Every game locks funds in a Kaspa covenant UTXO. The covenant script enforces that only the oracle-attested winner can unlock the payout. No admin key. No escape hatch.
+
+### Oracle Network
+
+HTP uses a **bonded m-of-n oracle system**:
+
+- Oracles post a KAS bond (minimum 1 KAS) to register
+- Results require `m` of `n` oracle signatures (default: 2-of-3)
+- Dishonest oracles are **slashed** — 10% of bond per proven fault
+- Oracle type: `zk` | `bond` | `hybrid`
+- Full lifecycle: `pending → active → slashed | exited`
 
 ```
-27/
-├── crates/                        # All Rust — the core of the protocol
-│   ├── htp-server/                # Axum HTTP + WebSocket server
-│   │   └── src/
-│   │       ├── main.rs            # router, startup, shutdown
-│   │       ├── routes.rs          # all handlers
-│   │       ├── oracle.rs          # attestation · quorum · bonds
-│   │       ├── db.rs              # SQLite helpers
-│   │       └── models.rs          # shared types
-│   ├── htp-games/                 # game engines (chess · checkers · connect4 · ttt)
-│   ├── htp-kaspa-rpc/             # Kaspa REST + wRPC client
-│   ├── htp-settler/               # [roadmap] autonomous settlement daemon
-│   ├── htp-orders/                # [roadmap] Rust port of orders-api.js
-│   └── htp-oracle-client/         # [roadmap] oracle node operator binary
-│
-├── covenants/                     # SilverScript covenant templates
-│   ├── escrow-v2.ss               # P2PK escrow — winner + DAA timeout
-│   ├── payout.ss
-│   ├── refund.ss
-│   └── fee.ss
-│
-├── public/                        # SPA frontend — vanilla JS, no framework
-│   ├── index.html
-│   ├── htp-config.js              # network config (TN12 ↔ mainnet toggle)
-│   ├── htp-router.js              # screen router + screen exports
-│   ├── htp-covenant-escrow-v2.js  # covenant UTXO builder
-│   ├── htp-escrow-derive.js       # deterministic escrow key derivation (WASM)
-│   ├── app.js                     # WebSocket client
-│   └── kaspa-wasm-sdk/            # rusty-kaspa WASM bindings
-│
-├── infra/                         # all server config in one place
-│   ├── nginx/
-│   │   ├── hightable.conf          # production site config
-│   │   └── nginx-api-only.conf     # API-only variant
-│   └── docker/
-│       ├── Dockerfile
-│       └── docker-compose.yml
-│
-├── orders-api.js                  # Node.js order book (:3001) — Rust port planned
-├── ecosystem.config.js            # PM2 process config
-├── docs/                          # extended documentation
-├── scripts/                       # build, deploy, stress-test
-├── tests/                         # integration tests
-├── .env.example                   # environment variable template
-└── Cargo.toml                     # workspace root
+Oracle Registration flow:
+
+register(address, bond_sompi, m, n)
+    └── bond TX confirmed on BlockDAG
+        └── activate(oracle_id)
+            └── status: active
+                └── attest(game_id, winner, proof_root, signature)
+                    └── quorum reached (m of n)
+                        └── auto-settler triggers payout
+```
+
+### Maximizer Pools
+
+Pool-capped wagering enforced at the protocol layer:
+
+- Each pool has a hard `pool_cap_sompi` — no bets accepted once full
+- Per-bet min and max enforced server-side
+- Over-cap bets return a structured error with exact `remaining_sompi`
+- Capped pools auto-close after 10 minutes
+- Full audit trail in `maximizer_entries` table
+
+### Auto-Settler
+
+Background Tokio task running every 30 seconds:
+
+1. Finds games with `status='completed'` and no winner set
+2. Checks `oracle_quorum_results` for `status='reached'`
+3. If quorum exists: sets `games.winner` and `games.status='settled'`
+4. Logs every settlement to stderr (PM2-captured)
+5. Also auto-closes stale capped Maximizer pools
+
+### Orders (P2P Matching)
+
+Peer-to-peer wager matching without a central counterparty:
+
+- Post a wager: amount, game type, conditions
+- Match an existing order → covenant lock created
+- Cancel before match → funds returned
+- Full order book with stats endpoint
+
+---
+
+## REST API Reference
+
+Base URL: `https://hightable.pro`  
+All endpoints return JSON. No authentication required for reads.
+
+### Core
+
+```http
+GET  /health
+GET  /api/stats
+GET  /api/fees
+GET  /api/config
+```
+
+### Games
+
+```http
+GET  /api/games              # List games (paginated)
+GET  /api/games/:id          # Get game by ID
+POST /api/games              # Create game
+PATCH /api/games/:id         # Update game state
+GET  /api/events             # Protocol events feed
+```
+
+### Oracle Network
+
+```http
+POST /api/oracle/register              # Register new oracle
+POST /api/oracle/:id/activate          # Activate after bond TX
+POST /api/oracle/attest                # Submit outcome attestation
+GET  /api/oracle/quorum/:game_id       # Check quorum status
+POST /api/oracle/slash                 # Report dishonest oracle
+GET  /api/oracle/list                  # List all oracles
+GET  /api/oracle/:id                   # Get oracle by ID
+POST /api/oracle/:id/exit              # Oracle voluntary exit
+GET  /api/oracle/network               # Network-wide stats
+```
+
+**Register oracle:**
+```json
+POST /api/oracle/register
+{
+  "address":     "kaspa:qp...",
+  "bond_sompi":  500000000,
+  "oracle_type": "hybrid",
+  "m":           2,
+  "n":           3
+}
+```
+
+**Attest outcome:**
+```json
+POST /api/oracle/attest
+{
+  "game_id":    "game_abc123",
+  "oracle_id":  "oracle_1778264754",
+  "oracle_addr": "kaspa:qp...",
+  "winner":     "kaspa:qp_winner...",
+  "proof_root": "0000...0000",
+  "attest_type": "hybrid"
+}
+```
+
+### Maximizer
+
+```http
+GET  /api/maximizer/stats              # Pool statistics
+GET  /api/maximizer/pools              # List open pools
+POST /api/maximizer/pools/create       # Create new pool
+POST /api/maximizer/enter              # Enter a pool (cap-enforced)
+```
+
+**Create pool:**
+```json
+POST /api/maximizer/pools/create
+{
+  "game_type":       "chess",
+  "pool_cap_sompi":  1000000000,
+  "min_bet_sompi":   10000000,
+  "max_bet_sompi":   500000000
+}
+```
+
+**Enter pool (over-cap rejected):**
+```json
+// Over-cap response:
+{
+  "error":                "pool cap would be exceeded",
+  "cap_sompi":            1000000000,
+  "current_sompi":        950000000,
+  "remaining_sompi":      50000000,
+  "your_bet_sompi":       200000000,
+  "max_you_can_bet_sompi": 50000000
+}
+```
+
+### Auto-Settler
+
+```http
+GET  /api/settler/status               # Settler state + counts
+```
+
+### Orders
+
+```http
+GET  /api/orders                       # List orders
+POST /api/orders                       # Create order
+PATCH /api/orders/:id                  # Update order
+DELETE /api/orders/:id                 # Cancel order
+POST /api/orders/:id/match             # Match order
+GET  /api/orders/stats                 # Order book stats
 ```
 
 ---
 
-## API Reference
+## Database Schema
 
-### Health
-```http
-GET /health
-→ {"engine":"rust","status":"ok","version":"0.1.0"}
-```
+```sql
+-- Core game table
+games (
+  id TEXT PK, game_type TEXT, player_a TEXT, player_b TEXT,
+  wager_sompi INTEGER, status TEXT, winner TEXT,
+  covenant_tx_id TEXT, created_at INTEGER, updated_at INTEGER
+)
 
-### Skill Games
-```http
-GET  /api/games                     # list all sessions
-POST /api/games                     # create session + escrow
-GET  /api/games/:id                 # session state
-POST /api/games/:id/join            # join as second participant
-POST /api/games/:id/move            # submit move
-POST /api/games/:id/settle          # trigger settlement
-POST /api/games/:id/propose-settle  # arbiter settlement proposal
-```
+-- Oracle system
+oracles (id, address, bond_sompi, bond_tx_id, oracle_type,
+          m_of_n_m, m_of_n_n, slash_count, status,
+          registered_at, activated_at, slashed_at, metadata)
 
-### Information Markets
-```http
-GET  /api/oracle/network            # operator + market stats
-POST /api/operators                 # register bonded operator
-GET  /api/operators                 # list operators
-POST /api/events                    # create information market
-GET  /api/events                    # list open markets
-POST /api/events/:id/attest         # submit oracle attestation
-GET  /api/events/:id/attestations   # attestation proofs
-```
+oracle_attestations (id, game_id, oracle_id, oracle_addr,
+                     winner, proof_root, signature, attest_type, created_at)
 
-### Order Book
-```http
-GET  /api/orders                    # open positions
-POST /api/orders                    # post order
-GET  /api/orders/stats              # volume + counts
-POST /api/orders/:id/match          # match an order
-POST /api/orders/:id/cancel         # cancel order
+oracle_quorum_results (id, game_id, winner, m_required, n_total,
+                       attested_count, status, resolved_at, payout_tx_id)
+
+oracle_slashes (id, oracle_id, game_id, reason,
+                slash_sompi, reported_by, created_at)
+
+-- Maximizer
+maximizer_pools (id, game_type, pool_cap_sompi, current_sompi,
+                 min_bet_sompi, max_bet_sompi, status,
+                 created_at, updated_at)
+
+maximizer_entries (id, pool_id, player_addr, bet_sompi,
+                   predicted_winner, tx_id, status, created_at)
+
+-- Orders
+orders (id, player_addr, game_type, wager_sompi, conditions,
+        status, matched_with, created_at, updated_at)
 ```
 
 ---
 
-## Quickstart
+## Development Setup
 
 ### Prerequisites
-- Rust `1.75+`
-- Node.js `18+`
-- Kaspa TN12 endpoint: `https://api-tn12.kaspa.org`
 
-### Build & Run
+- Rust 1.75+ (`rustup install stable`)
+- Node.js 18+
+- SQLite 3
+- A Kaspa node (TN12 testnet recommended)
+
+### Quick Start
+
 ```bash
-git clone https://github.com/THTProtocol/27.git && cd 27
-cargo build --release -p htp-server
+# 1. Clone
+git clone https://github.com/THTProtocol/27.git htp
+cd htp
+
+# 2. Copy env
 cp .env.example .env
-# Set: HTP_NETWORK, KASPA_REST_TN12, HTP_ORACLE_PRIVKEY, PROTOCOL_ADDRESS
-./target/release/htp-server          # Rust backend  :3000
-node orders-api.js                   # order book     :3001
-cd public && python3 -m http.server 8080
+# Edit .env: set KASPA_NODE_URL, DB_PATH, PORT
+
+# 3. Build Rust server
+cd crates
+cargo build --release -p htp-server
+cd ..
+
+# 4. Initialize database
+sqlite3 htp.db < scripts/init_schema.sql
+
+# 5. Start backend
+./crates/target/release/htp-server
+
+# 6. Start orders API (separate terminal)
+node orders-api.js
+
+# 7. Serve frontend
+# Open public/index.html or serve with any static server
+npx serve public
+```
+
+### PM2 Production
+
+```bash
+# Start both services
+pm2 start infra/ecosystem.config.js
+pm2 save
+pm2 startup
+
+# View logs
+pm2 logs htp-server
+pm2 logs htp-orders
 ```
 
 ### Docker
+
 ```bash
-docker-compose up --build
+docker-compose up -d
 ```
 
-### Network Toggle
-```bash
-# .env — one line switch on mainnet day:
-HTP_NETWORK=tn12   # → HTP_NETWORK=mainnet
+---
+
+## Environment Variables
+
+```env
+# Kaspa node
+KASPA_NODE_URL=ws://localhost:17110
+KASPA_NETWORK=testnet-12        # or mainnet
+
+# Server
+PORT=3000
+ORDERS_PORT=3001
+DB_PATH=./htp.db
+HOST=0.0.0.0
+
+# Protocol
+MIN_ORACLE_BOND_SOMPI=100000000   # 1 KAS
+ORACLE_SLASH_PCT=10               # 10% per fault
+MAX_BET_SOMPI=10000000000        # 100 KAS hard cap
+SETTLER_INTERVAL_SECS=30
+
+# Frontend
+API_ORIGIN=https://hightable.pro
+VERCEL_TOKEN=your_token_here
 ```
 
 ---
 
 ## Covenant Design
 
-Covenants are written in **SilverScript** — compiles to Kaspa Script opcodes, pending Toccata activation.
+HTP uses Kaspa's native UTXO model with covenant-style locking scripts (KaspaSilver):
 
-```silverscript
-// escrow-v2.ss
-covenantEscrow(participant_a, participant_b, arbiter, stake, fee_addr) {
-  path winner_claim {
-    require sig(arbiter, settlement_hash)  // oracle quorum attested
-    require sig(winner, claim_tx)
-    split(stake * 0.98 → winner, stake * 0.02 → fee_addr)
-  }
-  path daa_timeout_refund {
-    require daa_score > deadline           // DAG-native timelock (not wall-clock)
-    split(stake / 2 → participant_a, stake / 2 → participant_b)
-  }
-}
+```
+Game UTXO lock conditions:
+
+  UNLOCK IF:
+    sig(winner_address) AND oracle_quorum_attestation(game_id)
+
+  OR (timeout refund):
+    sig(player_a) AND sig(player_b) AND height > lock_height + TIMEOUT
 ```
 
-> Until Toccata activates, settlement uses **server-side Schnorr signing** with an isolated arbiter key.
+The covenant script is committed at game creation. Neither party can redirect funds without a valid oracle attestation. See [`covenants/`](covenants/) for full script specs.
 
 ---
 
-## Oracle Network
+## Oracle Slashing
 
-Operators register with a bond (min 1,000 KAS). Dishonest attestations are slashed. Markets resolve on `m-of-n` quorum.
+Oracles that attest incorrect outcomes are slashed:
 
-```
-  register + bond KAS
-       │
-  market created (condition + deadline_daa_score + quorum m/n)
-       │
-  operators independently verify outcome
-       │
-  each submits: HMAC(market_id ‖ outcome ‖ value ‖ daa_score)
-       │
-  matching_attestations ≥ quorum_m  →  market.final = true
-       │
-  htp-settler auto-calls settlement
-```
+1. Anyone can call `POST /api/oracle/slash` with evidence
+2. Slash is recorded in `oracle_slashes`
+3. `slash_count` increments on oracle record
+4. 10% of `bond_sompi` is burned per proven fault
+5. After 3 slashes, oracle status → `slashed` (permanently excluded)
+
+This creates strong economic incentives for honest attestation.
 
 ---
 
-## Rust Migration Roadmap
+## Frontend
 
-The protocol is progressively moving all server-side logic to Rust. Current state and planned crates:
+The frontend is a single-file vanilla JS application with a hash router.
+No framework. No build step. Loads in <200ms.
 
-| Crate | Status | Replaces |
-|---|---|---|
-| `htp-server` | ✅ live | core of `server.js` |
-| `htp-games` | ✅ live | JS game engines |
-| `htp-kaspa-rpc` | ✅ live | JS Kaspa RPC calls |
-| `htp-settler` | 🔄 in progress | manual settlement triggers |
-| `htp-orders` | 📅 Q3 2026 | `orders-api.js` (Node.js) |
-| `htp-oracle-client` | 📅 Q3 2026 | oracle operator tooling |
-| `htp-covenant-builder` | 📅 post-Toccata | `htp-covenant-escrow-v2.js` (WASM) |
+**Screens:**
 
-Once `htp-orders` and `htp-oracle-client` are ported, the Node.js dependency is fully eliminated. The WASM covenant builder will replace the JS covenant module at Toccata mainnet launch.
+| Route | Screen | Description |
+|-------|--------|-------------|
+| `#/overview` | Overview | Hero, live stats, feature cards, recent games |
+| `#/games` | Games | Game list, create game, join game |
+| `#/oracle` | Oracle | Register, activate, attest, network stats |
+| `#/maximizer` | Maximizer | Pool list, enter pool, create pool |
+| `#/orders` | Orders | P2P order book, post and match wagers |
+| `#/settler` | Settler | Auto-settler status dashboard |
+| `#/info` | Info | Protocol docs, covenant explainer |
+
+**API config** (`window.HTP_CONFIG`):
+```html
+<script>
+  window.HTP_CONFIG = {
+    API_ORIGIN: 'https://hightable.pro',
+    NETWORK: 'testnet-12'
+  };
+</script>
+```
 
 ---
 
 ## Roadmap
 
-| Milestone | Status | Description |
-|---|---|---|
-| `v0.9` | ✅ complete | Rust backend, skill games, P2PK escrow |
-| `v1.0` | ✅ complete | Oracle network, order book, production config |
-| `v1.1` | 🔄 in progress | Texas Hold’em + Blackjack Rust port, htp-settler daemon |
-| `v1.2` | 📅 Q3 2026 | `htp-orders` Rust port, information markets full enforcement |
-| `v2.0` | 📅 post-Toccata | On-chain covenants, decentralized oracle DAO, mainnet |
+### Live (TN12 Testnet)
+- [x] Core game engine (chess, poker, checkers, connect4)
+- [x] Oracle network (register, activate, attest, slash, quorum)
+- [x] Maximizer pools with hard cap enforcement
+- [x] Auto-settler background task
+- [x] P2P order matching
+- [x] Full frontend with hash router
+- [x] PM2 production deployment
+- [x] nginx + SSL
+- [x] Vercel CDN mirror
+
+### In Progress
+- [ ] Kaspa mainnet migration (TN12 → mainnet)
+- [ ] WASM wallet integration (browser-native signing)
+- [ ] Covenant script finalization (KaspaSilver)
+- [ ] ZK oracle proofs (hybrid → full ZK)
+
+### Planned
+- [ ] Mobile-responsive frontend polish
+- [ ] Oracle reputation scoring
+- [ ] Prediction markets (binary + scalar)
+- [ ] Tournament brackets
+- [ ] SDK / NPM package for third-party integrations
+- [ ] Governance module (HTP token)
 
 ---
 
 ## Security
 
-- **Non-custodial** — the protocol never holds participant private keys
-- **Covenant escrow** — funds locked in a Kaspa UTXO until oracle attests outcome
-- **Schnorr signatures** — secp256k1, Rust-native
-- **Bond slashing** — dishonest oracle operators lose their bond on the GHOSTDAG
-- **Deterministic escrow keys** — `HMAC-SHA256(matchId ‖ creatorAddr, seed)` via `htp-escrow-derive.js`
-- **No silent key generation** — derivation failure throws; no random fallback ever generated
+See [SECURITY.md](SECURITY.md) for the vulnerability disclosure policy.
 
-For vulnerabilities: **do not open a public issue**. See [SECURITY.md](SECURITY.md).
-
----
-
-## About Kaspa
-
-Kaspa is a proof-of-work BlockDAG that implements the **GHOSTDAG** protocol — a generalization of Nakamoto consensus to directed acyclic graphs. Unlike linear blockchains, GHOSTDAG incorporates parallel blocks rather than orphaning them, enabling **10 blocks per second** with sub-second block inclusion and DAA-score-based timelocks.
-
-The next consensus evolution is **DAGKnight** — a parameterless, self-stabilizing upgrade that removes the need for hardcoded latency assumptions and strengthens resistance to 50% attacks. The **Toccata hard fork** will activate covenant opcodes (SilverScript), enabling fully on-chain trustless contracts — the foundation for High Table Protocol’s mainnet deployment.
+Key security properties:
+- **Non-custodial**: HTP never holds user funds — all locked in covenant UTXOs
+- **No admin key**: No privileged role can redirect funds
+- **Oracle slashing**: Economic penalty for dishonest attestation
+- **Cap enforcement**: Maximizer pool caps are enforced at the protocol layer, not the UI
+- **CORS**: API locked to `hightable.pro` origin in production
 
 ---
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Pull requests welcome for game engine ports, oracle client implementations, Rust crate development, and security audits.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Quick checklist:
+- `cargo fmt` and `cargo clippy` before PRs
+- All new routes need an integration test in `tests/`
+- Oracle changes require updating `docs/oracle-design.md`
+- Covenant changes require full audit before merge
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE)
 
 ---
 
 <div align="center">
 
-Built on [Kaspa](https://kaspa.org) — GHOSTDAG proof-of-work BlockDAG.
+**The Kaspa BlockDAG is the referee.**
 
-*"Outcomes are decided on the DAG."*
-
-[![hightable.pro](https://img.shields.io/badge/🌐-hightable.pro-49e8c2?style=for-the-badge)](https://hightable.pro)
+[hightable.pro](https://hightable.pro) · [Kaspa](https://kaspa.org) · [MIT License](LICENSE)
 
 </div>

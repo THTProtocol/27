@@ -1,74 +1,91 @@
 # Contributing to High Table Protocol
 
-Thank you for your interest in contributing to High Table Protocol — a trustless skill game and information market layer built on the Kaspa BlockDAG.
+Thank you for your interest in contributing to HTP. This document covers everything you need to get started.
 
-## How to Contribute
+## Code of Conduct
 
-1. **Find or open an issue** — check the [issues page](https://github.com/THTProtocol/27/issues) first
-2. **Fork the repo** and create a feature branch from `main`
-3. **Write code** following the conventions below
-4. **Open a pull request** — include a clear description of what changed and why
-5. **Wait for review** — at least one maintainer approval required before merge
-
-## Code Conventions
-
-### Rust
-- Run `cargo fmt` before committing
-- Run `cargo clippy` — zero warnings policy
-- No `unsafe` blocks without explicit justification in a comment
-- Tests required for all new game engine logic
-- Keep crates focused — `htp-games` for engines, `htp-server` for routing
-
-### Frontend (JavaScript)
-- Vanilla JS only — no framework dependencies
-- All modules prefixed `htp-` (e.g. `htp-router.js`, `htp-config.js`)
-- Keep individual files under 600 lines where possible; split if larger
-- All network calls must use `window.HTP_CONFIG.API_ORIGIN` — no hardcoded URLs
-- No external npm dependencies without maintainer approval
-
-### Commit Messages
-
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-feat: add Texas Hold'em game engine
-fix: resolve WebSocket reconnection race condition
-docs: update information markets API reference
-chore: remove deprecated duckdns fallbacks
-refactor: extract oracle quorum logic into oracle.rs
-```
-
-## Contribution Areas
-
-| Priority | Area | Notes |
-|---|---|---|
-| 🔴 High | Security audit, fuzz testing | Escrow + oracle logic especially |
-| 🔴 High | Texas Hold'em Rust port | Engine written in JS, needs `htp-games` crate |
-| 🟡 Medium | Blackjack Rust port | Same — JS engine exists |
-| 🟡 Medium | `htp-settler` daemon | Auto-settlement on oracle finality |
-| 🟡 Medium | Oracle node client | Standalone operator binary |
-| 🟢 Low | Mobile responsiveness | Frontend SPA polish |
-| 🟢 Low | Documentation | Covenant design, API examples |
+Be direct, honest, and respectful. Assume good faith. Don't waste people's time.
 
 ## Development Setup
 
+See [README.md](README.md#development-setup) for full setup instructions.
+
+Quick start:
 ```bash
-git clone https://github.com/THTProtocol/27.git
-cd 27
-
-# Rust backend
-cargo build -p htp-server
-cargo test
-
-# Frontend
-cd public && python3 -m http.server 8080
-
-# Order book service
-node orders-api.js
+git clone https://github.com/THTProtocol/27.git htp
+cd htp
+cp .env.example .env
+cd crates && cargo build
 ```
 
-See [README.md](README.md) for full environment configuration.
+## How to Contribute
+
+### Bugs
+
+1. Check existing issues first
+2. Open an issue with: reproduction steps, expected vs actual behavior, OS + Rust version
+3. For security issues, see [SECURITY.md](SECURITY.md) — do NOT open public issues
+
+### Features
+
+1. Open an issue describing the feature and why it fits HTP's goals
+2. Wait for feedback before building — this prevents wasted effort
+3. Fork, build, test, PR
+
+### Pull Requests
+
+**Before submitting:**
+
+```bash
+# Rust
+cargo fmt
+cargo clippy -- -D warnings
+cargo test
+
+# JavaScript (frontend)
+node --check public/htp-router.js
+```
+
+**PR checklist:**
+- [ ] `cargo fmt` applied
+- [ ] No new `clippy` warnings
+- [ ] Tests added/updated for new routes or logic
+- [ ] `docs/` updated if API surface changed
+- [ ] No secrets or credentials committed
+- [ ] Single logical change per PR
+
+## Crate Ownership
+
+| Crate | Owner | Description |
+|-------|-------|-------------|
+| `htp-server` | core team | Axum routes, server config |
+| `htp-core` | core team | Protocol types, UTXO logic |
+| `htp-games` | open | Game engines |
+| `htp-oracle` | core team | Oracle system |
+| `htp-wallet` | core team | Kaspa wallet integration |
+| `htp-wasm` | open | Browser WASM bindings |
+
+## Adding a Game Type
+
+1. Add variant to `GameType` enum in `htp-core/src/types.rs`
+2. Implement `GameEngine` trait in `htp-games/src/<game>.rs`
+3. Add route handler in `htp-server/src/routes.rs`
+4. Add frontend screen in `public/htp-router.js`
+5. Add integration test in `tests/`
+6. Document in `docs/games/<game>.md`
+
+## Commit Style
+
+```
+type(scope): short description
+
+feat(oracle): add zk proof verification
+fix(maximizer): reject bets above pool cap
+docs(api): add settler endpoint reference
+refactor(games): extract shared payout logic
+test(oracle): add quorum edge case tests
+```
 
 ## Questions
 
-Open a [GitHub Discussion](https://github.com/THTProtocol/27/discussions) or raise an issue tagged `question`.
+Open a GitHub Discussion or reach out via the contact in SECURITY.md.

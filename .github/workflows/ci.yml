@@ -2,45 +2,74 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, dev]
   pull_request:
     branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
 
 jobs:
-  rust-check:
-    name: Rust Build + Test
+  rust:
+    name: Rust Build & Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
-      - uses: Swatinem/rust-cache@v2
+
+      - name: Cache cargo
+        uses: actions/cache@v4
         with:
-          workspaces: crates/htp-server
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            crates/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: fmt check
-        run: cargo fmt --manifest-path crates/htp-server/Cargo.toml -- --check
+      - name: Check formatting
+        run: cd crates && cargo fmt --all -- --check
 
-      - name: clippy
-        run: cargo clippy --manifest-path crates/htp-server/Cargo.toml --all-targets -- -D warnings
+      - name: Clippy
+        run: cd crates && cargo clippy --all-targets -- -D warnings
 
-      - name: test
-        run: cargo test --manifest-path crates/htp-server/Cargo.toml
+      - name: Build
+        run: cd crates && cargo build --release
 
-  lint-js:
-    name: JS Lint Check
+      - name: Test
+        run: cd crates && cargo test --all
+
+  frontend:
+    name: Frontend Syntax Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: |
-          npm install -g acorn
-          for f in public/htp-*.js; do
-            acorn --ecma2020 "$f" > /dev/null && echo "OK $f" || echo "FAIL $f"
-          done
+
+      - name: Check htp-router.js syntax
+        run: node --check public/htp-router.js
+
+      - name: Check orders-api.js syntax
+        run: node --check orders-api.js
+
+  security:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for secrets
+        run: |
+          # Fail if any real private keys or tokens sneak in
+          if grep -rE 'vcp_[A-Za-z0-9]{40}|sk-[A-Za-z0-9]{40}|PRIVATE_KEY\s*=\s*[0-9a-f]{64}' --include='*.js' --include='*.rs' --include='*.json' .; then
+            echo "FAIL: potential secret found"
+            exit 1
+          fi
+          echo "OK: no secrets detected"
