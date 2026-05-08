@@ -4124,7 +4124,7 @@ html,body{background:#010806!important;}
 
         <header class="hdr">
             <div class="hdr-in">
-                <a href="javascript:void(0)" class="hdr-brand" onclick="go('overview');return false">
+                <a href="javascript:void(0)" class="hdr-brand" onclick="window.location.hash='/overview';return false">
                     <div class="logo"><img
                             id="htp-logo-img" src="" alt="HTP"
                             alt="High Table Protocol" /></div>
@@ -4133,13 +4133,14 @@ html,body{background:#010806!important;}
                 <button class="menu-toggle" onclick="this.nextElementSibling.classList.toggle('open')"
                     aria-label="Menu">&#9776;</button>
                 <nav class="hdr-nav" id="htp-nav">
-                    <button class="nav-btn act" data-v="overview" onclick="go('overview')">Overview</button>
-                    <button class="nav-btn" data-v="markets" onclick="go('markets')">Events</button>
-                    <button class="nav-btn" data-v="create" onclick="go('create')">Create</button>
-                    <button class="nav-btn" data-v="skill" onclick="go('skill')">Games</button>
-                    <button class="nav-btn" data-v="oracle-network" onclick="go('oracle-network')" data-nav="true">Oracle Network</button>
-                    <button class="nav-btn" data-v="portfolio" onclick="go('portfolio')">Portfolio</button>
-                    <button class="nav-btn" data-v="wallet" onclick="go('wallet')">Wallet</button>
+                    <button class="nav-btn act" data-v="overview" onclick="window.location.hash='/overview'">Overview</button>
+                    <button class="nav-btn" data-v="markets" onclick="window.location.hash='/markets'">Events</button>
+                    <button class="nav-btn" data-v="create" onclick="window.location.hash='/create'">Create</button>
+                    <button class="nav-btn" data-v="skill" onclick="window.location.hash='/games'">Games</button>
+                    <button class="nav-btn" data-v="orders" onclick="window.location.hash='/orders'">Orders</button>
+                    <button class="nav-btn" data-v="oracle-network" onclick="window.location.hash='/oracle'" data-nav="true">Oracle Network</button>
+                    <button class="nav-btn" data-v="portfolio" onclick="window.location.hash='/wallet'">Portfolio</button>
+                    <button class="nav-btn" data-v="wallet" onclick="window.location.hash='/wallet'">Wallet</button>
                 </nav>
                     <div class="hdr-r">
                     <div style="position:relative;display:inline-flex;align-items:center;
@@ -4216,9 +4217,9 @@ html,body{background:#010806!important;}
                                         <div class="pill pill-glow">ZK oracles</div>
                                     </div>
                                     <div class="hero-cta">
-                                        <button class="cta1" onclick="go('markets')">Explore Markets</button>
-                                        <button class="cta2" onclick="go('create')">Create Event</button>
-                                        <button class="cta2" onclick="go('kaspa')">Why Kaspa</button>
+                                        <button class="cta1" onclick="window.location.hash='/markets'">Explore Markets</button>
+                                        <button class="cta2" onclick="window.location.hash='/create'">Create Event</button>
+                                        <button class="cta2" onclick="window.location.hash='/docs'">Why Kaspa</button>
                                     </div>
                                 </div>
                                 <div>
@@ -4283,7 +4284,7 @@ html,body{background:#010806!important;}
                                 Markets</h2>
                             <p style="margin:0;font-size:13px;color:var(--muted)">Highest pool volume right now.</p>
                         </div>
-                        <button class="cta2" onclick="go('markets')" style="padding:8px 18px;font-size:12px">View
+                        <button class="cta2" onclick="window.location.hash='/markets'" style="padding:8px 18px;font-size:12px">View
                             All</button>
                     </div>
                     <div id="featuredMarkets" class="mg" style="grid-template-columns:repeat(3,1fr)"></div>
@@ -4382,7 +4383,7 @@ html,body{background:#010806!important;}
                         <p>Parimutuel information markets and skill events on Kaspa.</p>
                     </div>
                     <div style="display:flex;gap:10px;margin-bottom:16px"><button class="cta1"
-                            style="padding:9px 20px;font-size:13px" onclick="go('create')">+ Create Event</button></div>
+                            style="padding:9px 20px;font-size:13px" onclick="window.location.hash='/create'">+ Create Event</button></div>
                     <div class="fb">
                         <div class="fc" id="catC"></div>
                         <div class="fr">
@@ -5780,7 +5781,7 @@ event MyMarket {
                             <div id="matchesList" style="display:grid;gap:10px">
                                 <div style="border:1px dashed rgba(73,232,194,0.12);border-radius:12px;padding:28px;text-align:center">
                                     <p style="margin:0;font-size:13px;color:var(--dim)">No active matches.</p>
-                                    <a href="javascript:void(0)" onclick="go('skill');return false"
+                                    <a href="javascript:void(0)" onclick="window.location.hash='/games';return false"
                                         style="display:inline-block;margin-top:12px;font-size:12px;font-weight:600;color:#49e8c2;text-decoration:none;padding:6px 16px;border:1px solid rgba(73,232,194,0.25);border-radius:8px">
                                         Create or join a match
                                     </a>
@@ -5811,7 +5812,7 @@ event MyMarket {
                                 <div style="border:1px dashed rgba(73,232,194,0.12);border-radius:12px;padding:28px;text-align:center">
                                     <div style="font-size:24px;margin-bottom:10px;opacity:.4"></div>
                                     <p style="margin:0;font-size:13px;color:var(--dim)">No active event positions.</p>
-                                    <a href="javascript:void(0)" onclick="go('overview');return false"
+                                    <a href="javascript:void(0)" onclick="window.location.hash='/overview';return false"
                                         style="display:inline-block;margin-top:12px;font-size:12px;font-weight:600;color:#49e8c2;text-decoration:none;padding:6px 16px;border:1px solid rgba(73,232,194,0.25);border-radius:8px">
                                         Explore markets
                                     </a>
@@ -6052,7 +6053,7 @@ event MyMarket {
             <div style="font-size:11px;color:var(--dim)">
                 Stake KAS, connect your node, and earn fees by resolving markets on-chain.</div>
         </div>
-        <button onclick="go('oracle-network')" class="cta1" style="font-size:12px;padding:8px 18px">
+        <button onclick="window.location.hash='/oracle'" class="cta1" style="font-size:12px;padding:8px 18px">
             Go to Oracle Dashboard</button>
     </div>
 </div>
@@ -6459,8 +6460,8 @@ event MyMarket {
     </main>
     <footer class="ftr">
         <div class="ftr-in"><span style="font-weight:600">HIGH TABLE PROTOCOL</span>
-            <div class="ftr-links"><a href="javascript:void(0)" onclick="go('terms');return false">Terms</a><a href="javascript:void(0)"
-                    onclick="go('kaspa');return false">Why Kaspa</a></div>
+            <div class="ftr-links"><a href="javascript:void(0)" onclick="window.location.hash='/docs';return false">Terms</a><a href="javascript:void(0)"
+                    onclick="window.location.hash='/docs';return false">Why Kaspa</a></div>
         </div>
     </footer>
     </div>
@@ -6597,7 +6598,7 @@ event MyMarket {
   <script src="htp-events-v3.js"></script>
   
   <!-- HTP Core -->
-  <script src="htp-router.js?v=4"></script>
+  <script src="htp-router.js?v=8"></script>
   <script src="htp-init.js"></script>
   <script src="chess.min.js"></script>
   
@@ -7866,7 +7867,7 @@ event MyMarket {
         // Connect button in header
         function togConn() {
             // Always go to wallet view for now
-            go('wallet');
+            window.location.hash='/wallet';
         }
 
         // Disconnect
@@ -7946,6 +7947,9 @@ window._htpAddMarket = function(m){
 
         // --- Navigation ---
 function go(v) {
+            var map = {overview:"/overview",markets:"/markets",create:"/create",skill:"/games","oracle-network":"/oracle",oracle:"/oracle",portfolio:"/wallet",wallet:"/wallet",kaspa:"/docs",terms:"/docs"};
+            window.location.hash = map[v] || "/overview";
+            return;
             document.querySelectorAll('.view').forEach(function(el) { el.classList.remove('show'); });
             var target = document.getElementById('v-' + v);
             if (target) target.classList.add('show');
@@ -8522,7 +8526,7 @@ function go(v) {
         async function submitCreate() {
             var q = $('cQ') ? $('cQ').value.trim() : ''; var img = window._htpEventImg || "";
             if (!q) { alert('Enter an event question.'); return; }
-            if (!conn || !walletAddress) { alert('Connect a wallet first.'); go('wallet'); return; }
+            if (!conn || !walletAddress) { alert('Connect a wallet first.'); window.location.hash='/wallet'; return; }
 
             // Read outcomes from dynamic oList
             var outInputs = document.querySelectorAll('#oList .or input');
@@ -8609,7 +8613,7 @@ function go(v) {
                     mkts.push(newMarket);
                     saveMkts();
                     showToast('Event created! Tx: ' + txid.substring(0, 16) + '...', 'success');
-                    go('markets');
+                    window.location.hash='/markets';
                     fCat = 'All'; fSt = 'open';
                     buildF(); renderM();
                 }).catch(function (e) {
@@ -8631,7 +8635,7 @@ function go(v) {
 
         // --- Real Trade Execution ---
         async function placeTrade() {
-            if (!conn || !walletAddress) { alert('Connect a wallet first.'); go('wallet'); return; }
+            if (!conn || !walletAddress) { alert('Connect a wallet first.'); window.location.hash='/wallet'; return; }
             if (!selMkt) { alert('Select a market first.'); return; }
 
 
@@ -9210,7 +9214,7 @@ function go(v) {
         }
 
         function selectForAttestation(id) {
-            if (!conn) { alert('Connect a wallet first.'); go('wallet'); return; }
+            if (!conn) { alert('Connect a wallet first.'); window.location.hash='/wallet'; return; }
             if (oracleBond === 0) { alert('Stake an oracle bond first.'); return; }
 
             var m = mkts.find(function (mk) { return mk.id === id; });
@@ -9245,7 +9249,7 @@ function go(v) {
 
         // Stake Oracle Bond
         async function stakeOracleBond() {
-            if (!conn || !walletAddress) { alert('Connect a wallet first.'); go('wallet'); return; }
+            if (!conn || !walletAddress) { alert('Connect a wallet first.'); window.location.hash='/wallet'; return; }
 
             var amt = parseInt($('oBondAmt').value) || 5000;
             if (amt < 5000) { alert('Minimum bond is 5,000 KAS.'); return; }
@@ -9373,7 +9377,7 @@ function go(v) {
 
         // --- Challenge / Dispute ---
         async function submitChallenge() {
-            if (!conn || !walletAddress) { alert('Connect a wallet first.'); go('wallet'); return; }
+            if (!conn || !walletAddress) { alert('Connect a wallet first.'); window.location.hash='/wallet'; return; }
 
             var marketSel = $('challengeMarket');
             if (!marketSel || !marketSel.value) { alert('Select a market to challenge.'); return; }
@@ -10736,7 +10740,7 @@ function go(v) {
             var b = d.body;
 
             // Switch to Create view
-            go('create');
+            window.location.hash='/create';
 
             // Populate form fields
             setTimeout(function () {
@@ -10908,7 +10912,7 @@ function go(v) {
             hash = hash.substring(1);
             var parts = hash.split('/');
             if (parts[0] === 'market' && parts[1]) {
-                setTimeout(function () { openM(parts[1]); go('markets'); }, 300);
+                setTimeout(function () { openM(parts[1]); window.location.hash='/markets'; }, 300);
             } else if (parts[0] === 'view' && parts[1]) {
                 setTimeout(function () { go(parts[1]); }, 100);
             }
@@ -10948,7 +10952,7 @@ function go(v) {
             if (shortcuts[key]) { e.preventDefault(); go(shortcuts[key]); }
             if (key === '/' || key === 's') {
                 var si = $('sI');
-                if (si) { e.preventDefault(); go('markets'); setTimeout(function () { si.focus(); }, 100); }
+                if (si) { e.preventDefault(); window.location.hash='/markets'; setTimeout(function () { si.focus(); }, 100); }
             }
             if (key === 'escape') {
                 // Close event detail if open
@@ -16058,7 +16062,7 @@ else setTimeout(initV69,300);
   // ================================================================
 
   async function createMatchWithLobby() {
-    if (!walletAddress) { showToast('Connect wallet first', 'error'); go('wallet'); return; }
+    if (!walletAddress) { showToast('Connect wallet first', 'error'); window.location.hash='/wallet'; return; }
 
     var gameEl = document.getElementById('sgGame');
     var timeEl = document.getElementById('sgTime');
