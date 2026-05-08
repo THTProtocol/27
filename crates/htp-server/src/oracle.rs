@@ -1,119 +1,126 @@
-//! oracle.rs — HTP Arbiter attestation module
-//!
-//! The server acts as HTP_ARBITER: it signs game outcomes so that
-//! covenant proposeSettle entrypoints can verify the arbiter's sig
-//! on-chain. The server NEVER constructs payout TXs. Covenants do.
-//!
-//! Settlement paths:
-//!   PATH A: both players sign — no arbiter needed
-//!   PATH B: HTP_ARBITER + winner sign — opens dispute window
-//!   PATH C: HTP_GUARDIAN force-settles after GUARDIAN_WINDOW
+//! HTP Oracle Network — core logic
+//! Oracle (auto node), Arbiter (human), Challenger, Proof (ZK)
 
 use sha2::{Digest, Sha256};
-use serde::{Deserialize, Serialize};
-use std::str::FromStr;
-use secp256k1::{Message, Secp256k1, SecretKey, Keypair};
 
-// --- Request / Response types ---
+// ── Constants ──────────────────────────────────────────
+pub const PROTOCOL_FEE_BPS: u64 = 200;
+pub const MIN_ORACLE_BOND_SOMPI: u64 = 100_000_000_000;
+pub const MIN_ARBITER_BOND_SOMPI: u64 = 50_000_000_000;
+pub const MIN_CHALLENGE_STAKE_SOMPI: u64 = 10_000_000_000;
+
+/// Canonical attestation hash. Format: SHA256("HTP-v1|{event_id}|{outcome}|{value}|{daa}")
+pub fn attestation_hash(event_id: &str, outcome: &str, value: &str, daa: u64) -> String {
+    let msg = format!("HTP-v1|{}|{}|{}|{}", event_id, outcome, value, daa);
+    hex::encode(Sha256::digest(msg.as_bytes()))
+}
+
+/// Returns (fee_sompi, net_sompi)
+pub fn compute_fee(gross: u64, bps: u64) -> (u64, u64) {
+    let fee = (gross * bps) / 10_000;
+    (fee, gross.saturating_sub(fee))
+}
+
+/// Evaluate condition string. Returns (condition_met, outcome_label)
+/// Supported: gt:N, lt:N, gte:N, lte:N, eq:STRING, contains:STRING, winner_is:NAME
+pub fn evaluate_condition(raw_value: &str, condition: &str) -> Result<(bool, String), String> {
+    let parts: Vec<&str> = condition.splitn(2, ':').collect();
+    if parts.len() != 2 { return Err(format!("invalid condition: {}", condition)); }
+    let (op, target) = (parts[0].trim(), parts[1].trim());
+    let v = raw_value.trim();
+    match op {
+        "eq" => { let m = v.to_lowercase() == target.to_lowercase(); Ok((m, if m {"yes"} else {"no"}.into())) }
+        "gt" => {
+            let n: f64 = v.parse().map_err(|_| format!("not a number: {}", v))?;
+            let t: f64 = target.parse().map_err(|_| format!("not a number: {}", target))?;
+            let m = n > t; Ok((m, if m {"yes"} else {"no"}.into()))
+        }
+        "gte" => {
+            let n: f64 = v.parse().map_err(|_| format!("not a number: {}", v))?;
+            let t: f64 = target.parse().map_err(|_| format!("not a number: {}", target))?;
+            let m = n >= t; Ok((m, if m {"yes"} else {"no"}.into()))
+        }
+        "lt" => {
+            let n: f64 = v.parse().map_err(|_| format!("not a number: {}", v))?;
+            let t: f64 = target.parse().map_err(|_| format!("not a number: {}", target))?;
+            let m = n < t; Ok((m, if m {"yes"} else {"no"}.into()))
+        }
+        "lte" => {
+            let n: f64 = v.parse().map_err(|_| format!("not a number: {}", v))?;
+            let t: f64 = target.parse().map_err(|_| format!("not a number: {}", target))?;
+            let m = n <= t; Ok((m, if m {"yes"} else {"no"}.into()))
+        }
+        "contains" => { let m = v.to_lowercase().contains(&target.to_lowercase()); Ok((m, if m {"yes"} else {"no"}.into())) }
+        "winner_is" => { let m = v.to_lowercase() == target.to_lowercase(); Ok((m, if m {target.to_string()} else {"other".into()})) }
+        other => Err(format!("unknown operator: {}", other))
+    }
+}
+
+// ═══════════════════════════════════════════════════════
+// Backward-compatibility for existing routes.rs
+// These wrap the new API so old code compiles unchanged
+// ═══════════════════════════════════════════════════════
+
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
 pub struct ProposeSettleReq {
-    pub winner:      String,
-    pub proof_root:  Option<String>,
-    pub settlement_path: Option<String>,  // "A" or "B", defaults to "B"
+    pub winner: String,
+    pub proof_root: Option<String>,
+    pub settlement_path: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
-pub struct ProposeSettleResp {
-    pub game_id:          String,
-    pub winner:           String,
-    pub proof_root:       String,
-    pub attestation_hash: String,
-    pub arbiter:          String,
-    pub settlement_path:  String,
-    pub status:           String,
+/// Thin wrapper calling new attestation_hash
+pub fn build_attestation(game_id: &str, winner: &str, proof_root: &str) -> String {
+    attestation_hash(game_id, winner, proof_root, 0)
+}
+
+/// Signed attestation using secp256k1 (kept from old oracle.rs)
+pub fn signed_attestation(
+    game_id: &str, winner: &str, proof_root: &str, path: &str,
+) -> Result<(String, String, String), String> {
+    use secp256k1::{Message, Secp256k1, SecretKey, Keypair};
+    use std::str::FromStr;
+
+    let privkey_hex = std::env::var("HTP_ORACLE_PRIVKEY")
+        .or_else(|_| std::env::var("ARBITER_PRIVKEY"))
+        .map_err(|_| "HTP_ORACLE_PRIVKEY not set".to_string())?;
+
+    let payload = format!("{}:{}:{}:{}", game_id, winner, proof_root, path);
+    let hash = hex::encode(Sha256::digest(payload.as_bytes()));
+
+    let secp = Secp256k1::new();
+    let secret_key = SecretKey::from_str(&privkey_hex)
+        .map_err(|e| format!("invalid key: {}", e))?;
+    let keypair = Keypair::from_secret_key(&secp, &secret_key);
+    let (pubkey, _parity) = keypair.x_only_public_key();
+
+    let msg_bytes = hex::decode(&hash).map_err(|e| format!("hex: {}", e))?;
+    let msg = Message::from_digest_slice(&msg_bytes)
+        .map_err(|e| format!("msg: {}", e))?;
+
+    let sig = secp.sign_schnorr(&msg, &keypair);
+    let sig_hex = hex::encode(sig.serialize());
+    let pubkey_hex = hex::encode(pubkey.serialize());
+
+    Ok((hash, sig_hex, pubkey_hex))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AttestPayoutReq {
+    pub market_id: String,
+    pub claimer: String,
+    pub amount: u64,
+}
+
+pub fn build_payout_attestation(market_id: &str, claimer: &str, amount: u64) -> String {
+    attestation_hash(market_id, "payout", claimer, amount)
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ProofCommitReq {
     pub game_id: String,
-    pub moves:   Vec<String>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ProofCommitResp {
-    pub game_id:      String,
-    pub move_count:   usize,
-    pub proof_root:   String,
-    pub proof_system: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct AttestPayoutReq {
-    pub market_id:   String,
-    pub claimer:     String,
-    pub amount:      u64,
-}
-
-#[derive(Debug, Serialize)]
-pub struct AttestPayoutResp {
-    pub market_id:        String,
-    pub claimer:          String,
-    pub amount:           u64,
-    pub attestation_hash: String,
-    pub arbiter:          String,
-    pub status:           String,
-}
-
-// --- Core attestation logic ---
-
-pub fn build_attestation(game_id: &str, winner: &str, proof_root: &str) -> String {
-    let payload = format!("{}:{}:{}:PROPOSE_SETTLE", game_id, winner, proof_root);
-    hex::encode(Sha256::digest(payload.as_bytes()))
-}
-
-/// Real secp256k1 Schnorr signing of attestation using ARBITER_PRIVKEY from env.
-/// Returns (attestation_hash, schnorr_signature_hex, pubkey_hex)
-pub fn signed_attestation(
-    game_id: &str,
-    winner: &str,
-    proof_root: &str,
-    path: &str,
-) -> Result<(String, String, String), String> {
-    let privkey_hex = std::env::var("ARBITER_PRIVKEY")
-        .map_err(|_| "ARBITER_PRIVKEY not set in environment".to_string())?;
-    
-    let payload = format!("{}:{}:{}:{}", game_id, winner, proof_root, path);
-    let hash = hex::encode(Sha256::digest(payload.as_bytes()));
-    
-    // Parse private key
-    let secp = Secp256k1::new();
-    let secret_key = SecretKey::from_str(&privkey_hex)
-        .map_err(|e| format!("Invalid ARBITER_PRIVKEY: {}", e))?;
-    let keypair = Keypair::from_secret_key(&secp, &secret_key);
-    let (pubkey, _parity) = keypair.x_only_public_key();
-    
-    // Create message from hash
-    let msg_bytes = hex::decode(&hash).map_err(|e| format!("hex decode: {}", e))?;
-    let msg = Message::from_digest_slice(&msg_bytes)
-        .map_err(|e| format!("message: {}", e))?;
-    
-    // Sign with Schnorr (BIP340)
-    let sig = secp.sign_schnorr(&msg, &keypair);
-    let sig_hex = hex::encode(sig.serialize());
-    let pubkey_hex = hex::encode(pubkey.serialize());
-    
-    Ok((hash, sig_hex, pubkey_hex))
-}
-
-pub fn build_payout_attestation(market_id: &str, claimer: &str, amount: u64) -> String {
-    let mut h = Sha256::new();
-    h.update(market_id.as_bytes());
-    h.update(b":");
-    h.update(claimer.as_bytes());
-    h.update(b":");
-    h.update(&amount.to_le_bytes());
-    hex::encode(h.finalize())
+    pub moves: Vec<String>,
 }
 
 pub fn build_proof_root(moves: &[String]) -> Option<String> {

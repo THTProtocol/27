@@ -621,3 +621,122 @@ pub async fn guardian_override(
         "message": "guardian override executed"
     })))
 }
+
+// ═══════════════════════════════════════════════════════
+// HTP ORACLE NETWORK ROUTES (new)
+// ═══════════════════════════════════════════════════════
+
+fn short_oid() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let n = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos();
+    format!("{:x}", n % 0xffffffffffff)
+}
+
+pub async fn create_event_handler(
+    State(state): State<Arc<AppState>>,
+    Json(b): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let id = format!("evt-{}", short_oid());
+    let title = b["title"].as_str().unwrap_or("Untitled Event");
+    let url = b["resolution_url"].as_str().unwrap_or("");
+    let condition = b["resolution_condition"].as_str().unwrap_or("eq:yes");
+    let resolution_daa = b["resolution_daa"].as_i64().unwrap_or(0);
+    let creator = b["creator_address"].as_str().unwrap_or("");
+    let oracle_type = b["oracle_type"].as_str().unwrap_or("oracle");
+    let json_path = b["resolution_json_path"].as_str().unwrap_or("$.result");
+    let quorum_m = b["quorum_m"].as_i64().unwrap_or(2);
+    let quorum_n = b["quorum_n"].as_i64().unwrap_or(3);
+    let db = state.db.lock().map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    db.create_event_db(&id, title, creator, oracle_type, url, json_path, condition, resolution_daa, quorum_m, quorum_n)
+        .map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    Ok(Json(serde_json::json!({
+        "event_id": id, "title": title, "oracle_type": oracle_type,
+        "resolution_url": url, "resolution_condition": condition,
+        "quorum": format!("{}/{}", quorum_m, quorum_n), "status": "open", "protocol_fee_pct": 2
+    })))
+}
+
+pub async fn list_events_handler(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let db = state.db.lock().map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    let events = db.get_open_events().map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    Ok(Json(serde_json::json!({ "events": events })))
+}
+
+pub async fn attest_event_handler(
+    State(state): State<Arc<AppState>>,
+    Path(event_id): Path<String>,
+    Json(b): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let pubkey = b["attestor_pubkey"].as_str().unwrap_or("");
+    let att_type = b["attestor_type"].as_str().unwrap_or("oracle");
+    let value = b["resolution_value"].as_str().unwrap_or("");
+    let outcome = b["signed_outcome"].as_str().unwrap_or("");
+    let hash = b["attestation_hash"].as_str().unwrap_or("");
+    let sig = b["signature"].as_str().unwrap_or("");
+    let daa = b["daa_score"].as_i64().unwrap_or(0);
+    let expected = crate::oracle::attestation_hash(&event_id, &outcome, &value, daa as u64);
+    if hash != expected {
+        return Err((StatusCode::BAD_REQUEST, format!("hash mismatch")));
+    }
+    let db = state.db.lock().map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    let bond = db.get_operator_bond(pubkey).map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    let min_bond = if att_type == "arbiter" { crate::oracle::MIN_ARBITER_BOND_SOMPI as i64 } else { crate::oracle::MIN_ORACLE_BOND_SOMPI as i64 };
+    if bond < min_bond { return Err((StatusCode::FORBIDDEN, format!("insufficient bond {}", bond))); }
+    db.submit_attestation_db(&event_id, pubkey, att_type, value, outcome, hash, sig, daa)
+        .map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    let quorum_m: i64 = db.conn.query_row("SELECT quorum_m FROM htp_events WHERE id=?1", rusqlite::params![event_id], |r| r.get(0)).unwrap_or(2);
+    let count = db.count_attestations(&event_id, outcome).unwrap_or(0);
+    if count >= quorum_m {
+        db.finalize_event_db(&event_id, outcome).map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+        db.reward_operator_db(pubkey).map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    }
+    Ok(Json(serde_json::json!({
+        "accepted": true, "event_id": event_id, "outcome": outcome,
+        "matching_attestations": count, "quorum_required": quorum_m,
+        "quorum_reached": count >= quorum_m
+    })))
+}
+
+pub async fn get_event_attestations_handler(
+    State(state): State<Arc<AppState>>,
+    Path(event_id): Path<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let db = state.db.lock().map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    let atts = db.get_attestations_for_event_db(&event_id).map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    Ok(Json(serde_json::json!({ "event_id": event_id, "attestations": atts })))
+}
+
+pub async fn register_operator_handler(
+    State(state): State<Arc<AppState>>,
+    Json(b): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let pubkey = b["pubkey"].as_str().unwrap_or("");
+    let nickname = b["nickname"].as_str().unwrap_or("anon");
+    let operator_type = b["operator_type"].as_str().unwrap_or("oracle");
+    let bond_txid = b["bond_txid"].as_str().unwrap_or("");
+    let bond_sompi = b["bond_sompi"].as_i64().unwrap_or(0);
+    let min = if operator_type == "arbiter" { crate::oracle::MIN_ARBITER_BOND_SOMPI as i64 } else { crate::oracle::MIN_ORACLE_BOND_SOMPI as i64 };
+    if bond_sompi < min { return Err((StatusCode::BAD_REQUEST, format!("need {} sompi min", min))); }
+    let db = state.db.lock().map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    db.register_operator_db(pubkey, nickname, operator_type, bond_txid, bond_sompi)
+        .map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    Ok(Json(serde_json::json!({ "registered": true, "pubkey": pubkey, "operator_type": operator_type, "bond_kas": bond_sompi as f64 / 1e8 })))
+}
+
+pub async fn list_operators_handler(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let db = state.db.lock().map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    let ops = db.get_operators_db().map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    Ok(Json(serde_json::json!({ "operators": ops, "total": ops.len() })))
+}
+
+pub async fn oracle_network_stats_handler(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let db = state.db.lock().map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    let stats = db.get_oracle_network_stats().map_err(|e|(StatusCode::INTERNAL_SERVER_ERROR,e.to_string()))?;
+    Ok(Json(stats))
+}

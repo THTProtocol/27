@@ -113,7 +113,108 @@ impl HtpDb {
                 dispute_deadline INTEGER NOT NULL DEFAULT 0,
                 disputed_by      TEXT
             );
-            CREATE TABLE IF NOT EXISTS move_log (
+            
+
+        // ═══════════════════════════════════════════
+        // HTP ORACLE NETWORK TABLES
+        // ═══════════════════════════════════════════
+        CREATE TABLE IF NOT EXISTS htp_events (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT DEFAULT '',
+            creator_address TEXT NOT NULL DEFAULT '',
+            oracle_type TEXT NOT NULL DEFAULT 'oracle',
+            resolution_url TEXT NOT NULL DEFAULT '',
+            resolution_json_path TEXT NOT NULL DEFAULT '$.result',
+            resolution_condition TEXT NOT NULL DEFAULT '',
+            resolution_daa INTEGER NOT NULL DEFAULT 0,
+            quorum_m INTEGER NOT NULL DEFAULT 2,
+            quorum_n INTEGER NOT NULL DEFAULT 3,
+            challenge_window_sec INTEGER NOT NULL DEFAULT 172800,
+            protocol_fee_bps INTEGER NOT NULL DEFAULT 200,
+            status TEXT NOT NULL DEFAULT 'open',
+            outcome TEXT,
+            outcome_attested_at INTEGER,
+            gross_pot_sompi INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+            resolved_at INTEGER
+        );
+
+        CREATE TABLE IF NOT EXISTS htp_oracle_operators (
+            pubkey TEXT PRIMARY KEY,
+            nickname TEXT DEFAULT 'anon',
+            bond_txid TEXT DEFAULT '',
+            bond_sompi INTEGER NOT NULL DEFAULT 0,
+            slash_count INTEGER NOT NULL DEFAULT 0,
+            correct_count INTEGER NOT NULL DEFAULT 0,
+            reputation REAL NOT NULL DEFAULT 1.0,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            operator_type TEXT NOT NULL DEFAULT 'oracle',
+            registered_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+            last_active_at INTEGER
+        );
+
+        CREATE TABLE IF NOT EXISTS htp_attestations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id TEXT NOT NULL,
+            attestor_pubkey TEXT NOT NULL,
+            attestor_type TEXT NOT NULL DEFAULT 'oracle',
+            resolution_value TEXT NOT NULL DEFAULT '',
+            signed_outcome TEXT NOT NULL,
+            attestation_hash TEXT NOT NULL,
+            signature TEXT NOT NULL,
+            daa_score INTEGER NOT NULL DEFAULT 0,
+            submitted_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+            UNIQUE(event_id, attestor_pubkey)
+        );
+
+        CREATE TABLE IF NOT EXISTS htp_challenges (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id TEXT NOT NULL,
+            attestation_id INTEGER NOT NULL,
+            challenger_pubkey TEXT NOT NULL,
+            challenger_stake_sompi INTEGER NOT NULL DEFAULT 0,
+            wrong_attestor_pubkey TEXT NOT NULL,
+            proof_type TEXT NOT NULL DEFAULT 'counter_url',
+            proof_data TEXT NOT NULL DEFAULT '{}',
+            counter_outcome TEXT,
+            status TEXT NOT NULL DEFAULT 'pending',
+            bond_slashed_sompi INTEGER NOT NULL DEFAULT 0,
+            challenger_reward_sompi INTEGER NOT NULL DEFAULT 0,
+            protocol_fee_sompi INTEGER NOT NULL DEFAULT 0,
+            slash_txid TEXT,
+            created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+            resolved_at INTEGER
+        );
+
+        CREATE TABLE IF NOT EXISTS htp_zk_proofs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id TEXT NOT NULL,
+            proof_system TEXT NOT NULL DEFAULT 'risc_zero',
+            circuit_commitment TEXT NOT NULL DEFAULT '',
+            public_inputs_json TEXT NOT NULL DEFAULT '{}',
+            proof_bytes_hex TEXT NOT NULL DEFAULT '',
+            signed_outcome TEXT NOT NULL,
+            resolution_value TEXT NOT NULL DEFAULT '',
+            verification_status TEXT NOT NULL DEFAULT 'pending',
+            kip16_opcode TEXT NOT NULL DEFAULT 'OP_ZK_RISC0_VERIFY',
+            verified_txid TEXT,
+            submitted_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+            verified_at INTEGER
+        );
+
+        CREATE TABLE IF NOT EXISTS htp_protocol_fees (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id TEXT NOT NULL,
+            fee_type TEXT NOT NULL DEFAULT 'settlement',
+            gross_sompi INTEGER NOT NULL DEFAULT 0,
+            fee_bps INTEGER NOT NULL DEFAULT 200,
+            fee_sompi INTEGER NOT NULL DEFAULT 0,
+            net_sompi INTEGER NOT NULL DEFAULT 0,
+            collected_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS move_log (
                 game_id    TEXT NOT NULL,
                 move_index INTEGER NOT NULL,
                 move_data  TEXT NOT NULL DEFAULT '',
@@ -332,6 +433,185 @@ impl HtpDb {
             updated_at:    row.get(11).unwrap_or(0),
         }))
     }
+
+
+    // ═══════════════════════════════════════════════════════
+    // Oracle Network helpers
+    // ═══════════════════════════════════════════════════════
+    pub fn create_event_db(
+        &self, id: &str, title: &str, creator: &str,
+        oracle_type: &str, url: &str, json_path: &str,
+        condition: &str, resolution_daa: i64, quorum_m: i64, quorum_n: i64,
+    ) -> rusqlite::Result<()> {
+        self.conn.execute(
+            "INSERT INTO htp_events (id,title,creator_address,oracle_type,resolution_url,resolution_json_path,resolution_condition,resolution_daa,quorum_m,quorum_n) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
+            rusqlite::params![id, title, creator, oracle_type, url, json_path, condition, resolution_daa, quorum_m, quorum_n],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_open_events(&self) -> rusqlite::Result<Vec<serde_json::Value>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id,title,oracle_type,resolution_url,resolution_json_path,resolution_condition,resolution_daa,quorum_m,quorum_n,status FROM htp_events WHERE status IN ('open','pending_resolution') ORDER BY resolution_daa ASC LIMIT 100"
+        )?;
+        let rows = stmt.query_map([], |r| {
+            Ok(serde_json::json!({
+                "id": r.get::<_,String>(0)?,
+                "title": r.get::<_,String>(1)?,
+                "oracle_type": r.get::<_,String>(2)?,
+                "resolution_url": r.get::<_,String>(3)?,
+                "resolution_json_path": r.get::<_,String>(4)?,
+                "resolution_condition": r.get::<_,String>(5)?,
+                "resolution_daa": r.get::<_,i64>(6)?,
+                "quorum_m": r.get::<_,i64>(7)?,
+                "quorum_n": r.get::<_,i64>(8)?,
+                "status": r.get::<_,String>(9)?,
+            }))
+        })?;
+        rows.collect()
+    }
+
+    pub fn register_operator_db(
+        &self, pubkey: &str, nickname: &str,
+        operator_type: &str, bond_txid: &str, bond_sompi: i64,
+    ) -> rusqlite::Result<()> {
+        self.conn.execute(
+            "INSERT INTO htp_oracle_operators (pubkey,nickname,operator_type,bond_txid,bond_sompi) VALUES (?1,?2,?3,?4,?5) ON CONFLICT(pubkey) DO UPDATE SET bond_sompi=bond_sompi+excluded.bond_sompi, is_active=1, last_active_at=strftime('%s','now')",
+            rusqlite::params![pubkey, nickname, operator_type, bond_txid, bond_sompi],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_operator_bond(&self, pubkey: &str) -> rusqlite::Result<i64> {
+        self.conn.query_row(
+            "SELECT bond_sompi FROM htp_oracle_operators WHERE pubkey=?1",
+            rusqlite::params![pubkey],
+            |r| r.get(0),
+        ).or(Ok(0))
+    }
+
+    pub fn submit_attestation_db(
+        &self, event_id: &str, pubkey: &str, att_type: &str,
+        value: &str, outcome: &str, hash: &str, sig: &str, daa: i64,
+    ) -> rusqlite::Result<()> {
+        self.conn.execute(
+            "INSERT OR IGNORE INTO htp_attestations (event_id,attestor_pubkey,attestor_type,resolution_value,signed_outcome,attestation_hash,signature,daa_score) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)",
+            rusqlite::params![event_id, pubkey, att_type, value, outcome, hash, sig, daa],
+        )?;
+        self.conn.execute(
+            "UPDATE htp_oracle_operators SET last_active_at=strftime('%s','now') WHERE pubkey=?1",
+            rusqlite::params![pubkey],
+        )?;
+        Ok(())
+    }
+
+    pub fn count_attestations(&self, event_id: &str, outcome: &str) -> rusqlite::Result<i64> {
+        self.conn.query_row(
+            "SELECT COUNT(*) FROM htp_attestations WHERE event_id=?1 AND signed_outcome=?2",
+            rusqlite::params![event_id, outcome],
+            |r| r.get(0),
+        )
+    }
+
+    pub fn check_event_quorum(&self, event_id: &str, quorum_m: i64) -> rusqlite::Result<Option<String>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT signed_outcome, COUNT(*) as cnt FROM htp_attestations WHERE event_id=?1 GROUP BY signed_outcome HAVING cnt >= ?2 ORDER BY cnt DESC LIMIT 1"
+        )?;
+        let mut rows = stmt.query(rusqlite::params![event_id, quorum_m])?;
+        if let Some(row) = rows.next()? {
+            Ok(Some(row.get::<_,String>(0)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn finalize_event_db(&self, event_id: &str, outcome: &str) -> rusqlite::Result<()> {
+        self.conn.execute(
+            "UPDATE htp_events SET status='attested', outcome=?2, outcome_attested_at=strftime('%s','now') WHERE id=?1",
+            rusqlite::params![event_id, outcome],
+        )?;
+        Ok(())
+    }
+
+    pub fn reward_operator_db(&self, pubkey: &str) -> rusqlite::Result<()> {
+        self.conn.execute(
+            "UPDATE htp_oracle_operators SET correct_count=correct_count+1, reputation=MIN(5.0,reputation+0.05), last_active_at=strftime('%s','now') WHERE pubkey=?1",
+            rusqlite::params![pubkey],
+        )?;
+        Ok(())
+    }
+
+    pub fn slash_operator_db(&self, pubkey: &str, slash_sompi: i64) -> rusqlite::Result<()> {
+        self.conn.execute(
+            "UPDATE htp_oracle_operators SET bond_sompi=MAX(0,bond_sompi-?2), slash_count=slash_count+1, reputation=MAX(0.0,reputation-0.25) WHERE pubkey=?1",
+            rusqlite::params![pubkey, slash_sompi],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_attestations_for_event_db(&self, event_id: &str) -> rusqlite::Result<Vec<serde_json::Value>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT attestor_pubkey,attestor_type,signed_outcome,attestation_hash,daa_score,submitted_at FROM htp_attestations WHERE event_id=?1 ORDER BY submitted_at ASC"
+        )?;
+        let rows = stmt.query_map(rusqlite::params![event_id], |r| {
+            Ok(serde_json::json!({
+                "pubkey": r.get::<_,String>(0)?,
+                "type": r.get::<_,String>(1)?,
+                "outcome": r.get::<_,String>(2)?,
+                "hash": r.get::<_,String>(3)?,
+                "daa_score": r.get::<_,i64>(4)?,
+                "submitted_at": r.get::<_,i64>(5)?,
+            }))
+        })?;
+        rows.collect()
+    }
+
+    pub fn get_operators_db(&self) -> rusqlite::Result<Vec<serde_json::Value>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT pubkey,nickname,operator_type,bond_sompi,slash_count,correct_count,reputation,is_active,last_active_at FROM htp_oracle_operators WHERE is_active=1 ORDER BY reputation DESC LIMIT 100"
+        )?;
+        let rows = stmt.query_map([], |r| {
+            let bond: i64 = r.get(3)?;
+            Ok(serde_json::json!({
+                "pubkey": r.get::<_,String>(0)?,
+                "nickname": r.get::<_,String>(1)?,
+                "type": r.get::<_,String>(2)?,
+                "bond_sompi": bond,
+                "bond_kas": bond as f64 / 1e8,
+                "slash_count": r.get::<_,i64>(4)?,
+                "correct_count": r.get::<_,i64>(5)?,
+                "reputation": r.get::<_,f64>(6)?,
+                "is_active": r.get::<_,bool>(7)?,
+                "last_active_at": r.get::<_,Option<i64>>(8)?,
+            }))
+        })?;
+        rows.collect()
+    }
+
+    pub fn get_oracle_network_stats(&self) -> rusqlite::Result<serde_json::Value> {
+        let total_events: i64 = self.conn.query_row("SELECT COUNT(*) FROM htp_events", [], |r| r.get(0)).unwrap_or(0);
+        let open_events: i64 = self.conn.query_row("SELECT COUNT(*) FROM htp_events WHERE status='open'", [], |r| r.get(0)).unwrap_or(0);
+        let resolved_events: i64 = self.conn.query_row("SELECT COUNT(*) FROM htp_events WHERE status IN ('attested','settled')", [], |r| r.get(0)).unwrap_or(0);
+        let total_oracles: i64 = self.conn.query_row("SELECT COUNT(*) FROM htp_oracle_operators WHERE operator_type='oracle' AND is_active=1", [], |r| r.get(0)).unwrap_or(0);
+        let total_arbiters: i64 = self.conn.query_row("SELECT COUNT(*) FROM htp_oracle_operators WHERE operator_type='arbiter' AND is_active=1", [], |r| r.get(0)).unwrap_or(0);
+        let total_attestations: i64 = self.conn.query_row("SELECT COUNT(*) FROM htp_attestations", [], |r| r.get(0)).unwrap_or(0);
+        let total_challenges: i64 = self.conn.query_row("SELECT COUNT(*) FROM htp_challenges", [], |r| r.get(0)).unwrap_or(0);
+        let upheld_challenges: i64 = self.conn.query_row("SELECT COUNT(*) FROM htp_challenges WHERE status='upheld'", [], |r| r.get(0)).unwrap_or(0);
+        let total_fees: i64 = self.conn.query_row("SELECT COALESCE(SUM(fee_sompi),0) FROM htp_protocol_fees", [], |r| r.get(0)).unwrap_or(0);
+        Ok(serde_json::json!({
+            "total_events": total_events,
+            "open_events": open_events,
+            "resolved_events": resolved_events,
+            "total_oracles": total_oracles,
+            "total_arbiters": total_arbiters,
+            "total_attestations": total_attestations,
+            "total_challenges": total_challenges,
+            "upheld_challenges": upheld_challenges,
+            "total_protocol_fee_sompi": total_fees,
+            "protocol_fee_bps": 200
+        }))
+    }
+
 
     pub fn execute_raw(&self, sql: &str, params: &[&dyn rusqlite::ToSql]) -> Result<usize> {
         self.conn.execute(sql, params)

@@ -74,6 +74,13 @@ async fn main() {
         .route("/api/balance/:address", get(routes::balance_route))
         .route("/api/games", get(routes::list_games))
         .route("/api/games/:id/settlement", get(routes::get_settlement))
+                // ═══ HTP Oracle Network ═════════════════════════════
+        .route("/api/events", axum::routing::get(routes::list_events_handler).post(routes::create_event_handler))
+        .route("/api/events/:id/attest", axum::routing::post(routes::attest_event_handler))
+        .route("/api/events/:id/attestations", axum::routing::get(routes::get_event_attestations_handler))
+        .route("/api/operators", axum::routing::get(routes::list_operators_handler).post(routes::register_operator_handler))
+        .route("/api/oracle/network", axum::routing::get(routes::oracle_network_stats_handler))
+
         .route("/ws", get(ws::ws_handler))
         .layer(cors)
         .layer(tower_http::trace::TraceLayer::new_for_http())
