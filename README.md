@@ -1,20 +1,6 @@
 <div align="center">
 
-```
-██╗  ██╗██╗ ██████╗ ██╗  ██╗    ████████╗ █████╗ ██████╗ ██╗     ███████╗
-██║  ██║██║██╔════╝ ██║  ██║    ╚══██╔══╝██╔══██╗██╔══██╗██║     ██╔════╝
-███████║██║██║  ███╗███████║       ██║   ███████║██████╔╝██║     █████╗
-██╔══██║██║██║   ██║██╔══██║       ██║   ██╔══██║██╔══██╗██║     ██╔══╝
-██║  ██║██║╚██████╔╝██║  ██║       ██║   ██║  ██║██████╔╝███████╗███████╗
-╚═╝  ╚═╝╚═╝ ╚═════╝ ╚═╝  ╚═╝       ╚═╝   ╚═╝  ╚═╝╚═════╝ ╚══════╝╚══════╝
-
-██████╗ ██████╗  ██████╗ ████████╗ ██████╗  ██████╗ ██████╗ ██╗
-██╔══██╗██╔══██╗██╔═══██╗╚══██╔══╝██╔═══██╗██╔════╝██╔═══██╗██║
-██████╔╝██████╔╝██║   ██║   ██║   ██║   ██║██║     ██║   ██║██║
-██╔═══╝ ██╔══██╗██║   ██║   ██║   ██║   ██║██║     ██║   ██║██║
-██║     ██║  ██║╚██████╔╝   ██║   ╚██████╔╝╚██████╗╚██████╔╝███████╗
-╚═╝     ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝  ╚═════╝ ╚═════╝ ╚══════╝
-```
+<img src="https://user-gen-media-assets.s3.amazonaws.com/gpt4o_images/8c591225-60dc-4cca-91d4-0a9bb106e1a0.png" alt="High Table Protocol" width="100%">
 
 **Trustless skill games and information markets on the Kaspa BlockDAG.**
 
@@ -38,12 +24,11 @@ High Table Protocol is a **trustless coordination layer** for skill-based compet
 Participants stake KAS to compete in skill games or signal their conviction on real-world outcomes. Settlement is enforced by cryptographic escrow on the Kaspa DAG — no custodian, no counterparty risk, no intermediary.
 
 ```
- participant_a ──┐
+ participant_a ──┬
                  ├──▶  P2PK escrow (Kaspa UTXO)  ──▶  winner receives stake
- participant_b ──┘              ▲
-                       oracle quorum attests
-                       outcome (m-of-n Schnorr)
-                                       └──▶  2% protocol fee → treasury
+ participant_b ──┘         ▲
+                   oracle quorum attests           2% → treasury
+                   outcome (m-of-n Schnorr)
 ```
 
 > Live on **Kaspa Testnet 12 (TN12)**. Mainnet deployment pending covenant opcode activation in the **Toccata hard fork**.
@@ -53,7 +38,7 @@ Participants stake KAS to compete in skill games or signal their conviction on r
 ## Core Concepts
 
 ### Skill Games
-Two participants lock equal stakes into a P2PK covenant escrow. A verified game engine runs server-side. When the game concludes, the protocol's arbiter key signs the settlement transaction — releasing funds to the winner. No manual intervention, no dispute resolution theatre.
+Two participants lock equal stakes into a P2PK covenant escrow. A verified game engine runs server-side. When the game concludes, the protocol arbiter key signs the settlement transaction — releasing funds to the winner. No manual intervention, no dispute resolution theatre.
 
 ### Information Markets
 Participants allocate stake to signal their view on a future outcome (price levels, protocol events, real-world facts). A bonded oracle network independently attests the resolution. When quorum is reached, the market settles automatically. Stake is redistributed proportionally to participants who signalled correctly.
@@ -69,7 +54,7 @@ All funds are locked in **Kaspa P2PK UTXOs** with two spend paths: a winner-clai
 |---|---|---|
 | **Frontend** | Vanilla JS + rusty-kaspa WASM | BIP44 key derivation in-browser, no framework |
 | **Backend** | Rust · Axum · SQLite | 35 REST endpoints + WebSocket relay |
-| **Blockchain** | Kaspa BlockDAG (TN12 → mainnet) | DAG-native UTXO settlement |
+| **DAG Layer** | Kaspa BlockDAG (TN12 → mainnet) | DAG-native UTXO settlement, ~1 BPS confirmation |
 | **Wallet** | WASM BIP44 `m/44h/111111h/0h` | KasWare · Kastle · Kaspium · mnemonic import |
 | **Settlement** | P2PK covenants · secp256k1 Schnorr | Rust-native via `secp256k1` crate |
 | **Oracles** | Bonded operator network · ECDSA attest | m-of-n quorum, slash-on-dishonesty |
@@ -80,13 +65,13 @@ All funds are locked in **Kaspa P2PK UTXOs** with two spend paths: a winner-clai
 ## Games & Markets
 
 ```
-♟  Chess              —  full rules engine (shakmaty), move validation, checkmate detection
-●  Connect 4          —  gravity logic, win detection, 6×7 board
-◆  Checkers           —  multi-jump, king promotion, forced-capture rules
-○  Tic-Tac-Toe        —  server-authoritative reference implementation
-🃏  Texas Hold'em      —  engine complete, Rust backend port in progress
-🂡  Blackjack          —  multi-deck engine complete, Rust backend port in progress
-⬡  Information Markets —  parimutuel allocation, bonded oracle resolution
+♟  Chess               —  full rules engine (shakmaty), move validation, checkmate
+●  Connect 4           —  gravity logic, win detection, 6×7 board
+◆  Checkers            —  multi-jump, king promotion, forced-capture rules
+○  Tic-Tac-Toe         —  server-authoritative reference implementation
+🃏  Texas Hold'em       —  engine complete, Rust backend port in progress
+🂡  Blackjack           —  multi-deck engine complete, Rust backend port in progress
+⬡  Information Markets  —  parimutuel allocation, bonded oracle resolution
 ```
 
 ---
@@ -101,7 +86,7 @@ All funds are locked in **Kaspa P2PK UTXOs** with two spend paths: a winner-clai
 │    ├── /                →  static SPA (Nginx)                   │
 │    ├── /api/*           →  Rust htp-server :3000 (Axum)         │
 │    ├── /api/orders/*    →  Node.js order book :3001             │
-│    └── /ws             →  WebSocket relay :3000                 │
+│    └── /ws              →  WebSocket relay :3000                 │
 │                                                                 │
 │  Rust Backend (PM2: htp-server)                                 │
 │    ├── game engines     —  chess · checkers · connect4 · ttt    │
@@ -110,17 +95,18 @@ All funds are locked in **Kaspa P2PK UTXOs** with two spend paths: a winner-clai
 │    └── WebSocket relay  —  real-time move fan-out               │
 │                                                                 │
 │  Node.js Backend (PM2: htp-orders)                              │
-│    └── order book       —  open orders · matching · cancellation│
+│    └── order book       —  open orders · matching · cancellation │
 │                                                                 │
 │  Storage — SQLite /root/htp/data/htp.db                         │
-│    ├── games            players  settlements                    │
-│    ├── htp_events       htp_attestations                        │
-│    ├── htp_operators    (bonded oracle nodes)                   │
-│    └── orders           (open order book)                       │
+│    ├── games · players · settlements                            │
+│    ├── htp_events · htp_attestations                            │
+│    ├── htp_operators (bonded oracle nodes)                      │
+│    └── orders (open order book)                                 │
 └─────────────────────────────────────────────────────────────────┘
                            │
-              Kaspa TN12  REST + wRPC
+                 Kaspa TN12 — BlockDAG consensus
               api-tn12.kaspa.org · ws-tn12.kaspa.org
+              ~1 block/second · DAG-parallel confirmation
 ```
 
 ---
@@ -182,16 +168,16 @@ POST /api/orders/:id/cancel         # cancel order
 │   └── htp-kaspa-rpc/         # Kaspa REST + wRPC client
 │
 ├── covenants/                 # SilverScript covenant templates
-│   ├── escrow-v2.ss           # P2PK escrow — winner claim + timeout refund
-│   ├── payout.ss              # winner claim covenant
-│   ├── refund.ss              # timeout refund path
+│   ├── escrow-v2.ss           # P2PK escrow — winner claim + DAA timeout refund
+│   ├── payout.ss              # winner claim path
+│   ├── refund.ss              # DAA-score timeout refund
 │   └── fee.ss                 # 2% protocol fee split
 │
 ├── public/                    # SPA frontend — vanilla JS, no framework
 │   ├── index.html             # single entry point
 │   ├── htp-config.js          # network config (TN12 ↔ mainnet toggle)
 │   ├── htp-router.js          # screen router + 14 screen functions
-│   ├── htp-covenant-escrow-v2.js  # covenant builder
+│   ├── htp-covenant-escrow-v2.js  # covenant UTXO builder
 │   ├── htp-escrow-derive.js   # deterministic escrow key derivation (WASM)
 │   ├── app.js                 # WebSocket client
 │   └── kaspa-wasm-sdk/        # rusty-kaspa WASM bindings
@@ -200,7 +186,7 @@ POST /api/orders/:id/cancel         # cancel order
 ├── docs/                      # extended documentation
 ├── scripts/                   # build, deploy, stress-test tools
 ├── Dockerfile                 # multi-stage Rust build
-├── docker-compose.yml         # local development environment
+├── docker-compose.yml         # local development
 ├── nginx.conf                 # reverse proxy reference config
 └── .env.example               # environment variable template
 ```
@@ -212,43 +198,32 @@ POST /api/orders/:id/cancel         # cancel order
 ### Prerequisites
 - Rust `1.75+`
 - Node.js `18+`
-- A Kaspa TN12 endpoint (public: `https://api-tn12.kaspa.org`)
+- Kaspa TN12 endpoint (public: `https://api-tn12.kaspa.org`)
 
 ### Build & Run
 
 ```bash
-# Clone
 git clone https://github.com/THTProtocol/27.git && cd 27
 
-# Build Rust backend
 cargo build --release -p htp-server
 
-# Configure environment
 cp .env.example .env
-# Required: HTP_NETWORK, KASPA_REST_TN12, HTP_ORACLE_PRIVKEY, PROTOCOL_ADDRESS
+# Set: HTP_NETWORK, KASPA_REST_TN12, HTP_ORACLE_PRIVKEY, PROTOCOL_ADDRESS
 
-# Run Rust backend
-./target/release/htp-server
-
-# Run order book service (separate terminal)
-node orders-api.js
-
-# Serve frontend
-cd public && python3 -m http.server 8080
-# Open: http://localhost:8080
+./target/release/htp-server          # Rust backend  :3000
+node orders-api.js                   # order book     :3001
+cd public && python3 -m http.server 8080  # frontend  :8080
 ```
 
 ### Docker
-
 ```bash
 docker-compose up --build
 ```
 
 ### Network Toggle
-
 ```bash
-# .env — one line to switch on mainnet day:
-HTP_NETWORK=tn12      # → HTP_NETWORK=mainnet
+# .env — flip one line on mainnet day:
+HTP_NETWORK=tn12    # → HTP_NETWORK=mainnet
 ```
 
 ---
@@ -258,45 +233,40 @@ HTP_NETWORK=tn12      # → HTP_NETWORK=mainnet
 Covenants are written in **SilverScript** — a high-level language that compiles to Kaspa Script opcodes, pending Toccata hard fork activation.
 
 ```silverscript
-// escrow-v2.ss — simplified
+// escrow-v2.ss
 covenantEscrow(participant_a, participant_b, arbiter, stake, fee_addr) {
   path winner_claim {
-    require sig(arbiter, settlement_hash)   // oracle quorum signed this
+    require sig(arbiter, settlement_hash)  // oracle quorum attested
     require sig(winner, claim_tx)
     split(stake * 0.98 → winner, stake * 0.02 → fee_addr)
   }
-  path timeout_refund {
-    require daa_score > deadline
+  path daa_timeout_refund {
+    require daa_score > deadline           // DAG-native timelock
     split(stake / 2 → participant_a, stake / 2 → participant_b)
   }
 }
 ```
 
-> Until covenant opcodes are live on mainnet, settlement uses **server-side secp256k1 Schnorr signing** with an isolated arbiter key.
+> Until Toccata activates, settlement uses **server-side Schnorr signing** with an isolated arbiter key. The DAG handles finality.
 
 ---
 
 ## Oracle Network
 
-Operators register with a **bond** (1,000 KAS minimum for oracle nodes). Dishonest attestations trigger slashing. Markets resolve when `m-of-n` quorum is reached.
+Operators register with a bond (min 1,000 KAS). Dishonest attestations are slashed. Markets resolve on `m-of-n` quorum.
 
 ```
- operator registers + bonds KAS
-         │
-         ▼
-  market created (resolution condition + quorum m/n + deadline)
-         │
-         ▼
-  operators independently verify the outcome source
-         │
-         ▼
+  register + bond KAS
+       │
+  market created (condition + deadline_daa_score + quorum m/n)
+       │
+  operators independently verify outcome
+       │
   each submits: HMAC(market_id ‖ outcome ‖ value ‖ daa_score)
-         │
-         ▼
-  count(matching attestations) ≥ quorum_m → market.final = true
-         │
-         ▼
-  htp-settler calls /api/games/:id/settle automatically
+       │
+  matching_attestations ≥ quorum_m  →  market.final = true
+       │
+  htp-settler auto-calls settlement endpoint
 ```
 
 ---
@@ -316,11 +286,11 @@ Operators register with a **bond** (1,000 KAS minimum for oracle nodes). Dishone
 ## Security
 
 - **Non-custodial** — the protocol never holds participant private keys
-- **Covenant escrow** — funds locked in UTXO until oracle attests outcome
-- **Schnorr signatures** — secp256k1, Rust-native
+- **Covenant escrow** — funds locked in a Kaspa UTXO until the oracle attests outcome
+- **Schnorr signatures** — secp256k1, Rust-native, DAG-finalized
 - **Bond slashing** — dishonest oracle operators lose their bond
 - **Deterministic escrow keys** — `HMAC-SHA256(matchId ‖ creatorAddr, seed)` via `htp-escrow-derive.js`
-- **No silent key generation** — if derivation fails, the transaction throws rather than using a random fallback key
+- **No silent key generation** — derivation failure throws; no random fallback key ever generated
 
 For vulnerabilities: **do not open a public issue**. See [SECURITY.md](SECURITY.md).
 
@@ -328,21 +298,15 @@ For vulnerabilities: **do not open a public issue**. See [SECURITY.md](SECURITY.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Pull requests welcome for:
-
-- New game engine ports
-- Frontend improvements
-- Oracle node client implementations
-- Security audits and fuzzing
-- Documentation
+See [CONTRIBUTING.md](CONTRIBUTING.md). Pull requests welcome for game engine ports, oracle client implementations, frontend improvements, and security audits.
 
 ---
 
 <div align="center">
 
-Built on [Kaspa](https://kaspa.org) — the fastest BlockDAG.
+Built on [Kaspa](https://kaspa.org) — BlockDAG consensus at ~1 block per second.
 
-*"The protocol is the referee."*
+*"Settlement is final when the DAG says so."*
 
 [![hightable.pro](https://img.shields.io/badge/🌐-hightable.pro-49e8c2?style=for-the-badge)](https://hightable.pro)
 
