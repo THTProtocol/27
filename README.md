@@ -21,14 +21,15 @@
 
 High Table Protocol is a **trustless coordination layer** for skill-based competition and information markets built on the [Kaspa BlockDAG](https://kaspa.org).
 
-Participants stake KAS to compete in skill games or signal their conviction on real-world outcomes. Settlement is enforced by cryptographic escrow on the Kaspa DAG — no custodian, no counterparty risk, no intermediary.
+Participants stake KAS to compete in skill games, or signal their conviction on real-world outcomes. Settlement is enforced by cryptographic escrow — no custodian, no counterparty risk.
 
 ```
  participant_a ──┬
                  ├──▶  P2PK escrow (Kaspa UTXO)  ──▶  winner receives stake
- participant_b ──┘         ▲
-                   oracle quorum attests           2% → treasury
-                   outcome (m-of-n Schnorr)
+ participant_b ──┘              ▲
+                      oracle quorum attests        2% → treasury
+                      outcome (m-of-n Schnorr)
+                      settled on the GHOSTDAG
 ```
 
 > Live on **Kaspa Testnet 12 (TN12)**. Mainnet deployment pending covenant opcode activation in the **Toccata hard fork**.
@@ -44,7 +45,7 @@ Two participants lock equal stakes into a P2PK covenant escrow. A verified game 
 Participants allocate stake to signal their view on a future outcome (price levels, protocol events, real-world facts). A bonded oracle network independently attests the resolution. When quorum is reached, the market settles automatically. Stake is redistributed proportionally to participants who signalled correctly.
 
 ### Covenant Escrow
-All funds are locked in **Kaspa P2PK UTXOs** with two spend paths: a winner-claim path (requires arbiter + winner signatures) and a timeout-refund path (available after a DAA score deadline). Until Toccata covenant opcodes activate on mainnet, settlement uses server-side Schnorr signing with an isolated arbiter key.
+Funds are locked in **Kaspa P2PK UTXOs** with two spend paths: a winner-claim path (arbiter + winner signatures) and a DAA-score timeout refund. Until Toccata activates on mainnet, settlement uses server-side Schnorr signing with an isolated arbiter key. The GHOSTDAG consensus provides sub-second block inclusion; finality is probabilistic and converges within seconds.
 
 ---
 
@@ -53,8 +54,8 @@ All funds are locked in **Kaspa P2PK UTXOs** with two spend paths: a winner-clai
 | Layer | Technology | Notes |
 |---|---|---|
 | **Frontend** | Vanilla JS + rusty-kaspa WASM | BIP44 key derivation in-browser, no framework |
-| **Backend** | Rust · Axum · SQLite | 35 REST endpoints + WebSocket relay |
-| **DAG Layer** | Kaspa BlockDAG (TN12 → mainnet) | DAG-native UTXO settlement, ~1 BPS confirmation |
+| **Backend** | Rust · Axum · SQLite | 35+ REST endpoints + WebSocket relay |
+| **DAG Layer** | Kaspa BlockDAG — GHOSTDAG consensus | 10 BPS, sub-second inclusion, DAA-score timelocks |
 | **Wallet** | WASM BIP44 `m/44h/111111h/0h` | KasWare · Kastle · Kaspium · mnemonic import |
 | **Settlement** | P2PK covenants · secp256k1 Schnorr | Rust-native via `secp256k1` crate |
 | **Oracles** | Bonded operator network · ECDSA attest | m-of-n quorum, slash-on-dishonesty |
@@ -69,7 +70,7 @@ All funds are locked in **Kaspa P2PK UTXOs** with two spend paths: a winner-clai
 ●  Connect 4           —  gravity logic, win detection, 6×7 board
 ◆  Checkers            —  multi-jump, king promotion, forced-capture rules
 ○  Tic-Tac-Toe         —  server-authoritative reference implementation
-🃏  Texas Hold'em       —  engine complete, Rust backend port in progress
+🃏  Texas Hold’em       —  engine complete, Rust backend port in progress
 🂡  Blackjack           —  multi-deck engine complete, Rust backend port in progress
 ⬡  Information Markets  —  parimutuel allocation, bonded oracle resolution
 ```
@@ -81,32 +82,77 @@ All funds are locked in **Kaspa P2PK UTXOs** with two spend paths: a winner-clai
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                       hightable.pro                             │
-│                                                                 │
 │  Browser (JS + WASM)                                            │
 │    ├── /                →  static SPA (Nginx)                   │
-│    ├── /api/*           →  Rust htp-server :3000 (Axum)         │
 │    ├── /api/orders/*    →  Node.js order book :3001             │
+│    ├── /api/*           →  Rust htp-server :3000 (Axum)         │
 │    └── /ws              →  WebSocket relay :3000                 │
 │                                                                 │
-│  Rust Backend (PM2: htp-server)                                 │
+│  Rust Backend (htp-server)                                      │
 │    ├── game engines     —  chess · checkers · connect4 · ttt    │
 │    ├── oracle module    —  attestation · quorum · slash          │
 │    ├── settlement       —  arbiter signing · UTXO broadcast      │
 │    └── WebSocket relay  —  real-time move fan-out               │
 │                                                                 │
-│  Node.js Backend (PM2: htp-orders)                              │
-│    └── order book       —  open orders · matching · cancellation │
-│                                                                 │
-│  Storage — SQLite /root/htp/data/htp.db                         │
-│    ├── games · players · settlements                            │
-│    ├── htp_events · htp_attestations                            │
-│    ├── htp_operators (bonded oracle nodes)                      │
-│    └── orders (open order book)                                 │
+│  Node.js (htp-orders)     —  order book :3001                   │
+│  Storage  —  SQLite /root/htp/data/htp.db                       │
 └─────────────────────────────────────────────────────────────────┘
                            │
-                 Kaspa TN12 — BlockDAG consensus
-              api-tn12.kaspa.org · ws-tn12.kaspa.org
-              ~1 block/second · DAG-parallel confirmation
+             Kaspa TN12  —  GHOSTDAG consensus
+             api-tn12.kaspa.org · ws-tn12.kaspa.org
+             10 BPS · sub-second block inclusion · DAA-score timelocks
+```
+
+---
+
+## Repository Layout
+
+```
+27/
+├── crates/                        # All Rust — the core of the protocol
+│   ├── htp-server/                # Axum HTTP + WebSocket server
+│   │   └── src/
+│   │       ├── main.rs            # router, startup, shutdown
+│   │       ├── routes.rs          # all handlers
+│   │       ├── oracle.rs          # attestation · quorum · bonds
+│   │       ├── db.rs              # SQLite helpers
+│   │       └── models.rs          # shared types
+│   ├── htp-games/                 # game engines (chess · checkers · connect4 · ttt)
+│   ├── htp-kaspa-rpc/             # Kaspa REST + wRPC client
+│   ├── htp-settler/               # [roadmap] autonomous settlement daemon
+│   ├── htp-orders/                # [roadmap] Rust port of orders-api.js
+│   └── htp-oracle-client/         # [roadmap] oracle node operator binary
+│
+├── covenants/                     # SilverScript covenant templates
+│   ├── escrow-v2.ss               # P2PK escrow — winner + DAA timeout
+│   ├── payout.ss
+│   ├── refund.ss
+│   └── fee.ss
+│
+├── public/                        # SPA frontend — vanilla JS, no framework
+│   ├── index.html
+│   ├── htp-config.js              # network config (TN12 ↔ mainnet toggle)
+│   ├── htp-router.js              # screen router + screen exports
+│   ├── htp-covenant-escrow-v2.js  # covenant UTXO builder
+│   ├── htp-escrow-derive.js       # deterministic escrow key derivation (WASM)
+│   ├── app.js                     # WebSocket client
+│   └── kaspa-wasm-sdk/            # rusty-kaspa WASM bindings
+│
+├── infra/                         # all server config in one place
+│   ├── nginx/
+│   │   ├── hightable.conf          # production site config
+│   │   └── nginx-api-only.conf     # API-only variant
+│   └── docker/
+│       ├── Dockerfile
+│       └── docker-compose.yml
+│
+├── orders-api.js                  # Node.js order book (:3001) — Rust port planned
+├── ecosystem.config.js            # PM2 process config
+├── docs/                          # extended documentation
+├── scripts/                       # build, deploy, stress-test
+├── tests/                         # integration tests
+├── .env.example                   # environment variable template
+└── Cargo.toml                     # workspace root
 ```
 
 ---
@@ -138,7 +184,7 @@ GET  /api/operators                 # list operators
 POST /api/events                    # create information market
 GET  /api/events                    # list open markets
 POST /api/events/:id/attest         # submit oracle attestation
-GET  /api/events/:id/attestations   # retrieve attestation proofs
+GET  /api/events/:id/attestations   # attestation proofs
 ```
 
 ### Order Book
@@ -152,67 +198,22 @@ POST /api/orders/:id/cancel         # cancel order
 
 ---
 
-## Codebase
-
-```
-27/
-├── crates/
-│   ├── htp-server/            # Axum server — routes, WebSocket, settlement, oracle
-│   │   └── src/
-│   │       ├── main.rs        # 35 routes
-│   │       ├── routes.rs      # handlers: games · oracle · operators · markets
-│   │       ├── oracle.rs      # attestation hash · quorum · bond constants
-│   │       ├── db.rs          # SQLite helpers for all 8 tables
-│   │       └── models.rs      # shared types
-│   ├── htp-games/             # game engines (chess · checkers · connect4 · ttt)
-│   └── htp-kaspa-rpc/         # Kaspa REST + wRPC client
-│
-├── covenants/                 # SilverScript covenant templates
-│   ├── escrow-v2.ss           # P2PK escrow — winner claim + DAA timeout refund
-│   ├── payout.ss              # winner claim path
-│   ├── refund.ss              # DAA-score timeout refund
-│   └── fee.ss                 # 2% protocol fee split
-│
-├── public/                    # SPA frontend — vanilla JS, no framework
-│   ├── index.html             # single entry point
-│   ├── htp-config.js          # network config (TN12 ↔ mainnet toggle)
-│   ├── htp-router.js          # screen router + 14 screen functions
-│   ├── htp-covenant-escrow-v2.js  # covenant UTXO builder
-│   ├── htp-escrow-derive.js   # deterministic escrow key derivation (WASM)
-│   ├── app.js                 # WebSocket client
-│   └── kaspa-wasm-sdk/        # rusty-kaspa WASM bindings
-│
-├── orders-api.js              # Node.js order book service (:3001)
-├── docs/                      # extended documentation
-├── scripts/                   # build, deploy, stress-test tools
-├── Dockerfile                 # multi-stage Rust build
-├── docker-compose.yml         # local development
-├── nginx.conf                 # reverse proxy reference config
-└── .env.example               # environment variable template
-```
-
----
-
 ## Quickstart
 
 ### Prerequisites
 - Rust `1.75+`
 - Node.js `18+`
-- Kaspa TN12 endpoint (public: `https://api-tn12.kaspa.org`)
+- Kaspa TN12 endpoint: `https://api-tn12.kaspa.org`
 
 ### Build & Run
-
 ```bash
 git clone https://github.com/THTProtocol/27.git && cd 27
-
 cargo build --release -p htp-server
-
 cp .env.example .env
 # Set: HTP_NETWORK, KASPA_REST_TN12, HTP_ORACLE_PRIVKEY, PROTOCOL_ADDRESS
-
 ./target/release/htp-server          # Rust backend  :3000
 node orders-api.js                   # order book     :3001
-cd public && python3 -m http.server 8080  # frontend  :8080
+cd public && python3 -m http.server 8080
 ```
 
 ### Docker
@@ -222,15 +223,15 @@ docker-compose up --build
 
 ### Network Toggle
 ```bash
-# .env — flip one line on mainnet day:
-HTP_NETWORK=tn12    # → HTP_NETWORK=mainnet
+# .env — one line switch on mainnet day:
+HTP_NETWORK=tn12   # → HTP_NETWORK=mainnet
 ```
 
 ---
 
 ## Covenant Design
 
-Covenants are written in **SilverScript** — a high-level language that compiles to Kaspa Script opcodes, pending Toccata hard fork activation.
+Covenants are written in **SilverScript** — compiles to Kaspa Script opcodes, pending Toccata activation.
 
 ```silverscript
 // escrow-v2.ss
@@ -241,13 +242,13 @@ covenantEscrow(participant_a, participant_b, arbiter, stake, fee_addr) {
     split(stake * 0.98 → winner, stake * 0.02 → fee_addr)
   }
   path daa_timeout_refund {
-    require daa_score > deadline           // DAG-native timelock
+    require daa_score > deadline           // DAG-native timelock (not wall-clock)
     split(stake / 2 → participant_a, stake / 2 → participant_b)
   }
 }
 ```
 
-> Until Toccata activates, settlement uses **server-side Schnorr signing** with an isolated arbiter key. The DAG handles finality.
+> Until Toccata activates, settlement uses **server-side Schnorr signing** with an isolated arbiter key.
 
 ---
 
@@ -266,8 +267,26 @@ Operators register with a bond (min 1,000 KAS). Dishonest attestations are slash
        │
   matching_attestations ≥ quorum_m  →  market.final = true
        │
-  htp-settler auto-calls settlement endpoint
+  htp-settler auto-calls settlement
 ```
+
+---
+
+## Rust Migration Roadmap
+
+The protocol is progressively moving all server-side logic to Rust. Current state and planned crates:
+
+| Crate | Status | Replaces |
+|---|---|---|
+| `htp-server` | ✅ live | core of `server.js` |
+| `htp-games` | ✅ live | JS game engines |
+| `htp-kaspa-rpc` | ✅ live | JS Kaspa RPC calls |
+| `htp-settler` | 🔄 in progress | manual settlement triggers |
+| `htp-orders` | 📅 Q3 2026 | `orders-api.js` (Node.js) |
+| `htp-oracle-client` | 📅 Q3 2026 | oracle operator tooling |
+| `htp-covenant-builder` | 📅 post-Toccata | `htp-covenant-escrow-v2.js` (WASM) |
+
+Once `htp-orders` and `htp-oracle-client` are ported, the Node.js dependency is fully eliminated. The WASM covenant builder will replace the JS covenant module at Toccata mainnet launch.
 
 ---
 
@@ -277,8 +296,8 @@ Operators register with a bond (min 1,000 KAS). Dishonest attestations are slash
 |---|---|---|
 | `v0.9` | ✅ complete | Rust backend, skill games, P2PK escrow |
 | `v1.0` | ✅ complete | Oracle network, order book, production config |
-| `v1.1` | 🔄 in progress | Texas Hold'em + Blackjack Rust port, htp-settler daemon |
-| `v1.2` | 📅 Q3 2026 | Information markets with full covenant enforcement |
+| `v1.1` | 🔄 in progress | Texas Hold’em + Blackjack Rust port, htp-settler daemon |
+| `v1.2` | 📅 Q3 2026 | `htp-orders` Rust port, information markets full enforcement |
 | `v2.0` | 📅 post-Toccata | On-chain covenants, decentralized oracle DAO, mainnet |
 
 ---
@@ -286,27 +305,35 @@ Operators register with a bond (min 1,000 KAS). Dishonest attestations are slash
 ## Security
 
 - **Non-custodial** — the protocol never holds participant private keys
-- **Covenant escrow** — funds locked in a Kaspa UTXO until the oracle attests outcome
-- **Schnorr signatures** — secp256k1, Rust-native, DAG-finalized
-- **Bond slashing** — dishonest oracle operators lose their bond
+- **Covenant escrow** — funds locked in a Kaspa UTXO until oracle attests outcome
+- **Schnorr signatures** — secp256k1, Rust-native
+- **Bond slashing** — dishonest oracle operators lose their bond on the GHOSTDAG
 - **Deterministic escrow keys** — `HMAC-SHA256(matchId ‖ creatorAddr, seed)` via `htp-escrow-derive.js`
-- **No silent key generation** — derivation failure throws; no random fallback key ever generated
+- **No silent key generation** — derivation failure throws; no random fallback ever generated
 
 For vulnerabilities: **do not open a public issue**. See [SECURITY.md](SECURITY.md).
 
 ---
 
+## About Kaspa
+
+Kaspa is a proof-of-work BlockDAG that implements the **GHOSTDAG** protocol — a generalization of Nakamoto consensus to directed acyclic graphs. Unlike linear blockchains, GHOSTDAG incorporates parallel blocks rather than orphaning them, enabling **10 blocks per second** with sub-second block inclusion and DAA-score-based timelocks.
+
+The next consensus evolution is **DAGKnight** — a parameterless, self-stabilizing upgrade that removes the need for hardcoded latency assumptions and strengthens resistance to 50% attacks. The **Toccata hard fork** will activate covenant opcodes (SilverScript), enabling fully on-chain trustless contracts — the foundation for High Table Protocol’s mainnet deployment.
+
+---
+
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Pull requests welcome for game engine ports, oracle client implementations, frontend improvements, and security audits.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Pull requests welcome for game engine ports, oracle client implementations, Rust crate development, and security audits.
 
 ---
 
 <div align="center">
 
-Built on [Kaspa](https://kaspa.org) — BlockDAG consensus at ~1 block per second.
+Built on [Kaspa](https://kaspa.org) — GHOSTDAG proof-of-work BlockDAG.
 
-*"Settlement is final when the DAG says so."*
+*"Outcomes are decided on the DAG."*
 
 [![hightable.pro](https://img.shields.io/badge/🌐-hightable.pro-49e8c2?style=for-the-badge)](https://hightable.pro)
 
