@@ -4037,7 +4037,180 @@ html,body{background:#010806!important;}
   #wlGrid{grid-template-columns:1fr!important;}
 }
 </style>
-<link rel="stylesheet" href="htp-theme-fix.css?v1">
+
+<style>
+/* ═══ HTP Premium Aesthetic — Dark Theme ═══ */
+
+/* --- Nav buttons: premium pill style --- */
+.hdr-nav { gap: 4px !important; }
+.nav-btn {
+  padding: 8px 16px !important;
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.03em !important;
+  border-radius: 8px !important;
+  color: rgba(255,255,255,0.55) !important;
+  transition: all 0.2s ease !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.nav-btn:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+.nav-btn.act {
+  color: #fff !important;
+  background: rgba(255,255,255,0.08) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  box-shadow: none !important;
+  font-weight: 600 !important;
+}
+
+/* --- Banner/header refinement --- */
+.htp-banner, .hdr, header[role="banner"] {
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  background: rgba(3,8,22,0.85) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+/* --- Cards: glass-morphism --- */
+.htp-card, .card, .htp-form-card {
+  background: rgba(255,255,255,0.03) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  border-radius: 12px !important;
+  transition: border-color 0.2s, background 0.2s !important;
+}
+.htp-card:hover, .card:hover {
+  border-color: rgba(255,255,255,0.1) !important;
+  background: rgba(255,255,255,0.04) !important;
+}
+
+/* --- Stats: clean numeric display --- */
+.htp-stat-val, .stat-val {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+  font-variant-numeric: tabular-nums !important;
+}
+.htp-stat-label, .stat-label {
+  font-size: 0.65rem !important;
+  letter-spacing: 0.08em !important;
+  color: rgba(255,255,255,0.4) !important;
+}
+
+/* --- Tables: minimal clean --- */
+.htp-table th {
+  font-size: 0.65rem !important;
+  letter-spacing: 0.08em !important;
+  color: rgba(255,255,255,0.35) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  padding: 10px 14px !important;
+}
+.htp-table td {
+  padding: 12px 14px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.03) !important;
+}
+.htp-table tr:hover td {
+  background: rgba(255,255,255,0.02) !important;
+}
+
+/* --- Buttons: clean neutral --- */
+.htp-btn, button.htp-btn {
+  background: rgba(255,255,255,0.06) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 8px !important;
+  padding: 9px 18px !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  transition: all 0.2s !important;
+}
+.htp-btn:hover {
+  background: rgba(255,255,255,0.1) !important;
+  border-color: rgba(255,255,255,0.18) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* --- Tabs --- */
+.htp-tab-bar {
+  background: rgba(255,255,255,0.02) !important;
+  border-radius: 10px !important;
+  padding: 4px !important;
+  gap: 2px !important;
+}
+.htp-tab {
+  padding: 8px 16px !important;
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  color: rgba(255,255,255,0.45) !important;
+}
+.htp-tab:hover { color: #fff !important; background: rgba(255,255,255,0.04) !important; }
+.htp-tab-act {
+  background: rgba(255,255,255,0.08) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+
+/* --- Page titles --- */
+.htp-page-title {
+  font-size: 1.8rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  color: #fff !important;
+}
+.htp-page-subtitle {
+  color: rgba(255,255,255,0.45) !important;
+  font-size: 0.9rem !important;
+}
+
+/* --- Inputs --- */
+.htp-input {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 8px !important;
+  color: #fff !important;
+  font-size: 0.88rem !important;
+}
+.htp-input:focus {
+  border-color: rgba(255,255,255,0.2) !important;
+  background: rgba(255,255,255,0.06) !important;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.04) !important;
+}
+
+/* --- Badges --- */
+.htp-badge {
+  font-size: 0.68rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  border-radius: 5px !important;
+  padding: 2px 8px !important;
+}
+.htp-badge-open    { background: rgba(255,255,255,0.06) !important; color: rgba(255,255,255,0.6) !important; }
+.htp-badge-active  { background: rgba(100,200,255,0.1) !important; color: #64c8ff !important; }
+.htp-badge-settled { background: rgba(255,255,255,0.04) !important; color: rgba(255,255,255,0.4) !important; }
+
+/* --- Hero title --- */
+.htp-hero-title, .hero h1 {
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.03em !important;
+}
+
+/* --- Smooth scroll --- */
+html { scroll-behavior: smooth; }
+
+/* --- Selection --- */
+::selection { background: rgba(255,255,255,0.15); color: #fff; }
+
+/* --- Footer --- */
+contentinfo, footer { color: rgba(255,255,255,0.3) !important; font-size: 0.8rem !important; }
+
+</style>
+
 </head>
 <body>
     <div class="shell">
@@ -4151,7 +4324,7 @@ html,body{background:#010806!important;}
                     <button class="nav-btn" data-v="events" onclick="window.location.hash='/events'">Events</button>
                     <button class="nav-btn" data-v="create" onclick="window.location.hash='/create'">Create</button>
                     <button class="nav-btn" data-v="games" onclick="window.location.hash='/games'">Games</button>
-                    <button class="nav-btn" data-v="oracle" onclick="window.location.hash='/oracle'">Oracle Network</button>
+                    <button class="nav-btn" data-v="oracle" data-nav="true" onclick="window.location.hash='/oracle'">Oracle Network</button>
                     <button class="nav-btn" data-v="portfolio" onclick="window.location.hash='/portfolio'">Portfolio</button>
                     <button class="nav-btn" data-v="wallet" onclick="window.location.hash='/wallet'">Wallet</button>
                 </nav>
