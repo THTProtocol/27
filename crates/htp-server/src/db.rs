@@ -234,6 +234,23 @@ impl HtpDb {
             CREATE INDEX IF NOT EXISTS idx_games_creator ON games(creator);
             CREATE INDEX IF NOT EXISTS idx_cov_game      ON covenants(game_id);
             CREATE INDEX IF NOT EXISTS idx_moves_game    ON move_log(game_id);
+            CREATE TABLE IF NOT EXISTS orders (
+                id          TEXT PRIMARY KEY,
+                creator     TEXT NOT NULL,
+                order_type  TEXT NOT NULL DEFAULT 'game',
+                game_type   TEXT,
+                event_id    TEXT,
+                outcome     TEXT,
+                stake_sompi INTEGER NOT NULL DEFAULT 0,
+                network     TEXT NOT NULL DEFAULT 'tn12',
+                status      TEXT NOT NULL DEFAULT 'open',
+                matched_by  TEXT,
+                match_id    TEXT,
+                created_at  INTEGER NOT NULL DEFAULT 0,
+                expires_at  INTEGER
+            );
+            CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+            CREATE INDEX IF NOT EXISTS idx_orders_creator ON orders(creator);
         ")?;
         Ok(())
     }
@@ -360,7 +377,139 @@ impl HtpDb {
         }))
     }
 
-    pub fn dispute_settlement(&self, game_id: &str, challenger: &str) -> Result<()> {
+    
+    // Orders
+
+    pub fn list_orders(&self, filter_type: Option<&str>, filter_addr: Option<&str>) -> Result<Vec<serde_json::Value>> {
+        let mut sql = "SELECT * FROM orders WHERE status='open'".to_string();
+        let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![];
+        if let Some(t) = filter_type {
+            sql.push_str(" AND order_type=?");
+            params.push(Box::new(t.to_string()));
+        }
+        if let Some(a) = filter_addr {
+            sql.push_str(" AND creator=?");
+            params.push(Box::new(a.to_string()));
+        }
+        sql.push_str(" ORDER BY created_at DESC LIMIT 50");
+        let mut stmt = self.conn.prepare(&sql)?;
+        let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        let rows = stmt.query_map(param_refs.as_slice(), |row| {
+            Ok(serde_json::json!({
+                "id": row.get::<_,String>(0)?,
+                "creator": row.get::<_,String>(1)?,
+                "order_type": row.get::<_,String>(2)?,
+                "game_type": row.get::<_,Option<String>>(3)?,
+                "stake_sompi": row.get::<_,i64>(6)?,
+                "network": row.get::<_,String>(7)?,
+                "status": row.get::<_,String>(8)?,
+                "matched_by": row.get::<_,Option<String>>(9)?,
+                "match_id": row.get::<_,Option<String>>(10)?,
+                "created_at": row.get::<_,i64>(11)?,
+                "expires_at": row.get::<_,Option<i64>>(12)?
+            }))
+        })?;
+        Ok(rows.filter_map(|r| r.ok()).collect())
+    }
+
+    pub fn get_order(&self, id: &str) -> Result<Option<serde_json::Value>> {
+        let mut stmt = self.conn.prepare("SELECT * FROM orders WHERE id=?1")?;
+        let mut rows = stmt.query(rusqlite::params![id])?;
+        Ok(rows.next()?.map(|row| {
+            serde_json::json!({
+                "id": row.get::<_,String>(0).unwrap_or_default(),
+                "creator": row.get::<_,String>(1).unwrap_or_default(),
+                "order_type": row.get::<_,String>(2).unwrap_or_default(),
+                "game_type": row.get::<_,Option<String>>(3).unwrap_or_default(),
+                "stake_sompi": row.get::<_,i64>(6).unwrap_or(0),
+                "network": row.get::<_,String>(7).unwrap_or_default(),
+                "status": row.get::<_,String>(8).unwrap_or_default(),
+                "matched_by": row.get::<_,Option<String>>(9).unwrap_or_default(),
+                "match_id": row.get::<_,Option<String>>(10).unwrap_or_default(),
+                "created_at": row.get::<_,i64>(11).unwrap_or(0),
+                "expires_at": row.get::<_,Option<i64>>(12).unwrap_or_default()
+            })
+        }))
+    }
+
+    pub fn create_order(&self, creator: &str, order_type: &str, game_type: Option<&str>, stake_sompi: i64) -> Result<String> {
+        let id = format!("ord-{:x}", 
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis());
+        let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64;
+        let network = std::env::var("HTP_NETWORK").unwrap_or_else(|_| "tn12".into());
+        self.conn.execute(
+            "INSERT INTO orders (id,creator,order_type,game_type,stake_sompi,network,created_at,expires_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)",
+            rusqlite::params![id, creator, order_type, game_type, stake_sompi, network, now, now + 86400],
+        )?;
+        Ok(id)
+    }
+
+    pub fn match_order(&self, id: &str, matched_by: &str) -> Result<bool> {
+        let n = self.conn.execute(
+            "UPDATE orders SET status='matched', matched_by=?1 WHERE id=?2 AND status='open'",
+            rusqlite::params![matched_by, id],
+        )?;
+        Ok(n > 0)
+    }
+
+    pub fn cancel_order(&self, id: &str, creator: &str) -> Result<bool> {
+        let n = self.conn.execute(
+            "UPDATE orders SET status='cancelled' WHERE id=?1 AND creator=?2 AND status='open'",
+            rusqlite::params![id, creator],
+        )?;
+        Ok(n > 0)
+    }
+
+    pub fn get_order_stats(&self) -> Result<serde_json::Value> {
+        let open: i64 = self.conn.query_row("SELECT COUNT(*) FROM orders WHERE status='open'", [], |r| r.get(0)).unwrap_or(0);
+        let matched: i64 = self.conn.query_row("SELECT COUNT(*) FROM orders WHERE status='matched'", [], |r| r.get(0)).unwrap_or(0);
+        let volume: i64 = self.conn.query_row("SELECT COALESCE(SUM(stake_sompi),0) FROM orders", [], |r| r.get(0)).unwrap_or(0);
+        Ok(serde_json::json!({"open_count": open, "matched_count": matched, "total_volume_sompi": volume}))
+    }
+
+    // Portfolio
+
+    pub fn get_portfolio(&self, addr: &str) -> Result<serde_json::Value> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id,game_type,creator,opponent,stake_sompi,status,winner,created_at              FROM games WHERE creator=?1 OR opponent=?1 ORDER BY created_at DESC LIMIT 100"
+        )?;
+        let games: Vec<serde_json::Value> = stmt.query_map(rusqlite::params![addr], |row| {
+            Ok(serde_json::json!({
+                "id": row.get::<_,String>(0)?,
+                "game_type": row.get::<_,String>(1)?,
+                "creator": row.get::<_,String>(2)?,
+                "opponent": row.get::<_,Option<String>>(3)?,
+                "stake_sompi": row.get::<_,i64>(4)?,
+                "status": row.get::<_,String>(5)?,
+                "winner": row.get::<_,Option<String>>(6)?,
+                "created_at": row.get::<_,i64>(7)?
+            }))
+        })?.filter_map(|r| r.ok()).collect();
+
+        let total_wagered: i64 = self.conn.query_row(
+            "SELECT COALESCE(SUM(stake_sompi),0) FROM games WHERE (creator=?1 OR opponent=?1)",
+            [addr], |r| r.get(0)).unwrap_or(0);
+        let total_won: i64 = self.conn.query_row(
+            "SELECT COALESCE(SUM(stake_sompi),0) FROM games WHERE winner=?1",
+            [addr], |r| r.get(0)).unwrap_or(0);
+        let wins: i64 = self.conn.query_row(
+            "SELECT COUNT(*) FROM games WHERE winner=?1",
+            [addr], |r| r.get(0)).unwrap_or(0);
+        let losses: i64 = self.conn.query_row(
+            "SELECT COUNT(*) FROM games WHERE (creator=?1 OR opponent=?1) AND winner IS NOT NULL AND winner!=?1",
+            [addr], |r| r.get(0)).unwrap_or(0);
+
+        Ok(serde_json::json!({
+            "address": addr,
+            "games": games,
+            "total_wagered_sompi": total_wagered,
+            "total_won_sompi": total_won,
+            "win_count": wins,
+            "loss_count": losses
+        }))
+    }
+
+pub fn dispute_settlement(&self, game_id: &str, challenger: &str) -> Result<()> {
         self.conn.execute(
             "UPDATE settlements SET status='DISPUTED', disputed_by=?1 WHERE game_id=?2",
             params![challenger, game_id],

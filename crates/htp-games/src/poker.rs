@@ -4,6 +4,7 @@
 use serde::{Deserialize, Serialize};
 use rand::seq::SliceRandom;
 use crate::{GameError, GameOutcome, GameStatus};
+pub type GameState = Vec<u8>;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -79,15 +80,15 @@ fn evaluate5(cards: &[PokerCard]) -> HandEval {
     g.sort_by(|a,b|b.1.cmp(&a.1).then(b.0.cmp(&a.0)));
 
     let(rank,kickers)=match(flush,straight,g.as_slice()){
-        (true,true,_) if vals[0]==14&&vals[1]==13=>(HandRank::RoyalFlush,vec![sh.unwrap()]),
+        (true,true,_) if vals[0]==14&&vals[1]==13=>(HandRank::RoyalFlush,vec![sh.unwrap_or(0)]),
         (true,true,_)=>(HandRank::StraightFlush,vec![sh.unwrap()]),
         (_,_,[(_,4),(o,1),..])=>(HandRank::FourOfKind,vec![g[0].0,*o]),
         (_,_,[(t,3),(p,2),..])=>(HandRank::FullHouse,vec![*t,*p]),
         (true,false,_)=>(HandRank::Flush,vals.clone()),
         (false,true,_)=>(HandRank::Straight,vec![sh.unwrap()]),
-        (_,_,[(t,3),..])=>{let mut k=vec![*t];k.extend(vals.iter().filter(|&&v|v!=*t));k;(HandRank::ThreeOfKind,k)}.1,
+        (_,_,[(t,3),..])=>{let mut k=vec![*t];k.extend(vals.iter().filter(|&&v|v!=*t));k.clone();(HandRank::ThreeOfKind,k)},
         (_,_,[(p1,2),(p2,2),(k,1),..])=>(HandRank::TwoPair,vec![*p1.max(p2),*p1.min(p2),*k]),
-        (_,_,[(p,2),..])=>{let mut k=vec![*p];k.extend(vals.iter().filter(|&&v|v!=*p));k;(HandRank::OnePair,k)}.1,
+        (_,_,[(p,2),..])=>{let mut k=vec![*p];k.extend(vals.iter().filter(|&&v|v!=*p));k.clone();(HandRank::OnePair,k)},
         _=>(HandRank::HighCard,vals.clone()),
     };
     HandEval{rank,kickers,cards:cards.to_vec()}

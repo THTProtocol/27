@@ -1,6 +1,6 @@
 // HTP Server — Route Handlers (Phase 8 clean build)
 use axum::{
-    extract::{Path, State},
+    extract::{Path, State, Query},
     http::StatusCode,
     response::Json,
 };
@@ -469,10 +469,15 @@ pub async fn balance_route(
 
 pub async fn list_games(
     State(state): State<Arc<AppState>>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Json<Value> {
+    let limit: usize = params.get("limit").and_then(|v| v.parse().ok()).unwrap_or(200);
     match state.db.lock() {
         Ok(db) => match db.list_games(None) {
-            Ok(games) => Json(json!({"games": games, "count": games.len()})),
+            Ok(games) => {
+                let filtered: Vec<_> = games.into_iter().take(limit).collect();
+                Json(json!({"games": filtered, "count": filtered.len()}))
+            },
             Err(e) => Json(json!({"error": e.to_string()})),
         },
         Err(_) => Json(json!({"error":"db_lock_poisoned"})),
@@ -946,4 +951,460 @@ pub async fn resolve_challenge_handler(
         "wrong_attestor": &wrong_attestor[..wrong_attestor.len().min(20)],
         "challenger": &challenger[..challenger.len().min(20)]
     })))
+}
+// ═══════════════════════════════════════════════════════
+// HTP ORACLE PHASE 4 — Full oracle participation
+// ═══════════════════════════════════════════════════════
+
+fn now_ts() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() as i64
+}
+
+pub async fn oracle_register(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<serde_json::Value>,
+) -> Json<Value> {
+    let addr = body["address"].as_str().unwrap_or("").to_string();
+    let bond: i64 = body["bond_sompi"].as_i64().unwrap_or(0);
+    let bond_tx = body["bond_tx_id"].as_str().unwrap_or("pending").to_string();
+    let otype = body["oracle_type"].as_str().unwrap_or("hybrid").to_string();
+    let m: i64 = body["m"].as_i64().unwrap_or(2);
+    let n: i64 = body["n"].as_i64().unwrap_or(3);
+    if addr.is_empty() { return Json(json!({"error": "address required"})); }
+    let id = format!("oracle_{}", now_ts());
+    let now = now_ts();
+    let min_bond: i64 = 100_000_000;
+    if bond < min_bond { return Json(json!({"error": format!("minimum bond is 1 KAS, got {}", bond)})); }
+    match state.db.lock() {
+        Ok(db) => {
+            match db.conn.execute(
+                "INSERT OR IGNORE INTO oracles (id,address,bond_sompi,bond_tx_id,oracle_type,m_of_n_m,m_of_n_n,status,registered_at) VALUES (?,?,?,?,?,?,?,?,?)",
+                rusqlite::params![id, addr, bond, bond_tx, otype, m, n, "pending", now],
+            ) {
+                Ok(1) => Json(json!({"id":id,"address":addr,"bond_sompi":bond,"oracle_type":otype,"m":m,"n":n,"status":"pending","message":"Registered. Send bond TX then activate."})),
+                Ok(_) => Json(json!({"error":"address already registered"})),
+                Err(e) => Json(json!({"error": e.to_string()})),
+            }
+        }
+        Err(_) => Json(json!({"error":"db_lock"}))
+    }
+}
+
+pub async fn oracle_activate(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    Json(body): Json<serde_json::Value>,
+) -> Json<Value> {
+    let now = now_ts();
+    let tx_id = body["bond_tx_id"].as_str().unwrap_or("").to_string();
+    match state.db.lock() {
+        Ok(db) => {
+            let n = db.conn.execute(
+                "UPDATE oracles SET status='active', activated_at=?1 WHERE id=?2 AND status='pending'",
+                rusqlite::params![now, id],
+            ).unwrap_or(0);
+            if n > 0 && !tx_id.is_empty() {
+                let _ = db.conn.execute("UPDATE oracles SET bond_tx_id=?1 WHERE id=?2", rusqlite::params![tx_id, id]);
+            }
+            Json(json!({"oracle_id": id, "status": if n>0{"active"}else{"not_found_or_already_active"}, "activated_at": now}))
+        }
+        Err(_) => Json(json!({"error":"db_lock"}))
+    }
+}
+
+pub async fn oracle_attest(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<serde_json::Value>,
+) -> Json<Value> {
+    let game_id = body["game_id"].as_str().unwrap_or("").to_string();
+    let oracle_id = body["oracle_id"].as_str().unwrap_or("").to_string();
+    let oracle_addr = body["oracle_addr"].as_str().unwrap_or("").to_string();
+    let winner = body["winner"].as_str().unwrap_or("").to_string();
+    let proof_root = body["proof_root"].as_str().unwrap_or("0").to_string();
+    let signature = body["signature"].as_str().unwrap_or("").to_string();
+    let atype = body["attest_type"].as_str().unwrap_or("hybrid").to_string();
+    if game_id.is_empty() || winner.is_empty() { return Json(json!({"error":"game_id and winner required"})); }
+    match state.db.lock() {
+        Ok(db) => {
+            let oid = if !oracle_id.is_empty() { oracle_id } else {
+                db.conn.query_row("SELECT id FROM oracles WHERE address=?1 AND status='active'", [&oracle_addr], |r| r.get::<_,String>(0)).unwrap_or_default()
+            };
+            if oid.is_empty() { return Json(json!({"error":"oracle not found or not active"})); }
+            let existing: i64 = db.conn.query_row("SELECT COUNT(*) FROM oracle_attestations WHERE game_id=?1 AND oracle_id=?2", [&game_id, &oid], |r| r.get(0)).unwrap_or(0);
+            if existing > 0 { return Json(json!({"error":"oracle already attested this game"})); }
+            let aid = format!("attest_{}", now_ts());
+            db.conn.execute("INSERT INTO oracle_attestations (id,game_id,oracle_id,oracle_addr,winner,proof_root,signature,attest_type,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+                rusqlite::params![aid, game_id, oid, oracle_addr, winner, proof_root, signature, atype, now_ts()]).unwrap();
+            let (m,): (i64,) = db.conn.query_row("SELECT m_of_n_m FROM oracles WHERE id=?1", [&oid], |r| Ok((r.get(0)?,))).unwrap_or((2,));
+            let agree: i64 = db.conn.query_row("SELECT COUNT(*) FROM oracle_attestations WHERE game_id=?1 AND winner=?2", [&game_id, &winner], |r| r.get(0)).unwrap_or(0);
+            let reached = agree >= m;
+            if reached {
+                let _ = db.conn.execute("INSERT OR REPLACE INTO oracle_quorum_results (id,game_id,winner,m_required,n_total,attested_count,status,resolved_at) VALUES (?1,?2,?3,?4,3,?5,'reached',?6)",
+                    rusqlite::params![format!("qr_{}", game_id), game_id, winner, m, agree, now_ts()]);
+            }
+            Json(json!({"attestation_id":aid,"game_id":game_id,"oracle_id":oid,"winner":winner,"agree_count":agree,"m_required":m,"quorum_reached":reached,"status":if reached {"quorum_reached"}else{"pending"}}))
+        }
+        Err(_) => Json(json!({"error":"db_lock"}))
+    }
+}
+
+pub async fn oracle_quorum(
+    State(state): State<Arc<AppState>>,
+    Path(game_id): Path<String>,
+) -> Json<Value> {
+    match state.db.lock() {
+        Ok(db) => {
+            let mut atts = Vec::new();
+            let mut stmt = db.conn.prepare("SELECT id,oracle_id,oracle_addr,winner,attest_type,created_at FROM oracle_attestations WHERE game_id=?1 ORDER BY created_at ASC").unwrap();
+            let rows = stmt.query_map([&game_id], |r| {
+                Ok(json!({"id":r.get::<_,String>(0)?,"oracle_id":r.get::<_,String>(1)?,"oracle_addr":r.get::<_,String>(2)?,"winner":r.get::<_,String>(3)?,"attest_type":r.get::<_,String>(4)?,"created_at":r.get::<_,i64>(5)?}))
+            }).unwrap();
+            for row in rows { if let Ok(v) = row { atts.push(v); } }
+            let qr = db.conn.query_row("SELECT winner,m_required,n_total,attested_count,status FROM oracle_quorum_results WHERE game_id=?1", [&game_id], |r| {
+                Ok(json!({"winner":r.get::<_,String>(0)?,"m_required":r.get::<_,i64>(1)?,"n_total":r.get::<_,i64>(2)?,"attested_count":r.get::<_,i64>(3)?,"status":r.get::<_,String>(4)?}))
+            }).ok();
+            Json(json!({"game_id":game_id,"attestations":atts,"attestation_count":atts.len(),"quorum":qr}))
+        }
+        Err(_) => Json(json!({"error":"db_lock"}))
+    }
+}
+
+pub async fn oracle_slash(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<serde_json::Value>,
+) -> Json<Value> {
+    let oracle_id = body["oracle_id"].as_str().unwrap_or("").to_string();
+    let game_id = body["game_id"].as_str().unwrap_or("unknown").to_string();
+    let reason = body["reason"].as_str().unwrap_or("dishonest_attestation").to_string();
+    let reported_by = body["reported_by"].as_str().unwrap_or("protocol").to_string();
+    if oracle_id.is_empty() { return Json(json!({"error":"oracle_id required"})); }
+    match state.db.lock() {
+        Ok(db) => {
+            let (bond, sc): (i64, i64) = db.conn.query_row("SELECT COALESCE(bond_sompi,0), COALESCE(slash_count,0) FROM oracles WHERE id=?1", [&oracle_id], |r| Ok((r.get(0)?, r.get(1)?))).unwrap_or((0,0));
+            let slash_amount = bond / 10;
+            let new_bond = bond - slash_amount;
+            let new_sc = sc + 1;
+            let now = now_ts();
+            let new_status = if new_sc >= 3 || new_bond < 100_000_000 { "slashed" } else { "active" };
+            db.conn.execute("INSERT INTO oracle_slashes (id,oracle_id,game_id,reason,slash_sompi,reported_by,created_at) VALUES (?1,?2,?3,?4,?5,?6,?7)",
+                rusqlite::params![format!("slash_{}", now), oracle_id, game_id, reason, slash_amount, reported_by, now]).unwrap();
+            db.conn.execute("UPDATE oracles SET bond_sompi=?1, slash_count=?2, status=?3, slashed_at=?4 WHERE id=?5",
+                rusqlite::params![new_bond, new_sc, new_status, now, oracle_id]).unwrap();
+            Json(json!({"slash_id":format!("slash_{}",now),"oracle_id":oracle_id,"slash_amount_sompi":slash_amount,"remaining_bond_sompi":new_bond,"slash_count":new_sc,"oracle_status":new_status,"reason":reason}))
+        }
+        Err(_) => Json(json!({"error":"db_lock"}))
+    }
+}
+
+pub async fn oracle_list(
+    State(state): State<Arc<AppState>>,
+) -> Json<Value> {
+    match state.db.lock() {
+        Ok(db) => {
+            let mut oracles = Vec::new();
+            let mut stmt = db.conn.prepare("SELECT id,address,bond_sompi,oracle_type,m_of_n_m,m_of_n_n,slash_count,status,registered_at FROM oracles ORDER BY bond_sompi DESC LIMIT 50").unwrap();
+            let rows = stmt.query_map([], |r| {
+                Ok(json!({"id":r.get::<_,String>(0)?,"address":r.get::<_,String>(1)?,"bond_sompi":r.get::<_,i64>(2)?,"oracle_type":r.get::<_,String>(3)?,"m":r.get::<_,i64>(4)?,"n":r.get::<_,i64>(5)?,"slash_count":r.get::<_,i64>(6)?,"status":r.get::<_,String>(7)?,"registered_at":r.get::<_,i64>(8)?}))
+            }).unwrap();
+            for row in rows { if let Ok(v) = row { oracles.push(v); } }
+            let active: i64 = db.conn.query_row("SELECT COUNT(*) FROM oracles WHERE status='active'", [], |r| r.get(0)).unwrap_or(0);
+            let total_bond: i64 = db.conn.query_row("SELECT COALESCE(SUM(bond_sompi),0) FROM oracles WHERE status='active'", [], |r| r.get(0)).unwrap_or(0);
+            Json(json!({"oracles":oracles,"count":oracles.len(),"active_count":active,"total_bond_sompi":total_bond}))
+        }
+        Err(_) => Json(json!({"error":"db_lock"}))
+    }
+}
+
+pub async fn oracle_get(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Json<Value> {
+    match state.db.lock() {
+        Ok(db) => {
+            let o = db.conn.query_row("SELECT id,address,bond_sompi,oracle_type,m_of_n_m,m_of_n_n,slash_count,status,registered_at,activated_at FROM oracles WHERE id=?1 OR address=?1", [&id], |r| {
+                Ok(json!({"id":r.get::<_,String>(0)?,"address":r.get::<_,String>(1)?,"bond_sompi":r.get::<_,i64>(2)?,"oracle_type":r.get::<_,String>(3)?,"m":r.get::<_,i64>(4)?,"n":r.get::<_,i64>(5)?,"slash_count":r.get::<_,i64>(6)?,"status":r.get::<_,String>(7)?,"registered_at":r.get::<_,i64>(8)?,"activated_at":r.get::<_,Option<i64>>(9)?}))
+            }).ok();
+            match o { Some(v) => Json(v), None => Json(json!({"error":"oracle not found"})) }
+        }
+        Err(_) => Json(json!({"error":"db_lock"}))
+    }
+}
+
+pub async fn oracle_exit(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    Json(body): Json<serde_json::Value>,
+) -> Json<Value> {
+    let now = now_ts();
+    let exit_tx = body["exit_tx_id"].as_str().unwrap_or("pending").to_string();
+    match state.db.lock() {
+        Ok(db) => {
+            let n = db.conn.execute("UPDATE oracles SET status='exited', slashed_at=?1 WHERE id=?2 AND status IN ('active','pending')", rusqlite::params![now, id]).unwrap_or(0);
+            Json(json!({"oracle_id":id,"status":if n>0{"exited"}else{"not_found"},"exit_tx_id":exit_tx}))
+        }
+        Err(_) => Json(json!({"error":"db_lock"}))
+    }
+}
+
+pub async fn oracle_network_stats(
+    State(state): State<Arc<AppState>>,
+) -> Json<Value> {
+    match state.db.lock() {
+        Ok(db) => {
+            let total: i64 = db.conn.query_row("SELECT COUNT(*) FROM oracles", [], |r| r.get(0)).unwrap_or(0);
+            let active: i64 = db.conn.query_row("SELECT COUNT(*) FROM oracles WHERE status='active'", [], |r| r.get(0)).unwrap_or(0);
+            let total_bond: i64 = db.conn.query_row("SELECT COALESCE(SUM(bond_sompi),0) FROM oracles WHERE status='active'", [], |r| r.get(0)).unwrap_or(0);
+            let total_att: i64 = db.conn.query_row("SELECT COUNT(*) FROM oracle_attestations", [], |r| r.get(0)).unwrap_or(0);
+            let qr: i64 = db.conn.query_row("SELECT COUNT(*) FROM oracle_quorum_results WHERE status='reached'", [], |r| r.get(0)).unwrap_or(0);
+            Json(json!({
+                "network": std::env::var("HTP_NETWORK").unwrap_or_else(|_|"tn12".to_string()),
+                "oracles":{"total":total,"active":active},
+                "bond":{"total_active_sompi":total_bond,"total_active_kas":total_bond as f64/1e8},
+                "attestations":{"total":total_att,"quorums_reached":qr},
+                "default_quorum":"2-of-3","min_bond_sompi":100000000
+            }))
+        }
+        Err(_) => Json(json!({"error":"db_lock"}))
+    }
+}
+
+
+
+// MAXIMIZER PHASE 5
+pub async fn maximizer_stats(State(state): State<Arc<AppState>>) -> Json<Value> {
+    match state.db.lock() {
+        Ok(db) => {
+            let open: i64 = db.conn.query_row("SELECT COUNT(*) FROM maximizer_pools WHERE status='open'", [], |r| r.get(0)).unwrap_or(0);
+            let capped: i64 = db.conn.query_row("SELECT COUNT(*) FROM maximizer_pools WHERE status='capped'", [], |r| r.get(0)).unwrap_or(0);
+            let total_entries: i64 = db.conn.query_row("SELECT COUNT(*) FROM maximizer_entries", [], |r| r.get(0)).unwrap_or(0);
+            let total_bet: i64 = db.conn.query_row("SELECT COALESCE(SUM(bet_sompi),0) FROM maximizer_entries WHERE status!='refunded'", [], |r| r.get(0)).unwrap_or(0);
+            Json(json!({"open_pools":open,"capped_pools":capped,"total_entries":total_entries,"total_bet_sompi":total_bet,"total_bet_kas":total_bet as f64/1e8}))
+        }
+        Err(_) => Json(json!({"error":"db_lock"}))
+    }
+}
+
+pub async fn maximizer_pools(State(state): State<Arc<AppState>>) -> Json<Value> {
+    match state.db.lock() {
+        Ok(db) => {
+            let mut pools: Vec<Value> = Vec::new();
+            let mut stmt = db.conn.prepare("SELECT id,game_type,pool_cap_sompi,current_sompi,min_bet_sompi,max_bet_sompi,status FROM maximizer_pools WHERE status!='closed' ORDER BY created_at DESC LIMIT 20").unwrap();
+            let rows = stmt.query_map([], |r| Ok(json!({"id":r.get::<_,String>(0)?,"game_type":r.get::<_,String>(1)?,"pool_cap_sompi":r.get::<_,i64>(2)?,"current_sompi":r.get::<_,i64>(3)?,"min_bet_sompi":r.get::<_,i64>(4)?,"max_bet_sompi":r.get::<_,i64>(5)?,"status":r.get::<_,String>(6)?,"fill_pct":(r.get::<_,i64>(3).unwrap_or(0) as f64/r.get::<_,i64>(2).unwrap_or(1) as f64*100.0).round()}))).unwrap();
+            for row in rows { if let Ok(v) = row { pools.push(v); } }
+            let locked: i64 = db.conn.query_row("SELECT COALESCE(SUM(current_sompi),0) FROM maximizer_pools WHERE status='open'", [], |r| r.get(0)).unwrap_or(0);
+            Json(json!({"pools":pools,"count":pools.len(),"total_locked_sompi":locked,"total_locked_kas":locked as f64/1e8}))
+        }
+        Err(_) => Json(json!({"error":"db_lock"}))
+    }
+}
+
+pub async fn maximizer_create_pool(State(state): State<Arc<AppState>>, Json(body): Json<Value>) -> Json<Value> {
+    let game_type = body["game_type"].as_str().unwrap_or("chess").to_string();
+    let cap: i64 = body["pool_cap_sompi"].as_i64().unwrap_or(1_000_000_000);
+    let min_bet: i64 = body["min_bet_sompi"].as_i64().unwrap_or(10_000_000);
+    let max_bet: i64 = body["max_bet_sompi"].as_i64().unwrap_or(500_000_000);
+    if cap < 100_000_000 { return Json(json!({"error":"pool cap must be at least 1 KAS"})); }
+    if min_bet >= max_bet { return Json(json!({"error":"min_bet must be < max_bet"})); }
+    if max_bet > cap { return Json(json!({"error":"max_bet cannot exceed pool cap"})); }
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs() as i64;
+    let id = format!("pool_{}", now);
+    match state.db.lock() {
+        Ok(db) => {
+            match db.conn.execute("INSERT INTO maximizer_pools (id,game_type,pool_cap_sompi,current_sompi,min_bet_sompi,max_bet_sompi,status,created_at,updated_at) VALUES (?1,?2,?3,0,?4,?5,'open',?6,?6)", rusqlite::params![id, game_type, cap, min_bet, max_bet, now]) {
+                Ok(_) => Json(json!({"id":id,"game_type":game_type,"pool_cap_sompi":cap,"min_bet_sompi":min_bet,"max_bet_sompi":max_bet,"status":"open"})),
+                Err(e) => Json(json!({"error":e.to_string()}))
+            }
+        }
+        Err(_) => Json(json!({"error":"db_lock"}))
+    }
+}
+
+pub async fn maximizer_enter(State(state): State<Arc<AppState>>, Json(body): Json<Value>) -> Json<Value> {
+    let pool_id = body["pool_id"].as_str().unwrap_or("").to_string();
+    let player = body["player_addr"].as_str().unwrap_or("").to_string();
+    let bet: i64 = body["bet_sompi"].as_i64().unwrap_or(0);
+    if pool_id.is_empty() || player.is_empty() || bet <= 0 { return Json(json!({"error":"pool_id, player_addr, bet_sompi required"})); }
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs() as i64;
+    match state.db.lock() {
+        Ok(db) => {
+            let pool = db.conn.query_row("SELECT pool_cap_sompi,current_sompi,min_bet_sompi,max_bet_sompi,status FROM maximizer_pools WHERE id=?1", [&pool_id], |r| Ok((r.get::<_,i64>(0)?,r.get::<_,i64>(1)?,r.get::<_,i64>(2)?,r.get::<_,i64>(3)?,r.get::<_,String>(4)?)));
+            match pool {
+                Err(_) => Json(json!({"error":"pool not found"})),
+                Ok((cap,current,min_bet,max_bet,status)) => {
+                    if status != "open" { return Json(json!({"error":"pool is not open, cannot enter"})); }
+                    if bet < min_bet { return Json(json!({"error":"bet below min", "min":min_bet, "yours":bet})); }
+                    if bet > max_bet { return Json(json!({"error":"bet above max", "max":max_bet, "yours":bet})); }
+                    let new_total = current + bet;
+                    if new_total > cap {
+                        let remaining = cap - current;
+                        return Json(json!({"error":"pool cap would be exceeded","cap_sompi":cap,"current_sompi":current,"remaining_sompi":remaining,"your_bet_sompi":bet,"max_you_can_bet_sompi":remaining}));
+                    }
+                    let entry_id = format!("entry_{}_{}", player.get(..8.min(player.len())).unwrap_or("anon"), now);
+                    db.conn.execute("INSERT INTO maximizer_entries (id,pool_id,player_addr,bet_sompi,status,created_at) VALUES (?1,?2,?3,?4,'pending',?5)", rusqlite::params![entry_id, pool_id, player, bet, now]).unwrap();
+                    let new_status = if new_total >= cap { "capped" } else { "open" };
+                    db.conn.execute("UPDATE maximizer_pools SET current_sompi=?1, status=?2, updated_at=?3 WHERE id=?4", rusqlite::params![new_total, new_status, now, pool_id]).unwrap();
+                    Json(json!({"entry_id":entry_id,"pool_id":pool_id,"bet_sompi":bet,"pool_total_sompi":new_total,"pool_cap_sompi":cap,"pool_status":new_status,"fill_pct":(new_total as f64/cap as f64*100.0).round(),"message":if new_status=="capped"{"Pool is now full!"}else{"Entry recorded"}}))
+                }
+            }
+        }
+        Err(_) => Json(json!({"error":"db_lock"}))
+    }
+}
+
+// AUTO-SETTLER PHASE 5
+pub fn spawn_auto_settler(state: Arc<AppState>) {
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
+        loop {
+            interval.tick().await;
+            let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs() as i64;
+            if let Ok(db) = state.db.lock() {
+                let games: Vec<(String,String)> = {
+                    let mut stmt = match db.conn.prepare("SELECT id, game_type FROM games WHERE status='completed' AND (winner IS NULL OR winner='') LIMIT 20") {
+                        Ok(s) => s,
+                        Err(_) => continue,
+                    };
+                    let rows = stmt.query_map([], |r| Ok((r.get::<_,String>(0)?, r.get::<_,String>(1)?)));
+                    match rows {
+                        Ok(r) => r.filter_map(|x| x.ok()).collect(),
+                        Err(_) => continue,
+                    }
+                };
+                let mut count = 0i64;
+                for (gid, _) in &games {
+                    let winner = db.conn.query_row("SELECT winner FROM oracle_quorum_results WHERE game_id=?1 AND status='reached'", [gid], |r| r.get::<_,String>(0));
+                    if let Ok(w) = winner {
+                        let n = db.conn.execute("UPDATE games SET status='settled', winner=?1, updated_at=?2 WHERE id=?3", rusqlite::params![w, now, gid]).unwrap_or(0);
+                        if n > 0 { count += 1; eprintln!("[settler] settled {} winner={}", gid, w); }
+                    }
+                }
+                if count > 0 { eprintln!("[settler] tick: settled {} games", count); }
+                let _ = db.conn.execute("UPDATE maximizer_pools SET status='closed', updated_at=?1 WHERE status='capped' AND updated_at < ?2", rusqlite::params![now, now-600]);
+            }
+        }
+    });
+}
+
+
+// Order endpoints (migrated from Node to Rust)
+
+pub async fn list_orders_handler(
+    State(state): State<Arc<AppState>>,
+) -> Json<Value> {
+    match state.db.lock() {
+        Ok(db) => match db.list_orders(None, None) {
+            Ok(orders) => Json(json!({"orders": orders, "count": orders.len()})),
+            Err(e) => Json(json!({"error": e.to_string()})),
+        },
+        Err(_) => Json(json!({"error":"db_lock_poisoned"})),
+    }
+}
+
+pub async fn get_order_handler(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Json<Value> {
+    match state.db.lock() {
+        Ok(db) => match db.get_order(&id) {
+            Ok(Some(order)) => Json(order),
+            Ok(None) => Json(json!({"error":"not_found","id":id})),
+            Err(e) => Json(json!({"error": e.to_string()})),
+        },
+        Err(_) => Json(json!({"error":"db_lock"})),
+    }
+}
+
+pub async fn create_order_handler(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<Value>,
+) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
+    let creator = body["creator"].as_str().unwrap_or("");
+    let order_type = body["order_type"].as_str().unwrap_or("game");
+    let game_type = body["game_type"].as_str();
+    let stake_sompi = body["stake_sompi"].as_i64().unwrap_or(0);
+    if creator.is_empty() || stake_sompi <= 0 {
+        return Err((StatusCode::BAD_REQUEST, Json(json!({"error":"missing creator or stake_sompi"}))));
+    }
+    match state.db.lock() {
+        Ok(db) => match db.create_order(creator, order_type, game_type, stake_sompi) {
+            Ok(id) => Ok(Json(json!({"id":id,"status":"open"}))),
+            Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()})))),
+        },
+        Err(_) => Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":"db_lock"})))),
+    }
+}
+
+pub async fn match_order_handler(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    Json(body): Json<Value>,
+) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
+    let matcher = body["matcher"].as_str().unwrap_or("unknown");
+    match state.db.lock() {
+        Ok(db) => match db.match_order(&id, matcher) {
+            Ok(true) => Ok(Json(json!({"id":id,"status":"matched","matched_by":matcher}))),
+            Ok(false) => Err((StatusCode::BAD_REQUEST, Json(json!({"error":"order not open or not found"})))),
+            Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()})))),
+        },
+        Err(_) => Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":"db_lock"})))),
+    }
+}
+
+pub async fn cancel_order_handler(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    Json(body): Json<Value>,
+) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
+    let creator = body["creator"].as_str().unwrap_or("");
+    match state.db.lock() {
+        Ok(db) => match db.cancel_order(&id, creator) {
+            Ok(true) => Ok(Json(json!({"id":id,"status":"cancelled"}))),
+            Ok(false) => Err((StatusCode::BAD_REQUEST, Json(json!({"error":"not your order or already matched"})))),
+            Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":e.to_string()})))),
+        },
+        Err(_) => Err((StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error":"db_lock"})))),
+    }
+}
+
+pub async fn order_stats_handler(
+    State(state): State<Arc<AppState>>,
+) -> Json<Value> {
+    match state.db.lock() {
+        Ok(db) => match db.get_order_stats() {
+            Ok(stats) => Json(stats),
+            Err(e) => Json(json!({"error": e.to_string()})),
+        },
+        Err(_) => Json(json!({"error":"db_lock"})),
+    }
+}
+
+// Portfolio
+
+pub async fn portfolio_handler(
+    State(state): State<Arc<AppState>>,
+    Path(addr): Path<String>,
+) -> Json<Value> {
+    match state.db.lock() {
+        Ok(db) => match db.get_portfolio(&addr) {
+            Ok(data) => Json(data),
+            Err(e) => Json(json!({"error": e.to_string()})),
+        },
+        Err(_) => Json(json!({"error":"db_lock"})),
+    }
+}
+
+pub async fn settler_status(State(state): State<Arc<AppState>>) -> Json<Value> {
+    match state.db.lock() {
+        Ok(db) => {
+            let completed: i64 = db.conn.query_row("SELECT COUNT(*) FROM games WHERE status='completed'", [], |r| r.get(0)).unwrap_or(0);
+            let settled: i64 = db.conn.query_row("SELECT COUNT(*) FROM games WHERE status='settled'", [], |r| r.get(0)).unwrap_or(0);
+            let pending_q: i64 = db.conn.query_row("SELECT COUNT(*) FROM oracle_quorum_results WHERE status='pending'", [], |r| r.get(0)).unwrap_or(0);
+            let reached_q: i64 = db.conn.query_row("SELECT COUNT(*) FROM oracle_quorum_results WHERE status='reached'", [], |r| r.get(0)).unwrap_or(0);
+            Json(json!({"auto_settler":"running","interval_secs":30,"games_completed":completed,"games_settled":settled,"quorums_pending":pending_q,"quorums_reached":reached_q}))
+        }
+        Err(_) => Json(json!({"error":"db_lock"}))
+    }
 }

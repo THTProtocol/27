@@ -3932,6 +3932,22 @@ body::before {
   display: none !important;
 }
 
+section.view, main.shell-main, .shell-main { display: none !important; }
+/* --- Overview screen --- */
+.htp-overview { padding: 0; }
+.htp-hero { padding: 80px 48px 60px; max-width: 860px; }
+.htp-hero-title { font-size: clamp(2.4rem, 6vw, 4.2rem); font-weight: 900; line-height: 1.05; letter-spacing: -0.02em; color: #fff; margin: 0 0 20px; }
+.htp-hero-sub { font-size: 1.05rem; color: var(--htp-muted, #8a9bba); max-width: 560px; line-height: 1.65; margin: 0 0 32px; }
+.htp-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.htp-stats-strip { display: flex; gap: 16px; flex-wrap: wrap; padding: 0 48px 40px; }
+.htp-stat-card { background: var(--htp-card, rgba(255,255,255,0.04)); border: 1px solid var(--htp-border, rgba(255,255,255,0.08)); border-radius: 10px; padding: 14px 22px; min-width: 120px; display: flex; flex-direction: column; gap: 4px; }
+.htp-stat-label { font-size: .65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--htp-muted, #8a9bba); }
+.htp-stat-val { font-size: 1.5rem; font-weight: 800; color: var(--htp-gold, #39ff90); }
+.htp-recent { padding: 0 48px 60px; }
+.htp-section-title { font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--htp-muted, #8a9bba); margin: 0 0 16px; }
+.htp-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--htp-card, rgba(255,255,255,0.04)); border: 1px solid var(--htp-border, rgba(255,255,255,0.07)); border-radius: 8px; margin-bottom: 6px; font-size: .9rem; }
+@media (max-width: 600px) { .htp-hero { padding: 48px 20px 40px; } .htp-stats-strip { padding: 0 20px 32px; } .htp-recent { padding: 0 20px 40px; } }
+
 </style>
 
 <style>
@@ -4024,10 +4040,7 @@ html,body{background:#010806!important;}
 </head>
 <body>
     <div class="shell">
-    <div id="htp-root"></div>
-
-        <!-- animated BlockDAG background -->
-        <canvas id="dagCanvas"></canvas>
+    <canvas id="dagCanvas"></canvas>
         <script>
 /* HTP DAG BACKGROUND v2 , bold, unmistakable animated BlockDAG */
 (function(){
@@ -4134,12 +4147,11 @@ html,body{background:#010806!important;}
                     aria-label="Menu">&#9776;</button>
                 <nav class="hdr-nav" id="htp-nav">
                     <button class="nav-btn act" data-v="overview" onclick="window.location.hash='/overview'">Overview</button>
-                    <button class="nav-btn" data-v="markets" onclick="window.location.hash='/markets'">Events</button>
+                    <button class="nav-btn" data-v="events" onclick="window.location.hash='/events'">Events</button>
                     <button class="nav-btn" data-v="create" onclick="window.location.hash='/create'">Create</button>
-                    <button class="nav-btn" data-v="skill" onclick="window.location.hash='/games'">Games</button>
-                    <button class="nav-btn" data-v="orders" onclick="window.location.hash='/orders'">Orders</button>
-                    <button class="nav-btn" data-v="oracle-network" onclick="window.location.hash='/oracle'" data-nav="true">Oracle Network</button>
-                    <button class="nav-btn" data-v="portfolio" onclick="window.location.hash='/wallet'">Portfolio</button>
+                    <button class="nav-btn" data-v="games" onclick="window.location.hash='/games'">Games</button>
+                    <button class="nav-btn" data-v="oracle" onclick="window.location.hash='/oracle'">Oracle Network</button>
+                    <button class="nav-btn" data-v="portfolio" onclick="window.location.hash='/portfolio'">Portfolio</button>
                     <button class="nav-btn" data-v="wallet" onclick="window.location.hash='/wallet'">Wallet</button>
                 </nav>
                     <div class="hdr-r">
@@ -4194,8 +4206,10 @@ html,body{background:#010806!important;}
                 <div style="font-size:11px;color:var(--muted)">DAA: <span id="daaScore">-</span></div>
             </div>
         </header>
+<div id="htp-root">
 
-        <main class="shell-main">
+        <!-- animated BlockDAG background -->
+        
 
             <!-- ••• OVERVIEW ••• -->
             <section class="view show" id="v-overview">
@@ -6455,9 +6469,18 @@ event MyMarket {
             </div>
         </div>
     </section>
+</div><!-- /htp-root -->
+
+</div><!-- /htp-root -->
 
 
-    </main>
+
+    
+</div>
+
+
+
+        
     <footer class="ftr">
         <div class="ftr-in"><span style="font-weight:600">HIGH TABLE PROTOCOL</span>
             <div class="ftr-links"><a href="javascript:void(0)" onclick="window.location.hash='/docs';return false">Terms</a><a href="javascript:void(0)"
@@ -6598,7 +6621,7 @@ event MyMarket {
   <script src="htp-events-v3.js"></script>
   
   <!-- HTP Core -->
-  <script src="htp-router.js?v=8"></script>
+  <script src="htp-router.js?v=12"></script>
   <script src="htp-init.js"></script>
   <script src="chess.min.js"></script>
   

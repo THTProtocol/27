@@ -44,6 +44,7 @@ async fn main() {
         .allow_methods(Any)
         .allow_headers(Any);
 
+    routes::spawn_auto_settler(Arc::clone(&state));
     let app = Router::new()
         .route("/health", get(routes::health))
         .route("/api/admin/stats", get(routes::admin_stats))
@@ -75,17 +76,42 @@ async fn main() {
         .route("/api/games", get(routes::list_games))
         .route("/api/games/:id/settlement", get(routes::get_settlement))
                 // ═══ HTP Oracle Network ═════════════════════════════
+        
+        // Orders (migrated from Node to Rust)
+        .route("/api/orders", axum::routing::get(routes::list_orders_handler).post(routes::create_order_handler))
+        .route("/api/orders/stats", axum::routing::get(routes::order_stats_handler))
+        .route("/api/orders/:id", axum::routing::get(routes::get_order_handler))
+        .route("/api/orders/:id/match", axum::routing::post(routes::match_order_handler))
+        .route("/api/orders/:id/cancel", axum::routing::post(routes::cancel_order_handler))
+        // Portfolio
+        .route("/api/portfolio/:addr", axum::routing::get(routes::portfolio_handler))
+        // Events
+        .route("/api/events/:id", axum::routing::get(routes::list_events_handler))
         .route("/api/events", axum::routing::get(routes::list_events_handler).post(routes::create_event_handler))
         .route("/api/events/:id/attest", axum::routing::post(routes::attest_event_handler))
         .route("/api/events/:id/attestations", axum::routing::get(routes::get_event_attestations_handler))
         .route("/api/operators", axum::routing::get(routes::list_operators_handler).post(routes::register_operator_handler))
-        .route("/api/oracle/network", axum::routing::get(routes::oracle_network_stats_handler))
 
         .route("/api/events/:id/settle", axum::routing::post(routes::settle_event_handler))
+                .route("/api/oracle/register", axum::routing::post(routes::oracle_register))
+        .route("/api/oracle/attest",   axum::routing::post(routes::oracle_attest))
+        .route("/api/oracle/quorum/:game_id", axum::routing::get(routes::oracle_quorum))
+        .route("/api/oracle/slash",    axum::routing::post(routes::oracle_slash))
+        .route("/api/oracle/list",     axum::routing::get(routes::oracle_list))
+        .route("/api/oracle/:id",      axum::routing::get(routes::oracle_get))
+        .route("/api/oracle/:id/activate", axum::routing::post(routes::oracle_activate))
+        .route("/api/oracle/:id/exit",     axum::routing::post(routes::oracle_exit))
+        .route("/api/oracle/network",  axum::routing::get(routes::oracle_network_stats))
+
         .route("/ws", get(ws::ws_handler))
         .layer(cors)
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(tower_http::limit::RequestBodyLimitLayer::new(64 * 1024))
+                .route("/api/maximizer/stats", get(routes::maximizer_stats))
+                .route("/api/maximizer/pools", get(routes::maximizer_pools))
+                .route("/api/maximizer/pools/create", post(routes::maximizer_create_pool))
+                .route("/api/maximizer/enter", post(routes::maximizer_enter))
+                .route("/api/settler/status", get(routes::settler_status))
         .with_state(state);
 
     let port: u16 = std::env::var("PORT").unwrap_or_else(|_| "3000".into()).parse().expect("PORT must be number");
