@@ -78,7 +78,7 @@
   window.htpRouter._toast = _toast;
 
   window.htpRouter._createGame = async function() {
-    var type = document.getElementById("create-type").value;
+    var type = document.getElementById("htp-root").value;
     var fee  = document.getElementById("create-fee").value;
     var max  = document.getElementById("create-max").value;
     var creator = window.connectedAddress || window.htpAddress;
@@ -616,3 +616,74 @@ window.screenWallet = screenWallet;
     }
   } catch(e) {}
 })();
+
+window.screenEvents = async function() {
+  var R = document.getElementById("htp-root"); if(!R) return;
+  R.innerHTML = '<div class="htp-page"><h1 class="htp-page-title">EVENTS</h1><p class="htp-page-subtitle">Skill-based prediction events on the Kaspa BlockDAG.</p><div id="ev-list"><p style="color:var(--muted)">Loading...</p></div></div>';
+  try {
+    var r = await fetch("https://hightable.pro/api/events");
+    var d = await r.json();
+    var evs = Array.isArray(d) ? d : (d.events || []);
+    var el2 = document.getElementById("ev-list");
+    if (!el2) return;
+    if (!evs.length) { el2.innerHTML = '<p style="color:var(--muted)">No events yet. <button class="htp-btn htp-btn-primary" onclick="go(&apos;create&apos;)">Create one</button></p>'; return; }
+    el2.innerHTML = '<div class="htp-grid">' + evs.map(function(e){
+      return '<div class="htp-card"><div class="htp-stat-label">'+(e.category||"event").toUpperCase()+'</div>'+
+        '<div style="font-weight:700;margin:6px 0">'+(e.title||e.question||e.id||"Event")+'</div>'+
+        '<div style="color:var(--muted);font-size:.82rem">'+(e.description||"")+'</div>'+
+        '<div style="margin-top:10px"><span class="htp-badge htp-badge-'+(e.status||"active").toLowerCase()+'">'+(e.status||"ACTIVE").toUpperCase()+'</span></div></div>';
+    }).join("") + '</div>';
+  } catch(err) {
+    var el3 = document.getElementById("ev-list");
+    if(el3) el3.innerHTML = '<p style="color:#ff4444">'+err.message+'</p>';
+  }
+};
+
+window.screenPortfolio = async function() {
+  var R = document.getElementById("htp-root"); if(!R) return;
+  R.innerHTML = '<div class="htp-page"><h1 class="htp-page-title">PORTFOLIO</h1><p class="htp-page-subtitle">Your match history and KAS balance on TN12.</p><div id="port-content"><p style="color:var(--muted)">Loading...</p></div></div>';
+  var el = document.getElementById("port-content");
+  if (!el) return;
+  var addr = (window.htpWallet && window.htpWallet.address) || window.selectedAddress || null;
+  if (!addr) {
+    el.innerHTML = '<div class="htp-card" style="text-align:center;padding:32px"><p style="color:var(--muted);margin-bottom:16px">Connect your wallet to view your portfolio.</p><button class="htp-btn htp-btn-primary" onclick="go(&apos;wallet&apos;)">Connect Wallet</button></div>';
+    return;
+  }
+  try {
+    var r = await fetch("https://hightable.pro/api/portfolio?address="+encodeURIComponent(addr));
+    var d = await r.json();
+    var rows = Array.isArray(d) ? d : (d.matches || d.positions || d.history || []);
+    if (!rows.length) { el.innerHTML = '<p style="color:var(--muted)">No match history yet.</p>'; return; }
+    el.innerHTML = '<div class="htp-grid">' + rows.map(function(m){
+      var won = m.winner === addr;
+      return '<div class="htp-card"><div class="htp-stat-label">'+(m.game||"match").toUpperCase()+'</div>'+
+        '<div style="font-weight:700;margin:6px 0">'+(m.id||m.matchId||"Match")+'</div>'+
+        '<div style="color:var(--muted);font-size:.82rem">Wager: '+(m.wager||m.amount||"?")+' KAS</div>'+
+        '<span class="htp-badge htp-badge-'+(won?"win":"loss")+'">'+(won?"WIN":"LOSS")+'</span></div>';
+    }).join("") + '</div>';
+  } catch(err) {
+    if(el) el.innerHTML = '<p style="color:#ff4444">'+err.message+'</p>';
+  }
+};
+
+window.screenGames = function() {
+  var R = document.getElementById("htp-root"); if(!R) return;
+  R.innerHTML = '<div class="htp-page"><h1 class="htp-page-title">SKILL GAMES</h1><p class="htp-page-subtitle">Skill-based games with KAS wagering on TN12.</p>'+
+    '<div class="htp-grid" style="margin-top:24px">'+
+      '<div class="htp-card" style="cursor:pointer;text-align:center" onclick="if(typeof window.screenChess===&apos;function&apos;)window.screenChess();else go(&apos;chess&apos;)">'+
+        '<div style="font-size:2.5rem;margin-bottom:12px">&#9822;</div>'+
+        '<div style="font-weight:700;font-size:1.1rem">CHESS</div>'+
+        '<div style="color:var(--muted);font-size:.82rem;margin-top:6px">Classic chess. Winner takes the pot.</div>'+
+      '</div>'+
+      '<div class="htp-card" style="cursor:pointer;text-align:center" onclick="if(typeof window.screenConnect4===&apos;function&apos;)window.screenConnect4();else go(&apos;connect4&apos;)">'+
+        '<div style="font-size:2.5rem;margin-bottom:12px">&#128308;</div>'+
+        '<div style="font-weight:700;font-size:1.1rem">CONNECT 4</div>'+
+        '<div style="color:var(--muted);font-size:.82rem;margin-top:6px">Four in a row on the BlockDAG.</div>'+
+      '</div>'+
+      '<div class="htp-card" style="cursor:pointer;text-align:center" onclick="if(typeof window.screenCheckers===&apos;function&apos;)window.screenCheckers();else go(&apos;checkers&apos;)">'+
+        '<div style="font-size:2.5rem;margin-bottom:12px">&#9924;</div>'+
+        '<div style="font-weight:700;font-size:1.1rem">CHECKERS</div>'+
+        '<div style="color:var(--muted);font-size:.82rem;margin-top:6px">Classic checkers. Non-custodial.</div>'+
+      '</div>'+
+    '</div></div>';
+};
