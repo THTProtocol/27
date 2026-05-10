@@ -5,15 +5,15 @@ use serde::{Deserialize, Serialize};
 pub struct SettlementRequest {
     pub event_id: String,
     pub settlement_type: String,
-    #[serde(skip_serializing_if = Option::is_none)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub winner: Option<String>,
-    #[serde(skip_serializing_if = Option::is_none)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub home_score: Option<i32>,
-    #[serde(skip_serializing_if = Option::is_none)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub away_score: Option<i32>,
-    #[serde(skip_serializing_if = Option::is_none)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<String>,
-    #[serde(skip_serializing_if = Option::is_none)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub players_rank: Option<Vec<String>>,
     pub timestamp: String,
     pub signature: Option<String>,

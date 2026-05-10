@@ -1,14 +1,14 @@
 [package]
-name = htp-settler
+name = "htp-settler"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
-description = Auto-settlement daemon for HTP Protocol events
+description = "Auto-settlement daemon for HTP Protocol events"
 
 [[bin]]
-name = htp-settler
-path = src/main.rs
+name = "htp-settler"
+path = "src/main.rs"
 
 [dependencies]
 tokio = { workspace = true }
@@ -23,5 +23,5 @@ uuid = { workspace = true }
 hex = { workspace = true }
 
 [dev-dependencies]
-tokio-test = 0.4
-mockito = 1
+tokio-test = "0.4"
+mockito = "1"
