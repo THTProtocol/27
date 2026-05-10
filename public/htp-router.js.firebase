@@ -479,119 +479,40 @@
   window.submitOracleAttest = submitOracleAttest;
   window.submitOracleChallenge = submitOracleChallenge;
 // ORACLE SCREEN FIX -- injected
-window.screenOracle = async function() {
-  var R = getRoot(); if(!R) return;
-  var G = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || "https://hightable.pro";
-  R.innerHTML = "<div class=\"htp-page\"><h1 class=\"htp-page-title\">ORACLE NETWORK</h1><p class=\"htp-page-subtitle\">Bonded oracle nodes resolving outcomes on the Kaspa BlockDAG.</p><div class=\"htp-tab-bar\" id=\"or-tabs\"><button class=\"htp-tab htp-tab-act\" onclick=\"htpOrSwitch(this,'dashboard')\">Dashboard</button><button class=\"htp-tab\" onclick=\"htpOrSwitch(this,'register')\">Register</button><button class=\"htp-tab\" onclick=\"htpOrSwitch(this,'attest')\">Attest</button></div><div id=\"or-content\"><p style=\"color:var(--muted)\">Loading...</p></div></div>";
-
-  // Stat strip helper
-  function statStrip(pairs) {
-    return "<div class=\"htp-grid\" style=\"margin-bottom:20px\">" + pairs.map(function(p){return "<div class=\"htp-card\"><div class=\"htp-stat-label\">"+p[0]+"</div><div class=\"htp-stat-val\">"+p[1]+"</div></div>";}).join("") + "</div>";
+async function screenOracle() {
+  var data = await (fetch("https://hightable.pro/api/oracle/network").then(function(r){return r.json();}).catch(function(){return null;}));
+  var root = document.getElementById("htp-root") || document.querySelector(".htp-root") || document.body;
+  if (!data) { root.innerHTML = "<div class=htp-page><h1 class=htp-page-title>ORACLE</h1><div class=htp-empty>Oracle offline</div></div>"; return; }
+  root.innerHTML = "<div class=htp-page><h1 class=htp-page-title>ORACLE NETWORK</h1>" +
+    "<div class=htp-grid>" +
+    "<div class=htp-card><strong>Open Events</strong><br>" + (data.open_events||0) + "</div>" +
+    "<div class=htp-card><strong>Total Oracles</strong><br>" + (data.total_oracles||0) + "</div>" +
+    "<div class=htp-card><strong>Total Attestations</strong><br>" + (data.total_attestations||0) + "</div>" +
+    "<div class=htp-card><strong>Resolved</strong><br>" + (data.resolved_events||0) + "</div>" +
+    "<div class=htp-card><strong>Protocol Fee</strong><br>" + ((data.protocol_fee_bps||0)/100) + "%</div>" +
+    "<div class=htp-card><strong>Challenges</strong><br>" + (data.total_challenges||0) + "</div>" +
+    "</div>" +
+    (typeof window.htpOracle === "object" ? "<div id=oracleContainer style=margin-top:24px></div>" : "") +
+    "</div>";
+  if (typeof window.htpOracle === "object" && typeof window.htpOracle.renderTabs === "function") {
+    window.htpOracle.renderTabs("oracleContainer");
   }
+}
+window.screenOracle = screenOracle;
 
-  // Dashboard
-  async function dash(el) {
-    el.innerHTML = "<p style=\"color:var(--muted)\">Loading network...</p>";
-    try {
-      var [nw, lst] = await Promise.all([
-        fetch(G+"/api/oracle/network").then(function(r){return r.json();}),
-        fetch(G+"/api/oracle/list").then(function(r){return r.json();})
-      ]);
-      var active = nw.oracles ? nw.oracles.active : 0;
-      var total  = nw.oracles ? nw.oracles.total : 0;
-      var nodes  = lst.oracles || [];
-      el.innerHTML =
-        statStrip([
-          ["Active Nodes", active],
-          ["Total Registered", total],
-          ["Total Bond", nw.bond ? nw.bond.total_active_kas + " KAS" : "0 KAS"],
-          ["Network", nw.network ? nw.network.toUpperCase() : "? "]
-        ]) +
-        (nodes.length ?
-          "<h2 class=\"htp-section-title\">Registered Oracles</h2>" +
-          "<div style=\"overflow-x:auto\"><table class=\"htp-table\"><thead><tr><th>Address</th><th>Bond</th><th>Type</th><th>m/n</th><th>Slashes</th><th>Status</th></tr></thead><tbody>" +
-          nodes.map(function(o){
-            var s = (o.status||"active").toLowerCase();
-            return "<tr><td style=\"font-family:monospace;font-size:.78rem\">"+(o.address||"").slice(0,14)+"\u2026</td>"+
-              "<td style=\"font-weight:700\">"+((o.bond_sompi||0)/1e8).toFixed(2)+" KAS</td>"+
-              "<td>"+(o.oracle_type||"?")+"</td><td>"+(o.m||"?")+"/"+(o.n||"?")+"</td>"+
-              "<td>"+(o.slash_count||0)+"</td>"+
-              "<td><span class=\"htp-badge htp-badge-"+s+"\">"+s.toUpperCase()+"</span></td></tr>";
-          }).join("") + "</tbody></table></div>"
-          : "<p style=\"color:var(--muted)\">No oracles registered yet.</p>");
-    } catch(e) { el.innerHTML = "<p style=\"color:#ff4444\">Failed to load: "+e.message+"</p>"; }
-  }
-
-  // Register
-  function reg(el) {
-    el.innerHTML = "<div class=\"htp-form-card\"><h2 style=\"margin:0 0 20px\">Register Oracle Node</h2>"+
-      "<p style=\"color:var(--muted);font-size:.85rem;margin:0 0 20px\">Bond KAS to become an oracle. Slashable if you attest falsely.</p>"+
-      "<div class=\"htp-form-group\"><label>Oracle Address</label><input id=\"or-addr\" class=\"htp-input\" placeholder=\"kaspatest:q...\" /></div>"+
-      "<div class=\"htp-form-group\"><label>Bond (KAS)</label><input id=\"or-bond\" class=\"htp-input\" type=\"number\" placeholder=\"10\" min=\"1\" /></div>"+
-      "<div class=\"htp-form-group\"><label>Type</label><select id=\"or-type\" class=\"htp-input\"><option value=\"hybrid\">Hybrid</option><option value=\"bond\">Bond</option><option value=\"zk\">ZK</option></select></div>"+
-      "<button class=\"htp-btn\" onclick=\"htpRegOracle()\">Register on BlockDAG</button>"+
-      "<div id=\"or-result\" style=\"margin-top:14px\"></div></div>";
-    window.htpRegOracle = async function() {
-      var addr = document.getElementById("or-addr").value.trim();
-      var bond = parseFloat(document.getElementById("or-bond").value);
-      var type = document.getElementById("or-type").value;
-      var res  = document.getElementById("or-result");
-      if (!addr || isNaN(bond) || bond <= 0) { res.innerHTML = "<p style=\"color:#ff4444\">Address and bond required.</p>"; return; }
-      res.innerHTML = "<p style=\"color:var(--muted)\">Registering...</p>";
-      try {
-        var r = await fetch(G+"/api/oracle/register", {
-          method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({address: addr, bond_sompi: Math.round(bond*1e8), oracle_type: type})
-        });
-        var d = await r.json();
-        if (d.id) res.innerHTML = "<p style=\"color:#ffffff\">\u2713 Oracle registered: "+(d.address||"").slice(0,14)+"\u2026</p>";
-        else res.innerHTML = "<p style=\"color:#ff4444\">"+(d.error||JSON.stringify(d))+"</p>";
-      } catch(e) { res.innerHTML = "<p style=\"color:#ff4444\">Request failed.</p>"; }
-    };
-  }
-
-  // Attest
-  function att(el) {
-    el.innerHTML = "<div class=\"htp-form-card\"><h2 style=\"margin:0 0 20px\">Submit Attestation</h2>"+
-      "<p style=\"color:var(--muted);font-size:.85rem;margin:0 0 20px\">Attest a game outcome. Bond at risk if quorum disagrees.</p>"+
-      "<div class=\"htp-form-group\"><label>Game ID</label><input id=\"or-evid\" class=\"htp-input\" placeholder=\"game-id\" /></div>"+
-      "<div class=\"htp-form-group\"><label>Oracle Address</label><input id=\"or-oaddr\" class=\"htp-input\" placeholder=\"kaspatest:q...\" /></div>"+
-      "<div class=\"htp-form-group\"><label>Winner Address</label><input id=\"or-winner\" class=\"htp-input\" placeholder=\"kaspatest:q...\" /></div>"+
-      "<button class=\"htp-btn\" onclick=\"htpSubmitAtt()\">Submit Attestation</button>"+
-      "<div id=\"or-result\" style=\"margin-top:14px\"></div></div>";
-    window.htpSubmitAtt = async function() {
-      var gid    = document.getElementById("or-evid").value.trim();
-      var oaddr  = document.getElementById("or-oaddr").value.trim();
-      var winner = document.getElementById("or-winner").value.trim();
-      var res    = document.getElementById("or-result");
-      if (!gid || !oaddr || !winner) { res.innerHTML = "<p style=\"color:#ff4444\">All fields required.</p>"; return; }
-      res.innerHTML = "<p style=\"color:var(--muted)\">Submitting attestation...</p>";
-      try {
-        var r = await fetch(G+"/api/oracle/attest", {
-          method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({game_id: gid, oracle_id: oaddr, oracle_addr: oaddr, winner: winner, proof_root: "0".repeat(64), attest_type: "oracle"})
-        });
-        var d = await r.json();
-        if (d.id || d.status === "attested") res.innerHTML = "<p style=\"color:#ffffff\">\u2713 Attestation submitted.</p>";
-        else res.innerHTML = "<p style=\"color:#ff4444\">"+(d.error||JSON.stringify(d))+"</p>";
-      } catch(e) { res.innerHTML = "<p style=\"color:#ff4444\">Request failed.</p>"; }
-    };
-  }
-
-  window.htpOrSwitch = function(btn, tab) {
-    document.querySelectorAll("#or-tabs .htp-tab").forEach(function(b){b.classList.remove("htp-tab-act");});
-    btn.classList.add("htp-tab-act");
-    var el = document.getElementById("or-content");
-    if (tab === "dashboard") dash(el);
-    else if (tab === "register") reg(el);
-    else att(el);
-  };
-
-  dash(document.getElementById("or-content"));
-};
-
-
-window.screenWallet = screenWallet;
+  window.screenAdmin = screenAdmin;
+  window.screenCreate = screenCreate;
+  window.screenDispute = screenDispute;
+  window.screenDocs = screenDocs;
+  window.screenGame = screenGame;
+  window.screenMarket = screenMarket;
+  window.screenMarkets = screenMarkets;
+  window.screenSettle = screenSettle;
+  window.screenStatus = screenStatus;
+  window.screenTournament = screenTournament;
+  window.screenTournamentId = screenTournamentId;
+  window.screenTx = screenTx;
+  window.screenWallet = screenWallet;
 })();
 (async function loadDashboardStats() {
   try {

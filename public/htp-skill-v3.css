@@ -15,7 +15,7 @@
   text-transform:uppercase !important;
   font-weight:700 !important;
   font-size:13px !important;
-  color:#d8fff5 !important;
+  color:#ffffff !important;
   position:relative !important;
 }
 .live-dag-label *{ overflow:visible !important; }
@@ -26,8 +26,8 @@
   min-width:10px !important;
   min-height:10px !important;
   border-radius:50% !important;
-  background:#49e8c2 !important;
-  box-shadow:0 0 8px rgba(73,232,194,.65) !important;
+  background:#ffffff !important;
+  box-shadow:0 0 8px rgba(255,255,255,0.10) !important;
   flex-shrink:0 !important;
   vertical-align:middle !important;
   animation:none !important;
@@ -51,20 +51,20 @@ iframe[src*="kgi.kaspad.net"]{
 
 /* ---------- Skill Games V3 panel ---------- */
 #sgv3-panel{
-  --neon: #49e8c2;
-  --neon-dim: rgba(73,232,194,.35);
+  --neon: #ffffff;
+  --neon-dim: rgba(255,255,255,0.35);
   --gold: #d4af37;
   --ink: #050a0e;
   margin:24px 0 28px;
-  border:1px solid rgba(73,232,194,.18);
+  border:1px solid rgba(255,255,255,0.10);
   border-radius:18px;
   background:
     linear-gradient(180deg, rgba(8,16,24,.85) 0%, rgba(4,10,14,.92) 100%),
-    repeating-linear-gradient(0deg, transparent 0 2px, rgba(73,232,194,.025) 2px 3px);
+    repeating-linear-gradient(0deg, transparent 0 2px, rgba(255,255,255,0.10) 2px 3px);
   box-shadow:
     0 24px 64px rgba(0,0,0,.55),
-    0 0 0 1px rgba(73,232,194,.05) inset,
-    0 0 40px rgba(73,232,194,.06);
+    0 0 0 1px rgba(255,255,255,0.10) inset,
+    0 0 40px rgba(255,255,255,0.10);
   overflow:hidden;
   backdrop-filter: blur(8px);
   position:relative;
@@ -80,21 +80,21 @@ iframe[src*="kgi.kaspad.net"]{
 .sgv3-panel-head{
   display:flex; align-items:center; justify-content:space-between;
   padding:18px 24px;
-  border-bottom:1px solid rgba(73,232,194,.1);
-  background:linear-gradient(180deg, rgba(73,232,194,.04), transparent);
+  border-bottom:1px solid rgba(255,255,255,0.10);
+  background:linear-gradient(180deg, rgba(255,255,255,0.10), transparent);
 }
 .sgv3-panel-title{ display:flex; align-items:center; gap:14px; }
 .sgv3-icon{
   display:inline-flex; align-items:center; justify-content:center;
   width:54px; height:54px; border-radius:14px;
-  background:rgba(73,232,194,.08);
-  border:1px solid rgba(73,232,194,.25);
+  background:rgba(255,255,255,0.10);
+  border:1px solid rgba(255,255,255,0.10);
   font-size:28px; color:var(--neon);
-  box-shadow: inset 0 0 18px rgba(73,232,194,.08);
+  box-shadow: inset 0 0 18px rgba(255,255,255,0.10);
   transition: color .2s, border-color .2s, box-shadow .2s;
 }
 .sgv3-eyebrow{
-  display:block; font-size:10px; color:rgba(73,232,194,.6);
+  display:block; font-size:10px; color:rgba(255,255,255,0.10);
   letter-spacing:.18em; text-transform:uppercase; font-weight:700; margin-bottom:2px;
 }
 .sgv3-name{ font-size:20px; font-weight:800; color:#e8fff8; letter-spacing:-.02em; }
@@ -109,7 +109,7 @@ iframe[src*="kgi.kaspad.net"]{
 
 .sgv3-tabs{
   display:flex; gap:0; padding:0 16px;
-  border-bottom:1px solid rgba(73,232,194,.1);
+  border-bottom:1px solid rgba(255,255,255,0.10);
   background:rgba(2,8,12,.4);
 }
 .sgv3-tab{
@@ -136,14 +136,14 @@ iframe[src*="kgi.kaspad.net"]{
 .sgv3-extras{ margin-top:14px; }
 .sgv3-fg label{
   display:block; font-size:10px; font-weight:700;
-  color:rgba(73,232,194,.7); letter-spacing:.1em; text-transform:uppercase;
+  color:rgba(255,255,255,0.10); letter-spacing:.1em; text-transform:uppercase;
   margin-bottom:6px;
 }
 .sgv3-fg input,
 .sgv3-fg select{
   width:100%; height:42px; box-sizing:border-box;
   background:rgba(1,8,6,.55); color:#e8fff8;
-  border:1px solid rgba(73,232,194,.12); border-radius:10px;
+  border:1px solid rgba(255,255,255,0.10); border-radius:10px;
   padding:0 12px; font-size:14px; font-weight:600;
   font-family:inherit; outline:none;
   transition: border-color .15s ease, box-shadow .15s ease;
@@ -151,7 +151,7 @@ iframe[src*="kgi.kaspad.net"]{
 .sgv3-fg input:focus,
 .sgv3-fg select:focus{
   border-color:var(--neon);
-  box-shadow:0 0 0 3px rgba(73,232,194,.12);
+  box-shadow:0 0 0 3px rgba(255,255,255,0.10);
 }
 .sgv3-hint{
   margin-top:6px; font-size:10px; color:rgba(216,255,245,.45); line-height:1.5;
@@ -160,8 +160,8 @@ iframe[src*="kgi.kaspad.net"]{
 /* Payout preview */
 .sgv3-payout{
   margin-top:18px; padding:14px 16px; border-radius:14px;
-  background:linear-gradient(135deg, rgba(73,232,194,.04), rgba(212,175,55,.02));
-  border:1px solid rgba(73,232,194,.16);
+  background:linear-gradient(135deg, rgba(255,255,255,0.10), rgba(212,175,55,.02));
+  border:1px solid rgba(255,255,255,0.10);
 }
 .sgv3-payout-row{
   display:grid; grid-template-columns:repeat(5,1fr); gap:10px;
@@ -170,12 +170,12 @@ iframe[src*="kgi.kaspad.net"]{
 .sgv3-payout-cell{
   display:flex; flex-direction:column; gap:4px;
   padding:10px 12px; border-radius:10px;
-  background:rgba(1,8,6,.5); border:1px solid rgba(73,232,194,.08);
+  background:rgba(1,8,6,.5); border:1px solid rgba(255,255,255,0.10);
 }
 .sgv3-pl{ font-size:9px; color:rgba(232,255,247,.5); letter-spacing:.12em; text-transform:uppercase; font-weight:700; }
 .sgv3-pv{ font-size:15px; color:#e8fff8; font-weight:800; letter-spacing:-.01em; }
-.sgv3-pwin{ background:rgba(73,232,194,.1); border-color:var(--neon); }
-.sgv3-pwin .sgv3-pv{ color:var(--neon); text-shadow:0 0 12px rgba(73,232,194,.4); }
+.sgv3-pwin{ background:rgba(255,255,255,0.10); border-color:var(--neon); }
+.sgv3-pwin .sgv3-pv{ color:var(--neon); text-shadow:0 0 12px rgba(255,255,255,0.10); }
 .sgv3-fineprint{
   margin-top:12px; font-size:11px; color:rgba(216,255,245,.5); line-height:1.6;
 }
@@ -188,13 +188,13 @@ iframe[src*="kgi.kaspad.net"]{
   font-family:inherit;
 }
 .sgv3-btn-primary{
-  background:linear-gradient(135deg, var(--neon), #26c9a0);
-  border:1px solid rgba(73,232,194,.6); color:#02110d;
-  box-shadow:0 6px 20px rgba(73,232,194,.25), 0 0 0 1px rgba(73,232,194,.15) inset;
+  background:linear-gradient(135deg, var(--neon), #cccccc);
+  border:1px solid rgba(255,255,255,0.10); color:rgba(255,255,255,0.08);
+  box-shadow:0 6px 20px rgba(255,255,255,0.10), 0 0 0 1px rgba(255,255,255,0.10) inset;
 }
 .sgv3-btn-primary:hover{
   filter:brightness(1.08); transform:translateY(-1px);
-  box-shadow:0 10px 28px rgba(73,232,194,.35);
+  box-shadow:0 10px 28px rgba(255,255,255,0.10);
 }
 .sgv3-btn-ghost{
   background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.1); color:#e8fff8;
@@ -209,13 +209,13 @@ iframe[src*="kgi.kaspad.net"]{
 .sgv3-open-list{ display:flex; flex-direction:column; gap:12px; }
 .sgv3-empty{
   padding:40px 24px; text-align:center;
-  border:1px dashed rgba(73,232,194,.2); border-radius:14px;
-  background:rgba(73,232,194,.02);
+  border:1px dashed rgba(255,255,255,0.10); border-radius:14px;
+  background:rgba(255,255,255,0.10);
 }
 .sgv3-empty-icon{
   display:block;
-  font-size:52px; color:rgba(73,232,194,.65); margin-bottom:14px;
-  text-shadow:0 0 24px rgba(73,232,194,.4);
+  font-size:52px; color:rgba(255,255,255,0.10); margin-bottom:14px;
+  text-shadow:0 0 24px rgba(255,255,255,0.10);
   line-height:1.1;
 }
 .sgv3-empty-title{ font-size:16px; font-weight:800; color:#e8fff8; margin-bottom:6px; }
@@ -224,23 +224,23 @@ iframe[src*="kgi.kaspad.net"]{
 .sgv3-mcard{
   display:flex; align-items:center; justify-content:space-between; gap:18px;
   padding:14px 16px; border-radius:14px;
-  background:rgba(1,8,6,.55); border:1px solid rgba(73,232,194,.12);
+  background:rgba(1,8,6,.55); border:1px solid rgba(255,255,255,0.10);
   transition:border-color .15s ease, transform .15s ease;
 }
-.sgv3-mcard:hover{ border-color:rgba(73,232,194,.32); }
-.sgv3-mcard-active{ border-color:rgba(73,232,194,.4); background:rgba(73,232,194,.03); }
+.sgv3-mcard:hover{ border-color:rgba(255,255,255,0.10); }
+.sgv3-mcard-active{ border-color:rgba(255,255,255,0.10); background:rgba(255,255,255,0.10); }
 .sgv3-mcard-side{ display:flex; gap:14px; align-items:center; min-width:0; flex:1; }
 .sgv3-mcard-icon{
   width:46px; height:46px; min-width:46px; border-radius:12px;
   display:inline-flex; align-items:center; justify-content:center;
-  background:rgba(73,232,194,.08); border:1px solid rgba(73,232,194,.2);
+  background:rgba(255,255,255,0.10); border:1px solid rgba(255,255,255,0.10);
   font-size:22px; color:var(--neon);
 }
 .sgv3-mcard-meta{ flex:1; min-width:0; }
 .sgv3-mcard-title{
   font-size:15px; font-weight:800; color:#e8fff8; letter-spacing:-.01em; margin-bottom:6px;
 }
-.sgv3-mcard-id{ color:rgba(73,232,194,.6); font-family:monospace; font-size:11px; font-weight:600; margin-left:6px; }
+.sgv3-mcard-id{ color:rgba(255,255,255,0.10); font-family:monospace; font-size:11px; font-weight:600; margin-left:6px; }
 .sgv3-mcard-row{
   display:flex; flex-wrap:wrap; gap:12px 18px;
   font-size:12px; color:rgba(216,255,245,.7); margin-bottom:4px;
@@ -248,10 +248,10 @@ iframe[src*="kgi.kaspad.net"]{
 .sgv3-badge{
   display:inline-flex; align-items:center; height:20px; padding:0 8px; border-radius:6px;
   font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
-  background:rgba(73,232,194,.1); border:1px solid rgba(73,232,194,.25); color:var(--neon);
+  background:rgba(255,255,255,0.10); border:1px solid rgba(255,255,255,0.10); color:var(--neon);
 }
 .sgv3-badge-active{ background:rgba(212,175,55,.1); border-color:rgba(212,175,55,.35); color:#d4af37; }
-.sgv3-badge-open  { background:rgba(73,232,194,.08); border-color:rgba(73,232,194,.25); color:var(--neon); }
+.sgv3-badge-open  { background:rgba(255,255,255,0.10); border-color:rgba(255,255,255,0.10); color:var(--neon); }
 .sgv3-badge-mine  { background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.12); color:rgba(255,255,255,.7); }
 .sgv3-mcard-actions{ display:flex; gap:8px; flex-wrap:wrap; flex-shrink:0; }
 
@@ -266,11 +266,11 @@ iframe[src*="kgi.kaspad.net"]{
 
 /* Pressable card ring */
 .sgv3-pressable{ cursor:pointer; }
-.sgv3-pressable:focus-visible{ outline:2px solid var(--card-accent,#49e8c2); outline-offset:2px; }
+.sgv3-pressable:focus-visible{ outline:2px solid var(--card-accent,#ffffff); outline-offset:2px; }
 
 /* ═══════════ Per-game accent theming ═══════════════════════════════════════ */
 .sgv2-card{
-  --card-accent: #49e8c2;
+  --card-accent: #ffffff;
   transition: border-color .2s ease, transform .25s ease, box-shadow .25s ease !important;
 }
 .sgv2-card:hover{
@@ -317,12 +317,12 @@ iframe[src*="kgi.kaspad.net"]{
 #sgGamePicker .sg-gbtn.act[data-game="blackjack"]{ border-color:#d4af37 !important; background:rgba(212,175,55,.08) !important; box-shadow:0 0 20px rgba(212,175,55,.2),inset 0 0 20px rgba(212,175,55,.04) !important; }
 
 /* Panel --neon override per selected game */
-#sgv3-panel[data-game="chess"]    { --neon:#4a9eff; }
-#sgv3-panel[data-game="connect4"] { --neon:#2ecc71; }
-#sgv3-panel[data-game="checkers"] { --neon:#e67e22; }
-#sgv3-panel[data-game="tictactoe"]{ --neon:#9b59b6; }
-#sgv3-panel[data-game="poker"]    { --neon:#e74c3c; }
-#sgv3-panel[data-game="blackjack"]{ --neon:#d4af37; }
+#sgv3-panel[data-game="chess"]    { --neon:#ffffff; }
+#sgv3-panel[data-game="connect4"] { --neon:#ffffff; }
+#sgv3-panel[data-game="checkers"] { --neon:#ffffff; }
+#sgv3-panel[data-game="tictactoe"]{ --neon:#ffffff; }
+#sgv3-panel[data-game="poker"]    { --neon:#ffffff; }
+#sgv3-panel[data-game="blackjack"]{ --neon:#ffffff; }
 
 /* Suppress empty sg-ico spans — no stray fallback glyphs */
 .sgv2-gpick button .sg-ico:empty{ display:none; }

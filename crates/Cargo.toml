@@ -3,7 +3,8 @@ resolver = "2"
 members = [
     "htp-server",
     "htp-games",
-    "htp-kaspa-rpc",
+    "htp-kaspa-rpc,
+    htp-settler",
 ]
 
 [workspace.package]

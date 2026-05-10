@@ -6,19 +6,19 @@
  */
 
 :root {
-  --htp-btn-bg:        #0a1f1c;
-  --htp-btn-bg-hover:  #0e2c28;
-  --htp-btn-border:    rgba(73,232,194,0.32);
-  --htp-btn-border-h:  rgba(73,232,194,0.62);
-  --htp-btn-text:      #d8fff5;
-  --htp-btn-accent:    #49e8c2;
-  --htp-btn-accent-d:  #26c9a0;
-  --htp-btn-gold:      #f5c46c;
+  --htp-btn-bg:        rgba(255,255,255,0.06);
+  --htp-btn-bg-hover:  rgba(255,255,255,0.10);
+  --htp-btn-border:    rgba(255,255,255,0.10);
+  --htp-btn-border-h:  rgba(255,255,255,0.18);
+  --htp-btn-text:      #fff;
+  --htp-btn-accent:    #fff;
+  --htp-btn-accent-d:  #ccc;
+  --htp-btn-gold:      #fff;
   --htp-btn-danger:    #ef4444;
   --htp-btn-danger-d:  #b91c1c;
-  --htp-btn-shadow:    0 6px 18px rgba(0,0,0,0.45), 0 0 0 1px rgba(73,232,194,0.06);
-  --htp-btn-glow:      0 0 0 1px rgba(73,232,194,0.55), 0 0 22px rgba(73,232,194,0.18), 0 8px 26px rgba(0,0,0,0.55);
-  --htp-btn-focus:     0 0 0 2px #000, 0 0 0 4px rgba(73,232,194,0.85);
+  --htp-btn-shadow:    none;
+  --htp-btn-glow:      none;
+  --htp-btn-focus:     0 0 0 2px rgba(255,255,255,0.2);
   --htp-btn-radius:    10px;
   --htp-btn-h:         42px;
   --htp-btn-h-sm:      32px;
@@ -89,7 +89,7 @@ button.btn-c::before,
   position: absolute;
   inset: 0 0 auto 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(73,232,194,0.55) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.10) 50%, transparent 100%);
   pointer-events: none;
   opacity: 0.7;
 }
@@ -130,7 +130,7 @@ button.btn-c:active:not(:disabled),
 .join-btn:active:not(:disabled),
 .create-btn:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 0 1px rgba(73,232,194,0.45);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.10);
 }
 
 /* Keyboard focus, visible only when focused via keyboard. */
@@ -171,7 +171,7 @@ button.btn-c:disabled,
   filter: grayscale(0.35);
   transform: none;
   background:
-    repeating-linear-gradient(135deg, rgba(73,232,194,0.04) 0 6px, rgba(73,232,194,0) 6px 12px),
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.10) 0 6px, rgba(255,255,255,0.10) 6px 12px),
     linear-gradient(180deg, #0a141a 0%, #06090c 100%);
   color: rgba(216,255,245,0.55);
   border-color: rgba(255,255,255,0.08);
@@ -197,7 +197,7 @@ button.btn-c:disabled,
   background: linear-gradient(180deg, #6ff5d6 0%, var(--htp-btn-accent) 100%);
   color: #03100d;
   border-color: var(--htp-btn-accent);
-  box-shadow: 0 0 0 1px var(--htp-btn-accent), 0 0 28px rgba(73,232,194,0.45), 0 10px 28px rgba(0,0,0,0.55);
+  box-shadow: 0 0 0 1px var(--htp-btn-accent), 0 0 28px rgba(255,255,255,0.10), 0 10px 28px rgba(0,0,0,0.55);
 }
 
 /* Secondary / ghost / outline. */
@@ -215,7 +215,7 @@ button.btn-c:disabled,
 .btn-ghost:hover:not(:disabled),
 .cta2:hover:not(:disabled),
 .htp-btn-ghost:hover:not(:disabled) {
-  background: rgba(73,232,194,0.06);
+  background: rgba(255,255,255,0.10);
   border-color: var(--htp-btn-border-h);
   color: var(--htp-btn-accent);
 }
@@ -281,10 +281,10 @@ button.btn-c:disabled,
   text-transform: uppercase;
 }
 .risk-btn.active {
-  background: linear-gradient(180deg, rgba(73,232,194,0.18) 0%, rgba(38,201,160,0.10) 100%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(38,201,160,0.10) 100%);
   border-color: var(--htp-btn-accent);
   color: var(--htp-btn-accent);
-  box-shadow: 0 0 0 1px var(--htp-btn-accent), 0 0 18px rgba(73,232,194,0.3);
+  box-shadow: 0 0 0 1px var(--htp-btn-accent), 0 0 18px rgba(255,255,255,0.10);
 }
 
 /* Skill v3 buttons. */
@@ -296,7 +296,7 @@ button.btn-c:disabled,
 }
 .sgv3-tab[aria-selected="true"],
 .sgv3-tab.active {
-  background: linear-gradient(180deg, rgba(73,232,194,0.18) 0%, rgba(38,201,160,0.08) 100%) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(38,201,160,0.08) 100%) !important;
   color: var(--htp-btn-accent) !important;
   border-color: var(--htp-btn-accent) !important;
 }
@@ -346,12 +346,12 @@ button.btn-c:disabled,
   transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 .chip:hover, .market-chip:hover {
-  background: rgba(73,232,194,0.10);
+  background: rgba(255,255,255,0.10);
   color: var(--htp-btn-accent);
-  border-color: rgba(73,232,194,0.4);
+  border-color: rgba(255,255,255,0.10);
 }
 .chip.act, .chip.chip-a, .market-chip.act {
-  background: rgba(73,232,194,0.16);
+  background: rgba(255,255,255,0.10);
   color: var(--htp-btn-accent);
   border-color: var(--htp-btn-accent);
 }
