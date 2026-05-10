@@ -6,19 +6,19 @@
  */
 
 :root {
-  --htp-btn-bg:        #0a1f1c;
-  --htp-btn-bg-hover:  #0e2c28;
-  --htp-btn-border:    rgba(73,232,194,0.32);
-  --htp-btn-border-h:  rgba(73,232,194,0.62);
-  --htp-btn-text:      #d8fff5;
-  --htp-btn-accent:    #49e8c2;
-  --htp-btn-accent-d:  #26c9a0;
-  --htp-btn-gold:      #f5c46c;
+  --htp-btn-bg:        rgba(255,255,255,0.06);
+  --htp-btn-bg-hover:  rgba(255,255,255,0.10);
+  --htp-btn-border:    rgba(255,255,255,0.10);
+  --htp-btn-border-h:  rgba(255,255,255,0.18);
+  --htp-btn-text:      #fff;
+  --htp-btn-accent:    #fff;
+  --htp-btn-accent-d:  #ccc;
+  --htp-btn-gold:      #fff;
   --htp-btn-danger:    #ef4444;
   --htp-btn-danger-d:  #b91c1c;
-  --htp-btn-shadow:    0 6px 18px rgba(0,0,0,0.45), 0 0 0 1px rgba(73,232,194,0.06);
-  --htp-btn-glow:      0 0 0 1px rgba(73,232,194,0.55), 0 0 22px rgba(73,232,194,0.18), 0 8px 26px rgba(0,0,0,0.55);
-  --htp-btn-focus:     0 0 0 2px #000, 0 0 0 4px rgba(73,232,194,0.85);
+  --htp-btn-shadow:    none;
+  --htp-btn-glow:      none;
+  --htp-btn-focus:     0 0 0 2px rgba(255,255,255,0.2);
   --htp-btn-radius:    10px;
   --htp-btn-h:         42px;
   --htp-btn-h-sm:      32px;
