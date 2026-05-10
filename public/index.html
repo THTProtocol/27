@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0">
 <meta name="version" content="2026.04.28.v4">
 <title>High Table Protocol — Skill Games &amp; Prediction Markets on Kaspa</title>
-    <link rel="stylesheet" href="htp-theme.css?v=21">
+    <link rel="stylesheet" href="htp-theme.css">
 <script>
   // Early global network resolver. Prevents ReferenceError for `net` in nested handlers.
   (function(){
@@ -4000,8 +4000,8 @@ html,body{background:#010806!important;}
 /* Section headers */
 .sh{background:transparent!important;}
 </style>
-<link rel="stylesheet" href="htp-skill-v3.css?v=21">
-<link rel="stylesheet" href="htp-buttons-v2.css?v=21">
+<link rel="stylesheet" href="htp-skill-v3.css">
+<link rel="stylesheet" href="htp-buttons-v2.css">
 <style id="htp-mob-responsive">
 @media(max-width:768px){
   .hdr{padding:10px 14px!important;}
@@ -6597,7 +6597,7 @@ event MyMarket {
   <script src="htp-events-v3.js"></script>
   
   <!-- HTP Core -->
-  <script src="htp-router.js?v=21"></script>
+  <script src="htp-router.js?v=25"></script>
   <script src="htp-init.js"></script>
   <script src="chess.min.js"></script>
   
@@ -15089,7 +15089,7 @@ function showGameOverOverlay(title, amountText, color, match) {
 
     var subLabel = document.createElement('div');
     subLabel.id = 'maximizerSubLabel';
-    subLabel.style.css?v=21Text = 'font-size:12px;color:var(--muted);margin-top:2px;';
+    subLabel.style.cssText = 'font-size:12px;color:var(--muted);margin-top:2px;';
     subLabel.textContent = 'Full amount to pool. Higher odds, no protection.';
 
     labelWrap.appendChild(mainLabel);
@@ -16630,7 +16630,7 @@ else setTimeout(initV69,300);
 
     var ov = document.createElement('div');
     ov.id = 'gameOverOverlay';
-    ov.style.css?v=21Text = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease;';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease;';
 
     var matchInfo = match ? (match.game + ' \u00B7 ' + match.timeControl + ' \u00B7 ' + match.stake + ' KAS') : '';
 
@@ -18406,7 +18406,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
   /* ── Bond Oracle tab ─────────────────────────────────────────── */
   function renderBondTab(parent) {
     var desc = document.createElement('p');
-    desc.style.css?v=21Text = 'color:var(--muted);font-size:14px;line-height:1.6;margin:0 0 20px;';
+    desc.style.cssText = 'color:var(--muted);font-size:14px;line-height:1.6;margin:0 0 20px;';
     desc.textContent = 'Human-verified resolution. Submit the winning outcome by posting a KAS bond. If unchallenged during the counter-bond period, the market resolves. Others can challenge by posting a counter-bond. The side with more total bonded KAS wins. Losers\' bonds are slashed and distributed to truth-tellers proportional to their bond contribution.';
     parent.appendChild(desc);
 
@@ -19255,7 +19255,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
 
       var mRight = document.createElement('div');
       var mResult = (m.result || '--').toUpperCase();
-      mRight.style.css?v=21Text = 'font-weight:700;color:' + resultColor(m.result) + ';';
+      mRight.style.cssText = 'font-weight:700;color:' + resultColor(m.result) + ';';
       mRight.textContent = mResult + ' | ' + (parseFloat(m.netPLKAS) >= 0 ? '+' : '') + (parseFloat(m.netPLKAS) || 0).toFixed(2) + ' KAS';
       mRow.appendChild(mRight);
 
@@ -19769,7 +19769,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
 
     var btn = document.createElement('button');
     btn.textContent = 'Unlock';
-    btn.style.css?v=21Text = 'background:linear-gradient(135deg,#49e8c2,#00cc82);color:#030816;font-weight:600;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;';
+    btn.style.cssText = 'background:linear-gradient(135deg,#49e8c2,#00cc82);color:#030816;font-weight:600;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;';
 
     btn.addEventListener('click', function() {
       var words = input.value.trim();
@@ -19979,7 +19979,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
 
     var dcBtn = document.createElement('button');
     dcBtn.textContent = 'Disconnect';
-    dcBtn.style.css?v=21Text = 'background:#ff4444;color:white;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:600;';
+    dcBtn.style.cssText = 'background:#ff4444;color:white;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:600;';
     dcBtn.addEventListener('click', function() {
       if (typeof window.disconnectWallet === 'function') {
         window.disconnectWallet();
@@ -22032,7 +22032,7 @@ document.querySelectorAll('button').forEach(function(b){
     if (document.getElementById('htpGlowDefs')) return;
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.id = 'htpGlowDefs';
-    svg.style.css?v=21Text = 'position:absolute;width:0;height:0;overflow:hidden;';
+    svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;';
     svg.innerHTML = `<defs>
       <filter id="kaspaGlow" x="-40%" y="-40%" width="180%" height="180%">
         <feGaussianBlur stdDeviation="2.5" result="blur1"/>
