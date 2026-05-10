@@ -26,7 +26,7 @@
   min-width:10px !important;
   min-height:10px !important;
   border-radius:50% !important;
-  background:#49e8c2 !important;
+  background:#fff !important;
   box-shadow:0 0 8px rgba(73,232,194,.65) !important;
   flex-shrink:0 !important;
   vertical-align:middle !important;
@@ -51,7 +51,7 @@ iframe[src*="kgi.kaspad.net"]{
 
 /* ---------- Skill Games V3 panel ---------- */
 #sgv3-panel{
-  --neon: #49e8c2;
+  --neon: #fff;
   --neon-dim: rgba(73,232,194,.35);
   --gold: #d4af37;
   --ink: #050a0e;
@@ -266,11 +266,11 @@ iframe[src*="kgi.kaspad.net"]{
 
 /* Pressable card ring */
 .sgv3-pressable{ cursor:pointer; }
-.sgv3-pressable:focus-visible{ outline:2px solid var(--card-accent,#49e8c2); outline-offset:2px; }
+.sgv3-pressable:focus-visible{ outline:2px solid var(--card-accent,#fff); outline-offset:2px; }
 
 /* ═══════════ Per-game accent theming ═══════════════════════════════════════ */
 .sgv2-card{
-  --card-accent: #49e8c2;
+  --card-accent: #fff;
   transition: border-color .2s ease, transform .25s ease, box-shadow .25s ease !important;
 }
 .sgv2-card:hover{
