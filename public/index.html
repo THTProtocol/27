@@ -6597,7 +6597,7 @@ event MyMarket {
   <script src="htp-events-v3.js"></script>
   
   <!-- HTP Core -->
-  <script src="htp-router.js?v=26"></script>
+  <script src="htp-router.js?v=27"></script>
   <script src="htp-init.js"></script>
   <script src="chess.min.js"></script>
   
@@ -20754,7 +20754,7 @@ function _patchGo(){
         _b(v);
         _VIEWS.forEach(function(n){document.body.classList.remove('view-'+n);});
         document.body.classList.add('view-'+(v||'overview'));
-        if(v==='oracle')   setTimeout(_refreshOracle,120);
+        if(v==='oracle')   { if(window.screenOracle) window.screenOracle(); else setTimeout(_refreshOracle,120); }
         if(v==='portfolio')setTimeout(_refreshPortfolio,120);
         if(v==='kaspa')    setTimeout(_initMinerUI,200);
     };
