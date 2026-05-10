@@ -56,3 +56,16 @@
 html{scroll-behavior:smooth}
 ::selection{background:rgba(255,255,255,0.12);color:#fff}
 contentinfo,footer{color:rgba(255,255,255,0.25)!important}
+
+/* KILL golden/teal glow on all active/selected states */
+.sgv3-tab.act,.sgv3-tab.active,.sgv3-tab[aria-selected=true],.sgv3-tab[aria-selected="true"],
+.sgv3-btn.act,.sgv3-btn.active,
+.risk-btn.active,.mkt-cat.act,
+.chip.act,.chip.chip-a,.market-chip.act{
+  background:rgba(255,255,255,0.08)!important;
+  color:#fff!important;
+  border-color:rgba(255,255,255,0.12)!important;
+  box-shadow:none!important;
+}
+.sgv3-tab.act::after,.sgv3-tab.active::after,.sgv3-tab[aria-selected=true]::after{display:none!important}
+:root{--neon:#fff!important;--htp-gold:#fff!important;--htp-btn-accent:#fff!important;--htp-btn-accent-d:#fff!important;--htp-btn-gold:#fff!important}
