@@ -79,3 +79,6 @@ tmp/
 Thumbs.db
 dist/
 build/
+
+serviceAccountKey.json
+hightable420-firebase-adminsdk-fbsvc-405ca4290a.json
