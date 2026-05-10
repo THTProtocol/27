@@ -42,7 +42,7 @@
   if (W.__htpAutoPayoutInstalled) return;
   W.__htpAutoPayoutInstalled = true;
 
-  const LOG  = (...a) => console.log('%c[HTP AutoPayout v4]', 'color:#49e8c2;font-weight:bold', ...a);
+  const LOG  = (...a) => console.log('%c[HTP AutoPayout v4]', 'color:#ffffff;font-weight:bold', ...a);
   const WARN = (...a) => console.warn('[HTP AutoPayout v4]', ...a);
   const ERR  = (...a) => console.error('[HTP AutoPayout v4]', ...a);
 
@@ -281,14 +281,14 @@
       @keyframes htpSlideUp{from{transform:translateY(28px);opacity:0}to{transform:translateY(0);opacity:1}}
       .htp-go-card {
         background:linear-gradient(145deg,#0f172a,#1e293b);
-        border:1px solid rgba(73,232,194,.2);border-radius:20px;
+        border:1px solid rgba(255,255,255,.2);border-radius:20px;
         padding:36px 28px;max-width:400px;width:92%;text-align:center;
         animation:htpSlideUp .3s ease;font-family:'Inter',sans-serif;color:#e2e8f0;
-        box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 40px rgba(73,232,194,.08);
+        box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 40px rgba(255,255,255,.08);
       }
       .htp-go-icon { font-size:64px;margin-bottom:12px;display:block;filter:drop-shadow(0 4px 8px rgba(0,0,0,.4)); }
       .htp-go-title { font-size:28px;font-weight:900;letter-spacing:-.03em;margin-bottom:6px; }
-      .htp-go-title.win  { background:linear-gradient(135deg,#49e8c2,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent; }
+      .htp-go-title.win  { background:linear-gradient(135deg,#ffffff,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent; }
       .htp-go-title.lose { color:#ef4444; }
       .htp-go-title.draw { color:#f59e0b; }
       .htp-go-reason { font-size:13px;color:#64748b;margin-bottom:20px; }
@@ -297,7 +297,7 @@
         border:1px solid rgba(255,255,255,.06);
       }
       .htp-go-payout-amount { font-size:32px;font-weight:800;margin-bottom:4px; }
-      .htp-go-payout-amount.win  { color:#49e8c2; }
+      .htp-go-payout-amount.win  { color:#ffffff; }
       .htp-go-payout-amount.draw { color:#f59e0b; }
       .htp-go-payout-amount.lose { color:#475569; }
       .htp-go-payout-row {
@@ -308,7 +308,7 @@
       .htp-go-payout-row:last-child{border:none;}
       .htp-go-payout-row .lbl{color:#64748b;}
       .htp-go-payout-row .val{font-weight:600;}
-      .htp-go-payout-row .val.green{color:#49e8c2;}
+      .htp-go-payout-row .val.green{color:#ffffff;}
       .htp-go-payout-row .val.red{color:#ef4444;}
       .htp-go-settle-status { font-size:12px;color:#f59e0b;margin-top:10px;min-height:18px; }
       .htp-go-tx { font-size:11px;color:#475569;margin-top:8px;word-break:break-all; }
@@ -321,7 +321,7 @@
         transition:opacity .2s,transform .1s;
       }
       .htp-go-btn:active{transform:scale(.96);}
-      .htp-go-btn.primary{background:linear-gradient(135deg,#49e8c2,#3b82f6);color:#0f172a;}
+      .htp-go-btn.primary{background:linear-gradient(135deg,#ffffff,#3b82f6);color:#0f172a;}
       .htp-go-btn.secondary{background:#1e293b;color:#94a3b8;border:1px solid rgba(255,255,255,.08);}
       .htp-go-btn:hover{opacity:.88;}
     `;
@@ -402,7 +402,7 @@
     const explorer = (W.HTP_NETWORK === 'mainnet')
       ? 'https://explorer.kaspa.org/txs/'
       : 'https://explorer-tn12.kaspa.org/txs/';
-    if (statusEl) { statusEl.textContent = 'Settled on-chain'; statusEl.style.color = '#49e8c2'; }
+    if (statusEl) { statusEl.textContent = 'Settled on-chain'; statusEl.style.color = '#ffffff'; }
     if (txEl) txEl.innerHTML = `TX: <a href="${explorer}${txId}" target="_blank">${String(txId).slice(0,20)}…</a>`;
   }
 
@@ -498,7 +498,7 @@
         width:100%;padding:8px 2px 0;
       }
       .htp-chess-status-txt{font-size:12px;color:#8a8a8a;}
-      .htp-chess-status-txt.your-turn{color:#49e8c2;font-weight:700;}
+      .htp-chess-status-txt.your-turn{color:#ffffff;font-weight:700;}
       .htp-chess-btn {
         padding:6px 16px;border-radius:6px;border:none;cursor:pointer;
         font-weight:700;font-size:12px;transition:opacity .2s;
@@ -793,9 +793,9 @@
       .htp-c4-player .disc.yellow { background:radial-gradient(circle at 35% 35%,#fde68a,#f59e0b); }
       .htp-c4-player .pname { font-size:11px;color:#94a3b8;font-weight:600; }
       .htp-c4-clock-v { font-family:monospace;font-size:20px;font-weight:700;padding:4px 12px;border-radius:6px;transition:all .2s; }
-      .htp-c4-clock-v.active   { background:#374151;color:#e2e8f0;box-shadow:0 0 12px rgba(73,232,194,.3); }
+      .htp-c4-clock-v.active   { background:#374151;color:#e2e8f0;box-shadow:0 0 12px rgba(255,255,255,.3); }
       .htp-c4-clock-v.inactive { background:#1e293b;color:#475569; }
-      .htp-c4-turn { font-size:13px;font-weight:700;color:#49e8c2;text-align:center;min-height:18px; }
+      .htp-c4-turn { font-size:13px;font-weight:700;color:#ffffff;text-align:center;min-height:18px; }
       .htp-c4-board-wrap { background:linear-gradient(145deg,#1d4ed8,#1e40af);border-radius:16px;padding:10px;box-shadow:0 12px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.1); }
       .htp-c4-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:6px;cursor:pointer; }
       .htp-c4-cell { width:min(56px,calc((100vw - 80px)/7));height:min(56px,calc((100vw - 80px)/7));border-radius:50%;background:rgba(0,0,0,.6);position:relative;overflow:hidden;transition:background .1s; }
@@ -883,7 +883,7 @@
     if (!lbl || !W.C4) return;
     if (W.C4.gameOver) { lbl.textContent='Game over'; return; }
     lbl.textContent = W.C4.turn===W.C4.mySide?'● Your turn':"○ Opponent's turn";
-    lbl.style.color = W.C4.turn===W.C4.mySide?'#49e8c2':'#64748b';
+    lbl.style.color = W.C4.turn===W.C4.mySide?'#ffffff':'#64748b';
   }
 
   function updateC4ClockDisplay() {
@@ -1055,7 +1055,7 @@
     updateCkClockDisplay();updateCkTurnLabel();
   }
 
-  function updateCkTurnLabel(){const lbl=document.getElementById('htpCkTurnLbl');if(!lbl||!W.CK)return;if(W.CK.gameOver){lbl.textContent='Game over';return;}const myTurn=W.CK.turn===W.CK.mySide;lbl.textContent=myTurn?'● Your turn':"○ Opponent's turn";lbl.style.color=myTurn?'#49e8c2':'#64748b';}
+  function updateCkTurnLabel(){const lbl=document.getElementById('htpCkTurnLbl');if(!lbl||!W.CK)return;if(W.CK.gameOver){lbl.textContent='Game over';return;}const myTurn=W.CK.turn===W.CK.mySide;lbl.textContent=myTurn?'● Your turn':"○ Opponent's turn";lbl.style.color=myTurn?'#ffffff':'#64748b';}
   function updateCkClockDisplay(){if(!W.CK||!W.CK._clk)return;const clk=W.CK._clk,rEl=document.getElementById('htpCkClockR'),bEl=document.getElementById('htpCkClockB');if(rEl){rEl.textContent=fmtSec(Math.floor(clk.ms[0]/1000));rEl.className='htp-ck-clock '+(clk.active===1?'active':'inactive');}if(bEl){bEl.textContent=fmtSec(Math.floor(clk.ms[1]/1000));bEl.className='htp-ck-clock '+(clk.active===3?'active':'inactive');}}
 
   W._htpCkClick=function(r,c){
@@ -1145,7 +1145,7 @@
       +'</div>'
       +'<div id="tttStatusBar" style="font-size:13px;color:#94a3b8;margin-bottom:8px;">'+(mySide===1?'Your turn':'Opponent\'s turn')+'</div>'
       +'<div style="display:flex;justify-content:center;gap:24px;margin-bottom:12px;">'
-      +'<span style="font-family:monospace;font-size:14px;font-weight:700;color:#49e8c2;background:#1e293b;padding:4px 12px;border-radius:6px;" id="tttClk1">'+fmtSec(W.TTT.timeSec)+'</span>'
+      +'<span style="font-family:monospace;font-size:14px;font-weight:700;color:#ffffff;background:#1e293b;padding:4px 12px;border-radius:6px;" id="tttClk1">'+fmtSec(W.TTT.timeSec)+'</span>'
       +'<span style="color:#475569;font-weight:900;">vs</span>'
       +'<span style="font-family:monospace;font-size:14px;font-weight:700;color:#f59e0b;background:#1e293b;padding:4px 12px;border-radius:6px;" id="tttClk2">'+fmtSec(W.TTT.timeSec)+'</span>'
       +'</div>'
@@ -1178,10 +1178,10 @@
     var h='';
     for(var i=0;i<9;i++){
       var bg='#0f172a';var col='#334155';var txt='';var cursor='default';
-      if(b[i]===1){txt='X';col='#49e8c2';bg='rgba(73,232,194,0.08)';}
+      if(b[i]===1){txt='X';col='#ffffff';bg='rgba(255,255,255,0.08)';}
       else if(b[i]===2){txt='O';col='rgba(255,255,255,0.85)';bg='rgba(255,255,255,0.04)';}
-      else if(!W.TTT.gameOver&&turn===mySide){cursor='pointer';bg='rgba(73,232,194,0.03)';}
-      h+='<div onclick="window.tttCellClick('+i+')" style="width:90px;height:90px;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:'+col+';background:'+bg+';border:1px solid rgba(73,232,194,0.12);border-radius:8px;cursor:'+cursor+';">'+txt+'</div>';
+      else if(!W.TTT.gameOver&&turn===mySide){cursor='pointer';bg='rgba(255,255,255,0.03)';}
+      h+='<div onclick="window.tttCellClick('+i+')" style="width:90px;height:90px;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:'+col+';background:'+bg+';border:1px solid rgba(255,255,255,0.12);border-radius:8px;cursor:'+cursor+';">'+txt+'</div>';
     }
     el.innerHTML=h;
     var sb=document.getElementById('tttStatusBar');

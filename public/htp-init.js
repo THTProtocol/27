@@ -162,13 +162,13 @@ window.addEventListener('unhandledrejection',function(e){var m=e.reason&&(e.reas
     var s = document.createElement('style');
     s.id = 'htp-board-css';
     s.textContent = [
-      '.htp-board{display:grid;border:2px solid rgba(73,232,194,.25);border-radius:4px;overflow:hidden;}',
+      '.htp-board{display:grid;border:2px solid rgba(255,255,255,.25);border-radius:4px;overflow:hidden;}',
       '.htp-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:clamp(14px,2.5vw,26px);cursor:pointer;transition:background .12s;}',
       '.htp-cell.light{background:#2a3a2a;}',
       '.htp-cell.dark{background:#1a2a1a;}',
-      '.htp-cell.selected{background:rgba(73,232,194,.35)!important;}',
-      '.htp-cell.legal{background:rgba(73,232,194,.18)!important;}',
-      '.htp-cell.last-move{background:rgba(73,232,194,.22)!important;}',
+      '.htp-cell.selected{background:rgba(255,255,255,.35)!important;}',
+      '.htp-cell.legal{background:rgba(255,255,255,.18)!important;}',
+      '.htp-cell.last-move{background:rgba(255,255,255,.22)!important;}',
       '.htp-piece{pointer-events:none;line-height:1;}',
     ].join('');
     document.head.appendChild(s);

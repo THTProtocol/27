@@ -101,11 +101,11 @@
         let coordHtml = '';
         // File label along bottom row
         if (ri === 7) {
-          coordHtml += `<span style="position:absolute;bottom:2px;right:3px;font-size:9px;font-weight:700;color:rgba(79,152,163,0.6);pointer-events:none">${file}</span>`;
+          coordHtml += `<span style="position:absolute;bottom:2px;right:3px;font-size:9px;font-weight:700;color:rgba(255,255,255,0.6);pointer-events:none">${file}</span>`;
         }
         // Rank label along left column
         if (fi === 0) {
-          coordHtml += `<span style="position:absolute;top:2px;left:3px;font-size:9px;font-weight:700;color:rgba(79,152,163,0.6);pointer-events:none">${rank}</span>`;
+          coordHtml += `<span style="position:absolute;top:2px;left:3px;font-size:9px;font-weight:700;color:rgba(255,255,255,0.6);pointer-events:none">${rank}</span>`;
         }
 
         // Piece image
@@ -119,10 +119,10 @@
         let legalHtml = '';
         if (isLegal && !isCapture) {
           // Small teal circle for empty legal move square
-          legalHtml = `<div class="legal-move" style="position:absolute;width:12px;height:12px;border-radius:50%;background:rgba(79,152,163,0.6);pointer-events:none;z-index:3"></div>`;
+          legalHtml = `<div class="legal-move" style="position:absolute;width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.6);pointer-events:none;z-index:3"></div>`;
         } else if (isCapture) {
           // Teal ring for capture square
-          legalHtml = `<div class="legal-capture" style="position:absolute;width:90%;height:90%;border-radius:50%;border:3px solid rgba(79,152,163,0.5);pointer-events:none;z-index:3"></div>`;
+          legalHtml = `<div class="legal-capture" style="position:absolute;width:90%;height:90%;border-radius:50%;border:3px solid rgba(255,255,255,0.5);pointer-events:none;z-index:3"></div>`;
         }
 
         html += `<div class="chess-square ${lightClass}" data-sq="${sq}" style="background:${bgColor};position:relative" onclick="window.htpChessClick && window.htpChessClick('${sq}')">
@@ -327,17 +327,17 @@
     overlay.innerHTML = `
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.7)">
         <div style="background:var(--surface-2);padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
-          <div style="width:40px;height:40px;border-radius:9px;background:rgba(79,152,163,0.08);border:1.5px solid rgba(79,152,163,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${icon}</div>
+          <div style="width:40px;height:40px;border-radius:9px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${icon}</div>
           <div>
             <div style="font-size:15px;font-weight:600;color:var(--text)">${label} &middot; ${timeControl}</div>
             <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${series}</div>
           </div>
-          <div style="margin-left:auto;background:rgba(79,152,163,0.08);border:1px solid rgba(79,152,163,0.22);color:var(--primary);font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px">ESCROW LOCKED</div>
+          <div style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.22);color:var(--primary);font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px">ESCROW LOCKED</div>
         </div>
         <div style="padding:22px;display:flex;flex-direction:column;gap:18px">
           <div style="display:grid;grid-template-columns:1fr 36px 1fr;align-items:center;gap:8px">
-            <div style="background:var(--surface-2);border:1px solid rgba(79,152,163,0.25);border-radius:10px;padding:14px 10px;text-align:center">
-              <div style="width:36px;height:36px;border-radius:50%;background:rgba(79,152,163,0.12);border:1.5px solid rgba(79,152,163,0.35);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:16px">&#129489;</div>
+            <div style="background:var(--surface-2);border:1px solid rgba(255,255,255,0.25);border-radius:10px;padding:14px 10px;text-align:center">
+              <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.35);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:16px">&#129489;</div>
               <div style="font-size:12px;font-weight:600;color:var(--text)">You</div>
               <div style="font-size:9px;color:var(--text-muted);font-family:monospace;margin-top:3px">${shortAddr}</div>
             </div>
@@ -376,7 +376,7 @@
                 <div style="font-size:20px;font-weight:700;color:var(--primary);font-family:monospace">${stakeKas} KAS</div>
                 <div style="font-size:11px;color:var(--text-muted);margin-top:1px">Winner takes all</div>
               </div>
-              <div style="font-size:11px;color:var(--primary);background:rgba(79,152,163,0.08);padding:5px 12px;border-radius:20px;border:1px solid rgba(79,152,163,0.2)">On-chain</div>
+              <div style="font-size:11px;color:var(--primary);background:rgba(255,255,255,0.08);padding:5px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.2)">On-chain</div>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px">
@@ -426,7 +426,7 @@
         const nm = document.getElementById('htp-wr-opp-name');
         if (sp) sp.style.borderTopColor = '#4ade80';
         if (st) { st.textContent = 'Opponent joined! Starting game...'; st.style.color = '#4ade80'; }
-        if (av) { av.textContent = '\u{1F9D1}'; av.style.color = 'var(--text)'; av.style.animation = 'htpOppIn .4s ease'; av.style.background = 'rgba(79,152,163,0.08)'; av.style.borderColor = 'rgba(79,152,163,0.35)'; }
+        if (av) { av.textContent = '\u{1F9D1}'; av.style.color = 'var(--text)'; av.style.animation = 'htpOppIn .4s ease'; av.style.background = 'rgba(255,255,255,0.08)'; av.style.borderColor = 'rgba(255,255,255,0.35)'; }
         if (nm) { nm.textContent = addr ? addr.slice(0, 10) + '...' : 'Opponent'; nm.style.color = 'var(--text)'; }
         setTimeout(() => overlay.remove(), 1800);
       }
@@ -450,7 +450,7 @@
     overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(3px)';
 
     const box = document.createElement('div');
-    box.style.cssText = 'background:var(--surface);border:1px solid rgba(79,152,163,0.3);border-radius:14px;padding:28px;display:flex;gap:16px;flex-direction:column;align-items:center;box-shadow:0 20px 60px rgba(0,0,0,0.8)';
+    box.style.cssText = 'background:var(--surface);border:1px solid rgba(255,255,255,0.3);border-radius:14px;padding:28px;display:flex;gap:16px;flex-direction:column;align-items:center;box-shadow:0 20px 60px rgba(0,0,0,0.8)';
     box.innerHTML = '<div style="color:var(--primary);font-size:13px;font-weight:600;letter-spacing:0.06em">PROMOTE PAWN</div>';
 
     const row = document.createElement('div');
@@ -470,7 +470,7 @@
       const url = pieceSvgUrl(color, p.name.toUpperCase());
       btn.innerHTML = `<img src="${url}" alt="${p.label}" style="width:42px;height:42px">`;
       btn.style.cssText = 'background:var(--surface-2);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;padding:10px 14px;transition:border-color .15s,background .15s';
-      btn.addEventListener('mouseenter', () => { btn.style.borderColor = 'rgba(79,152,163,0.5)'; btn.style.background = 'rgba(79,152,163,0.06)'; });
+      btn.addEventListener('mouseenter', () => { btn.style.borderColor = 'rgba(255,255,255,0.5)'; btn.style.background = 'rgba(255,255,255,0.06)'; });
       btn.addEventListener('mouseleave', () => { btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--surface-2)'; });
       btn.addEventListener('click', () => choose(p.name));
       row.appendChild(btn);

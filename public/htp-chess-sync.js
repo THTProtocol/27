@@ -216,7 +216,7 @@
           '[data-clock="' + c + '"], .clock-' + c + ', #clock-' + c
         );
         els.forEach(function (el) {
-          el.style.color  = isActive ? '#49e8c2' : '#888';
+          el.style.color  = isActive ? '#ffffff' : '#888';
           el.style.fontWeight = isActive ? '700' : '400';
         });
       }.bind(this));

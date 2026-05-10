@@ -16,12 +16,12 @@
   var BLOCK_W = 18;
   var BLOCK_H = 12;
   var BLOCK_R = 3;
-  var PRIMARY = '#49e8c2';
-  var PRIMARY_GLOW = 'rgba(73,232,194,0.6)';
+  var PRIMARY = '#ffffff';
+  var PRIMARY_GLOW = 'rgba(255,255,255,0.6)';
   var BLOCK_FILL = '#0a1a14';
   var BG = '#010806';
-  var LINE_COLOR = 'rgba(73,232,194,0.25)';
-  var LABEL_COLOR = 'rgba(73,232,194,0.45)';
+  var LINE_COLOR = 'rgba(255,255,255,0.25)';
+  var LABEL_COLOR = 'rgba(255,255,255,0.45)';
 
   // ── KASPA BLOCKDAG BACKGROUND ─────────────────────────────────────────
   // Three-layer deep-space DAG:
@@ -293,7 +293,7 @@
         var dx = bx - px;
         var cp = dx * 0.42;
         ctx.globalAlpha = ef * (isHot ? 0.38 : 0.16);
-        ctx.strokeStyle = '#49e8c2';
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = isHot ? 1.1 : 0.65;
         ctx.beginPath();
         ctx.moveTo(px, b.y > p.y ? p.y : p.y);
@@ -321,7 +321,7 @@
         if (isLatest) {
           var pulse = 0.12 + 0.08 * Math.sin(_bgTime * 1.7);
           ctx.globalAlpha = pulse * ef;
-          ctx.fillStyle = 'rgba(73,232,194,0.35)';
+          ctx.fillStyle = 'rgba(255,255,255,0.35)';
           ctx.beginPath();
           ctx.arc(bx, b.y, rr + 8, 0, Math.PI * 2);
           ctx.fill();
@@ -329,14 +329,14 @@
 
         // Filled dot
         ctx.globalAlpha = a * 0.92;
-        ctx.fillStyle = isLatest ? '#49e8c2' : 'rgba(73,232,194,0.82)';
+        ctx.fillStyle = isLatest ? '#ffffff' : 'rgba(255,255,255,0.82)';
         ctx.beginPath();
         ctx.arc(bx, b.y, rr, 0, Math.PI * 2);
         ctx.fill();
 
         // Ring
         ctx.globalAlpha = a * 0.48;
-        ctx.strokeStyle = '#49e8c2';
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.arc(bx, b.y, rr + 2.8, 0, Math.PI * 2);
@@ -345,7 +345,7 @@
         // Hash label on latest real block
         if (isLatest) {
           ctx.globalAlpha = ef * 0.50;
-          ctx.fillStyle = '#49e8c2';
+          ctx.fillStyle = '#ffffff';
           ctx.font = '7px JetBrains Mono, monospace';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'bottom';
@@ -358,7 +358,7 @@
 
         // Draw filled node with rounded rect instead of circle for kgi-like look
         ctx.globalAlpha = a * (b.isChain ? 0.72 : 0.38);
-        ctx.fillStyle = 'rgba(73,232,194,0.18)';
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
         var ns = r * 2;
         ctx.beginPath();
         if (ctx.roundRect) { ctx.roundRect(bx - r, b.y - r, ns, ns, 2); }
@@ -366,7 +366,7 @@
         ctx.fill();
 
         ctx.globalAlpha = a * (b.isChain ? 0.85 : 0.50);
-        ctx.strokeStyle = '#49e8c2';
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = b.isChain ? 1.1 : 0.75;
         ctx.stroke();
       }
@@ -640,7 +640,7 @@
   function showTooltip(px, py, block) {
     removeTooltip();
     _tooltip = document.createElement('div');
-    _tooltip.style.cssText = 'position:fixed;z-index:1000;background:#1a2235;border:1px solid rgba(79,152,163,0.4);color:#e2e8f0;padding:10px 14px;border-radius:8px;font-family:JetBrains Mono,monospace;font-size:12px;line-height:1.6;pointer-events:none;max-width:320px;';
+    _tooltip.style.cssText = 'position:fixed;z-index:1000;background:#1a2235;border:1px solid rgba(255,255,255,0.4);color:#e2e8f0;padding:10px 14px;border-radius:8px;font-family:JetBrains Mono,monospace;font-size:12px;line-height:1.6;pointer-events:none;max-width:320px;';
     _tooltip.style.left = px + 12 + 'px';
     _tooltip.style.top = py + 12 + 'px';
     var ts = block.timestamp ? new Date(block.timestamp * 1000).toLocaleString() : '--';

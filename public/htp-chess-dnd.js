@@ -80,10 +80,10 @@
 
       if (hasPiece) {
         // Teal ring around capture square
-        indicator.style.cssText = 'position:absolute;inset:0;border-radius:50%;border:3px solid rgba(79,152,163,0.5);pointer-events:none;z-index:5';
+        indicator.style.cssText = 'position:absolute;inset:0;border-radius:50%;border:3px solid rgba(255,255,255,0.5);pointer-events:none;z-index:5';
       } else {
         // Small teal circle for empty square
-        indicator.style.cssText = 'position:absolute;width:12px;height:12px;border-radius:50%;background:rgba(79,152,163,0.6);pointer-events:none;z-index:5;top:50%;left:50%;transform:translate(-50%,-50%)';
+        indicator.style.cssText = 'position:absolute;width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.6);pointer-events:none;z-index:5;top:50%;left:50%;transform:translate(-50%,-50%)';
       }
       cell.appendChild(indicator);
     });
