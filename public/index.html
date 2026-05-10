@@ -4021,6 +4021,10 @@ html,body{background:#010806!important;}
   #wlGrid{grid-template-columns:1fr!important;}
 }
 </style>
+<style id="bg-fix">
+html, body { background: #0d0d0d !important; background-color: #0d0d0d !important; }
+#htp-root, #app, #main, #root, .htp-page, .htp-view { background: transparent !important; }
+</style>
 </head>
 <body>
     <div class="shell">
@@ -4137,7 +4141,7 @@ html,body{background:#010806!important;}
                     <button class="nav-btn" data-v="markets" onclick="go('markets')">Events</button>
                     <button class="nav-btn" data-v="create" onclick="go('create')">Create</button>
                     <button class="nav-btn" data-v="skill" onclick="go('skill')">Games</button>
-                    <button class="nav-btn" data-v="oracle-network" onclick="go('oracle-network')" data-nav="true">Oracle Network</button>
+                    <button class="nav-btn" data-v="oracle" onclick="go('oracle')" data-nav="true">Oracle Network</button>
                     <button class="nav-btn" data-v="portfolio" onclick="go('portfolio')">Portfolio</button>
                     <button class="nav-btn" data-v="wallet" onclick="go('wallet')">Wallet</button>
                 </nav>
@@ -6052,7 +6056,7 @@ event MyMarket {
             <div style="font-size:11px;color:var(--dim)">
                 Stake KAS, connect your node, and earn fees by resolving markets on-chain.</div>
         </div>
-        <button onclick="go('oracle-network')" class="cta1" style="font-size:12px;padding:8px 18px">
+        <button onclick="go('oracle')" class="cta1" style="font-size:12px;padding:8px 18px">
             Go to Oracle Dashboard</button>
     </div>
 </div>
@@ -6597,7 +6601,7 @@ event MyMarket {
   <script src="htp-events-v3.js"></script>
   
   <!-- HTP Core -->
-  <script src="htp-router.js?v=31"></script>
+  <script src="htp-router.js?v=33"></script>
   <script src="htp-init.js"></script>
   <script src="chess.min.js"></script>
   

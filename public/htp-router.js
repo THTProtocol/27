@@ -476,7 +476,7 @@
 
 // ORACLE SCREEN FIX -- injected
 window.screenOracle = async function() {
-  var R = getRoot(); if(!R) return;
+  var R = document.getElementById("htp-root"); if(!R) return;
   var G = (window.HTP_CONFIG && window.HTP_CONFIG.API_ORIGIN) || "https://hightable.pro";
   R.innerHTML = "<div class=\"htp-page\"><h1 class=\"htp-page-title\">ORACLE NETWORK</h1><p class=\"htp-page-subtitle\">Bonded oracle nodes resolving outcomes on the Kaspa BlockDAG.</p><div class=\"htp-tab-bar\" id=\"or-tabs\"><button class=\"htp-tab htp-tab-act\" onclick=\"htpOrSwitch(this,'dashboard')\">Dashboard</button><button class=\"htp-tab\" onclick=\"htpOrSwitch(this,'register')\">Register</button><button class=\"htp-tab\" onclick=\"htpOrSwitch(this,'attest')\">Attest</button></div><div id=\"or-content\"><p style=\"color:var(--muted)\">Loading...</p></div></div>";
 
