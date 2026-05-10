@@ -474,10 +474,6 @@
   window.addEventListener("load", render);
   window.addEventListener("hashchange", render);
 
-  console.log("[HTP Router] 14 screens registered. Hash SPA ready.");
-  window.registerOracleOp = registerOracleOp;
-  window.submitOracleAttest = submitOracleAttest;
-  window.submitOracleChallenge = submitOracleChallenge;
 // ORACLE SCREEN FIX -- injected
 window.screenOracle = async function() {
   var R = getRoot(); if(!R) return;
