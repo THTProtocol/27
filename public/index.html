@@ -180,8 +180,8 @@
             backdrop-filter: blur(18px) saturate(180%);
             -webkit-backdrop-filter: blur(18px) saturate(180%);
             border-bottom: 1px solid rgba(255,255,255,0.10);
-            position: fixed; bottom: 0; /* top:0 removed */
-            /* top:0 removed */
+            position: sticky;
+            top: 0;
             z-index: 100;
             box-shadow: 0 1px 0 rgba(255,255,255,0.10);
         }
@@ -4021,37 +4021,6 @@ html,body{background:#010806!important;}
   #wlGrid{grid-template-columns:1fr!important;}
 }
 </style>
-<style id="bg-fix">
-:root {
-  --bg-base:    #061a10 !important;
-  --bg-dark:    #061a10 !important;
-  --bg-darker:  #030e08 !important;
-  --surface:    #0e2d1a !important;
-  --bg-surface: #0e2d1a !important;
-}
-html, body {
-  background: #061a10 !important;
-  background-color: #061a10 !important;
-  min-height: 100vh;
-}
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: radial-gradient(ellipse at 65% 38%, rgba(0,255,163,0.07) 0%, transparent 68%);
-}
-#htp-root, #app, #root, #main, .htp-app,
-.htp-page, .htp-view, .htp-wrap {
-  background: transparent !important;
-  position: relative;
-  z-index: 1;
-}
-</style>
-<style id="nav-pad-fix">
-body { padding-bottom: 76px !important; }
-</style>
 </head>
 <body>
     <div class="shell">
@@ -4163,7 +4132,15 @@ body { padding-bottom: 76px !important; }
                 </a>
                 <button class="menu-toggle" onclick="this.nextElementSibling.classList.toggle('open')"
                     aria-label="Menu">&#9776;</button>
-                
+                <nav class="hdr-nav" id="htp-nav">
+                    <button class="nav-btn act" data-v="overview" onclick="go('overview')">Overview</button>
+                    <button class="nav-btn" data-v="markets" onclick="go('markets')">Events</button>
+                    <button class="nav-btn" data-v="create" onclick="go('create')">Create</button>
+                    <button class="nav-btn" data-v="skill" onclick="go('skill')">Games</button>
+                    <button class="nav-btn" data-v="oracle-network" onclick="go('oracle-network')" data-nav="true">Oracle Network</button>
+                    <button class="nav-btn" data-v="portfolio" onclick="go('portfolio')">Portfolio</button>
+                    <button class="nav-btn" data-v="wallet" onclick="go('wallet')">Wallet</button>
+                </nav>
                     <div class="hdr-r">
                     <div style="position:relative;display:inline-flex;align-items:center;
                              gap:0;margin-right:4px;
@@ -6075,7 +6052,7 @@ event MyMarket {
             <div style="font-size:11px;color:var(--dim)">
                 Stake KAS, connect your node, and earn fees by resolving markets on-chain.</div>
         </div>
-        <button onclick="go('oracle')" class="cta1" style="font-size:12px;padding:8px 18px">
+        <button onclick="go('oracle-network')" class="cta1" style="font-size:12px;padding:8px 18px">
             Go to Oracle Dashboard</button>
     </div>
 </div>
@@ -6620,7 +6597,7 @@ event MyMarket {
   <script src="htp-events-v3.js"></script>
   
   <!-- HTP Core -->
-  <script src="htp-router.js?v=37"></script>
+  <script src="htp-router.js?v=38"></script>
   <script src="htp-init.js"></script>
   <script src="chess.min.js"></script>
   
@@ -7997,12 +7974,6 @@ function go(v) {
                     if (typeof refreshOracleStats === 'function') setTimeout(refreshOracleStats, 100);
                 }
             }
-            
-            if (v === 'events') { if(typeof window.screenEvents==='function'){window.screenEvents();} }
-            
-            if (v === 'portfolio') { if(typeof window.screenPortfolio==='function'){window.screenPortfolio();} }
-            
-            if (v === 'skill') { if(typeof window.screenGames==='function'){window.screenGames();} }
             if (v === 'markets') {
                 if (typeof loadMarkets === 'function') setTimeout(loadMarkets, 80);
             }
@@ -22670,6 +22641,5 @@ window.addEventListener('htp:balance:updated', function(e) {
 
 
 
-<div id="testnet-banner" style="position:fixed;bottom:76px;left:0;right:0;z-index:9998;background:rgba(255,180,0,0.10);border-top:1px solid rgba(255,180,0,0.25);text-align:center;padding:5px 16px;font-size:.76rem;color:#ffb400;letter-spacing:.04em;">⚠️ TESTNET ONLY — TN12 testnet KAS. No real funds. Research &amp; testing only. <a href="#" onclick="document.getElementById(&apos;testnet-banner&apos;).style.display=&apos;none&apos;;return false;" style="color:rgba(255,180,0,0.4);margin-left:8px;text-decoration:none;">✕</a></div>
 </body>
 </html>
