@@ -4022,10 +4022,36 @@ html,body{background:#010806!important;}
 }
 </style>
 <style id="bg-fix">
-html, body { background: #0d0d0d !important; background-color: #0d0d0d !important; }
-#htp-root, #app, #main, #root, .htp-page, .htp-view { background: transparent !important; }
+:root {
+  --bg-base:    #061a10 !important;
+  --bg-dark:    #061a10 !important;
+  --bg-darker:  #030e08 !important;
+  --surface:    #0e2d1a !important;
+  --bg-surface: #0e2d1a !important;
+}
+html, body {
+  background: #061a10 !important;
+  background-color: #061a10 !important;
+  min-height: 100vh;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 65% 38%, rgba(0,255,163,0.07) 0%, transparent 68%);
+}
+#htp-root, #app, #root, #main, .htp-app,
+.htp-page, .htp-view, .htp-wrap {
+  background: transparent !important;
+  position: relative;
+  z-index: 1;
+}
 </style>
-<style id="nav-pad-fix">body{padding-bottom:76px!important}</style>
+<style id="nav-pad-fix">
+body { padding-bottom: 76px !important; }
+</style>
 </head>
 <body>
     <div class="shell">
@@ -4137,15 +4163,7 @@ html, body { background: #0d0d0d !important; background-color: #0d0d0d !importan
                 </a>
                 <button class="menu-toggle" onclick="this.nextElementSibling.classList.toggle('open')"
                     aria-label="Menu">&#9776;</button>
-                <nav class="hdr-nav" id="htp-nav">
-                    <button class="nav-btn act" data-v="overview" onclick="go('overview')">Overview</button>
-                    <button class="nav-btn" data-v="markets" onclick="go('markets')">Events</button>
-                    <button class="nav-btn" data-v="create" onclick="go('create')">Create</button>
-                    <button class="nav-btn" data-v="skill" onclick="go('skill')">Games</button>
-                    <button class="nav-btn" data-v="oracle" onclick="go('oracle')" data-nav="true">Oracle Network</button>
-                    <button class="nav-btn" data-v="portfolio" onclick="go('portfolio')">Portfolio</button>
-                    <button class="nav-btn" data-v="wallet" onclick="go('wallet')">Wallet</button>
-                </nav>
+                
                     <div class="hdr-r">
                     <div style="position:relative;display:inline-flex;align-items:center;
                              gap:0;margin-right:4px;

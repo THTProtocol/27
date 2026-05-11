@@ -31,7 +31,7 @@
 ─────────────────────────────────────────────────────────────── */
 html.htp-mob-preview,
 html.htp-mob-preview body {
-  background: #000 !important;
+  background: #061a10 !important;
 }
 html.htp-mob-preview #app,
 html.htp-mob-preview .shell {

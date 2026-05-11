@@ -4,7 +4,7 @@
    ============================================================ */
 
 :root {
-  --bg-primary: #111111;
+  --bg-primary: #061a10;
   --bg-secondary: #1a1a1a;
   --bg-card: #1e1e1e;
   --bg-card-hover: #252525;
@@ -42,7 +42,7 @@ html { font-size: 14px; scroll-behavior: smooth; }
 
 body {
   font-family: var(--font);
-  background: var(--bg-primary);
+  background: #061a10 !important;
   color: var(--text-primary);
   min-height: 100vh;
   display: flex;

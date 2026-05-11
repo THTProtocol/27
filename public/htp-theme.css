@@ -21,7 +21,7 @@
 /* ── body reset ── */
 body {
   margin: 0;
-  background: var(--htp-black);
+  background: #061a10 !important;
   color: var(--htp-text);
   font-family: var(--htp-font);
   line-height: 1.5;
