@@ -35,3 +35,4 @@ rusqlite      = { workspace = true }
 reqwest       = { workspace = true }
 secp256k1     = { workspace = true }
 ripemd        = "0.1"
+bech32        = "0.9"
