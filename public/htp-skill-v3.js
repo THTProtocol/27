@@ -31,12 +31,12 @@
   };
 
   var GAME_COLORS = {
-    chess:     '#4a9eff',
-    connect4:  '#2ecc71',
-    checkers:  '#e67e22',
-    tictactoe: '#9b59b6',
-    poker:     '#e74c3c',
-    blackjack: '#d4af37'
+    chess:     '#00ffa3',
+    connect4:  '#00ffa3',
+    checkers:  '#00ffa3',
+    tictactoe: '#00ffa3',
+    poker:     '#00ffa3',
+    blackjack: '#00ffa3'
   };
 
   // ----- DOM helpers -----
