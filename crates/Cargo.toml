@@ -5,6 +5,8 @@ members = [
     "htp-games",
     "htp-kaspa-rpc",
     "htp-settler",
+    "silverscript",
+    "htp-covenant",
 ]
 
 [workspace.package]
@@ -32,3 +34,5 @@ rand = "0.8"
 shakmaty = "0.27"
 rusqlite = { version = "0.31", features = ["bundled"] }
 reqwest = { version = "0.12", features = ["json"] }
+ripemd = "0.1"
+bech32 = "0.9"

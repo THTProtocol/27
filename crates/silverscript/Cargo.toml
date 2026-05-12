@@ -1,0 +1,15 @@
+[package]
+name = "silverscript"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Targeted Silverscript compiler for HTP MatchEscrow covenant opcodes"
+
+[dependencies]
+sha2 = { workspace = true }
+hex = { workspace = true }
+thiserror = { workspace = true }
+ripemd = "0.1"
+
+[dev-dependencies]
+hex = { workspace = true }
