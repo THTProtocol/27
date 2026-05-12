@@ -856,3 +856,13 @@ html[data-theme="light"] .stat-card {
   color:var(--text-primary); font:400 14px/1 'Inter',sans-serif;
   padding:8px 12px; border-radius:8px; cursor:pointer; outline:none;
 }
+/* ═══════════════════════════════════════════════════
+   HTP-DESIGN-V2.0 — CLAIMED BADGE
+   ═══════════════════════════════════════════════════ */
+
+.badge-claimed {
+  display:inline-block; padding:3px 10px; border-radius:100px;
+  background:rgba(0,255,163,0.15); border:1px solid rgba(0,255,163,0.30);
+  color:var(--color-primary); font:600 11px/1 'Inter',sans-serif;
+  letter-spacing:0.06em; text-transform:uppercase;
+}
