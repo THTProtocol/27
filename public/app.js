@@ -113,7 +113,7 @@ function initWebSocket() {
   app.ws = new WebSocket(WS_URL);
 
   app.ws.onopen = () => {
-    document.querySelector('.net-dot').style.background = 'var(--green)';
+    document.querySelector('.net-dot').style.background = '#00ffa3';
   };
 
   app.ws.onclose = () => {
@@ -444,7 +444,7 @@ async function showMarketDetail(marketId) {
               (m.positions.length === 0 ? '<div class="empty-state">No positions yet</div>' :
               m.positions.map(p => {
                 const sideLabel = p.side === 1 ? m.outcomeA : m.outcomeB;
-                const sideColor = p.side === 1 ? 'var(--green)' : 'var(--red)';
+                const sideColor = p.side === 1 ? '#00ffa3' : 'var(--red)';
                 const riskLabel = p.riskMode === 1 ? 'MAX' : 'SPOT';
                 return '<div class="feed-item">' +
                   '<span><span style="color:' + sideColor + ';font-weight:600">' + sideLabel + '</span> · ' +
@@ -887,7 +887,7 @@ function renderPortfolioPositions(positions) {
   const el = document.getElementById('portfolio-positions');
   if (!positions.length) { el.innerHTML = '<div class="empty-state">No positions yet</div>'; return; }
   el.innerHTML = positions.map(p => {
-    const sideColor = p.side === 1 ? 'var(--green)' : 'var(--red)';
+    const sideColor = p.side === 1 ? '#00ffa3' : 'var(--red)';
     return '<div class="feed-item" style="cursor:pointer" onclick="navigateTo(\'market\',\'' + p.marketId + '\')">' +
       '<span>' + esc(p.marketTitle) + ' · <span style="color:' + sideColor + '">' + (p.side === 1 ? 'A' : 'B') + '</span> · ' + formatKas(p.amountSompi) + ' KAS</span>' +
       '<span class="market-badge badge-' + p.marketStatus + '">' + p.marketStatus + '</span>' +
@@ -903,7 +903,7 @@ function renderPortfolioGames(games) {
     const draw = g.winner === 'draw';
     return '<div class="feed-item" style="cursor:pointer" onclick="navigateTo(\'game\',\'' + g.id + '\')">' +
       '<span>' + g.type + ' · ' + formatKas(g.stakeSompi) + ' KAS · vs ' + shortAddr(g.playerA === app.wallet.address ? g.playerB : g.playerA) + '</span>' +
-      '<span style="color:' + (won ? 'var(--green)' : draw ? 'var(--yellow)' : 'var(--red)') + ';font-weight:600">' +
+      '<span style="color:' + (won ? '#00ffa3' : draw ? 'var(--yellow)' : 'var(--red)') + ';font-weight:600">' +
         (g.status === 'finished' ? (won ? 'WON' : draw ? 'DRAW' : 'LOST') : g.status.toUpperCase()) +
       '</span>' +
     '</div>';

@@ -3974,6 +3974,129 @@ html,body{background:#071a0e!important;}
 </style>
 <style id="kaspa-bg-flat">html,body{background:#071a0e !important;}</style>
 </head>
+<style id="htp-master-theme">
+/* ═══════════════════════════════════════════════
+   HTP MASTER THEME — Kaspa Green on Black
+   Design tokens: accent #00ffa3, text #e8f5f0, muted #7ab89a
+   ═══════════════════════════════════════════════ */
+
+/* 1. FEATURE PILLS */
+.pill, .chip, .badge, .feature-pill, [class*="pill"], [class*="chip"] {
+  background: rgba(0,255,163,0.08) !important;
+  border: 1px solid rgba(0,255,163,0.25) !important;
+  color: #e8f5f0 !important;
+  font-weight: 500 !important;
+}
+
+/* 2. SKILL GAME CARDS */
+.sgv2-card, .sg-card, .mc, [class*="game-card"] {
+  background: rgba(0,18,10,0.82) !important;
+  border: 1px solid rgba(0,255,163,0.15) !important;
+  border-radius: 16px !important;
+}
+.sgv2-card:hover, .sg-card:hover, .mc:hover, [class*="game-card"]:hover {
+  border-color: rgba(0,255,163,0.45) !important;
+  box-shadow: 0 0 32px rgba(0,255,163,0.12), 0 8px 32px rgba(0,0,0,0.6) !important;
+}
+.sgv2-card *, .sg-card *, .mc *, [class*="game-card"] * { color: #e8f5f0 !important; }
+.sgv2-title, .sg-title, .sgv2-name, [class*="card-title"], [class*="game-name"] {
+  color: #00ffa3 !important; font-weight: 700 !important;
+}
+.sgv2-desc, .sg-desc, [class*="card-desc"], [class*="game-desc"], [class*="card-subtitle"] {
+  color: #7ab89a !important;
+}
+[class*="stake"], [class*="amount"], [class*="bet"], [class*="wager"] {
+  color: #00ffa3 !important;
+}
+
+/* 3. ALL BUTTONS */
+.btn, .btn-primary, .chip-a, [class*="btn-accent"], button:not(.btn-danger):not(.nav-btn) {
+  background: rgba(0,255,163,0.15) !important;
+  border: 1px solid rgba(0,255,163,0.4) !important;
+  color: #00ffa3 !important;
+}
+.btn-secondary, [class*="btn-secondary"], [class*="btn-ghost"], [class*="btn-outline"] {
+  background: transparent !important;
+  border: 1px solid rgba(0,255,163,0.2) !important;
+  color: #7ab89a !important;
+}
+.btn-danger, [class*="btn-danger"], [class*="btn-cancel"], [class*="btn-resign"] {
+  background: rgba(239,68,68,0.15) !important;
+  border: 1px solid #ef4444 !important;
+  color: #ef4444 !important;
+}
+.btn:hover, .btn-primary:hover, button:not(.btn-danger):hover {
+  background: rgba(0,255,163,0.22) !important;
+  border-color: rgba(0,255,163,0.6) !important;
+}
+.btn-danger:hover, [class*="btn-danger"]:hover {
+  background: rgba(239,68,68,0.28) !important;
+}
+
+/* 4. HEADINGS AND LABELS */
+h1,h2,h3,h4,h5,h6 { color: #e8f5f0 !important; }
+label, .label, .form-label { color: #7ab89a !important; }
+p, span, li { color: inherit; }
+
+/* 5. INPUTS AND SELECTS */
+input, select, textarea {
+  background: rgba(0,18,10,0.6) !important;
+  border: 1px solid rgba(0,255,163,0.2) !important;
+  color: #e8f5f0 !important;
+  border-radius: 8px !important;
+}
+input::placeholder, textarea::placeholder { color: rgba(122,184,154,0.5) !important; }
+input:focus, select:focus, textarea:focus {
+  border-color: rgba(0,255,163,0.5) !important;
+  outline: none !important;
+}
+
+/* 6. NAV ACTIVE STATE */
+.nav-btn.act {
+  color: #00ffa3 !important;
+  background: rgba(0,255,163,0.12) !important;
+  box-shadow: 0 0 14px rgba(0,255,163,0.25) !important;
+}
+.nav-btn:hover { color: #00ffa3 !important; background: rgba(0,255,163,0.08) !important; }
+.nav-btn { color: #7ab89a !important; }
+
+/* 7. MODALS */
+#modal, .modal, [class*="modal"], #modal-overlay {
+  background: rgba(0,12,6,0.96) !important;
+  border: 1px solid rgba(0,255,163,0.15) !important;
+  border-radius: 20px !important;
+  color: #e8f5f0 !important;
+}
+
+/* 8. TOASTS / ALERTS */
+.toast, [class*="toast"] {
+  background: rgba(0,18,10,0.95) !important;
+  border-left: 3px solid #00ffa3 !important;
+  color: #e8f5f0 !important;
+}
+.toast.error, .toast.danger, [class*="toast"].error, [class*="toast"].danger {
+  border-left-color: #ef4444 !important;
+}
+.toast.warn, [class*="toast"].warn { border-left-color: #f59e0b !important; }
+
+/* 9. SECTION HEADERS / DIVIDERS */
+.section-title, .view-title, [class*="section-hdr"] {
+  color: #e8f5f0 !important; font-weight: 700 !important;
+}
+hr, .divider { border-color: rgba(0,255,163,0.1) !important; }
+
+/* 10. SCROLLBARS */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: rgba(0,8,4,0.95); }
+::-webkit-scrollbar-thumb { background: rgba(0,255,163,0.25); border-radius: 2px; }
+
+/* ADDITIONAL: per-game tag override */
+.sgv2-card[data-game] .sgv2-tag {
+  color: #00ffa3 !important;
+  border-color: rgba(0,255,163,0.3) !important;
+  background: rgba(0,255,163,0.08) !important;
+}
+</style>
 <body>
     <div class="shell">
     <div id="htp-root"></div>

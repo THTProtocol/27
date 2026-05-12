@@ -169,3 +169,6 @@ window.htpOracleAttest = function (matchId, winner, reason) {
 };
 
 console.log('[HTP Oracle Sync] ZK fallback (htpOracleAttest) registered');
+
+// ORACLE_KEY sanity check
+(function(){ if(window.HTP_CONFIG&&window.HTP_CONFIG.ORACLE_KEY){console.log('[HTP Oracle] ORACLE_KEY configured');}else{console.warn('[HTP Oracle] No ORACLE_KEY set in htp-config.js — results unsigned');} })();
