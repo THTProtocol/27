@@ -1,12 +1,18 @@
 {
   "version": 2,
+  "outputDirectory": "public",
   "builds": [
     { "src": "public/**", "use": "@vercel/static" }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "https://hightable.pro/api/$1"
+      "dest": "https://hightable.pro/api/$1",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+      }
     },
     {
       "src": "/ws",
@@ -16,6 +22,33 @@
       "src": "/health",
       "dest": "https://hightable.pro/health"
     },
-    { "src": "/(.*)", "dest": "/public/$1" }
+    {
+      "src": "/assets/(.*)",
+      "dest": "/public/assets/$1"
+    },
+    {
+      "src": "/(.*\\.(js|css|png|ico|svg|woff2?))",
+      "dest": "/public/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    },
+    {
+      "source": "/(.*\\.(css|js|png|woff2?))",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
   ]
 }
