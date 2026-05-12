@@ -6570,92 +6570,54 @@ event MyMarket {
   <script src="htp-wasm-loader.js"></script>
   <script src="htp-wallet-logos.js"></script>
   <script src="htp-animations.js"></script>
-<script>
-/* HTP-DESIGN-V2.0 Runtime — Theme + Mobile Tabs + Search */
+  <script>
+/* HTP-DESIGN-V2.0 Runtime */
 (function(){
   'use strict';
-
-  // ── Theme Toggle ──
-  function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    var btn = document.getElementById('htpThemeBtn');
-    if (btn) btn.innerHTML = theme === 'light' ? '\u2600' : '\u263d';
-  }
-  window.htpToggleTheme = function() {
-    var current = document.documentElement.getAttribute('data-theme') || 'dark';
-    var next = current === 'dark' ? 'light' : 'dark';
-    localStorage.setItem('htp-theme', next);
-    applyTheme(next);
-  };
   var saved = localStorage.getItem('htp-theme');
-  if (saved) {
-    applyTheme(saved);
-  } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-    applyTheme('light');
+  if (saved) { document.documentElement.setAttribute('data-theme', saved); }
+  else if (window.matchMedia('(prefers-color-scheme: light)').matches) { document.documentElement.setAttribute('data-theme', 'light'); }
+  var tb = document.getElementById('htpThemeBtn');
+  if (tb) tb.innerHTML = (document.documentElement.getAttribute('data-theme')==='light') ? '☀' : '☽';
+  window.htpToggleTheme = function() {
+    var c = document.documentElement.getAttribute('data-theme') || 'dark';
+    var n = c === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('htp-theme', n);
+    document.documentElement.setAttribute('data-theme', n);
+    var t = document.getElementById('htpThemeBtn');
+    if (t) t.innerHTML = n === 'light' ? '☀' : '☽';
+  };
+  function syncTabs() {
+    var t = document.querySelectorAll('.htp-mobile-tab');
+    var h = location.hash.replace('#','') || 'overview';
+    t.forEach(function(b){b.classList.toggle('active', b.getAttribute('data-nav')===h||(h===''&&b.getAttribute('data-nav')==='overview'));});
   }
-
-  // ── Mobile Tab Sync ──
-  function syncMobileTabs() {
-    var tabs = document.querySelectorAll('.htp-mobile-tab');
-    var hash = location.hash.replace('#','') || 'overview';
-    tabs.forEach(function(t) {
-      var nav = t.getAttribute('data-nav');
-      t.classList.toggle('active', nav === hash || (hash === '' && nav === 'overview'));
-    });
-  }
-  window.addEventListener('hashchange', syncMobileTabs);
-  syncMobileTabs();
-
-  // ── Global search keybindings ──
-  document.addEventListener('keydown', function(e) {
-    if (e.key === '/' && e.target === document.body && !e.ctrlKey && !e.metaKey) {
-      e.preventDefault();
-      var si = document.querySelector('.htp-search-bar input');
-      if (si) si.focus();
-    }
-  });
-})();
-<script>
-/* HTP-DESIGN-V2.0 — Filter + Search + Ticker runtime */
-(function(){
-  'use strict';
+  window.addEventListener('hashchange', syncTabs); syncTabs();
+  document.addEventListener('keydown', function(e){if(e.key==='/'&&e.target===document.body&&!e.ctrlKey){e.preventDefault();var s=document.querySelector('.htp-search-bar input');if(s)s.focus();}});
   window.htpSetFilter = function(cat, btn) {
     document.querySelectorAll('.htp-filter-chip').forEach(function(c){c.classList.remove('active');});
     btn.classList.add('active');
-    // Update URL hash param
-    var hash = location.hash || '#';
-    if (cat === 'all') hash = hash.replace(/[?&]category=[^&]*/g, '').replace(/[?&]search=[^&]*/g, '');
     if (typeof updF === 'function') updF();
   };
-  window.htpSetSort = function(sort) {
-    if (typeof updF === 'function') updF();
-  };
-
-  // ── Live Ticker (poll /api/games for settled items) ──
-  function updateTicker() {
-    var track = document.getElementById('htpTickerTrack');
-    if (!track) return;
-    fetch('/api/games')
-      .then(function(r){return r.json();})
-      .then(function(data){
-        var settled = (data.games||[]).filter(function(g){return g.status==='settled'||g.winner;});
-        if (settled.length > 0) {
-          var items = settled.slice(0, 8).map(function(g){
-            var addr = (g.creator||'').slice(0,16)+'...';
-            var stake = ((g.stake_sompi||0)/1e8).toFixed(0);
-            var type = g.game_type||'market';
-            return '<span class="htp-ticker-item">\u2503 '+addr+' claimed '+stake+' KAS on ['+type+'] \u00b7 just now</span>';
-          }).join('');
-          // Duplicate for seamless scroll
-          track.innerHTML = items + items;
-        }
-      }).catch(function(){});
+  window.htpSetSort = function() { if (typeof updF === 'function') updF(); };
+  function updTick() {
+    var tr = document.getElementById('htpTickerTrack'); if(!tr)return;
+    fetch('/api/games').then(function(r){return r.json();}).then(function(d){
+      var s = (d.games||[]).filter(function(g){return g.status==='settled'||g.winner;});
+      if (s.length>0) {
+        var items = s.slice(0,8).map(function(g){
+          var a=(g.creator||'').slice(0,14)+'...';
+          var k=((g.stake_sompi||0)/1e8).toFixed(0);
+          return '<span class="htp-ticker-item">┃ '+a+' claimed '+k+' KAS on ['+(g.game_type||'market')+'] · just now</span>';
+        }).join('');
+        tr.innerHTML = items + items;
+      }
+    }).catch(function(){});
   }
-  setInterval(updateTicker, 10000);
-  updateTicker();
+  setInterval(updTick, 10000); updTick();
 })();
 </script>
-</script>
+
   <script src="htp-board-engine.js"></script>
   <script src="htp-chess-ui.js"></script>
   <script src="htp-chess-dnd.js"></script>
