@@ -1,3 +1,7 @@
+/* green pulse for live indicators */
+@keyframes htpPulse{0%,100%{box-shadow:0 0 0 0 rgba(0,255,163,0.4)}50%{box-shadow:0 0 0 12px rgba(0,255,163,0)}}
+@keyframes htpGlow{0%,100%{opacity:0.6}50%{opacity:1}}
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
 
 :root{
@@ -86,7 +90,7 @@ body::before{
   transform:translateY(-2px);
   box-shadow:var(--shadow-3)!important;
 }
-.card *,.mc *,.sgv2-card *,.sg-card *{color:var(--text-primary)}
+.card *:not(.wlCard):not(.wlCard *),.mc *,.sgv2-card *,.sg-card *{color:var(--text-primary)}
 .sgv2-sub,.sg-sub,.text-muted{color:var(--text-secondary)!important}
 
 /* chips / pills / tags */
@@ -143,7 +147,29 @@ input:focus,select:focus,textarea:focus{border-color:rgba(0,255,163,0.45)!import
   *,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important}
 }
 
+/* wallet logo protection — never override wallet card styles */
+.wlCard,.wlCard *{background:initial!important}
+.wlLogo{background:rgba(0,0,0,.25)!important;border-radius:13px!important}
+.wlLogo img{object-fit:cover!important;border-radius:11px!important;filter:none!important}
+.wlCard.on{background:rgba(73,232,194,.04)!important;border:1px solid rgba(73,232,194,.35)!important}
+.wlCard.off{background:rgba(255,255,255,.015)!important;border:1px solid rgba(255,255,255,.07)!important;opacity:.78}
+.wlCard.off:hover{opacity:1!important}
+.wlBtn.on{background:#49e8c2!important;color:#021a10!important;border:none!important}
+.wlBtn.off{background:rgba(73,232,194,.07)!important;color:#49e8c2!important;border:1px solid rgba(73,232,194,.2)!important}
+#wlWrap{background:rgba(255,255,255,.02)!important;border:1px solid rgba(73,232,194,.1)!important;border-radius:18px!important}
+
+/* amplified glass — more depth */
+.card,.mc,.sgv2-card,.sg-card,[class*="game-card"],.stat-card{box-shadow:0 4px 24px rgba(0,0,0,0.55),0 1px 3px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.03)!important}
+.card:hover,.mc:hover,.sgv2-card:hover,.sg-card:hover{box-shadow:0 16px 56px rgba(0,0,0,0.7),0 2px 8px rgba(0,0,0,0.5),0 0 48px rgba(0,255,163,0.10),inset 0 1px 0 rgba(255,255,255,0.05)!important}
+
+/* hero heading glow */
+h1{text-shadow:0 0 80px rgba(0,255,163,0.15),0 0 30px rgba(0,255,163,0.08)}
+
+/* live DAG section glow */
+[class*="blockdag"]{border:1px solid rgba(0,255,163,0.08)!important;border-radius:16px!important;overflow:hidden!important}
+
 /* mobile */
+
 @media (max-width:768px){
   .card,.mc,.sgv2-card,.sg-card{border-radius:12px!important}
 }

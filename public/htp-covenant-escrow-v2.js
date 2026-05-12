@@ -187,7 +187,7 @@
     var SDK = window.kaspa || window.KaspaSDK;
     if (!SDK) { console.error('[HTP Escrow] Kaspa SDK not loaded'); return null; }
 
-    var networkId = W.htpNetwork || W.kaspaNetwork || 'testnet-11';
+    var networkId = W.htpNetwork || W.kaspaNetwork || 'tn12';
 
     // 1. Generate ephemeral escrow keypair (CSPRNG, client-side only)
     var escrowPriv, escrowPub;
@@ -390,7 +390,7 @@
       utxos:   utxos,
       outputs: outputs,
       fee:     NETWORK_FEE,
-      networkId: esc.networkId || W.htpNetwork || 'testnet-11'
+      networkId: esc.networkId || W.htpNetwork || 'tn12'
     });
 
     var signFn = SDK.signTransaction || W.signTransaction;
@@ -438,7 +438,7 @@
     if (feeAmount < MIN_FEE) feeAmount = MIN_FEE;
     var winnerAmount = BigInt(payoutSompi) - feeAmount;
 
-    var feeDestForNet = getFeeDest(esc.networkId || W.htpNetwork || 'testnet-11');
+    var feeDestForNet = getFeeDest(esc.networkId || W.htpNetwork || 'tn12');
     var outputs = [
       { address: winnerAddress, amount: winnerAmount },
       { address: feeDestForNet, amount: feeAmount }

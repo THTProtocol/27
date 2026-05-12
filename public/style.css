@@ -15,10 +15,10 @@
   --text-primary: #e8e8e8;
   --text-secondary: #999999;
   --text-muted: #666666;
-  --green: #779556;
-  --green-light: #8bac62;
-  --green-dark: #5f7a42;
-  --green-bg: rgba(119, 149, 86, 0.12);
+  --green: #00ffa3;
+  --green-light: #33ffb5;
+  --green-dark: #00cc82;
+  --green-bg: rgba(0,255,163,0.12);
   --red: #c44;
   --red-bg: rgba(204, 68, 68, 0.12);
   --blue: #5b8db8;

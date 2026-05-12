@@ -8,7 +8,6 @@
     "build:settler": "cd crates && cargo build --release -p htp-settler",
     "start": "pm2 start infra/pm2-ecosystem.config.js",
     "check": "cd crates && cargo check --workspace",
-    "deploy": "cd public && npx vercel --prod",
     "logs": "pm2 logs",
     "status": "pm2 list"
   },
