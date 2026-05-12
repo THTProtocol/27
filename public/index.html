@@ -3974,6 +3974,7 @@ html,body{background:#071a0e!important;}
 </style>
 <style id="kaspa-bg-flat">html,body{background:#071a0e !important;}</style>
   <link rel="stylesheet" href="/htp-design-system.css?v=billion1">
+  <link rel="stylesheet" href="/htp-skeletons.css">
 </head>
 <style id="htp-master-theme">
 /* ═══════════════════════════════════════════════
@@ -4247,6 +4248,7 @@ hr, .divider { border-color: rgba(0,255,163,0.1) !important; }
                         </select>
                     </div>
                     <div id="htp-nav-balance" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.10);border-radius:20px;padding:4px 14px 4px 10px;font-size:13px;font-weight:600;color:#fff;white-space:nowrap;margin-right:2px"><svg width="18" height="18" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;vertical-align:middle"><circle cx="100" cy="100" r="100" fill="#ffffff"/><path d="M140 40 L140 160 M140 100 L60 40 M140 100 L60 160" stroke="#0d1117" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/></svg> <span id="htp-nav-bal-amt">0.00</span> <span style="color:#ffffff;font-size:11px">KAS</span></div>
+                    <button class="htp-theme-btn" id="htpThemeBtn" onclick="window.htpToggleTheme()" title="Toggle theme" aria-label="Toggle dark/light mode">☽</button>
                     <button class="btn-c" id="cBtn" onclick="
   if(window.walletAddress){
     var bal=window.walletBalance&&window.walletBalance.total?((window.walletBalance.total/1e8).toFixed(2)+' KAS'):(window.htpBalance?window.htpBalance+' KAS':'Loading...');
@@ -4348,8 +4350,41 @@ hr, .divider { border-color: rgba(0,255,163,0.1) !important; }
                     </div>
                 </div>
 
+                <!-- HTP-DESIGN-V2.0 Live Ticker Strip -->
+                <div class="htp-ticker-wrap" id="htpTicker">
+                  <div class="htp-ticker-track" id="htpTickerTrack">
+                    <span class="htp-ticker-item">Waiting for on-chain settlement... next block ~0.8s</span>
+                  </div>
+                </div>
+
                 <!-- Featured Markets -->
                 <div class="mx sec-pad">
+
+                    <!-- HTP-DESIGN-V2.0 Search + Filter Bar -->
+                    <div class="htp-search-wrap">
+                      <div class="htp-search-bar">
+                        <span class="htp-search-icon">🔍</span>
+                        <input type="text" id="htpGlobalSearch" placeholder="Search markets and events..." autocomplete="off" />
+                        <span class="htp-search-kbd">/</span>
+                      </div>
+                    </div>
+                    <div class="htp-filter-row">
+                      <div class="htp-filter-chips">
+                        <button class="htp-filter-chip active" data-filter="all" onclick="window.htpSetFilter('all', this)">All</button>
+                        <button class="htp-filter-chip" data-filter="sports" onclick="window.htpSetFilter('sports', this)">Sports</button>
+                        <button class="htp-filter-chip" data-filter="crypto" onclick="window.htpSetFilter('crypto', this)">Crypto</button>
+                        <button class="htp-filter-chip" data-filter="politics" onclick="window.htpSetFilter('politics', this)">Politics</button>
+                        <button class="htp-filter-chip" data-filter="esports" onclick="window.htpSetFilter('esports', this)">Esports</button>
+                        <button class="htp-filter-chip" data-filter="custom" onclick="window.htpSetFilter('custom', this)">Custom</button>
+                      </div>
+                      <select class="htp-sort-select" id="htpSortSelect" onchange="window.htpSetSort(this.value)">
+                        <option value="trending">Trending</option>
+                        <option value="newest">Newest</option>
+                        <option value="closing">Closing Soon</option>
+                        <option value="volume">Highest Volume</option>
+                      </select>
+                    </div>
+
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
                         <div>
                             <h2 style="margin:0 0 4px;font-size:22px;font-weight:800;letter-spacing:-.03em">Trending
@@ -6534,6 +6569,93 @@ event MyMarket {
   <!-- HTP Game Modules -->
   <script src="htp-wasm-loader.js"></script>
   <script src="htp-wallet-logos.js"></script>
+  <script src="htp-animations.js"></script>
+<script>
+/* HTP-DESIGN-V2.0 Runtime — Theme + Mobile Tabs + Search */
+(function(){
+  'use strict';
+
+  // ── Theme Toggle ──
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    var btn = document.getElementById('htpThemeBtn');
+    if (btn) btn.innerHTML = theme === 'light' ? '\u2600' : '\u263d';
+  }
+  window.htpToggleTheme = function() {
+    var current = document.documentElement.getAttribute('data-theme') || 'dark';
+    var next = current === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('htp-theme', next);
+    applyTheme(next);
+  };
+  var saved = localStorage.getItem('htp-theme');
+  if (saved) {
+    applyTheme(saved);
+  } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+    applyTheme('light');
+  }
+
+  // ── Mobile Tab Sync ──
+  function syncMobileTabs() {
+    var tabs = document.querySelectorAll('.htp-mobile-tab');
+    var hash = location.hash.replace('#','') || 'overview';
+    tabs.forEach(function(t) {
+      var nav = t.getAttribute('data-nav');
+      t.classList.toggle('active', nav === hash || (hash === '' && nav === 'overview'));
+    });
+  }
+  window.addEventListener('hashchange', syncMobileTabs);
+  syncMobileTabs();
+
+  // ── Global search keybindings ──
+  document.addEventListener('keydown', function(e) {
+    if (e.key === '/' && e.target === document.body && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      var si = document.querySelector('.htp-search-bar input');
+      if (si) si.focus();
+    }
+  });
+})();
+<script>
+/* HTP-DESIGN-V2.0 — Filter + Search + Ticker runtime */
+(function(){
+  'use strict';
+  window.htpSetFilter = function(cat, btn) {
+    document.querySelectorAll('.htp-filter-chip').forEach(function(c){c.classList.remove('active');});
+    btn.classList.add('active');
+    // Update URL hash param
+    var hash = location.hash || '#';
+    if (cat === 'all') hash = hash.replace(/[?&]category=[^&]*/g, '').replace(/[?&]search=[^&]*/g, '');
+    if (typeof updF === 'function') updF();
+  };
+  window.htpSetSort = function(sort) {
+    if (typeof updF === 'function') updF();
+  };
+
+  // ── Live Ticker (poll /api/games for settled items) ──
+  function updateTicker() {
+    var track = document.getElementById('htpTickerTrack');
+    if (!track) return;
+    fetch('/api/games')
+      .then(function(r){return r.json();})
+      .then(function(data){
+        var settled = (data.games||[]).filter(function(g){return g.status==='settled'||g.winner;});
+        if (settled.length > 0) {
+          var items = settled.slice(0, 8).map(function(g){
+            var addr = (g.creator||'').slice(0,16)+'...';
+            var stake = ((g.stake_sompi||0)/1e8).toFixed(0);
+            var type = g.game_type||'market';
+            return '<span class="htp-ticker-item">\u2503 '+addr+' claimed '+stake+' KAS on ['+type+'] \u00b7 just now</span>';
+          }).join('');
+          // Duplicate for seamless scroll
+          track.innerHTML = items + items;
+        }
+      }).catch(function(){});
+  }
+  setInterval(updateTicker, 10000);
+  updateTicker();
+})();
+</script>
+</script>
   <script src="htp-board-engine.js"></script>
   <script src="htp-chess-ui.js"></script>
   <script src="htp-chess-dnd.js"></script>
@@ -7872,6 +7994,7 @@ window._htpAddMarket = function(m){
 
         // --- Navigation ---
 function go(v) {
+        try {
             document.querySelectorAll('.view').forEach(function(el) { el.classList.remove('show'); });
             var target = document.getElementById('v-' + v);
             if (target) target.classList.add('show');
@@ -7903,6 +8026,14 @@ function go(v) {
             if (v === 'markets') {
                 if (typeof loadMarkets === 'function') setTimeout(loadMarkets, 80);
             }
+        } catch(e) {
+            console.error('[go] nav error:', e);
+        } finally {
+            // ensure nav buttons are re-enabled
+            document.querySelectorAll('.nav-btn').forEach(function(b) {
+                b.style.pointerEvents = '';
+            });
+        }
         }
         function setNet(n) {
             net = n;
@@ -22583,6 +22714,29 @@ window.addEventListener('htp:balance:updated', function(e) {
     },4000);
   })();
   </script>
+  <!-- HTP-DESIGN-V2.0 Mobile Bottom Tab Bar -->
+  <nav class="htp-mobile-tabs" id="htpMobileTabs">
+    <button class="htp-mobile-tab active" data-nav="overview" onclick="go('overview')">
+      <span class="tab-icon">⌂</span>
+      <span class="tab-label">Home</span>
+    </button>
+    <button class="htp-mobile-tab" data-nav="markets" onclick="go('markets')">
+      <span class="tab-icon">☊</span>
+      <span class="tab-label">Markets</span>
+    </button>
+    <button class="htp-mobile-tab create-tab" data-nav="create" onclick="go('create')">
+      <span class="tab-icon">+</span>
+      <span class="tab-label">Create</span>
+    </button>
+    <button class="htp-mobile-tab" data-nav="oracle" onclick="go('oracle')">
+      <span class="tab-icon">⛨</span>
+      <span class="tab-label">Oracle</span>
+    </button>
+    <button class="htp-mobile-tab" data-nav="wallet" onclick="go('wallet')">
+      <span class="tab-icon">₿</span>
+      <span class="tab-label">Wallet</span>
+    </button>
+  </nav>
 </body>
 </html>
 <style id="htp-unified-theme">
