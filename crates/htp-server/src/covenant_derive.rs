@@ -1,9 +1,11 @@
 //! Derives a MatchEscrow P2SH address from game creation params.
 //!
-//! Kaspa uses a bech32 *variant* where the HRP and payload are separated by
-//! `:` rather than `1`.  We split on `:`, then decode only the payload portion
-//! using bech32 0.9's `decode` by temporarily re-encoding it with a dummy
-//! HRP that the library accepts (i.e. adding a `1` separator ourselves).
+//! Kaspa uses a bech32 *variant* with `:` as HRP separator and a custom
+//! polymod checksum.  Standard bech32 0.9 rejects the checksum.
+//! We split on `:`, decode the payload as raw base32 (5-bit groups)
+//! using the bech32 alphabet directly, strip the 8-byte checksum tail,
+//! then convert to bytes.  No library checksum validation needed here —
+//! the address came from the user / wallet and we just need the hash bytes.
 
 use htp_covenant::{
     address::CovenantAddress,
@@ -11,7 +13,36 @@ use htp_covenant::{
 };
 use sha2::{Sha256, Digest};
 use ripemd::Ripemd160;
-use bech32::{self, FromBase32};
+
+/// bech32 charset (standard, same as Kaspa uses)
+const CHARSET: &[u8] = b"qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+
+/// Decode a bech32 data string (no HRP, no checksum) into 5-bit groups.
+/// Returns Err if any character is not in the charset.
+fn decode_base32(s: &str) -> Result<Vec<u8>, String> {
+    s.chars().map(|c| {
+        CHARSET.iter().position(|&x| x == c as u8)
+            .map(|i| i as u8)
+            .ok_or_else(|| format!("invalid bech32 char: {:?}", c))
+    }).collect()
+}
+
+/// Convert 5-bit groups to 8-bit bytes (standard base32 conversion).
+fn from_base32(data: &[u8]) -> Vec<u8> {
+    let mut buf: u32 = 0;
+    let mut bits: u32 = 0;
+    let mut out = Vec::new();
+    for &b in data {
+        buf = (buf << 5) | (b as u32);
+        bits += 5;
+        if bits >= 8 {
+            bits -= 8;
+            out.push((buf >> bits) as u8);
+            buf &= (1 << bits) - 1;
+        }
+    }
+    out
+}
 
 pub fn derive_escrow_address(
     creator_addr: &str,
@@ -64,33 +95,34 @@ pub struct DerivedEscrow {
 
 /// Convert a Kaspa bech32 address to HASH160 (20 bytes).
 ///
-/// Kaspa format: `<hrp>:<bech32_payload>`
-/// We split on `:`, prepend a dummy HRP `x1` so bech32 0.9 can decode it,
-/// then convert the 5-bit groups to bytes.
+/// Format: `<hrp>:<base32_payload_with_8_char_checksum>`
+/// We skip checksum validation and just decode the payload bytes.
 fn addr_to_hash160(addr: &str) -> Result<[u8; 20], String> {
     if addr == "open" || addr.is_empty() || addr == "kaspatest:open" {
         return Ok([0u8; 20]);
     }
 
-    // Split "kaspatest:qpx6..." -> payload = "qpx6..."
     let colon = addr.find(':')
         .ok_or_else(|| format!("invalid kaspa address (no ':'): {}", addr))?;
     let payload_str = &addr[colon + 1..];
 
-    // Re-encode as standard bech32: "x1<payload>" so bech32 0.9 decode() works.
-    // bech32 0.9 decode() expects "<hrp>1<data+checksum>"
-    let standard = format!("x1{}", payload_str);
-    let (_hrp, data5, _variant) = bech32::decode(&standard)
-        .map_err(|e| format!("bech32 decode failed for '{}': {}", addr, e))?;
+    // Kaspa appends an 8-char polymod checksum at the end of the payload.
+    // Strip it before converting to bytes.
+    if payload_str.len() < 8 {
+        return Err(format!("payload too short: {}", addr));
+    }
+    let data_str = &payload_str[..payload_str.len() - 8];
 
-    let all_bytes = Vec::<u8>::from_base32(&data5)
-        .map_err(|e| format!("base32->bytes failed: {}", e))?;
+    let u5s = decode_base32(data_str)
+        .map_err(|e| format!("decode_base32 failed for '{}': {}", addr, e))?;
+
+    let all_bytes = from_base32(&u5s);
 
     if all_bytes.is_empty() {
         return Err(format!("empty payload for: {}", addr));
     }
 
-    // byte[0] = version: 0x08 = P2SH, else P2PK
+    // byte[0] = version: 0x08 = P2SH (20-byte hash), else P2PK (hash the pubkey)
     let version = all_bytes[0];
     let key = &all_bytes[1..];
 
@@ -126,6 +158,7 @@ mod tests {
             "kaspatest:qpx6f5j2zpe4hlwv9yn8hl0mze4k9ffp6ft0fm3w68wp6cft6f8mjdtt0qzyj"
         ).unwrap();
         assert_eq!(h.len(), 20);
+        assert_ne!(h, [0u8; 20], "should not be zero hash for real address");
     }
 
     #[test]
