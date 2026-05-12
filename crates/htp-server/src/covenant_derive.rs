@@ -10,6 +10,7 @@ use htp_covenant::{
 };
 use sha2::{Sha256, Digest};
 use ripemd::Ripemd160;
+use bech32::{self, FromBase32};
 
 /// Derive a deterministic P2SH deposit address for a MatchEscrow covenant.
 ///
@@ -70,69 +71,48 @@ pub struct DerivedEscrow {
     pub network:           String,
 }
 
-/// Hash a Kaspa bech32 address to HASH160 (SHA256 then RIPEMD160 of the payload bytes).
-/// For P2SH addresses: extract the 20-byte hash directly from the payload.
-/// For P2PK addresses: hash the pubkey bytes.
-///
-/// If the address is "open" or a placeholder, use a zero hash (TBD slot).
+/// Convert a Kaspa bech32 address to HASH160 (20 bytes).
+/// - "open" / empty → zero bytes (TBD slot)
+/// - P2SH (version 0x08) → extract 20-byte hash directly from payload
+/// - P2PK (version 0x00 / 0x01) → SHA256 then RIPEMD160 of pubkey bytes
 fn addr_to_hash160(addr: &str) -> Result<[u8; 20], String> {
-    if addr == "open" || addr == "kaspatest:open" || addr.is_empty() {
-        return Ok([0u8; 20]); // placeholder — will be replaced when opponent joins
+    if addr == "open" || addr.is_empty() || addr == "kaspatest:open" {
+        return Ok([0u8; 20]);
     }
 
-    // Strip the hrp prefix (everything before and including ":")
-    let payload_part = if let Some(pos) = addr.rfind(':') {
-        &addr[pos + 1..]
-    } else {
-        addr
-    };
+    // bech32 0.9: decode returns (hrp: String, data: Vec<u5>, variant: Variant)
+    let (_hrp, data5, _variant) = bech32::decode(addr)
+        .map_err(|e| format!("bech32 decode failed for '{}': {}", addr, e))?;
 
-    // Decode bech32 — extract the raw payload bytes
-    match bech32::decode(addr) {
-        Ok((_hrp, data, _variant)) => {
-            use bech32::FromBase32;
-            let bytes = Vec::<u8>::from_base32(&data)
-                .map_err(|e| format!("bech32 base32 decode: {}", e))?;
+    // convert from 5-bit groups to 8-bit bytes
+    let bytes = Vec::<u8>::from_base32(&data5)
+        .map_err(|e| format!("bech32 base32->bytes failed: {}", e))?;
 
-            if bytes.is_empty() {
-                return Err(format!("empty bech32 payload for addr: {}", addr));
+    if bytes.is_empty() {
+        return Err(format!("empty payload for address: {}", addr));
+    }
+
+    // Kaspa address encoding:
+    //   byte[0] = version/type
+    //   0x00 or 0x01 = P2PK  → remaining bytes are the pubkey
+    //   0x08         = P2SH  → remaining 20 bytes ARE the script hash
+    let version = bytes[0];
+    let payload = &bytes[1..];
+
+    match version {
+        0x08 => {
+            // P2SH: payload is already the 20-byte hash
+            if payload.len() < 20 {
+                return Err(format!("P2SH payload too short: {} bytes", payload.len()));
             }
-
-            // First byte is the version/type byte in Kaspa:
-            //   0x00 = P2PK  (remaining bytes are 32-byte pubkey)
-            //   0x08 = P2SH  (remaining 20 bytes are the script hash)
-            //   0x01 = P2PK compressed (33 bytes)
-            let version = bytes[0];
-            let payload = &bytes[1..];
-
-            match version {
-                0x08 => {
-                    // P2SH: payload IS the 20-byte hash
-                    if payload.len() != 20 {
-                        return Err(format!("P2SH payload length {} != 20", payload.len()));
-                    }
-                    let mut arr = [0u8; 20];
-                    arr.copy_from_slice(payload);
-                    Ok(arr)
-                }
-                0x00 | 0x01 => {
-                    // P2PK: HASH160 the pubkey bytes
-                    let sha = Sha256::digest(payload);
-                    let h160: [u8; 20] = Ripemd160::digest(&sha).into();
-                    Ok(h160)
-                }
-                _ => {
-                    // Unknown version — HASH160 the raw payload
-                    let sha = Sha256::digest(payload);
-                    let h160: [u8; 20] = Ripemd160::digest(&sha).into();
-                    Ok(h160)
-                }
-            }
+            let mut arr = [0u8; 20];
+            arr.copy_from_slice(&payload[..20]);
+            Ok(arr)
         }
-        Err(_) => {
-            // Not valid bech32 — hash the raw bytes as fallback
-            let sha = Sha256::digest(payload_part.as_bytes());
-            let h160: [u8; 20] = Ripemd160::digest(&sha).into();
+        _ => {
+            // P2PK or unknown: HASH160 the payload
+            let sha: [u8; 32] = Sha256::digest(payload).into();
+            let h160: [u8; 20] = Ripemd160::digest(sha).into();
             Ok(h160)
         }
     }
@@ -143,26 +123,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn open_opponent_gives_zero_hash() {
-        let h = addr_to_hash160("open").unwrap();
-        assert_eq!(h, [0u8; 20]);
+    fn open_gives_zero_hash() {
+        assert_eq!(addr_to_hash160("open").unwrap(), [0u8; 20]);
     }
 
     #[test]
     fn derive_open_game() {
-        // Use a known oracle hash160 (all-03 bytes for test)
         let oracle = "0303030303030303030303030303030303030303";
-        let result = derive_escrow_address(
+        let r = derive_escrow_address(
             "kaspatest:qpx6f5j2zpe4hlwv9yn8hl0mze4k9ffp6ft0fm3w68wp6cft6f8mjdtt0qzyj",
             "open",
             oracle,
             100_000_000_000,
             50_000_000,
             "tn12",
-        );
-        // Should succeed and return a kaspatest: address
-        let escrow = result.unwrap();
-        assert!(escrow.deposit_address.starts_with("kaspatest"), "addr={}", escrow.deposit_address);
-        println!("deposit_address: {}", escrow.deposit_address);
+        ).unwrap();
+        assert!(r.deposit_address.starts_with("kaspatest"), "addr={}", r.deposit_address);
     }
 }
