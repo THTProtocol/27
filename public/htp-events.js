@@ -452,7 +452,8 @@ window.createLobbyMatch = createLobbyMatch;
             (match ? '<div style="font-size:12px;color:#888;margin-bottom:24px">' + match.game + ' \u00B7 ' + match.timeControl + ' \u00B7 ' + match.stake + ' KAS</div>' : '') +
             '<button class="chess-btn" onclick="this.parentElement.parentElement.remove();go(\'skillGames\')" style="padding:12px 32px;font-size:14px">Back to Lobby</button>' +
             '</div>';
-        document.body.appendChild(ov);
+        var eventsSection = document.getElementById('v-events') || document.getElementById('v-skill') || document.body;
+        eventsSection.appendChild(ov);
         if (typeof playChessSound === 'function') playChessSound(color === '49e8c2' ? 'victory' : 'defeat');
     };
 
@@ -636,7 +637,8 @@ function handleRelayMessage(msg) {
             '<div id="c4board" style="background:#1a3a5c;border-radius:12px;padding:8px;margin-bottom:16px"></div>' +
             '<div style="text-align:center"><button class="chess-btn chess-btn-danger" onclick="resignMatch()" style="font-size:12px;padding:8px 20px">Resign</button></div>' +
             '</div></div>';
-        document.body.appendChild(ov);
+        var eventsSection = document.getElementById('v-events') || document.getElementById('v-skill') || document.body;
+        eventsSection.appendChild(ov);
         renderC4Board();
     }
 })();
@@ -865,7 +867,8 @@ function handleRelayMessage(msg) {
             '<div id="ckboard" style="border-radius:8px;overflow:hidden;margin-bottom:16px;display:inline-block"></div>' +
             '<div style="text-align:center"><button class="chess-btn chess-btn-danger" onclick="resignMatch()" style="font-size:12px;padding:8px 20px">Resign</button></div>' +
             '</div></div>';
-        document.body.appendChild(ov);
+        var eventsSection = document.getElementById('v-events') || document.getElementById('v-skill') || document.body;
+        eventsSection.appendChild(ov);
         renderCkBoard();
     }
 })();

@@ -113,7 +113,7 @@
   }
 
   function renderMarkets(markets) {
-    var container = document.getElementById('active-markets');
+    var container = document.querySelector('#v-events #active-markets') || document.getElementById('active-markets');
     if (!container) return;
 
     if (!markets || markets.length === 0) {
