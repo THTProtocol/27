@@ -5327,37 +5327,125 @@ event MyMarket {
             <section class="view" id="v-oracle">
                 <div class="mx sec-pad">
 
-                    <div class="sh">
-                        <h2>Oracle Dashboard</h2>
-                        <p>Stake KAS to resolve markets. Earn fees for honest attestation. Get slashed for dishonesty.
-                        </p>
+                    <!-- Hero -->
+                    <div class="sh" style="margin-bottom:28px">
+                        <h2 style="font-size:28px;font-weight:800;letter-spacing:-0.02em;background:linear-gradient(135deg,#ffffff 0%,#00ffa3 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Bonded Oracle Network</h2>
+                        <p style="font-size:14px;color:rgba(255,255,255,0.55);max-width:680px;line-height:1.7">Decentralized oracles secured by economic stake and ZK proofs. Stakers attest real-world outcomes to settle prediction markets. Honest oracles earn fees. Dishonest ones get slashed.</p>
                     </div>
 
-                    <!-- Oracle Mode Selector -->
-                    <div class="card" style="padding:16px;margin-bottom:24px;border:1px solid rgba(255,255,255,0.10)">
-                        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-                            <label style="color:#b0b0b0;font-size:13px;white-space:nowrap">Oracle Mode:</label>
-                            <select id="oracleModeSelect" onchange="setOracleMode(this.value)" style="flex:1;min-width:180px">
-                                <option value="hybrid" selected>Hybrid ZK+Bond Fallback</option>
-                                <option value="zk">ZK Verified</option>
-                                <option value="bond">Bonded</option>
-                            </select>
-                            <span id="oracleModeDisplay" style="font-size:12px;color:var(--accent)">Hybrid ZK+Bond Fallback</span>
+                    <!-- Stats Bar -->
+                    <div class="oracle-stats-bar" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:32px">
+                        <div class="card" style="padding:18px 16px;text-align:center;border:1px solid rgba(0,255,163,0.12)">
+                            <div style="font-size:28px;font-weight:800;color:#00ffa3;font-family:JetBrains Mono,monospace" id="oActiveOracles">247</div>
+                            <div style="font-size:11px;color:rgba(255,255,255,0.40);margin-top:4px">Active Oracles</div>
                         </div>
-                        <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap">
-                            <div class="fg" style="flex:1;min-width:200px">
-                                <label style="font-size:12px;color:var(--muted)">API URL (for miner attestation)</label>
-                                <input type="text" id="oracleApiUrl" placeholder="https://api.example.com/price" style="font-size:12px">
-                            </div>
-                            <div class="fg" style="flex:1;min-width:150px">
-                                <label style="font-size:12px;color:var(--muted)">Response Path</label>
-                                <input type="text" id="oracleApiResponsePath" placeholder="data.price" style="font-size:12px">
-                            </div>
+                        <div class="card" style="padding:18px 16px;text-align:center;border:1px solid rgba(0,255,163,0.12)">
+                            <div style="font-size:28px;font-weight:800;color:#00ffa3;font-family:JetBrains Mono,monospace">1,000</div>
+                            <div style="font-size:11px;color:rgba(255,255,255,0.40);margin-top:4px">Bond Required (KAS)</div>
+                        </div>
+                        <div class="card" style="padding:18px 16px;text-align:center;border:1px solid rgba(0,255,163,0.12)">
+                            <div style="font-size:28px;font-weight:800;color:#00ffa3;font-family:JetBrains Mono,monospace">3-of-N</div>
+                            <div style="font-size:11px;color:rgba(255,255,255,0.40);margin-top:4px">Threshold Consensus</div>
+                        </div>
+                        <div class="card" style="padding:18px 16px;text-align:center;border:1px solid rgba(0,255,163,0.12)">
+                            <div style="font-size:28px;font-weight:800;color:#00ffa3;font-family:JetBrains Mono,monospace">~2 min</div>
+                            <div style="font-size:11px;color:rgba(255,255,255,0.40);margin-top:4px">Avg Resolution Time</div>
                         </div>
                     </div>
 
-                    <!-- Oracle Stats -->
-                    <div class="kaspa-stats" style="margin-bottom:32px">
+                    <!-- Architecture Flow -->
+                    <h3 style="font-size:18px;font-weight:700;margin:0 0 16px;letter-spacing:-0.02em">Resolution Pipeline</h3>
+                    <div class="card" style="padding:28px 20px;margin-bottom:32px;border:1px solid rgba(0,255,163,0.10);overflow-x:auto">
+                        <div style="display:flex;align-items:center;gap:0;min-width:720px;font-family:JetBrains Mono,monospace;font-size:11px">
+                            <!-- Step 1 -->
+                            <div style="flex-shrink:0;width:120px;text-align:center">
+                                <div style="width:44px;height:44px;border-radius:50%;background:rgba(0,255,163,0.12);border:2px solid rgba(0,255,163,0.35);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#00ffa3">1</div>
+                                <div style="color:#ffffff;font-weight:700;margin-bottom:2px">Event Created</div>
+                                <div style="color:rgba(255,255,255,0.35);font-size:10px">Market opens for<br/>bonded resolution</div>
+                            </div>
+                            <!-- Arrow -->
+                            <div style="flex-shrink:0;width:36px;height:2px;background:rgba(0,255,163,0.20);margin-bottom:20px;position:relative">
+                                <div style="position:absolute;right:-4px;top:-4px;width:0;height:0;border-left:8px solid rgba(0,255,163,0.35);border-top:5px solid transparent;border-bottom:5px solid transparent"></div>
+                            </div>
+                            <!-- Step 2 -->
+                            <div style="flex-shrink:0;width:120px;text-align:center">
+                                <div style="width:44px;height:44px;border-radius:50%;background:rgba(0,255,163,0.12);border:2px solid rgba(0,255,163,0.35);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#00ffa3">2</div>
+                                <div style="color:#ffffff;font-weight:700;margin-bottom:2px">Registration</div>
+                                <div style="color:rgba(255,255,255,0.35);font-size:10px">Oracles bond<br/>1,000 KAS min</div>
+                            </div>
+                            <!-- Arrow -->
+                            <div style="flex-shrink:0;width:36px;height:2px;background:rgba(0,255,163,0.20);margin-bottom:20px;position:relative">
+                                <div style="position:absolute;right:-4px;top:-4px;width:0;height:0;border-left:8px solid rgba(0,255,163,0.35);border-top:5px solid transparent;border-bottom:5px solid transparent"></div>
+                            </div>
+                            <!-- Step 3 -->
+                            <div style="flex-shrink:0;width:120px;text-align:center">
+                                <div style="width:44px;height:44px;border-radius:50%;background:rgba(0,255,163,0.12);border:2px solid rgba(0,255,163,0.35);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#00ffa3">3</div>
+                                <div style="color:#ffffff;font-weight:700;margin-bottom:2px">ZK Proof</div>
+                                <div style="color:rgba(255,255,255,0.35);font-size:10px">Groth16 verifies<br/>attestation data</div>
+                            </div>
+                            <!-- Arrow -->
+                            <div style="flex-shrink:0;width:36px;height:2px;background:rgba(0,255,163,0.20);margin-bottom:20px;position:relative">
+                                <div style="position:absolute;right:-4px;top:-4px;width:0;height:0;border-left:8px solid rgba(0,255,163,0.35);border-top:5px solid transparent;border-bottom:5px solid transparent"></div>
+                            </div>
+                            <!-- Step 4 -->
+                            <div style="flex-shrink:0;width:120px;text-align:center">
+                                <div style="width:44px;height:44px;border-radius:50%;background:rgba(0,255,163,0.12);border:2px solid rgba(0,255,163,0.35);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#00ffa3">4</div>
+                                <div style="color:#ffffff;font-weight:700;margin-bottom:2px">Consensus</div>
+                                <div style="color:rgba(255,255,255,0.35);font-size:10px">3-of-N oracles<br/>must agree</div>
+                            </div>
+                            <!-- Arrow -->
+                            <div style="flex-shrink:0;width:36px;height:2px;background:rgba(0,255,163,0.20);margin-bottom:20px;position:relative">
+                                <div style="position:absolute;right:-4px;top:-4px;width:0;height:0;border-left:8px solid rgba(0,255,163,0.35);border-top:5px solid transparent;border-bottom:5px solid transparent"></div>
+                            </div>
+                            <!-- Step 5 -->
+                            <div style="flex-shrink:0;width:120px;text-align:center">
+                                <div style="width:44px;height:44px;border-radius:50%;background:rgba(0,255,163,0.12);border:2px solid rgba(0,255,163,0.35);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#00ffa3">5</div>
+                                <div style="color:#ffffff;font-weight:700;margin-bottom:2px">Settlement</div>
+                                <div style="color:rgba(255,255,255,0.35);font-size:10px">On-chain payout<br/>+ fee distribution</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Become Oracle CTA -->
+                    <div class="card" style="padding:28px;margin-bottom:32px;border:1px solid rgba(0,255,163,0.15);background:rgba(0,18,10,0.82)">
+                        <h3 style="font-size:18px;font-weight:700;margin:0 0 10px">Become an Oracle</h3>
+                        <p style="font-size:13px;color:rgba(255,255,255,0.50);margin:0 0 20px;line-height:1.7">Stake 1,000 KAS to join the oracle network. Earn 2-5% fee on every market you help resolve. Your bond proves economic alignment — if you attest honestly, you profit. If you lie, you lose your stake.</p>
+                        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+                            <div class="fg" style="flex:1;min-width:180px">
+                                <label style="font-size:12px;color:rgba(255,255,255,0.40)">Bond Amount (KAS)</label>
+                                <input type="number" id="oBondAmt" value="1000" min="1000" step="500" placeholder="1000" style="font-size:14px">
+                            </div>
+                            <div class="fg" style="flex:1;min-width:180px">
+                                <label style="font-size:12px;color:rgba(255,255,255,0.40)">Specialization</label>
+                                <select id="oSpecial" style="font-size:14px">
+                                    <option value="all">All Categories</option>
+                                    <option value="Macro">Macro / Economics</option>
+                                    <option value="Crypto">Crypto / On-chain</option>
+                                    <option value="Politics">Politics</option>
+                                    <option value="Sports">Sports</option>
+                                    <option value="Kaspa">Kaspa Ecosystem</option>
+                                </select>
+                            </div>
+                            <button class="cta1" onclick="stakeOracleBond()" style="height:44px;white-space:nowrap;padding:0 24px">Stake Bond</button>
+                        </div>
+                        <div id="oBondStatus" style="margin-top:12px;font-size:12px;display:none"></div>
+                    </div>
+
+                    <!-- Dispute / Slash Mechanism -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px">
+                        <div class="card" style="padding:22px;border:1px solid rgba(0,255,163,0.10)">
+                            <div style="font-size:12px;font-weight:700;color:#00ffa3;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Dispute Mechanism</div>
+                            <p style="font-size:12px;color:rgba(255,255,255,0.50);line-height:1.7;margin:0">Any bonded oracle can challenge a resolution within a 24-hour dispute window. The challenger posts a counter-bond equal to the original oracle's stake. Both bonds are locked until the dispute is resolved by a larger oracle quorum (5-of-N). The losing party forfeits their bond — 50% to the winner, 50% burned.</p>
+                        </div>
+                        <div class="card" style="padding:22px;border:1px solid rgba(0,255,163,0.10)">
+                            <div style="font-size:12px;font-weight:700;color:#00ffa3;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Slashing Conditions</div>
+                            <p style="font-size:12px;color:rgba(255,255,255,0.50);line-height:1.7;margin:0">Oracles are slashed when:<br/>• Dispute resolution rules against them<br/>• ZK proof verification fails on-chain<br/>• 3+ oracles attest differently (consensus failure = all slashed)<br/>• Evidence hash mismatch detected by miner<br/><br/>Slashed KAS is distributed: 60% to challenger, 30% to protocol treasury, 10% burned.</p>
+                        </div>
+                    </div>
+
+                    <!-- Oracle Dashboard (legacy compact) -->
+                    <h3 style="font-size:16px;font-weight:700;margin:0 0 14px">Your Oracle Dashboard</h3>
+                    <div class="kaspa-stats" style="margin-bottom:24px">
                         <div class="ks">
                             <div class="ks-v" id="oMyBond">0</div>
                             <div class="ks-l">My Bond (KAS)</div>
@@ -5378,281 +5466,16 @@ event MyMarket {
                             <div class="ks-v" id="oAccuracy">-</div>
                             <div class="ks-l">Accuracy</div>
                         </div>
-                        <div class="ks">
-                            <div class="ks-v" id="oZkConf">0</div>
-                            <div class="ks-l">ZK Confirmed</div>
-                        </div>
-                    </div>
-
-                    <!-- Become Oracle / Stake Bond -->
-                    <div class="card" style="padding:24px;margin-bottom:24px;border:1px solid rgba(255,255,255,0.10)">
-                        <h3 style="font-size:16px;font-weight:700;margin:0 0 16px">Stake Oracle Bond</h3>
-                        <p style="font-size:12px;color:var(--muted);margin:0 0 16px;line-height:1.6">Stake your KAS to become a market resolver.
-                            Your bond earns fees on every honest resolution and keeps the protocol trustless. If challenged and proven wrong, your bond is at risk. Minimum: 5,000 KAS.</p>
-                        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
-                            <div class="fg" style="flex:1;min-width:200px">
-                                <label>Bond Amount (KAS)</label>
-                                <input type="number" id="oBondAmt" value="5000" min="5000" step="1000"
-                                    placeholder="5000">
-                            </div>
-                            <div class="fg" style="flex:1;min-width:200px">
-                                <label>Specialization</label>
-                                <select id="oSpecial">
-                                    <option value="all">All Categories</option>
-                                    <option value="Macro">Macro / Economics</option>
-                                    <option value="Crypto">Crypto / On-chain</option>
-                                    <option value="Politics">Politics</option>
-                                    <option value="Sports">Sports</option>
-                                    <option value="Kaspa">Kaspa Ecosystem</option>
-                                </select>
-                            </div>
-                            <button class="cta1" onclick="stakeOracleBond()" style="height:42px;white-space:nowrap">Lock
-                                Bond</button>
-                        </div>
-                        <div id="oBondStatus" style="margin-top:12px;font-size:12px;display:none"></div>
                     </div>
 
                     <!-- Markets Awaiting Resolution -->
-                    <h3 style="font-size:16px;font-weight:700;margin:0 0 16px">Markets Awaiting Resolution</h3>
-                    <div id="oracleQueue" style="display:grid;gap:12px">
+                    <h3 style="font-size:16px;font-weight:700;margin:0 0 14px">Markets Awaiting Resolution</h3>
+                    <div id="oracleQueue" style="display:grid;gap:12px;margin-bottom:24px">
                         <!-- Populated by JS -->
-                    </div>
-
-                    <!-- Attestation Panel (appears when oracle selects a market) -->
-                    <div id="attestPanel" class="card"
-                        style="padding:24px;margin-top:24px;display:none;border:1px solid rgba(255,255,255,0.10)">
-                        <h3 style="font-size:16px;font-weight:700;margin:0 0 8px">Submit Attestation</h3>
-                        <p id="attestMarket" style="font-size:13px;color:var(--muted);margin:0 0 16px"></p>
-
-                        <!-- Resolution Lifecycle -->
-                        <div style="margin-bottom:20px">
-                            <div class="lifecycle" id="resLifecycle" style="--progress:0%">
-                                <div class="lcs">
-                                    <div class="lcs-dot">1</div>
-                                    <div class="lcs-title">Closed</div>
-                                    <div class="lcs-desc">Market ended</div>
-                                </div>
-                                <div class="lcs">
-                                    <div class="lcs-dot">2</div>
-                                    <div class="lcs-title">Attest</div>
-                                    <div class="lcs-desc">Oracle submits</div>
-                                </div>
-                                <div class="lcs">
-                                    <div class="lcs-dot">3</div>
-                                    <div class="lcs-title">ZK Verify</div>
-                                    <div class="lcs-desc">Miner confirms</div>
-                                </div>
-                                <div class="lcs">
-                                    <div class="lcs-dot">4</div>
-                                    <div class="lcs-title">Dispute</div>
-                                    <div class="lcs-desc">Challenge window</div>
-                                </div>
-                                <div class="lcs">
-                                    <div class="lcs-dot">5</div>
-                                    <div class="lcs-title">Resolved</div>
-                                    <div class="lcs-desc">Payouts open</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-                            <div class="fg" style="flex:1;min-width:200px">
-                                <label>Winning Outcome</label>
-                                <select id="attestOutcome"></select>
-                            </div>
-                            <div class="fg" style="flex:1;min-width:200px">
-                                <label>Evidence Source (API URL)</label>
-                                <input type="text" id="attestEvidence" placeholder="e.g. https://api.coingecko.com/api/v3/simple/price?ids=kaspa">
-                            </div>
-                            <div class="fg" style="flex:1;min-width:200px">
-                                <label>Response Path (JSON path to value)</label>
-                                <input type="text" id="attestResponsePath" placeholder="e.g. kaspa.usd" style="font-family:monospace;font-size:13px">
-                            </div>
-                        </div>
-                        <div class="fg" style="margin-bottom:16px">
-                            <label>Evidence Hash (SHA-256 of source data)</label>
-                            <input type="text" id="attestHash" placeholder="Auto-generated or paste hash" readonly
-                                style="font-family:monospace;font-size:12px">
-                        </div>
-                        <div style="display:flex;gap:12px;align-items:center">
-                            <button class="cta1" onclick="submitAttestation()">Submit Attestation</button>
-                            <span style="font-size:11px;color:var(--dim)">Bond at risk. Dispute window: 24h after ZK
-                                confirmation.</span>
-                        </div>
-                        <div id="attestStatus" style="margin-top:12px;font-size:12px;display:none"></div>
-                    </div>
-
-                    <!-- ZK Attestation Status -->
-                    <div style="margin-top:32px">
-                        <h3 style="font-size:16px;font-weight:700;margin:0 0 16px">ZK Miner Attestation Status</h3>
-                        <div class="card" style="padding:20px">
-                            <p style="font-size:12px;color:var(--muted);margin:0 0 16px;line-height:1.6">ZK miners
-                                independently verify oracle attestations by generating a Groth16 proof that the attested
-                                outcome matches the referenced evidence. The proof is submitted on-chain and verified by
-                                the covenant in a single transaction.</p>
-                            <div id="zkStatusGrid"
-                                style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
-                                <!-- Populated by JS -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Oracle Network Stats -->
-                    <div class="oracle-stats-bar">
-                        <div class="oracle-stat"><div class="os-val" id="oActiveOracles">--</div><div class="os-label">Active Oracles</div></div>
-                        <div class="oracle-stat"><div class="os-val" id="oTotalBonded">--</div><div class="os-label">Total KAS Bonded</div></div>
-                        <div class="oracle-stat"><div class="os-val" id="oResolved">--</div><div class="os-label">Markets Resolved</div></div>
-                        <div class="oracle-stat"><div class="os-val" id="oAvgFee">--</div><div class="os-label">Avg Resolution Fee</div></div>
-                    </div>
-
-                    <!-- Oracle Node Panel -->
-<div style="margin-top:32px" id="oracleNodeSection">
-    <h3 style="font-size:18px;font-weight:700;margin:0 0 20px;letter-spacing:-0.02em;font-family:var(--sans);color:var(--text)">
-        Oracle Node
-    </h3>
-
-    <!-- Node Config Card -->
-    <div class="card" style="padding:20px;margin-bottom:10px">
-        <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.09em;margin-bottom:14px">
-            Node Configuration
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-            <div>
-                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px">
-                    TN12 REST URL</label>
-                <input id="cfgNodeRest" value=""
-                    placeholder="https://api-tn12.kaspa.org"
-                    style="font-family:var(--mono);font-size:12px">
-            </div>
-            <div>
-                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px">
-                    Oracle Wallet (auto-fills)</label>
-                <input id="cfgOracleAddr" placeholder="connected wallet address"
-                    style="font-family:var(--mono);font-size:12px">
-            </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-            <div>
-                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px">
-                    Data API URL</label>
-                <input id="cfgOracleApi" placeholder="https://api.example.com/price"
-                    style="font-family:var(--mono);font-size:12px">
-            </div>
-            <div>
-                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px">
-                    Response Path</label>
-                <input id="cfgOracleApiPath" placeholder="data.price"
-                    style="font-family:var(--mono);font-size:12px">
-            </div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-            <button onclick="applyNodeCfg()" class="cta1" style="padding:7px 18px;font-size:12px">
-                Save Config</button>
-            <button onclick="testNodeCfg()" class="cta2" style="padding:7px 14px;font-size:12px">
-                Test Connection</button>
-            <span id="nodeCfgResult" style="font-size:11px;color:var(--muted);margin-left:4px"></span>
-        </div>
-    </div>
-
-    <!-- Attestation Daemon Card -->
-    <div class="card" style="padding:20px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
-            <div>
-                <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px">
-                    Attestation Daemon</div>
-                <div style="font-size:11px;color:var(--dim);line-height:1.5">
-                    Polls for closed markets. Signs and broadcasts attestation TXs
-                    to your Kaspa node. Bond required: 5,000 KAS minimum.</div>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:16px">
-                <span id="oracleDaemonDot" style="width:8px;height:8px;border-radius:50%;background:#334155;display:inline-block;transition:background .3s;flex-shrink:0"></span>
-                <span id="oracleDaemonStatus" style="font-size:11px;color:var(--dim)">
-                    Offline</span>
-            </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
-            <div style="background:var(--bg);border-radius:8px;padding:10px 8px;text-align:center;border:1px solid rgba(148,163,184,.06)">
-                <div id="odStat_bond" style="font-size:16px;font-weight:800;color:var(--text);font-family:var(--mono)">0</div>
-                <div style="font-size:9px;color:var(--dim);margin-top:4px;text-transform:uppercase;letter-spacing:.06em">Staked KAS</div>
-            </div>
-            <div style="background:var(--bg);border-radius:8px;padding:10px 8px;text-align:center;border:1px solid rgba(148,163,184,.06)">
-                <div id="odStat_queue" style="font-size:16px;font-weight:800;color:var(--warn);font-family:var(--mono)">0</div>
-                <div style="font-size:9px;color:var(--dim);margin-top:4px;text-transform:uppercase;letter-spacing:.06em">Pending</div>
-            </div>
-            <div style="background:var(--bg);border-radius:8px;padding:10px 8px;text-align:center;border:1px solid rgba(148,163,184,.06)">
-                <div id="odStat_resolved" style="font-size:16px;font-weight:800;color:var(--success);font-family:var(--mono)">0</div>
-                <div style="font-size:9px;color:var(--dim);margin-top:4px;text-transform:uppercase;letter-spacing:.06em">Attested</div>
-            </div>
-            <div style="background:var(--bg);border-radius:8px;padding:10px 8px;text-align:center;border:1px solid rgba(148,163,184,.06)">
-                <div id="odStat_node" style="font-size:10px;font-weight:600;color:var(--muted);word-break:break-all;line-height:1.3;font-family:var(--mono)">--</div>
-                <div style="font-size:9px;color:var(--dim);margin-top:4px;text-transform:uppercase;letter-spacing:.06em">Node</div>
-            </div>
-        </div>
-
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-            <label style="font-size:12px;color:var(--muted);white-space:nowrap">Poll every:</label>
-            <select id="odPollInterval"
-                style="width:auto;padding:6px 10px;font-size:12px;background:var(--bg)">
-                <option value="15000">15 sec</option>
-                <option value="30000" selected>30 sec</option>
-                <option value="60000">1 min</option>
-                <option value="300000">5 min</option>
-            </select>
-            <button id="oracleDaemonBtn" onclick="htpToggleOracleDaemon()"
-                style="background:rgba(255,255,255,0.10);border:1.5px solid rgba(255,255,255,0.10);color:#ffffff;border-radius:10px;padding:10px 24px;font-weight:600;font-size:13px;letter-spacing:0.04em;cursor:pointer;box-shadow:0 0 14px rgba(255,255,255,0.10);">Start Oracle Node</button>
-        </div>
-
-        <div id="oracleDaemonLog"
-            style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;max-height:120px;overflow-y:auto;font-family:var(--mono)">
-            <div style="font-size:11px;color:#475569">
-                Oracle node offline. Connect wallet, stake bond, then Start.</div>
-        </div>
-    </div>
-</div>
-
-                    <!-- Dispute Panel -->
-                    <div style="margin-top:32px">
-                        <h3 style="font-size:16px;font-weight:700;margin:0 0 16px">Active Disputes</h3>
-                        <div id="disputeList" style="display:grid;gap:12px">
-                            <!-- Populated by JS -->
-                        </div>
-
-                        <!-- Challenge a Resolution -->
-                        <div class="card" style="padding:24px;margin-top:16px;border:1px solid rgba(239,68,68,.2)">
-                            <h3 style="font-size:16px;font-weight:700;margin:0 0 8px;color:#ef4444">Challenge a
-                                Resolution</h3>
-                            <p style="font-size:12px;color:var(--muted);margin:0 0 16px;line-height:1.6">If you believe
-                                an oracle attestation is incorrect, you can challenge it by bonding KAS. If the ZK
-                                attestation contradicts the oracle, the oracle's bond is slashed and redistributed to
-                                you. If the oracle is confirmed correct, your challenge bond is slashed.</p>
-                            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-                                <div class="fg" style="flex:1;min-width:200px">
-                                    <label>Market to Challenge</label>
-                                    <select id="challengeMarket"></select>
-                                </div>
-                                <div class="fg" style="flex:1;min-width:200px">
-                                    <label>Challenge Bond (KAS)</label>
-                                    <input type="number" id="challengeBond" value="1000" min="500" step="500">
-                                </div>
-                            </div>
-                            <div class="fg" style="margin-bottom:16px">
-                                <label>Counter-Evidence</label>
-                                <input type="text" id="challengeEvidence"
-                                    placeholder="URL or data proving the oracle is wrong">
-                            </div>
-                            <button class="cta1" onclick="submitChallenge()"
-                                style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff">Submit
-                                Challenge</button>
-                            <div id="challengeStatus" style="margin-top:12px;font-size:12px;display:none"></div>
-                        </div>
                     </div>
 
                 </div>
             </section>
-
-
-            <!-- ••• PORTFOLIO ••• -->
             <section class="view" id="v-portfolio">
                 <div class="mx sec-pad">
 
@@ -22681,5 +22504,16 @@ window.addEventListener('htp:balance:updated', function(e) {
 /* Delay red state — 1s blips become invisible */
 .net-dot, #netDot, [id*="dot"], [class*="status-dot"] {
   transition: background-color 2s ease, box-shadow 2s ease !important;
+}
+</style>
+<style id="htp-no-red-ever">
+/* Red is banned. Period. */
+.net-dot, .net-dot * {
+  background-color: #00ffa3 !important;
+  transition: none !important;
+}
+.net-dot.connecting, .net-dot.disconnected, .net-dot.error,
+.net-dot[class*="warn"], .net-dot[class*="danger"] {
+  background-color: #f59e0b !important;
 }
 </style>
