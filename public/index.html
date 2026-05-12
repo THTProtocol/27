@@ -4412,38 +4412,25 @@ hr, .divider { border-color: rgba(0,255,163,0.1) !important; }
                     </div>
                 </div>
 
-                <!-- Trust bar -->
-                <div class="mx" style="padding-bottom:40px">
-                    <div
-                        style="display:flex;align-items:center;justify-content:center;gap:32px;padding:20px;border-radius:14px;border:1px solid var(--border);background:rgba(10,15,30,.3);backdrop-filter:blur(4px)">
-                        <div style="text-align:center">
-                            <div
-                                style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase">
-                                Settlement</div>
-                            <div style="font-size:12px;color:var(--muted);margin-top:2px">Kaspa L1</div>
-                        </div>
-                        <div style="width:1px;height:24px;background:var(--border)"></div>
-                        <div style="text-align:center">
-                            <div
-                                style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase">
-                                Consensus</div>
-                            <div style="font-size:12px;color:var(--muted);margin-top:2px">GHOSTDAG / DAGKnight</div>
-                        </div>
-                        <div style="width:1px;height:24px;background:var(--border)"></div>
-                        <div style="text-align:center">
-                            <div
-                                style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase">
-                                Contracts</div>
-                            <div style="font-size:12px;color:var(--muted);margin-top:2px">KIP-10 Covenants</div>
-                        </div>
-                        <div style="width:1px;height:24px;background:var(--border)"></div>
-                        <div style="text-align:center">
-                            <div
-                                style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase">
-                                Proof</div>
-                            <div style="font-size:12px;color:var(--muted);margin-top:2px">Pure PoW (kHeavyHash)</div>
-                        </div>
-                    </div>
+                <!-- Trust pills -->
+                <div class="mx" style="padding-bottom:40px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center">
+                    <span class="pill" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;height:auto;font-size:12px;color:#e8f5f0">
+                        <span style="color:#00ffa3;font-weight:700">Settlement</span>
+                        <span style="color:#a8cfbc">Kaspa L1</span>
+                    </span>
+                    <span class="pill" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;height:auto;font-size:12px;color:#e8f5f0">
+                        <span style="color:#00ffa3;font-weight:700">Consensus</span>
+                        <span style="color:#a8cfbc">GHOSTDAG / DAGKnight</span>
+                    </span>
+                    <span class="pill" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;height:auto;font-size:12px;color:#e8f5f0">
+                        <span style="color:#00ffa3;font-weight:700">Contracts</span>
+                        <span style="color:#a8cfbc">KIP-10 Covenants</span>
+                    </span>
+                    <span class="pill" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;height:auto;font-size:12px;color:#e8f5f0">
+                        <span style="color:#00ffa3;font-weight:700">Proof</span>
+                        <span style="color:#a8cfbc">Pure PoW (kHeavyHash)</span>
+                    </span>
+                </div>
                 </div>
             </section>
 
@@ -5530,10 +5517,44 @@ event MyMarket {
                         </div>
                     </div>
 
-                    <!-- Become Oracle CTA -->
+                    <!-- Dual Oracle: Automated Node + Human Bonded -->
+                    <div class="card" style="padding:28px;margin-bottom:24px;border:2px solid rgba(0,255,163,0.25);background:rgba(0,18,10,0.88)!important;position:relative;overflow:visible;box-shadow:0 0 48px rgba(0,255,163,0.08)">
+                        <div style="position:absolute;top:-11px;left:24px;background:#00ffa3;color:#000804;padding:2px 14px;border-radius:99px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 0 20px rgba(0,255,163,0.5)">AUTOMATED</div>
+                        <h3 style="font-size:18px;font-weight:700;margin:10px 0 10px;color:#00ffa3">Run Oracle Node + Script</h3>
+                        <p style="font-size:13px;color:rgba(255,255,255,0.55);margin:0 0 18px;line-height:1.7">The most powerful way to participate. Run a lightweight oracle daemon that watches markets, fetches real-world data via APIs/scrapers, generates ZK attestation proofs, and submits them on-chain. Earn fees automatically. No browser needed.</p>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+                            <div style="background:rgba(0,8,4,0.6);border:1px solid rgba(0,255,163,0.10);border-radius:12px;padding:16px">
+                                <div style="font-size:10px;font-weight:700;color:#00ffa3;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Node Responsibilities</div>
+                                <ul style="margin:0;padding:0 0 0 16px;font-size:12px;color:rgba(255,255,255,0.55);line-height:1.8">
+                                    <li>Watch blockchain for new oracle-eligible markets</li>
+                                    <li>Fetch external data (APIs, RSS, scrapers)</li>
+                                    <li>Generate Groth16 ZK attestation proofs</li>
+                                    <li>Submit signed resolution TX to Kaspa L1</li>
+                                    <li>Monitor for disputes and auto-counter-challenge</li>
+                                </ul>
+                            </div>
+                            <div style="background:rgba(0,8,4,0.6);border:1px solid rgba(0,255,163,0.10);border-radius:12px;padding:16px">
+                                <div style="font-size:10px;font-weight:700;color:#00ffa3;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Economic Incentives</div>
+                                <ul style="margin:0;padding:0 0 0 16px;font-size:12px;color:rgba(255,255,255,0.55);line-height:1.8">
+                                    <li>Earn 2-5% fee on every market resolved</li>
+                                    <li>First-mover bonus for fastest honest attestation</li>
+                                    <li>Challenge wrong attestations = win opponent's bond</li>
+                                    <li>Reputation score = priority in market assignment</li>
+                                    <li>Stake slashed for dishonest attestation</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.35);border:1px solid rgba(0,255,163,0.14);border-radius:10px;padding:14px 18px;font-family:JetBrains Mono,monospace;font-size:12px;color:#a8cfbc;margin-bottom:14px">
+                            <span style="color:#00ffa3;font-weight:700">$</span> oracle-node --bond 5000 --specialization=all --auto-attest --zk-prover=groth16<br>
+                            <span style="color:rgba(0,255,163,0.4)">// Downloads verifier keys, syncs Kaspa TN12, watches Firebase for new markets</span>
+                        </div>
+                        <button class="cta1" onclick="go('wallet')" style="background:linear-gradient(180deg,rgba(0,255,163,0.22),rgba(0,255,163,0.12))!important;border:1px solid rgba(0,255,163,0.5)!important;color:#00ffa3!important;box-shadow:0 0 24px rgba(0,255,163,0.15)">Connect Wallet &amp; Run Oracle Node</button>
+                    </div>
+
+                    <!-- Human Attestation -->
                     <div class="card" style="padding:28px;margin-bottom:32px;border:1px solid rgba(0,255,163,0.15);background:rgba(0,18,10,0.82)">
-                        <h3 style="font-size:18px;font-weight:700;margin:0 0 10px">Become an Oracle</h3>
-                        <p style="font-size:13px;color:rgba(255,255,255,0.50);margin:0 0 20px;line-height:1.7">Stake 1,000 KAS to join the oracle network. Earn 2-5% fee on every market you help resolve. Your bond proves economic alignment — if you attest honestly, you profit. If you lie, you lose your stake.</p>
+                        <h3 style="font-size:18px;font-weight:700;margin:0 0 10px">Human Attestation</h3>
+                         — if you attest honestly, you profit. If you lie, you lose your stake.</p>
                         <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
                             <div class="fg" style="flex:1;min-width:180px">
                                 <label style="font-size:12px;color:rgba(255,255,255,0.40)">Bond Amount (KAS)</label>
@@ -18378,26 +18399,26 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
     var eventId = getActiveEventId();
     var bonds = eventId && _oracleStore['bonds_' + eventId] ? _oracleStore['bonds_' + eventId] : [];
 
-    var html = '<div style="font-weight:600;margin-bottom:12px;color:var(--text)">Truth Bond Ledger</div>';
+    var html = '<div style="font-weight:600;margin-bottom:14px;color:#00ffa3;font-size:13px;letter-spacing:.04em;text-transform:uppercase">Truth Bond Ledger</div>';
 
     if (bonds.length === 0) {
-      html += '<div style="color:var(--muted);font-size:13px">No bonds submitted yet.</div>';
+      html += '<div style="color:rgba(255,255,255,0.35);font-size:13px;padding:20px;text-align:center">No bonds submitted yet.</div>';
     } else {
-      html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
-      html += '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.10);color:var(--muted)">' +
-        '<th style="text-align:left;padding:8px">Address</th>' +
-        '<th style="text-align:left;padding:8px">Outcome</th>' +
-        '<th style="text-align:right;padding:8px">Amount</th>' +
-        '<th style="text-align:right;padding:8px">Time</th></tr></thead><tbody>';
+      html += '<div style="display:flex;flex-direction:column;gap:8px">';
       for (var i = 0; i < bonds.length; i++) {
         var b = bonds[i];
-        html += '<tr style="border-bottom:1px solid rgba(10,15,30,0.6);color:var(--text)">' +
-          '<td style="padding:8px;font-family:monospace;font-size:11px;word-break:break-all">' + (b.address || '').substring(0, 24) + '...</td>' +
-          '<td style="padding:8px">' + (b.outcome || '') + '</td>' +
-          '<td style="padding:8px;text-align:right;font-weight:600">' + (b.amount || 0) + ' KAS</td>' +
-          '<td style="padding:8px;text-align:right;color:var(--muted)">' + new Date(b.timestamp || 0).toLocaleTimeString() + '</td></tr>';
+        var isChallenge = b.type === 'challenge';
+        html += '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(6,22,14,0.5);border:1px solid ' + (isChallenge ? 'rgba(245,158,11,0.22)' : 'rgba(0,255,163,0.10)') + ';border-radius:10px;font-size:12px">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-family:JetBrains Mono,monospace;font-size:11px;color:#a8cfbc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (b.address || '...').substring(0, 28) + '...</div>' +
+            '<div style="color:rgba(255,255,255,0.35);font-size:10px;margin-top:2px">' + new Date(b.timestamp || 0).toLocaleString() + '</div>' +
+          '</div>' +
+          '<div style="font-weight:700;color:#00ffa3;white-space:nowrap">' + (b.outcome || '--') + '</div>' +
+          '<div style="font-weight:600;color:#f0fff7;white-space:nowrap;text-align:right;min-width:60px">' + (b.amount || 0) + ' KAS</div>' +
+          (isChallenge ? '<div style="font-size:9px;color:#f59e0b;background:rgba(245,158,11,0.12);padding:2px 8px;border-radius:99px;font-weight:700">CHALLENGE</div>' : '') +
+        '</div>';
       }
-      html += '</tbody></table></div>';
+      html += '</div>';
     }
 
     card.innerHTML = html;
