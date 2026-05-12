@@ -3989,7 +3989,7 @@ html,body{background:#010806!important;}
   var cx=pc.getContext('2d');
   var W=0,H=0,blocks=[],lastSpawn=0;
   var T=[73,232,194];
-  function teal(a){return 'rgba('+T[0]+','+T[1]+','+T[2]+','+a+')';}
+  function teal(a){return 'rgba('+T[0]+','+T[1]+','+T[2]+','+(Math.min(a,0.12))+')';}
   function resize(){
     W=window.innerWidth;H=window.innerHeight;
     var dpr=window.devicePixelRatio||1;
@@ -7202,7 +7202,7 @@ event MyMarket {
           window.addEventListener('resize', resize);
           setTimeout(resize, 100);
 
-          function teal(a) { return 'rgba('+ACCENT[0]+','+ACCENT[1]+','+ACCENT[2]+','+a+')'; }
+          function teal(a) { return 'rgba('+ACCENT[0]+','+ACCENT[1]+','+ACCENT[2]+','+(Math.min(a,0.12))+')'; }
 
           function spawnBlock() {
             var lanes = Math.floor(H / 38);
