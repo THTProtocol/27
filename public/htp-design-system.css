@@ -196,3 +196,113 @@ h1{text-shadow:0 0 80px rgba(0,255,163,0.15),0 0 30px rgba(0,255,163,0.08)}
 @media (min-width: 768px) {
   .hdr #htpMobBtn { display: none !important; }
 }
+/* ═══════════════════════════════════════════════════
+   SKILL GAMES CARD ELEVATION — May 2026
+   ═══════════════════════════════════════════════════ */
+
+/* 1. Game preview gradient overlay — bottom-to-top fade covering 60% */
+.sgv2-card .game-preview,
+.sgv2-card [class*="preview"],
+.sg-card .game-preview,
+.sg-card [class*="preview"] {
+  position: relative;
+}
+.sgv2-card .game-preview::after,
+.sgv2-card [class*="preview"]::after,
+.sg-card .game-preview::after,
+.sg-card [class*="preview"]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  background: linear-gradient(to top, rgba(6,22,14,1) 0%, rgba(6,22,14,0.85) 30%, rgba(6,22,14,0.35) 60%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 2. Status dot standardization */
+.sg-dot-live,
+[class*="sg-dot"][class*="live"] {
+  background: #00ffa3 !important;
+  box-shadow: 0 0 8px rgba(0,255,163,0.5) !important;
+}
+.sg-dot-soon,
+[class*="sg-dot"][class*="soon"] {
+  background: #f59e0b !important;
+  box-shadow: 0 0 8px rgba(245,158,11,0.5) !important;
+}
+.sg-dot-offline,
+[class*="sg-dot"][class*="offline"] {
+  background: #4a6b5c !important;
+  box-shadow: 0 0 4px rgba(74,107,92,0.4) !important;
+}
+
+/* 3. Card hover: lift + inset top glow + border brighten */
+.sgv2-card,
+.sg-card {
+  position: relative !important;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease !important;
+}
+.sgv2-card:hover,
+.sg-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 -2px 20px rgba(0,255,163,0.12) inset,
+              0 12px 32px rgba(0,0,0,0.45) !important;
+  border-color: rgba(0,255,163,0.25) !important;
+}
+
+/* 4. Tag pills */
+.sgv2-card .tag,
+.sgv2-card [class*="tag"],
+.sg-card .tag,
+.sg-card [class*="tag"],
+.sgv2-card .pill,
+.sg-card .pill {
+  padding: 5px 14px !important;
+  border: 1px solid rgba(0,255,163,0.20) !important;
+  background: rgba(0,255,163,0.06) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border-radius: 100px !important;
+  font-size: 0.75rem !important;
+  color: rgba(0,255,163,0.85) !important;
+}
+
+/* 5. Play CTA button — hidden at rest, slides up on card hover */
+.sgv2-card .play-cta,
+.sgv2-card [class*="play"],
+.sg-card .play-cta,
+.sg-card [class*="play"],
+.sgv2-card .btn-play,
+.sg-card .btn-play {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  opacity: 0;
+  background: #00ffa3 !important;
+  color: #000804 !important;
+  font-weight: 700 !important;
+  padding: 10px 28px !important;
+  border-radius: 8px !important;
+  border: none !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.85rem;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease !important;
+  z-index: 3;
+  cursor: pointer;
+}
+.sgv2-card:hover .play-cta,
+.sgv2-card:hover [class*="play"],
+.sgv2-card:hover .btn-play,
+.sg-card:hover .play-cta,
+.sg-card:hover [class*="play"],
+.sg-card:hover .btn-play {
+  opacity: 1 !important;
+  transform: translateX(-50%) translateY(0) !important;
+  pointer-events: auto;
+}
