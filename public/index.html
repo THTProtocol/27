@@ -7991,6 +7991,8 @@ function go(v) {
             }
         } catch(e) {
             console.error('[go] nav error:', e);
+        // sync mobile tab bar
+        document.querySelectorAll('.tab-item').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === v); });
         } finally {
             // ensure nav buttons are re-enabled
             document.querySelectorAll('.nav-btn').forEach(function(b) {
@@ -22678,28 +22680,33 @@ window.addEventListener('htp:balance:updated', function(e) {
   })();
   </script>
   <!-- HTP-DESIGN-V2.0 Mobile Bottom Tab Bar -->
-  <nav class="htp-mobile-tabs" id="htpMobileTabs">
-    <button class="htp-mobile-tab active" data-nav="overview" onclick="go('overview')">
+  <div id="htpTabBar">
+    <div class="tab-item" onclick="go('overview')" data-tab="overview">
       <span class="tab-icon">⌂</span>
       <span class="tab-label">Home</span>
-    </button>
-    <button class="htp-mobile-tab" data-nav="markets" onclick="go('markets')">
-      <span class="tab-icon">☊</span>
+      <span class="tab-dot"></span>
+    </div>
+    <div class="tab-item" onclick="go('markets')" data-tab="markets">
+      <span class="tab-icon">◈</span>
       <span class="tab-label">Markets</span>
-    </button>
-    <button class="htp-mobile-tab create-tab" data-nav="create" onclick="go('create')">
-      <span class="tab-icon">+</span>
+      <span class="tab-dot"></span>
+    </div>
+    <div class="tab-item create" onclick="go('create')" data-tab="create">
+      <span class="tab-icon">⊕</span>
       <span class="tab-label">Create</span>
-    </button>
-    <button class="htp-mobile-tab" data-nav="oracle" onclick="go('oracle')">
-      <span class="tab-icon">⛨</span>
+      <span class="tab-dot"></span>
+    </div>
+    <div class="tab-item" onclick="go('oracle')" data-tab="oracle">
+      <span class="tab-icon">◎</span>
       <span class="tab-label">Oracle</span>
-    </button>
-    <button class="htp-mobile-tab" data-nav="wallet" onclick="go('wallet')">
-      <span class="tab-icon">₿</span>
+      <span class="tab-dot"></span>
+    </div>
+    <div class="tab-item" onclick="go('wallet')" data-tab="wallet">
+      <span class="tab-icon">◇</span>
       <span class="tab-label">Wallet</span>
-    </button>
-  </nav>
+      <span class="tab-dot"></span>
+    </div>
+  </div>
     <script src="/htp-theme-toggle.js?v=1"></script>
     <script src="/htp-ticker.js?v=1"></script>
 

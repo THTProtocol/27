@@ -866,3 +866,39 @@ html[data-theme="light"] .stat-card {
   color:var(--color-primary); font:600 11px/1 'Inter',sans-serif;
   letter-spacing:0.06em; text-transform:uppercase;
 }
+/* ═══════════════════════════════════════════════════
+   HTP-DESIGN-V2.0 — MOBILE BOTTOM TAB BAR
+   ═══════════════════════════════════════════════════ */
+
+#htpTabBar {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  height: calc(64px + env(safe-area-inset-bottom, 0px));
+  background: rgba(0,8,4,0.92);
+  backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(0,255,163,0.10);
+}
+@media (max-width: 768px) {
+  #htpTabBar { display: flex; }
+  .hdr-nav { display: none !important; }
+}
+.tab-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px;
+  cursor: pointer; padding-bottom: env(safe-area-inset-bottom, 0px);
+  color: var(--text-tertiary);
+  transition: color var(--dur-micro) var(--ease-micro);
+  -webkit-tap-highlight-color: transparent;
+}
+.tab-item.active { color: var(--color-primary); }
+.tab-item.active .tab-dot { opacity: 1; }
+.tab-icon { font-size: 22px; line-height: 1; }
+.tab-item.create .tab-icon { font-size: 26px; color: var(--color-primary); }
+.tab-label { font: 600 9px/1 'Inter',sans-serif; letter-spacing:0.04em; text-transform:uppercase; opacity: 0; }
+.tab-item.active .tab-label { opacity: 1; }
+.tab-dot { width:4px; height:4px; border-radius:50%; background:var(--color-primary); opacity:0; }
+
+/* Push content up for tab bar on mobile */
+@media (max-width: 768px) {
+  #htp-root { padding-bottom: 80px !important; }
+}
