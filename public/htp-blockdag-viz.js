@@ -18,8 +18,8 @@
   var BLOCK_R = 3;
   var PRIMARY = '#ffffff';
   var PRIMARY_GLOW = 'rgba(255,255,255,0.6)';
-  var BLOCK_FILL = '#0a1a14';
-  var BG = '#010806';
+  var BLOCK_FILL = '#141414';
+  var BG = '#080808';
   var LINE_COLOR = 'rgba(255,255,255,0.25)';
   var LABEL_COLOR = 'rgba(255,255,255,0.45)';
 
