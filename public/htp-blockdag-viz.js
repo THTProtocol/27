@@ -183,55 +183,6 @@
     _bgSpawnNext = Math.max(_bgSpawnNext, _bgSpawnNext + _SPAWN_GAP);
   }
 
-  // Write live Kaspa data to Firebase Realtime DB.
-  // Disabled by default for anonymous clients to avoid permission_denied SDK log spam.
-  // Set window.HTP_FB_STATS_WRITES = true to opt in (requires database rules to allow).
-  var _fbWriteDisabled = (typeof window !== 'undefined' && window.HTP_FB_STATS_WRITES === true) ? false : true;
-  var _fbWarnedOnce = false;
-  var _fbWriteFailures = 0;
-  function _disableFbWrites(reason) {
-    if (_fbWriteDisabled) return;
-    _fbWriteDisabled = true;
-    if (!_fbWarnedOnce) {
-      _fbWarnedOnce = true;
-      console.warn('[HTP BlockDAG] Firebase stats writes disabled:', reason || 'permission_denied');
-    }
-  }
-  function _safeSet(ref, val) {
-    if (_fbWriteDisabled) return;
-    try {
-      var p = ref.set(val);
-      if (p && typeof p.catch === 'function') p.catch(function(err){
-        var msg = (err && (err.code || err.message)) || '';
-        if (/permission_denied|PERMISSION_DENIED/i.test(String(msg)) || ++_fbWriteFailures > 2) _disableFbWrites(msg);
-      });
-    } catch(e) { _disableFbWrites('exception'); }
-  }
-  function _syncFirebase(stats, blocks) {
-    if (_fbWriteDisabled) return;
-    try {
-      var fb = window.firebase;
-      if (!fb || !fb.apps || !fb.apps.length) return;
-      var db = fb.database();
-      if (stats) {
-        _safeSet(db.ref('kaspa/stats'), {
-          blockCount:  stats.blockCount  || 0,
-          daaScore:    stats.virtualDaaScore || 0,
-          difficulty:  stats.difficulty  || 0,
-          bps:         10,
-          ts:          Date.now()
-        });
-      }
-      if (blocks && blocks.length) {
-        var recent = blocks.slice(-15).map(function(b) {
-          return { hash: b.hash, blueScore: b.blueScore || 0, parents: (b.parents||[]).slice(0,3), ts: b.timestamp || 0 };
-        });
-        _safeSet(db.ref('kaspa/latestBlocks'), recent);
-        _safeSet(db.ref('kaspa/latestHash'), blocks[blocks.length - 1].hash);
-      }
-    } catch(e) { /* firebase not ready yet */ }
-  }
-
   function drawBackgroundMode(ctx, w, h) {
     ctx.clearRect(0, 0, w, h);
     _bgTime += 0.016;
@@ -407,7 +358,6 @@
 
       el = document.getElementById('statFee') || document.getElementById('kaspaFee') || document.getElementById('ks-fee');
       if (el) el.textContent = '~0.0001 KAS';
-      _syncFirebase(data, null);
     }).catch(function() {
       _connected = false;
     });
@@ -469,7 +419,6 @@
         _latestHash = _blocks[_blocks.length - 1].hash;
       }
       _injectRealBlocks(_blocks);
-      _syncFirebase(null, _blocks);
     }).catch(function() {
       _connected = false;
     });
