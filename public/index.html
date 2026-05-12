@@ -3930,7 +3930,7 @@ body #dagCanvas, body.on-overview #dagCanvas { opacity:1!important; }
 .dag-mini,#dagMiniWrap,#liveDagContainer,#dagMiniContainer{height:480px!important;min-height:480px!important;max-height:480px!important}
 
 /* Body/html: let canvas be the bg , body color matches canvas fill */
-html,body{background:#080808!important;}
+html,body{background:#061410!important;}
 
 /* Shell wrappers: fully transparent so canvas shows through */
 .shell,.shell-main{background:transparent!important;}
@@ -3972,7 +3972,7 @@ html,body{background:#080808!important;}
   #wlGrid{grid-template-columns:1fr!important;}
 }
 </style>
-<style id="kaspa-bg-flat">html,body{background:#080808 !important;}</style>
+<style id="kaspa-bg-flat">html,body{background:#061410 !important;}</style>
 </head>
 <body>
     <div class="shell">
@@ -3988,8 +3988,8 @@ html,body{background:#080808!important;}
   pc._startDagManaged=true;
   var cx=pc.getContext('2d');
   var W=0,H=0,blocks=[],lastSpawn=0;
-  var T=[255,255,255];
-  function teal(a){return 'rgba('+T[0]+','+T[1]+','+T[2]+','+(Math.min(a,0.12))+')';}
+  var T=[180,255,220];
+  function teal(a){return 'rgba('+T[0]+','+T[1]+','+T[2]+','+(Math.min(a,0.18))+')';}
   function resize(){
     W=window.innerWidth;H=window.innerHeight;
     var dpr=window.devicePixelRatio||1;
@@ -4015,7 +4015,7 @@ html,body{background:#080808!important;}
   }
   function draw(){
     /* solid background , canvas IS the background */
-    cx.fillStyle='#080808';cx.fillRect(0,0,W,H);
+    cx.fillStyle='#061410';cx.fillRect(0,0,W,H);
     /* faint grid lanes */
     cx.strokeStyle='rgba(255,255,255,0.10)';cx.lineWidth=0.5;
     for(var l=0;l*34+17<H;l++){cx.beginPath();cx.moveTo(0,l*34+17);cx.lineTo(W,l*34+17);cx.stroke();}
@@ -7202,7 +7202,7 @@ event MyMarket {
           window.addEventListener('resize', resize);
           setTimeout(resize, 100);
 
-          function teal(a) { return 'rgba('+ACCENT[0]+','+ACCENT[1]+','+ACCENT[2]+','+(Math.min(a,0.12))+')'; }
+          function teal(a) { return 'rgba('+ACCENT[0]+','+ACCENT[1]+','+ACCENT[2]+','+(Math.min(a,0.18))+')'; }
 
           function spawnBlock() {
             var lanes = Math.floor(H / 38);
