@@ -1,8 +1,21 @@
 {
   "version": 2,
-  "builds": [{ "src": "public/**", "use": "@vercel/static" }],
+  "builds": [
+    { "src": "public/**", "use": "@vercel/static" }
+  ],
   "routes": [
-    { "src": "/(.*)", "dest": "/public/$1" },
-    { "src": "/", "dest": "/public/index.html" }
+    {
+      "src": "/api/(.*)",
+      "dest": "https://hightable.pro/api/$1"
+    },
+    {
+      "src": "/ws",
+      "dest": "https://hightable.pro/ws"
+    },
+    {
+      "src": "/health",
+      "dest": "https://hightable.pro/health"
+    },
+    { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }

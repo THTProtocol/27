@@ -1,9 +1,9 @@
 //! Derives a MatchEscrow P2SH address from game creation params.
 //!
 //! Kaspa uses a bech32 *variant* where the HRP and payload are separated by
-//! `:` rather than `1`.  The standard `bech32::decode` function expects the
-//! `1` separator and therefore fails on Kaspa addresses.  We split manually
-//! and decode only the data portion.
+//! `:` rather than `1`.  We split on `:`, then decode only the payload portion
+//! using bech32 0.9's `decode` by temporarily re-encoding it with a dummy
+//! HRP that the library accepts (i.e. adding a `1` separator ourselves).
 
 use htp_covenant::{
     address::CovenantAddress,
@@ -11,7 +11,7 @@ use htp_covenant::{
 };
 use sha2::{Sha256, Digest};
 use ripemd::Ripemd160;
-use bech32::FromBase32;
+use bech32::{self, FromBase32};
 
 pub fn derive_escrow_address(
     creator_addr: &str,
@@ -64,49 +64,47 @@ pub struct DerivedEscrow {
 
 /// Convert a Kaspa bech32 address to HASH160 (20 bytes).
 ///
-/// Kaspa bech32 format: `<hrp>:<base32_payload>`
-/// The payload starts with a 1-byte version then the key/hash bytes,
-/// all re-encoded in 5-bit groups (standard bech32 alphabet).
+/// Kaspa format: `<hrp>:<bech32_payload>`
+/// We split on `:`, prepend a dummy HRP `x1` so bech32 0.9 can decode it,
+/// then convert the 5-bit groups to bytes.
 fn addr_to_hash160(addr: &str) -> Result<[u8; 20], String> {
     if addr == "open" || addr.is_empty() || addr == "kaspatest:open" {
         return Ok([0u8; 20]);
     }
 
-    // Kaspa uses `:` as HRP separator, not `1`.
+    // Split "kaspatest:qpx6..." -> payload = "qpx6..."
     let colon = addr.find(':')
         .ok_or_else(|| format!("invalid kaspa address (no ':'): {}", addr))?;
-    let data_str = &addr[colon + 1..];
+    let payload_str = &addr[colon + 1..];
 
-    // Decode bech32 characters into 5-bit groups using the standard alphabet.
-    let data5 = bech32::decode_to_u5(data_str)
-        .map_err(|e| format!("bech32 u5 decode failed for '{}': {}", addr, e))?;
+    // Re-encode as standard bech32: "x1<payload>" so bech32 0.9 decode() works.
+    // bech32 0.9 decode() expects "<hrp>1<data+checksum>"
+    let standard = format!("x1{}", payload_str);
+    let (_hrp, data5, _variant) = bech32::decode(&standard)
+        .map_err(|e| format!("bech32 decode failed for '{}': {}", addr, e))?;
 
-    // Convert 5-bit groups -> 8-bit bytes (ignore the checksum tail: last 8 u5s).
     let all_bytes = Vec::<u8>::from_base32(&data5)
-        .map_err(|e| format!("bech32 base32->bytes failed: {}", e))?;
+        .map_err(|e| format!("base32->bytes failed: {}", e))?;
 
     if all_bytes.is_empty() {
-        return Err(format!("empty payload for address: {}", addr));
+        return Err(format!("empty payload for: {}", addr));
     }
 
-    // byte[0] = version:
-    //   0x00 / 0x01 = P2PK  -> HASH160(pubkey)
-    //   0x08        = P2SH  -> next 20 bytes are already the script hash
+    // byte[0] = version: 0x08 = P2SH, else P2PK
     let version = all_bytes[0];
-    let payload = &all_bytes[1..];
+    let key = &all_bytes[1..];
 
     match version {
         0x08 => {
-            if payload.len() < 20 {
-                return Err(format!("P2SH payload too short ({} bytes)", payload.len()));
+            if key.len() < 20 {
+                return Err(format!("P2SH payload too short ({} bytes)", key.len()));
             }
             let mut arr = [0u8; 20];
-            arr.copy_from_slice(&payload[..20]);
+            arr.copy_from_slice(&key[..20]);
             Ok(arr)
         }
         _ => {
-            // P2PK: HASH160 = RIPEMD160(SHA256(pubkey))
-            let sha: [u8; 32] = Sha256::digest(payload).into();
+            let sha: [u8; 32] = Sha256::digest(key).into();
             let h160: [u8; 20] = Ripemd160::digest(sha).into();
             Ok(h160)
         }
@@ -124,7 +122,6 @@ mod tests {
 
     #[test]
     fn kaspa_addr_parses() {
-        // Just verify it doesn't panic / returns 20 bytes
         let h = addr_to_hash160(
             "kaspatest:qpx6f5j2zpe4hlwv9yn8hl0mze4k9ffp6ft0fm3w68wp6cft6f8mjdtt0qzyj"
         ).unwrap();
@@ -142,6 +139,7 @@ mod tests {
             50_000_000,
             "tn12",
         ).unwrap();
-        assert!(!r.deposit_address.is_empty(), "deposit_address is empty");
+        assert!(!r.deposit_address.is_empty());
+        assert!(!r.redeem_script_hex.is_empty());
     }
 }
