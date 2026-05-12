@@ -9,7 +9,7 @@
  *     #chess-board, #c4-board, #checkers-board
  *     .game-controls (Draw / Resign)
  *
- * LOAD ORDER: after firebase, chess.min.js, and all htp-*.js modules
+ * LOAD ORDER: after htp-relay.js, chess.min.js, and all htp-*.js modules
  */
 ;(function () {
   'use strict';
@@ -207,13 +207,10 @@
     let m = resolveMatch(matchId);
 
     // Firebase fallback
-    if (!m && window.firebase) {
+    if (!m) {
       try {
-        const snap = await firebase.database().ref(`matches/${matchId}/info`).once('value');
-        if (snap.val()) {
-          m = snap.val();
-          m.id = matchId;
-        }
+        const r = await fetch('/api/games/' + matchId);
+        if (r.ok) { m = await r.json(); m.id = matchId; }
       } catch (e) { /* ignore */ }
     }
 
@@ -295,16 +292,16 @@
   // ─────────────────────────────────────────────────────────────────────────
 
   async function resolveColorAssignment(matchId, m, isCreator) {
-    if (window.firebase) {
-      try {
-        const snap = await firebase.database()
-          .ref(`matches/${matchId}/colorAssignment`).once('value');
-        const ca = snap.val();
+    try {
+      const r = await fetch('/api/games/' + matchId);
+      if (r.ok) {
+        const g = await r.json();
+        const ca = g.colorAssignment || g.color_assignment;
         if (ca && ca.creator && ca.opponent) {
           return isCreator ? ca.creator : ca.opponent;
         }
-      } catch (e) { /* ignore */ }
-    }
+      }
+    } catch (e) { /* ignore */ }
 
     // Compute deterministically from matchId
     const idStr = matchId.replace('HTP-', '');
@@ -317,11 +314,14 @@
       opponent: creatorGetsWhite ? 'b' : 'w'
     };
 
-    // Write to Firebase so both sides agree (only creator writes)
-    if (window.firebase && isCreator) {
+    // Write to API so both sides agree (only creator writes)
+    if (isCreator) {
       try {
-        await firebase.database()
-          .ref(`matches/${matchId}/colorAssignment`).set(assignment);
+        await fetch('/api/games/' + matchId, {
+          method: 'PATCH',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({colorAssignment: assignment})
+        });
       } catch (e) { /* ignore */ }
     }
 
@@ -333,15 +333,13 @@
   // ─────────────────────────────────────────────────────────────────────────
 
   async function replayMoveHistory(matchId, game) {
-    if (!window.firebase) return;
     try {
-      const snap = await firebase.database()
-        .ref(`relay/${matchId}/moves`).orderByChild('ts').once('value');
-      const moves = [];
-      snap.forEach(child => moves.push(child.val()));
-      if (moves.length === 0) return;
+      const r = await fetch('/api/relay/' + matchId + '/moves');
+      if (!r.ok) return;
+      const moves = await r.json();
+      if (!Array.isArray(moves) || moves.length === 0) return;
 
-      LOG(`Replaying ${moves.length} historical moves for ${matchId}`);
+      LOG('Replaying ' + moves.length + ' historical moves for ' + matchId);
       for (const msg of moves) {
         applyRelayMove(msg, game);
       }
@@ -422,12 +420,12 @@
 
         const loserSide = clockState.activeSide;
         const winnerSide = loserSide === 0 ? 'b' : 'w';
-        if (window.firebase && clockState.matchId) {
-          firebase.database().ref(`matches/${clockState.matchId}/result`).set({
-            timeout: true,
-            winner: winnerSide,
-            ts: firebase.database.ServerValue.TIMESTAMP
-          }).catch(() => {});
+        if (clockState.matchId) {
+          fetch('/api/games/' + clockState.matchId + '/result', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({timeout: true, winner: winnerSide, ts: Date.now()})
+          }).catch(function(){});
         }
         if (typeof window.handleMatchGameOver === 'function') {
           window.handleMatchGameOver('timeout', winnerSide);
@@ -634,13 +632,13 @@
 
     LOG(`Game ended: ${reason}, winner: ${winner || 'none'}`);
 
-    // Write result to Firebase
-    if (window.firebase && clockState.matchId) {
-      firebase.database().ref(`matches/${clockState.matchId}/result`).set({
-        reason,
-        winner,
-        ts: firebase.database.ServerValue.TIMESTAMP
-      }).catch(() => {});
+    // Write result to API
+    if (clockState.matchId) {
+      fetch('/api/games/' + clockState.matchId + '/result', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({reason: reason, winner: winner, ts: Date.now()})
+      }).catch(function(){});
     }
 
     if (typeof window.handleMatchGameOver === 'function') {
@@ -663,7 +661,7 @@
       window.relaySend({
         type: 'draw-offer',
         matchId: clockState.matchId,
-        serverTime: window.firebase ? firebase.database.ServerValue.TIMESTAMP : null,
+        serverTime: Date.now(),
         clientTime: Date.now()
       });
     }
@@ -685,7 +683,7 @@
         type: 'resign',
         matchId: clockState.matchId,
         loser: mySide,
-        serverTime: window.firebase ? firebase.database.ServerValue.TIMESTAMP : null,
+        serverTime: Date.now(),
         clientTime: Date.now()
       });
     }
