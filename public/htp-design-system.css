@@ -173,3 +173,16 @@ h1{text-shadow:0 0 80px rgba(0,255,163,0.15),0 0 30px rgba(0,255,163,0.08)}
 @media (max-width:768px){
   .card,.mc,.sgv2-card,.sg-card{border-radius:12px!important}
 }
+
+/* === CONNECTIVITY DOTS — always Kaspa green === */
+.net-dot, .conn-dot, .status-dot,
+[class*="net-dot"], [class*="conn-dot"], [class*="status-dot"] {
+  background: #00ffa3 !important;
+  box-shadow: 0 0 6px rgba(0,255,163,0.6) !important;
+}
+/* Disconnected state → amber, never red */
+.net-dot.offline, .net-dot.disconnected,
+.conn-dot.offline, .status-dot.offline {
+  background: #f59e0b !important;
+  box-shadow: 0 0 6px rgba(245,158,11,0.5) !important;
+}
