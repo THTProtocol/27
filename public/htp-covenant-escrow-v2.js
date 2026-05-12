@@ -5,9 +5,9 @@
  *  - Escrow keypair is generated ONCE per match, CLIENT-SIDE, via WebCrypto CSPRNG.
  *  - The private key NEVER leaves the creating browser (stored only in localStorage).
  *  - Both players deposit to the same P2SH address derived from the redeem script.
- *  - Settlement is triggered by the oracle attestation written to Firebase.
+ *  - Settlement is triggered by the oracle attestation written via REST API.
  *  - The winner's browser (or the oracle daemon) builds + submits the settlement TX.
- *  - Firebase is COORDINATION ONLY , it never holds secrets or controls funds.
+ *  - REST API is COORDINATION ONLY , it never holds secrets or controls funds.
  *
  * P2SH REDEEM SCRIPT (KIP-10, TN12 + mainnet compatible):
  *
@@ -406,32 +406,24 @@
       return null;
     }
 
-    // Firebase settlement lock -- atomic compare-and-set prevents double-settle.
+    // REST API settlement lock -- atomic compare-and-set prevents double-settle.
     try {
-      if (W.firebase && W.firebase.database) {
-        var lockRef = W.firebase.database().ref('settlement/' + matchId + '/claimed');
-        var txnResult = await new Promise(function(resolve, reject) {
-          lockRef.transaction(function(current) {
-            if (current && current.txId) return undefined; // already settled
-            if (current && current.locked && (Date.now() - current.ts) < 30000) return undefined; // in progress
-            return { by: W.walletAddress || 'daemon', ts: Date.now(), locked: true };
-          }, function(err, committed, snap) {
-            if (err) reject(err);
-            else resolve({ committed: committed, data: snap ? snap.val() : null });
-          });
-        });
-        if (!txnResult.committed) {
-          var existing = txnResult.data;
-          if (existing && existing.txId) {
-            if (W.showToast) W.showToast('Match already settled on-chain', 'info');
-            return existing.txId;
-          }
-          if (W.showToast) W.showToast('Settlement in progress by another client, please wait...', 'info');
-          return null;
+      var lockRes = await fetch('/api/settlement/' + matchId + '/lock', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({by: W.walletAddress || 'daemon', ts: Date.now()})
+      });
+      var txnResult = await lockRes.json();
+      if (!txnResult.acquired) {
+        if (txnResult.existingTxId) {
+          if (W.showToast) W.showToast('Match already settled on-chain', 'info');
+          return txnResult.existingTxId;
         }
+        if (W.showToast) W.showToast('Settlement in progress by another client, please wait...', 'info');
+        return null;
       }
     } catch (e) {
-      console.warn('[HTP Escrow] Firebase lock unavailable, proceeding without lock:', e.message);
+      console.warn('[HTP Escrow] REST lock unavailable, proceeding without lock:', e.message);
     }
 
     var feeAmount = (BigInt(payoutSompi) * 200n) / 10000n; // 2%
@@ -459,28 +451,28 @@
     } catch (e) {
       console.error('[HTP Escrow] settle TX failed:', e);
       if (W.showToast) W.showToast('Settlement TX failed: ' + e.message, 'error');
-      // Release the Firebase lock so another browser can retry
+      // Release the REST lock so another browser can retry
       try {
-        if (W.firebase && W.firebase.database) {
-          await W.firebase.database().ref('settlement/' + matchId + '/claimed').remove();
-        }
+        await fetch('/api/settlement/' + matchId + '/lock', {method: 'DELETE'});
       } catch (_) {}
       return null;
     }
 
-    // Write txId to Firebase to permanently claim the lock
+    // Write txId to REST API to permanently claim the lock
     try {
-      if (W.firebase && W.firebase.database) {
-        await W.firebase.database().ref('settlement/' + matchId + '/claimed').set({
+      await fetch('/api/settlement/' + matchId + '/claimed', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
           by: W.walletAddress || 'daemon',
           ts: Date.now(),
           txId: txId,
           winner: winnerAddress,
           locked: false
-        });
-      }
+        })
+      });
     } catch (e) {
-      console.warn('[HTP Escrow] Firebase settlement write failed:', e.message);
+      console.warn('[HTP Escrow] REST settlement write failed:', e.message);
     }
 
     if (W.showToast) W.showToast('Settlement TX submitted: ' + txId, 'success');
@@ -522,20 +514,26 @@
         txId = await submitFn(signed);
       }
 
-      // Mark as cancelled in Firebase
+      // Mark as cancelled via REST API
       try {
-        if (W.firebase && W.firebase.database) {
-          await W.firebase.database().ref('matches/' + matchId + '/status').set('cancelled');
-          await W.firebase.database().ref('settlement/' + matchId + '/claimed').set({
+        await fetch('/api/games/' + matchId, {
+          method: 'PATCH',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({status: 'cancelled'})
+        });
+        await fetch('/api/settlement/' + matchId + '/claimed', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
             by: W.walletAddress || 'creator',
             ts: Date.now(),
             txId: txId,
             winner: null,
             reason: 'creator-cancel'
-          });
-        }
+          })
+        });
       } catch (e) {
-        console.warn('[HTP Escrow] Firebase cancel write failed:', e.message);
+        console.warn('[HTP Escrow] REST cancel write failed:', e.message);
       }
 
       if (W.showToast) W.showToast('Match cancelled. Stake refunded: ' + txId, 'success');
@@ -573,18 +571,25 @@
 
   /* == Oracle attestation listener == */
   function watchOracleAttestation(matchId, onSettle) {
-    if (!W.firebase || !W.firebase.database) {
-      console.warn('[HTP Escrow] Firebase not available for oracle watch');
-      return;
+    var ws = null;
+    var stopped = false;
+    function connect() {
+      try {
+        ws = new WebSocket('wss://' + location.host + '/relay/oracle/' + matchId);
+        ws.onmessage = function(e) {
+          var att = JSON.parse(e.data);
+          if (!att || att.processed) return;
+          console.log('[HTP Escrow] oracle attestation received for match', matchId, att);
+          if (typeof onSettle === 'function') onSettle(att);
+        };
+        ws.onerror = function() { if (!stopped) setTimeout(connect, 3000); };
+        ws.onclose = function() { if (!stopped) setTimeout(connect, 3000); };
+      } catch(e) {
+        if (!stopped) setTimeout(connect, 3000);
+      }
     }
-    var ref = W.firebase.database().ref('oracle/attestations/' + matchId);
-    ref.on('value', function(snap) {
-      var att = snap.val();
-      if (!att || att.processed) return;
-      console.log('[HTP Escrow] oracle attestation received for match', matchId, att);
-      if (typeof onSettle === 'function') onSettle(att);
-    });
-    return function(){ ref.off('value'); };
+    connect();
+    return function cleanup() { stopped = true; if (ws) { ws.close(); ws = null; } };
   }
 
   /* == Auto-settle on oracle attestation == */
@@ -595,9 +600,11 @@
         var txId = await settleMatchPayout(matchId, att.winnerAddress, att.payoutSompi);
         // Mark oracle attestation as processed
         try {
-          if (W.firebase && W.firebase.database) {
-            await W.firebase.database().ref('oracle/attestations/' + matchId + '/processed').set(true);
-          }
+          await fetch('/api/oracle/attestations/' + matchId + '/processed', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({processed: true})
+          });
         } catch(e) {}
         resolve(txId);
       });
@@ -648,10 +655,12 @@
       if (!resp.ok) { console.error('[HTP] proposeSettle HTTP', resp.status); return null; }
       var data = await resp.json();
 
-      // Store attestation in Firebase for dispute tracking
-      if (W.firebase && W.firebase.database) {
-        try {
-          await W.firebase.database().ref('games/' + gameId + '/settlement').set({
+      // Store attestation via REST API for dispute tracking
+      try {
+        await fetch('/api/games/' + gameId + '/settlement', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
             winner:           data.winner,
             attestation_hash: data.attestation_hash,
             arbiter:          data.arbiter,
@@ -659,9 +668,9 @@
             proposed_at:      Date.now(),
             status:           'PENDING_SETTLE',
             dispute_deadline: Date.now() + (2 * 24 * 60 * 60 * 1000)
-          });
-        } catch(fbErr) { console.warn('[HTP] Firebase settlement write failed:', fbErr); }
-      }
+          })
+        });
+      } catch(fbErr) { console.warn('[HTP] REST settlement write failed:', fbErr); }
 
       console.log('[HTP] proposeSettle OK:', data.attestation_hash.slice(0,16) + '...');
       return data;
@@ -672,14 +681,11 @@
   }
 
   async function htpFinalizeSettle(gameId) {
-    if (!W.firebase || !W.firebase.database) {
-      console.error('[HTP] Firebase not available for finalize');
-      return { error: 'no_firebase' };
-    }
     try {
-      var snap = await W.firebase.database().ref('games/' + gameId + '/settlement').once('value');
-      var s = snap.val();
-      if (!s) { console.error('[HTP] no settlement record for', gameId); return { error: 'no_record' }; }
+      var r = await fetch('/api/games/' + gameId + '/settlement');
+      if (!r.ok) { console.error('[HTP] REST not available for finalize'); return { error: 'api_unavailable' }; }
+      var s = await r.json();
+      if (!s || !s.status) { console.error('[HTP] no settlement record for', gameId); return { error: 'no_record' }; }
 
       var deadline = s.dispute_deadline;
       if (Date.now() < deadline) {
@@ -688,7 +694,11 @@
         return { error: 'dispute_window_open', minutes_remaining: mins };
       }
 
-      await W.firebase.database().ref('games/' + gameId + '/settlement/status').set('SETTLED');
+      await fetch('/api/games/' + gameId + '/settlement', {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({status: 'SETTLED'})
+      });
       console.log('[HTP] finalizeSettle:', gameId, 'settled');
       return { status: 'SETTLED', game_id: gameId };
     } catch(e) {
@@ -698,12 +708,15 @@
   }
 
   async function htpChallengeSettle(gameId, challengerAddress) {
-    if (!W.firebase || !W.firebase.database) return { error: 'no_firebase' };
     try {
-      await W.firebase.database().ref('games/' + gameId + '/settlement').update({
-        status:      'DISPUTED',
-        challenger:  challengerAddress || 'unknown',
-        disputed_at: Date.now()
+      await fetch('/api/games/' + gameId + '/settlement', {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          status:      'DISPUTED',
+          challenger:  challengerAddress || 'unknown',
+          disputed_at: Date.now()
+        })
       });
       console.warn('[HTP] settlement DISPUTED by', challengerAddress);
       return { status: 'DISPUTED' };
