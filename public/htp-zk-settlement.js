@@ -1,9 +1,13 @@
-  window.htpSettleWithProof = async function (matchId, winnerAddr, reason, gameType) {
+window.htpSettleWithProof = async function (matchId, winnerAddr, reason, gameType) {
     var proof = await window.htpBuildGameProof(matchId, gameType, winnerAddr, reason);
 
-    // Store proof in Firebase
+    // Store proof via REST API
     try {
-      firebase.database().ref('gamechain/' + matchId + '/proof').set(proof);
+      await fetch('/api/gamechain/' + matchId + '/proof', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(proof)
+      });
     } catch (e) {}
 
     // Attempt Kaspa settlement with covenant
@@ -24,15 +28,18 @@
 
     if (txId) {
       try {
-        firebase.database().ref('gamechain/' + matchId + '/settleTx').set({
-          txId:       txId,
-          winner:     winnerAddr,
-          proofHash:  proof.proofHash,
-          ts:         Date.now()
+        await fetch('/api/gamechain/' + matchId + '/settleTx', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            txId:       txId,
+            winner:     winnerAddr,
+            proofHash:  proof.proofHash,
+            ts:         Date.now()
+          })
         });
       } catch (e) {}
       console.log('[HTP Server] Settled match', matchId, 'txId:', txId.substring(0, 16) + '...');
     }
     return txId;
   };
-

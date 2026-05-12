@@ -8,20 +8,15 @@ window.refreshOracleStats = async function() {
   if (!addr) return;
 
   try {
-    var db = window.htpFirestore || (window.firebase && window.firebase.firestore ? window.firebase.firestore() : null);
-    if (!db) return;
-
-    // Bond stats
-    var bondSnap = await db.collection('oracle_bonds').where('address','==',addr).get();
-    var totalBond = 0, earned = 0, slashed = 0, resolved = 0, zkConf = 0;
-    bondSnap.forEach(function(doc) {
-      var d = doc.data();
-      totalBond += parseFloat(d.bondKas || 0);
-      earned += parseFloat(d.earned || 0);
-      slashed += parseFloat(d.slashed || 0);
-      resolved += parseInt(d.resolved || 0);
-      zkConf += parseInt(d.zkConfirmed || 0);
-    });
+    // Bond stats from REST API
+    var r = await fetch('/api/oracle/stats/' + addr);
+    if (!r.ok) return;
+    var stats = await r.json();
+    var totalBond = stats.totalBond || 0;
+    var earned = stats.earned || 0;
+    var slashed = stats.slashed || 0;
+    var resolved = stats.resolved || 0;
+    var zkConf = stats.zkConfirmed || 0;
 
     var set = function(id, val) {
       var el = document.getElementById(id);
@@ -139,26 +134,26 @@ console.log('[HTP Oracle Sync v1] Loaded , stats, mode, attestation panel wired'
 window.htpOracleAttest = function (matchId, winner, reason) {
   console.warn('[HTP Oracle] ZK fallback triggered for ' + matchId + ' reason: ' + (reason || 'unknown'));
   
-  // Write fallback attestation to Firebase
-  if (window.firebase && window.firebase.database) {
-    var entry = {
-      matchId: matchId,
-      winner: winner,
-      reason: reason || 'zk-timeout',
-      oracle: window.walletAddress || window.htpAddress || 'unknown',
-      attestedAt: firebase.database.ServerValue.TIMESTAMP || Date.now(),
-      status: 'attested',
-      type: 'oracle-fallback'
-    };
-    
-    firebase.database().ref('attestations/' + matchId).set(entry)
-      .then(function () {
-        console.log('[HTP Oracle] Fallback attestation recorded for ' + matchId);
-      })
-      .catch(function (e) {
-        console.error('[HTP Oracle] Fallback attestation failed:', e.message);
-      });
-  }
+  // Write fallback attestation via REST API
+  var entry = {
+    matchId: matchId,
+    winner: winner,
+    reason: reason || 'zk-timeout',
+    oracle: window.walletAddress || window.htpAddress || 'unknown',
+    attestedAt: Date.now(),
+    status: 'attested',
+    type: 'oracle-fallback'
+  };
+  
+  fetch('/api/attestations/' + matchId, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(entry)
+  }).then(function () {
+    console.log('[HTP Oracle] Fallback attestation recorded for ' + matchId);
+  }).catch(function (e) {
+    console.error('[HTP Oracle] Fallback attestation failed:', e.message);
+  });
 
   // Notify UI
   if (typeof showToast === 'function') {
