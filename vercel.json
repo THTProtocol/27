@@ -14,40 +14,17 @@
         "Access-Control-Allow-Headers": "Content-Type"
       }
     },
-    {
-      "src": "/ws",
-      "dest": "https://hightable.pro/ws"
-    },
-    {
-      "src": "/health",
-      "dest": "https://hightable.pro/health"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "/public/assets/$1"
-    },
-    {
-      "src": "/(.*\\.(js|css|png|ico|svg|woff2?))",
-      "dest": "/public/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/public/index.html"
-    }
+    { "src": "/ws",     "dest": "https://hightable.pro/ws" },
+    { "src": "/health", "dest": "https://hightable.pro/health" },
+    { "src": "/(.*)",   "dest": "/public/$1" }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Cache-Control", "value": "no-store" }
-      ]
-    },
-    {
-      "source": "/(.*\\.(css|js|png|woff2?))",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        { "key": "X-Frame-Options",        "value": "DENY" },
+        { "key": "Cache-Control",          "value": "no-store" }
       ]
     }
   ]
