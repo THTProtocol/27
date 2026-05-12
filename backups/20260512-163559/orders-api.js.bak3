@@ -1,0 +1,197 @@
+// HIGH TABLE PROTOCOL — Orders API (Node/Express)
+// Phase 1: Protocol Lock + Backend Truth Layer
+// Listens on :3001. Proxies read endpoints to Rust :3000.
+// Enforces real-or-fail for fund-flow paths.
+
+const express  = require('express');
+const Database = require('better-sqlite3');
+const app      = express();
+app.use(express.json());
+
+const DB_PATH  = process.env.HTP_DB_PATH  || '/root/htp/data/htp.db';
+const PORT     = process.env.ORDERS_PORT  || 3001;
+const RUST_API = process.env.RUST_API     || 'http://localhost:3000';
+
+let db;
+function getDb() {
+  if (!db) db = new Database(DB_PATH);
+  return db;
+}
+
+function uuid() {
+  return 'ord-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+
+// ── CORS ──────────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin',  '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
+// ── Helpers ───────────────────────────────────────────────────────
+async function rustProxy(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const resp = await fetch(`${RUST_API}${path}`, opts);
+  const text = await resp.text();
+  try { return JSON.parse(text); } catch (_) { return { _raw: text }; }
+}
+
+function fail(code, detail) {
+  return { error: code, detail: detail || code };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ORDER ENDPOINTS (existing — keep working)
+// ═══════════════════════════════════════════════════════════════════
+
+// GET /api/orders — list open orders
+app.get('/api/orders', (req, res) => {
+  let sql      = "SELECT * FROM orders WHERE status='open'";
+  const params = [];
+  if (req.query.type)    { sql += ' AND order_type=?'; params.push(req.query.type); }
+  if (req.query.network) { sql += ' AND network=?';    params.push(req.query.network); }
+  sql += ' ORDER BY created_at DESC LIMIT 50';
+  const orders = getDb().prepare(sql).all(...params);
+  res.json({ orders, count: orders.length });
+});
+
+// POST /api/orders — create order
+app.post('/api/orders', (req, res) => {
+  const { creator, order_type, game_type, event_id, outcome, stake_sompi, network, expires_at } = req.body;
+  if (!creator || !order_type || !stake_sompi)
+    return res.status(400).json(fail('MISSING_FIELDS', 'creator, order_type, stake_sompi required'));
+  const id  = uuid();
+  const now = Math.floor(Date.now() / 1000);
+  const exp = expires_at || (now + 86400);
+  getDb().prepare(
+    'INSERT INTO orders (id,creator,order_type,game_type,event_id,outcome,stake_sompi,network,created_at,expires_at) VALUES (?,?,?,?,?,?,?,?,?,?)'
+  ).run(id, creator, order_type, game_type || null, event_id || null, outcome || null, stake_sompi, network || 'tn12', now, exp);
+  res.json({ id, status: 'open', created_at: now });
+});
+
+// GET /api/orders/stats
+app.get('/api/orders/stats', (req, res) => {
+  const d       = getDb();
+  const open    = d.prepare("SELECT COUNT(*) as c FROM orders WHERE status='open'").get().c;
+  const matched = d.prepare("SELECT COUNT(*) as c FROM orders WHERE status='matched'").get().c;
+  const volume  = d.prepare('SELECT COALESCE(SUM(stake_sompi),0) as v FROM orders').get().v;
+  res.json({ open_count: open, matched_count: matched, total_volume_sompi: volume });
+});
+
+// GET /api/orders/:id
+app.get('/api/orders/:id', (req, res) => {
+  const order = getDb().prepare('SELECT * FROM orders WHERE id=?').get(req.params.id);
+  if (!order) return res.status(404).json(fail('NOT_FOUND'));
+  res.json(order);
+});
+
+// POST /api/orders/:id/cancel
+app.post('/api/orders/:id/cancel', (req, res) => {
+  const order = getDb().prepare('SELECT * FROM orders WHERE id=?').get(req.params.id);
+  if (!order)                                 return res.status(404).json(fail('NOT_FOUND'));
+  if (order.status !== 'open')                return res.status(400).json(fail('ORDER_NOT_OPEN'));
+  if (order.creator !== req.body.creator)     return res.status(403).json(fail('NOT_YOUR_ORDER'));
+  getDb().prepare("UPDATE orders SET status='cancelled' WHERE id=?").run(req.params.id);
+  res.json({ id: req.params.id, status: 'cancelled' });
+});
+
+// POST /api/orders/:id/match — match an order, forward to Rust
+app.post('/api/orders/:id/match', async (req, res) => {
+  const order = getDb().prepare('SELECT * FROM orders WHERE id=?').get(req.params.id);
+  if (!order)                  return res.status(404).json(fail('NOT_FOUND'));
+  if (order.status !== 'open') return res.status(400).json(fail('ORDER_NOT_OPEN'));
+  const matcher = req.body.matcher || 'unknown';
+  try {
+    let matchId;
+    if (order.order_type === 'game') {
+      const data = await rustProxy('POST', '/api/games', {
+        creator:     order.creator,
+        opponent:    matcher,
+        game_type:   order.game_type || 'SkillGame',
+        stake_sompi: order.stake_sompi,
+      });
+      matchId = data.id || 'unknown';
+    } else {
+      matchId = order.event_id || 'unknown';
+    }
+    getDb().prepare("UPDATE orders SET status='matched', matched_by=?, match_id=? WHERE id=?")
+      .run(matcher, matchId, req.params.id);
+    res.json({ id: req.params.id, status: 'matched', match_id: matchId, matched_by: matcher });
+  } catch (err) {
+    res.status(500).json(fail('MATCH_FAILED', err.message));
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// PHASE 1 — NEW ENDPOINTS
+// ═══════════════════════════════════════════════════════════════════
+
+// 1) POST /api/gamecreate — REAL-OR-FAIL covenant address
+app.post('/api/gamecreate', async (req, res) => {
+  const { creator, opponent, game_type, stake_sompi } = req.body;
+  if (!creator || !stake_sompi)
+    return res.status(400).json(fail('MISSING_FIELDS', 'creator, stake_sompi required'));
+
+  // Covenant derivation not yet ready → fail loudly
+  // DO NOT fabricate an address. DO NOT return PROTOCOLADDRESS.
+  return res.status(501).json(
+    fail('COVENANT_DERIVATION_NOT_READY', 'Refusing to return fake deposit address.')
+  );
+});
+
+// 2) GET /api/game/:id — proxy to Rust
+app.get('/api/game/:id', async (req, res) => {
+  try {
+    const data = await rustProxy('GET', `/api/games/${req.params.id}`);
+    if (data.error || data._raw) return res.status(404).json(fail('NOT_FOUND', data.error || 'game not found'));
+    res.json(data);
+  } catch (err) {
+    res.status(500).json(fail('RUST_PROXY_FAILED', err.message));
+  }
+});
+
+// 3) POST /api/game/:id/result — proxy attestation to Rust
+app.post('/api/game/:id/result', async (req, res) => {
+  const { winner, oracle_addr, proof_root } = req.body;
+  if (!winner)
+    return res.status(400).json(fail('MISSING_FIELDS', 'winner required'));
+
+  // REJECT fake proof_root
+  if (proof_root && proof_root === '0'.repeat(64))
+    return res.status(400).json(fail('INVALID_PROOF_ROOT', 'proof_root must be a real Merkle root, not 64 zeros'));
+
+  try {
+    const data = await rustProxy('POST', '/api/oracle/attest', {
+      game_id: req.params.id,
+      winner: winner,
+      oracle_id: oracle_addr || winner,
+      oracle_addr: oracle_addr || winner,
+      proof_root: proof_root || null,
+      attest_type: 'oracle',
+    });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json(fail('ATTEST_FAILED', err.message));
+  }
+});
+
+// 4) GET /api/oraclepending — games awaiting settlement (no settlements row yet)
+app.get(/api/oraclepending, async (req, res) => {
+  try {
+    const d = new Database(/root/htp/htp.db);
+    const rows = d.prepare(
+      `SELECT g.id, g.game_type, g.creator, g.opponent, g.stake_sompi, g.status, g.winner, g.proof_root, g.created_at, g.updated_at
+       FROM games g
+       WHERE g.id NOT IN (SELECT s.game_id FROM settlements s WHERE s.game_id IS NOT NULL)
+       ORDER BY g.created_at DESC LIMIT 50`
+    ).all();
+    d.close();
+    res.json({ pending: rows, count: rows.length });
+  } catch (err) {
+    res.status(500).json(fail(DB_ERROR, err.message));
+  }
+});

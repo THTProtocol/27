@@ -1,0 +1,273 @@
+/* ══════════════════════════════════════════════
+   HIGH TABLE PROTOCOL — htp-theme.css v1.0
+   Dark gaming aesthetic. Gold on black.
+   ══════════════════════════════════════════════ */
+
+:root {
+  --htp-black:  #0a0a0a;
+  --htp-dark:   #111111;
+  --htp-card:   #181818;
+  --htp-border: #2a2a2a;
+  --htp-gold:   #c9a84c;
+  --htp-gold2:  #e8c96b;
+  --htp-green:  #00ff87;
+  --htp-red:    #ff4757;
+  --htp-text:   #e8e8e8;
+  --htp-muted:  #888888;
+  --htp-radius: 8px;
+  --htp-font:   'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+}
+
+/* ── body reset ── */
+body {
+  margin: 0;
+  background: #061a10 !important;
+  color: var(--htp-text);
+  font-family: var(--htp-font);
+  line-height: 1.5;
+}
+
+/* ── card ── */
+.htp-card {
+  background: var(--htp-card);
+  border: 1px solid var(--htp-border);
+  border-radius: var(--htp-radius);
+  padding: 20px;
+}
+.htp-card:hover { border-color: var(--htp-gold); }
+
+/* ── primary button ── */
+.htp-btn {
+  background: var(--htp-gold);
+  color: #000;
+  font-weight: 700;
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--htp-radius);
+  cursor: pointer;
+  font-family: var(--htp-font);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: background 0.15s;
+}
+.htp-btn:hover { background: var(--htp-gold2); }
+.htp-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── ghost / outlined button ── */
+.htp-btn-ghost {
+  background: transparent;
+  border: 1px solid var(--htp-gold);
+  color: var(--htp-gold);
+}
+.htp-btn-ghost:hover { background: var(--htp-gold); color: #000; }
+
+/* ── badge pills ── */
+.htp-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.htp-badge-open     { background: rgba(0,255,135,0.12); color: var(--htp-green); border: 1px solid rgba(0,255,135,0.3); }
+.htp-badge-active   { background: rgba(201,168,76,0.12); color: var(--htp-gold); border: 1px solid rgba(201,168,76,0.3); }
+.htp-badge-settled  { background: rgba(136,136,136,0.12); color: var(--htp-muted); border: 1px solid rgba(136,136,136,0.3); }
+.htp-badge-disputed { background: rgba(255,71,87,0.12); color: var(--htp-red); border: 1px solid rgba(255,71,87,0.3); }
+.htp-badge-live     { animation: htp-pulse 2s infinite; }
+
+/* ── nav bar ── */
+nav#htp-nav {
+  height: 56px;
+  background: var(--htp-black);
+  border-bottom: 1px solid var(--htp-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 1000;
+  position: sticky;
+  top: 0;
+}
+.htp-logo {
+  color: var(--htp-gold);
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+.htp-nav-links {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.htp-nav-links a {
+  color: var(--htp-muted);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+.htp-nav-links a:hover,
+.htp-nav-links a.active { color: var(--htp-gold); }
+
+/* ── wallet pill ── */
+#htp-wallet-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#htp-wallet-pill .htp-addr {
+  font-size: 11px;
+  color: var(--htp-gold);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#htp-wallet-pill .htp-bal {
+  font-size: 11px;
+  color: var(--htp-green);
+  font-weight: 700;
+}
+
+/* ── grid ── */
+.htp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+/* ── page layout ── */
+.htp-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+.htp-page-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--htp-gold);
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.htp-page-subtitle {
+  font-size: 13px;
+  color: var(--htp-muted);
+  margin: 0 0 24px 0;
+}
+
+/* ── form elements ── */
+.htp-input,
+.htp-select,
+.htp-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--htp-card);
+  border: 1px solid var(--htp-border);
+  border-radius: var(--htp-radius);
+  color: var(--htp-text);
+  font-family: var(--htp-font);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.htp-input:focus,
+.htp-select:focus,
+.htp-textarea:focus { border-color: var(--htp-gold); }
+
+.htp-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--htp-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.htp-field { margin-bottom: 18px; }
+
+/* ── tables ── */
+.htp-table { width: 100%; border-collapse: collapse; }
+.htp-table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--htp-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--htp-border);
+}
+.htp-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(42,42,42,0.5);
+  font-size: 13px;
+}
+.htp-table tr:hover td { background: var(--htp-card); }
+
+/* ── empty state ── */
+.htp-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--htp-muted);
+  font-size: 14px;
+}
+.htp-empty-icon { font-size: 48px; margin-bottom: 16px; }
+
+/* ── toasts ── */
+.htp-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 20px;
+  background: var(--htp-card);
+  border: 1px solid var(--htp-gold);
+  border-radius: var(--htp-radius);
+  color: var(--htp-text);
+  font-size: 13px;
+  z-index: 9999;
+  max-width: 360px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+/* ── scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--htp-black); }
+::-webkit-scrollbar-thumb { background: var(--htp-gold); border-radius: 3px; }
+
+/* ── pulse animation ── */
+@keyframes htp-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+/* ── code / pre ── */
+.htp-code {
+  background: var(--htp-dark);
+  border: 1px solid var(--htp-border);
+  border-radius: var(--htp-radius);
+  padding: 16px;
+  font-family: var(--htp-font);
+  font-size: 12px;
+  color: var(--htp-green);
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+/* ── responsive ── */
+@media (max-width: 600px) {
+  .htp-page { padding: 20px 16px; }
+  nav#htp-nav { padding: 0 12px; }
+  .htp-nav-links { gap: 2px; }
+  .htp-nav-links a { padding: 6px 6px; font-size: 10px; }
+  .htp-grid { grid-template-columns: 1fr; }
+}

@@ -1,6 +1,5 @@
 // HIGH TABLE PROTOCOL — Orders API (Node/Express)
 // Phase 1: Protocol Lock + Backend Truth Layer
-// v40: Kaspa Covenant Command Center — RESTful aliases + TN12 proxy
 // Listens on :3001. Proxies read endpoints to Rust :3000.
 // Enforces real-or-fail for fund-flow paths.
 
@@ -136,7 +135,12 @@ app.post('/api/gamecreate', async (req, res) => {
   const { creator, opponent, game_type, stake_sompi } = req.body;
   if (!creator || !stake_sompi)
     return res.status(400).json(fail('MISSING_FIELDS', 'creator, stake_sompi required'));
-  return res.status(501).json(fail('COVENANT_DERIVATION_NOT_READY', 'Refusing to return fake deposit address.'));
+
+  // Covenant derivation not yet ready → fail loudly
+  // DO NOT fabricate an address. DO NOT return PROTOCOLADDRESS.
+  return res.status(501).json(
+    fail('COVENANT_DERIVATION_NOT_READY', 'Refusing to return fake deposit address.')
+  );
 });
 
 // 2) GET /api/game/:id — proxy to Rust
@@ -155,8 +159,11 @@ app.post('/api/game/:id/result', async (req, res) => {
   const { winner, oracle_addr, proof_root } = req.body;
   if (!winner)
     return res.status(400).json(fail('MISSING_FIELDS', 'winner required'));
+
+  // REJECT fake proof_root
   if (proof_root && proof_root === '0'.repeat(64))
     return res.status(400).json(fail('INVALID_PROOF_ROOT', 'proof_root must be a real Merkle root, not 64 zeros'));
+
   try {
     const data = await rustProxy('POST', '/api/oracle/attest', {
       game_id: req.params.id,
@@ -172,7 +179,7 @@ app.post('/api/game/:id/result', async (req, res) => {
   }
 });
 
-// 4) GET /api/oraclepending — games awaiting settlement (anti-join)
+// 4) GET /api/oraclepending — games awaiting settlement (no settlements row yet)
 app.get('/api/oraclepending', async (req, res) => {
   try {
     const d = new Database('/root/htp/htp.db');
@@ -203,6 +210,7 @@ app.get('/api/oraclenetwork', async (req, res) => {
 app.get('/api/oraclelist', async (req, res) => {
   try {
     const data = await rustProxy('GET', '/api/oracle/list');
+    // Return in shape matching what frontend expects
     res.json({
       oracles: data.oracles || [],
       count: data.count || (data.oracles || []).length,
@@ -229,8 +237,11 @@ app.post('/api/oracleattest', async (req, res) => {
   const { game_id, winner, oracle_id, oracle_addr, proof_root } = req.body;
   if (!game_id || !winner)
     return res.status(400).json(fail('MISSING_FIELDS', 'game_id and winner required'));
+
+  // REJECT fake proof_root
   if (proof_root && proof_root === '0'.repeat(64))
     return res.status(400).json(fail('INVALID_PROOF_ROOT', 'proof_root must be a real Merkle root, not 64 zeros'));
+
   try {
     const data = await rustProxy('POST', '/api/oracle/attest', {
       game_id: game_id,
@@ -251,7 +262,9 @@ app.get('/api/portfolio', async (req, res) => {
   const addr = req.query.address;
   if (!addr)
     return res.status(400).json(fail('MISSING_FIELDS', 'address query param required'));
+
   try {
+    // Query Rust DB for games involving this address
     const d = new Database('/root/htp/htp.db');
     const rows = d.prepare(
       `SELECT id, game_type, creator, opponent, stake_sompi, status, winner, proof_root, created_at, updated_at
@@ -259,7 +272,11 @@ app.get('/api/portfolio', async (req, res) => {
        ORDER BY created_at DESC LIMIT 50`
     ).all(addr, addr);
     d.close();
-    res.json({ address: addr, matches: rows, count: rows.length });
+    res.json({
+      address: addr,
+      matches: rows,
+      count: rows.length,
+    });
   } catch (err) {
     res.status(500).json(fail('DB_ERROR', err.message));
   }
@@ -281,6 +298,7 @@ app.post('/api/eventscreate', async (req, res) => {
           resolution_url, resolution_json_path, resolution_condition, resolution_daa } = req.body;
   if (!title || !creator_address)
     return res.status(400).json(fail('MISSING_FIELDS', 'title, creator_address required'));
+
   try {
     const data = await rustProxy('POST', '/api/events', {
       title: title,
@@ -297,77 +315,6 @@ app.post('/api/eventscreate', async (req, res) => {
   } catch (err) {
     res.status(500).json(fail('EVENT_CREATE_FAILED', err.message));
   }
-});
-
-// ═══════════════════════════════════════════════════════════════════
-// RESTful aliases (frontend calls /api/oracle/*)
-// ═══════════════════════════════════════════════════════════════════
-
-app.get('/api/oracle/network', async (req, res) => {
-  try { const data = await rustProxy('GET', '/api/oracle/network'); res.json(data); }
-  catch (err) { res.status(500).json(fail('RUST_PROXY_FAILED', err.message)); }
-});
-
-app.get('/api/oracle/list', async (req, res) => {
-  try {
-    const data = await rustProxy('GET', '/api/oracle/list');
-    res.json({ oracles: data.oracles || [], count: data.count || (data.oracles || []).length, active_count: data.active_count || 0, total_bond_sompi: data.total_bond_sompi || 0 });
-  } catch (err) { res.status(500).json(fail('RUST_PROXY_FAILED', err.message)); }
-});
-
-app.get('/api/oracle/pending', async (req, res) => {
-  try {
-    const d = new Database('/root/htp/htp.db');
-    const rows = d.prepare(
-      `SELECT g.id, g.game_type, g.creator, g.opponent, g.stake_sompi, g.status, g.winner, g.proof_root, g.created_at, g.updated_at
-       FROM games g
-       WHERE g.id NOT IN (SELECT s.game_id FROM settlements s WHERE s.game_id IS NOT NULL)
-       ORDER BY g.created_at DESC LIMIT 50`
-    ).all();
-    d.close();
-    res.json({ pending: rows, count: rows.length });
-  } catch (err) { res.status(500).json(fail('DB_ERROR', err.message)); }
-});
-
-app.post('/api/oracle/register', async (req, res) => {
-  try { const data = await rustProxy('POST', '/api/oracle/register', req.body); res.json(data); }
-  catch (err) { res.status(500).json(fail('RUST_PROXY_FAILED', err.message)); }
-});
-
-app.post('/api/oracle/attest', async (req, res) => {
-  const { game_id, winner, oracle_id, oracle_addr, proof_root } = req.body;
-  if (!game_id || !winner) return res.status(400).json(fail('MISSING_FIELDS', 'game_id and winner required'));
-  if (proof_root && proof_root === '0'.repeat(64)) return res.status(400).json(fail('INVALID_PROOF_ROOT', 'proof_root must be a real Merkle root, not 64 zeros'));
-  try {
-    const data = await rustProxy('POST', '/api/oracle/attest', { game_id, winner, oracle_id: oracle_id || oracle_addr || winner, oracle_addr: oracle_addr || winner, proof_root: proof_root || null, attest_type: 'oracle' });
-    res.json(data);
-  } catch (err) { res.status(500).json(fail('ATTEST_FAILED', err.message)); }
-});
-
-// Game RESTful alias
-app.post('/api/game/create', async (req, res) => {
-  const { creator, opponent, game_type, stake_sompi } = req.body;
-  if (!creator || !stake_sompi) return res.status(400).json(fail('MISSING_FIELDS', 'creator, stake_sompi required'));
-  return res.status(501).json(fail('COVENANT_DERIVATION_NOT_READY', 'Refusing to return fake deposit address.'));
-});
-
-// Events RESTful alias
-app.post('/api/events/create', async (req, res) => {
-  const { title, creator_address, oracle_type, quorum_m, quorum_n, resolution_url, resolution_json_path, resolution_condition, resolution_daa } = req.body;
-  if (!title || !creator_address) return res.status(400).json(fail('MISSING_FIELDS', 'title, creator_address required'));
-  try {
-    const data = await rustProxy('POST', '/api/events', { title, creator_address, oracle_type: oracle_type || 'oracle', quorum_m: quorum_m || 2, quorum_n: quorum_n || 3, resolution_url: resolution_url || '', resolution_json_path: resolution_json_path || '$.result', resolution_condition: resolution_condition || '', resolution_daa: resolution_daa || 0 });
-    res.json(data);
-  } catch (err) { res.status(500).json(fail('EVENT_CREATE_FAILED', err.message)); }
-});
-
-// TN12 info proxy
-app.get('/api/tn12/info', async (req, res) => {
-  try {
-    const resp = await fetch('https://api-tn12.kaspa.org/info');
-    const data = await resp.json();
-    res.json(data);
-  } catch (err) { res.status(503).json(fail('TN12_UNAVAILABLE', err.message)); }
 });
 
 // ═══════════════════════════════════════════════════════════════════

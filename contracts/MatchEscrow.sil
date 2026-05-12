@@ -1,0 +1,30 @@
+covenant MatchEscrow(
+    bytes20 player_a,
+    bytes20 player_b,
+    bytes20 oracle,
+    int     wager,
+    int     deadline_daa
+) {
+    function attest(pubkey winner_pk, sig oracle_sig) {
+        require(checkSig(oracle_sig, oracle));
+        require(hash160(winner_pk) == player_a || hash160(winner_pk) == player_b);
+        require(tx.outputs[0].value == wager * 2);
+        require(tx.outputs[0].lockingBytecode == p2pkh(winner_pk));
+    }
+    function refund(pubkey claimer_pk, sig claimer_sig) {
+        require(checkSig(claimer_sig, claimer_pk));
+        require(hash160(claimer_pk) == player_a || hash160(claimer_pk) == player_b);
+        require(tx.time >= deadline_daa);
+        require(tx.outputs[0].value == wager);
+        require(tx.outputs[1].value == wager);
+        require(tx.outputs[0].lockingBytecode == p2pkh(bytes(player_a)));
+        require(tx.outputs[1].lockingBytecode == p2pkh(bytes(player_b)));
+    }
+    function dispute(pubkey honest_pk, sig honest_sig, bytes proof) {
+        require(checkSig(honest_sig, honest_pk));
+        require(hash160(honest_pk) == player_a || hash160(honest_pk) == player_b);
+        require(checkDataSig(datasig(proof), sha256(tx.bytecode), oracle));
+        require(tx.outputs[0].value == wager * 2);
+        require(tx.outputs[0].lockingBytecode == p2pkh(honest_pk));
+    }
+}
