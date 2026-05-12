@@ -17,10 +17,10 @@
   var BLOCK_H = 12;
   var BLOCK_R = 3;
   var PRIMARY = '#ffffff';
-  var PRIMARY_GLOW = 'rgba(0,255,163,0.35)';
+  var PRIMARY_GLOW = 'rgba(0,255,163,0.15)';
   var BLOCK_FILL = '#141414';
   var BG = '#080808';
-  var LINE_COLOR = 'rgba(0,255,163,0.08)';
+  var LINE_COLOR = 'rgba(0,255,163,0.06)';
   var LABEL_COLOR = 'rgba(255,255,255,0.20)';
 
   // ── KASPA BLOCKDAG BACKGROUND ─────────────────────────────────────────
@@ -269,7 +269,7 @@
       var ef = _bgFade(sx, w);
       if (ef < 0.005) return;
       ctx.globalAlpha = s.a * ef;
-      ctx.fillStyle = 'rgba(0,255,163,0.35)';
+      ctx.fillStyle = 'rgba(0,255,163,0.12)';
       ctx.beginPath();
       ctx.arc(sx, s.y, s.r, 0, Math.PI * 2);
       ctx.fill();
