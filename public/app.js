@@ -117,7 +117,7 @@ function initWebSocket() {
   };
 
   app.ws.onclose = () => {
-    document.querySelector('.net-dot').style.background = 'var(--red)';
+    document.querySelector('.net-dot').style.background = '#f59e0b';
     setTimeout(initWebSocket, 3000);
   };
 

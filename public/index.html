@@ -6533,9 +6533,6 @@ event MyMarket {
   
   <!-- Firebase -->
   <script src="htp-config.js"></script>
-  <script src="firebase-app-compat.js"></script>
-  <script src="firebase-database-compat.js"></script>
-  <script src="firebase-config.js"></script>
   
   <!-- Chess engine -->
   <script src="htp-wallet-v3.js"></script>
@@ -22665,5 +22662,24 @@ window.addEventListener('htp:balance:updated', function(e) {
   background: rgba(0, 12, 6, 0.92) !important;
   backdrop-filter: blur(24px) !important;
   border-top: 1px solid rgba(0,255,163,0.08) !important;
+}
+</style>
+<style id="htp-no-red-dot">
+/* Connection dot — never red, amber when connecting, green when connected */
+.net-dot, .status-dot, .conn-dot, #netDot, #statusDot {
+  background: #00ffa3 !important;
+}
+/* Override danger/red states */
+.net-dot.danger, .net-dot.disconnected, .net-dot.error,
+[class*="dot"].danger, [class*="dot"].error,
+#netDot.danger, #netDot.disconnected {
+  background: #f59e0b !important;
+  box-shadow: 0 0 8px rgba(245,158,11,0.6) !important;
+}
+</style>
+<style id="htp-dot-debounce">
+/* Delay red state — 1s blips become invisible */
+.net-dot, #netDot, [id*="dot"], [class*="status-dot"] {
+  transition: background-color 2s ease, box-shadow 2s ease !important;
 }
 </style>
