@@ -186,13 +186,3 @@ h1{text-shadow:0 0 80px rgba(0,255,163,0.15),0 0 30px rgba(0,255,163,0.08)}
   background: #f59e0b !important;
   box-shadow: 0 0 6px rgba(245,158,11,0.5) !important;
 }
-
-/* hide mobile toggle on desktop */
-@media (min-width: 768px) {
-  #htpMobBtn { display: none !important; }
-}
-
-/* mobile btn — higher specificity to beat JS-injected inline style */
-@media (min-width: 768px) {
-  .hdr #htpMobBtn { display: none !important; }
-}

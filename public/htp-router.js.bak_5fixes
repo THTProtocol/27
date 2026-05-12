@@ -15,7 +15,7 @@
   // ▸ FETCH helpers — unwraps {count, games:[]} OR bare array
   async function api(path) {
     try {
-      var r = await fetch(API + path, { signal: (()=>{const c=new AbortController();setTimeout(()=>c.abort(),8000);return c.signal;})() });
+      var r = await fetch(API + path, { signal: AbortSignal.timeout(8000) });
       if (!r.ok) throw new Error("HTTP " + r.status);
       var j = await r.json();
       // Unwrap paginated envelope
