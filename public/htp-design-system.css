@@ -770,3 +770,44 @@ html[data-theme="light"] .stat-card {
     transition-duration: 0.01ms !important;
   }
 }
+/* ═══════════════════════════════════════════════════
+   HTP-DESIGN-V2.0 — LIVE TICKER STRIP
+   ═══════════════════════════════════════════════════ */
+
+#htpTicker {
+  width: 100%;
+  height: 40px;
+  background: rgba(10,26,18,0.60);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(0,255,163,0.08);
+  border-bottom: 1px solid rgba(0,255,163,0.08);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+#htpTickerInner {
+  display: flex;
+  gap: 0;
+  white-space: nowrap;
+  animation: tickerScroll 45s linear infinite;
+  will-change: transform;
+}
+@keyframes tickerScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ticker-item {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+  padding: 0 32px;
+  flex-shrink: 0;
+}
+.ticker-claimed { color: var(--color-primary); }
+.ticker-amount { color: var(--color-secondary); }
+.ticker-sep { color: rgba(0,255,163,0.15); }
+@media (max-width: 768px) {
+  #htpTicker { height: 36px; }
+  .ticker-item { font-size: 11px; padding: 0 20px; }
+}
