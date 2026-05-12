@@ -1,6 +1,6 @@
 /* ============================================================
    HTP Skill Games - Complete Multiplayer Module (htp-skill-games.js)
-   Drop-in fix: createMatchWithLobby + Firebase relay (no WS server needed)
+   Drop-in fix: createMatchWithLobby + REST API relay
    ============================================================ */
 
 // ─── CREATE MATCH WITH LOBBY (the missing function) ───────────────
@@ -58,10 +58,11 @@ try {
         match.escrowTxId = txId;
         if (typeof saveLobby === 'function') saveLobby();
 
-        // Write full match info to Firebase so listenLobby sees it
-        var db = (typeof firebase !== 'undefined') && firebase.database();
-        if (db) {
-            db.ref('matches/' + match.id + '/info').set({
+        // Write full match info via REST API so listenLobby sees it
+        fetch('/api/matches/' + match.id, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
                 game: game,
                 timeControl: timeControl,
                 stake: stake,
@@ -69,15 +70,13 @@ try {
                 status: 'waiting',
                 created: Date.now(),
                 escrowAddress: match.escrowAddress,
-                escrowTxId: txId
-            });
-            db.ref('matches/' + match.id + '/players').set({
+                escrowTxId: txId,
                 creator: walletAddress,
                 creatorAddrFull: walletAddress,
                 opponent: null,
                 opponentAddrFull: null
-            });
-        }
+            })
+        });
 
         // Note: No direct write to /lobby here. Backend handles that via /matches watch or direct call.
         
@@ -87,7 +86,7 @@ try {
     showToast('Match creation failed: ' + e.message, 'error');
     console.error('[HTP Skill] createMatchWithLobby error:', e);
     if (typeof matchId !== 'undefined' && matchId) {
-      try { var _db=(typeof firebase!=='undefined')&&firebase.database(); if(_db){_db.ref('matches/'+matchId).remove();console.log('[HTP] Ghost cleaned:',matchId);} } catch(_e) {}
+      try { fetch('/api/matches/'+matchId,{method:'DELETE'}).then(function(){console.log('[HTP] Ghost cleaned:',matchId);}).catch(function(){}); } catch(_e) {}
       if (window.matchLobby&&window.matchLobby.matches) window.matchLobby.matches=window.matchLobby.matches.filter(function(x){return x.id!==matchId;});
       try{if(typeof saveLobby==='function')saveLobby();}catch(_e){}
     }
@@ -117,12 +116,12 @@ async function joinLobbyMatch(matchId) {
         escAddr = esc ? esc.address : null;
     }
 
-    if (!escAddr && window.htpFirebase && window.htpFirebase.getMatch) {
+    if (!escAddr) {
         try {
-            var fm = await window.htpFirebase.getMatch(matchId);
-            if (fm && fm.escrowAddress) escAddr = fm.escrowAddress;
+            var r = await fetch('/api/matches/' + matchId);
+            if (r.ok) { var fm = await r.json(); if (fm && fm.escrowAddress) escAddr = fm.escrowAddress; }
         } catch (e) {
-            console.warn("HTP Firebase getMatch failed:", e.message);
+            console.warn("HTP API getMatch failed:", e.message);
         }
     }
 
@@ -154,15 +153,15 @@ async function joinLobbyMatch(matchId) {
         m.joinTxId = txId;
         saveLobby();
 
-        if (window.htpFirebase && window.htpFirebase.joinMatch) {
-            window.htpFirebase.joinMatch(
-                m.id,
-                matchLobby.myPlayerId,
-                walletAddress,
-                walletAddress,
-                txId
-            );
-        }
+        fetch('/api/matches/' + m.id + '/join', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                playerId: matchLobby.myPlayerId,
+                walletAddress: walletAddress,
+                txId: txId
+            })
+        }).catch(function(){});
 
         if (typeof broadcastLobby === 'function') broadcastLobby({ type: 'match_joined', matchId: m.id, player: matchLobby.myPlayerId });
         if (typeof renderLobby === 'function') renderLobby();
@@ -172,7 +171,7 @@ async function joinLobbyMatch(matchId) {
     showToast('Join failed: ' + e.message, 'error');
     console.error('[HTP Skill] joinLobbyMatch error:', e);
     if (matchId) {
-      try { var _db2=(typeof firebase!=='undefined')&&firebase.database(); if(_db2){_db2.ref('matches/'+matchId+'/players/opponent').set(null);_db2.ref('matches/'+matchId+'/info/status').set('waiting');} } catch(_e) {}
+      try { fetch('/api/matches/'+matchId,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({opponent:null,status:'waiting'})}).catch(function(){}); } catch(_e) {}
     }
   }
 }
@@ -210,10 +209,8 @@ async function createLobbyMatch(game, timeControl, stake, seriesLen, existingId)
         if (typeof saveLobby === 'function') saveLobby();
     }
 
-    // Persist to Firebase via backend if available
-    if (window.htpFirebase && window.htpFirebase.createMatch) {
-         window.htpFirebase.createMatch(match.id, matchLobby.myPlayerId, walletAddress, match);
-    }
+    // Persist to API via backend if available
+    fetch('/api/matches/' + match.id, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(match)}).catch(function(){});
 
     if (typeof broadcastLobby === 'function') broadcastLobby({ type: 'match_created', matchId: match.id });
     if (typeof renderLobby === 'function') renderLobby();
@@ -229,9 +226,8 @@ async function createLobbyMatch(game, timeControl, stake, seriesLen, existingId)
       return { allowed: true, reason: "cap check unavailable (non-fatal)" };
     }
     try {
-      var db = firebase.database();
-      var snap = await db.ref("events/" + eventId).once("value");
-      var event = snap.val() || {};
+      var r = await fetch('/api/events/' + eventId);
+      var event = r.ok ? await r.json() : {};
       return HTPFee.checkMaximizerCap(event, betAmountKas);
     } catch(e) { return { allowed: true, reason: "cap check error" }; }
   };
@@ -242,12 +238,11 @@ window.joinLobbyMatch = joinLobbyMatch;
 // ─── CANCEL MATCH (creator only) ─────────────────────────────────────────
 async function cancelLobbyMatch(matchId) {
     try {
-        const db = window.htpFirebase && window.htpFirebase.db;
-        if (!db) { showToast && showToast('Firebase not ready', 'error'); return; }
+
 
         // Verify caller is creator
-        const snap = await db.ref('lobby/' + matchId).get();
-        const m = snap.val();
+        const res = await fetch('/api/lobby/' + matchId);
+        const m = res.ok ? await res.json() : null;
         if (!m) { showToast && showToast('Match not found', 'error'); return; }
 
         const myAddr = window.htpAddress || window.walletAddress;
@@ -271,8 +266,8 @@ async function cancelLobbyMatch(matchId) {
             }
         }
 
-        // Delete from Firebase
-        await db.ref('lobby/' + matchId).remove();
+        // Delete from API
+        await fetch('/api/lobby/' + matchId, {method:'DELETE'});
 
         // Remove from local store
         if (window.htpMatches) delete window.htpMatches[matchId];
@@ -296,7 +291,7 @@ window.cancelLobbyMatch = cancelLobbyMatch;
 window.createLobbyMatch = createLobbyMatch;
 
 
-// ─── FIREBASE MOVE RELAY (replaces WebSocket relay) ────────────────
+// ─── REST API MOVE RELAY ────────────────────────────────
 (function () {
     var fbRelay = { matchId: null, playerId: null, gameType: null, unsubscribe: null, lastMoveTs: 0 };
 
@@ -308,10 +303,14 @@ window.createLobbyMatch = createLobbyMatch;
         fbRelay.playerId = matchLobby.myPlayerId;
         fbRelay.lastMoveTs = Date.now();
 
-        var ref = firebase.database().ref('relay/' + matchId);
-
-        ref.child('presence/' + fbRelay.playerId).set({ online: true, joined: Date.now() });
-        ref.child('presence/' + fbRelay.playerId).onDisconnect().set({ online: false, left: Date.now() });
+        fetch('/api/relay/' + matchId + '/presence/' + fbRelay.playerId, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({online: true, joined: Date.now()})
+        }).catch(function(){});
+        window.addEventListener('beforeunload', function() {
+            fetch('/api/relay/' + matchId + '/presence/' + fbRelay.playerId, {method:'DELETE'}).catch(function(){});
+        });
 
         var movesRef = ref.child('moves');
         var handler = movesRef.orderByChild('ts').startAt(Date.now()).on('child_added', function (snap) {
@@ -324,7 +323,7 @@ window.createLobbyMatch = createLobbyMatch;
 
         fbRelay.unsubscribe = function () {
             movesRef.off('child_added', handler);
-            ref.child('presence/' + fbRelay.playerId).set({ online: false, left: Date.now() });
+            fetch('/api/relay/' + fbRelay.matchId + '/presence/' + fbRelay.playerId, {method:'DELETE'}).catch(function(){});
         };
 
         ref.child('presence').on('value', function (snap) {
@@ -344,7 +343,7 @@ window.createLobbyMatch = createLobbyMatch;
             htpRelay.matchId = matchId;
             htpRelay.gameType = gameType;
         }
-        console.log('[HTP Relay] Firebase relay connected for', matchId);
+        console.log('[HTP Relay] REST relay connected for', matchId);
         showToast('Connected to game relay', 'success');
     };
 
@@ -352,7 +351,7 @@ window.createLobbyMatch = createLobbyMatch;
         if (!fbRelay.matchId) { console.warn('[HTP Relay] No active match'); return; }
         msg.player = fbRelay.playerId;
         msg.ts = Date.now();
-        firebase.database().ref('relay/' + fbRelay.matchId + '/moves').push(msg);
+        fetch('/api/relay/' + fbRelay.matchId + '/moves', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(msg)}).catch(function(){});
     };
 
     window.hookMoveRelay = function (matchId, gameType) {
@@ -428,9 +427,9 @@ window.createLobbyMatch = createLobbyMatch;
         saveLobby();
 
         try {
-            // firebase.database().ref('lobby/' + match.id + '/status').set('finished');
-            firebase.database().ref('matches/' + match.id + '/info/status').set('finished');
-            firebase.database().ref('relay/' + match.id + '/result').set({ winner: iWon ? matchLobby.myPlayerId : 'opponent', reason: reason, ts: Date.now() });
+            // API endpoint for lobby status update (handled by backend)
+            fetch('/api/matches/' + match.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'finished'})}).catch(function(){});
+            fetch('/api/relay/' + match.id + '/result', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({winner:iWon?matchLobby.myPlayerId:'opponent',reason:reason,ts:Date.now()})}).catch(function(){});
         } catch (e) { }
 
         if (fbRelay.unsubscribe) { fbRelay.unsubscribe(); fbRelay.unsubscribe = null; }
@@ -873,4 +872,4 @@ function handleRelayMessage(msg) {
     }
 })();
 
-console.log('[HTP Skill Games] Module loaded - createMatchWithLobby, Firebase relay, Connect4, Checkers');
+console.log('[HTP Skill Games] Module loaded - createMatchWithLobby, REST relay, Connect4, Checkers');
