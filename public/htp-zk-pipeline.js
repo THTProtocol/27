@@ -114,10 +114,12 @@
       ts: commitData.timestamp
     });
 
-    // Store commitment in Firebase as proof record
-    if (window.firebase && window.firebase.database) {
-      try {
-        await window.firebase.database().ref('zkProofs/' + matchId).set({
+    // Store commitment via REST API as proof record
+    try {
+      await fetch('/api/zk/proof', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
           protocol: 'HTP/1.0',
           type: 'narrow-verification',
           matchId: matchId,
@@ -128,14 +130,14 @@
           committedAt: commitData.timestamp,
           proofSystem: 'sha256-sequential-chain',
           status: 'committed'
-        });
-        console.log(
-          '%c[HTP ZK] Proof committed to Firebase: ' + commitData.root.substring(0, 16) + '...',
-          'color:#49e8c2;font-weight:bold'
-        );
-      } catch (e) {
-        console.warn('[HTP ZK] Firebase proof commit failed:', e.message);
-      }
+        })
+      });
+      console.log(
+        '%c[HTP ZK] Proof committed to API: ' + commitData.root.substring(0, 16) + '...',
+        'color:#49e8c2;font-weight:bold'
+      );
+    } catch (e) {
+      console.warn('[HTP ZK] API proof commit failed:', e.message);
     }
 
     // Try to post as Kaspa TX payload (dust commitment)
@@ -160,15 +162,17 @@
             'color:#22c55e;font-weight:bold'
           );
 
-          // Update Firebase with TX ID
-          if (window.firebase && window.firebase.database) {
-            window.firebase.database().ref('zkProofs/' + matchId + '/txId').set(String(txId)).catch(function(){});
-          }
+          // Update API with TX ID
+          fetch('/api/zk/proof/' + matchId + '/txId', {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({txId: String(txId)})
+          }).catch(function(){});
         }
       }
     } catch (e) {
-      // Chain TX is optional -- Firebase proof is the primary record
-      console.warn('[HTP ZK] Chain TX failed (optional), Firebase proof recorded:', e.message);
+      // Chain TX is optional -- API proof is the primary record
+      console.warn('[HTP ZK] Chain TX failed (optional), API proof recorded:', e.message);
     }
     // Upgrade: call Rust Groth16 prover if server available
     try {
@@ -243,7 +247,7 @@
 
   // ── 1. REPLACE FAKE ZK CONFIRMATION IN submitAttestation ───────
   // The original fires a setTimeout that just updates the UI.
-  // We replace it with a real Firebase commit + proof hash.
+  // We replace it with a real API commit + proof hash.
   setTimeout(function () {
     var _origAttest = window.submitAttestation;
     if (typeof _origAttest !== 'function') return;
@@ -277,31 +281,38 @@
       // Call original (sends the TX, updates UI lifecycle to step 2)
       try { await _origAttest.apply(this, arguments); } catch(e) {}
 
-      // Now do real ZK commit to Firebase instead of setTimeout simulation
-      if (window.firebase) {
-        var proofEntry = {
-          oracle:      addr,
-          marketId:    marketId,
-          outcome:     outcome,
-          evidenceUrl: evidence,
-          proofHash:   proofHash,
-          proofSystem: 'sha256-commit', // upgrades to groth16 when KIP-16 lands
-          submittedAt: ts,
-          status:      'submitted',
-          verifiedAt:  null,
-          verificationTx: null
-        };
+      // Now do real ZK commit via REST API instead of setTimeout simulation
+      var proofEntry = {
+        oracle:      addr,
+        marketId:    marketId,
+        outcome:     outcome,
+        evidenceUrl: evidence,
+        proofHash:   proofHash,
+        proofSystem: 'sha256-commit', // upgrades to groth16 when KIP-16 lands
+        submittedAt: ts,
+        status:      'submitted',
+        verifiedAt:  null,
+        verificationTx: null
+      };
 
-        try {
-          // Write proof to gamechain-style oracle proof store
-          await firebase.database().ref('oracleProofs/' + marketId).set(proofEntry);
-          // Update attestation record
-          await firebase.database().ref('attestations/' + marketId).update({
+      try {
+        // Write proof to oracle proof store
+        await fetch('/api/oracle/proof', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(proofEntry)
+        });
+        // Update attestation record
+        await fetch('/api/attestations/' + marketId, {
+          method: 'PATCH',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
             proofHash:   proofHash,
             proofStatus: 'submitted',
             proofAt:     ts
-          });
-          console.log('%cHTP ZK: proof committed to Firebase ' + proofHash.substring(0, 16), 'color:#49e8c2');
+          })
+        });
+        console.log('%cHTP ZK: proof committed to API ' + proofHash.substring(0, 16), 'color:#49e8c2');
 
           // Update UI lifecycle to step 3 (ZK verified) , real, not simulated
           if (typeof updateResLifecycle === 'function') updateResLifecycle(3);
@@ -328,9 +339,8 @@
           }, 2000);
 
         } catch (e) {
-          console.warn('HTP ZK: Firebase proof commit failed', e.message);
+          console.warn('HTP ZK: API proof commit failed', e.message);
         }
-      }
     };
 
     console.log('%cHTP ZK: submitAttestation , fake timeout replaced with real proof commit', 'color:#49e8c2;font-weight:bold');
@@ -353,10 +363,9 @@
       if (!OD || !OD.run || !OD.apiUrl || !OD.oracleAddr) return;
 
       try {
-        var snap = await firebase.database()
-          .ref('markets')
-          .orderByChild('status').equalTo('closed')
-          .once('value');
+        var r = await fetch('/api/markets?status=closed');
+        var markets = await r.json();
+        var snap = { forEach: function(cb) { (markets||[]).forEach(function(m, i) { cb({ val: function(){return m;}, key: m.id||m.marketId||i }); }); } };
 
         snap.forEach(async function (child) {
           var m = child.val();
@@ -399,31 +408,43 @@
 
             var disputeEndsAt = ts2 + 24 * 60 * 60 * 1000;
 
-            await firebase.database().ref('oracleProofs/' + mid).set({
-              oracle: OD.oracleAddr,
-              marketId: mid,
-              outcome: matched,
-              evidenceUrl: OD.apiUrl,
-              proofHash: ph,
-              proofSystem: 'sha256-commit',
-              submittedAt: ts2,
-              status: 'submitted',
-              auto: true
+            await fetch('/api/oracle/proof', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                oracle: OD.oracleAddr,
+                marketId: mid,
+                outcome: matched,
+                evidenceUrl: OD.apiUrl,
+                proofHash: ph,
+                proofSystem: 'sha256-commit',
+                submittedAt: ts2,
+                status: 'submitted',
+                auto: true
+              })
             });
 
-            await firebase.database().ref('attestations/' + mid).set({
-              oracle: OD.oracleAddr,
-              outcome: matched,
-              evidenceHash: ph,
-              attestedAt: ts2,
-              disputeEndsAt: disputeEndsAt,
-              status: 'pending',
-              challenged: false,
-              network: window.activeNet || 'tn12',
-              proofHash: ph
+            await fetch('/api/attestations', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                oracle: OD.oracleAddr,
+                outcome: matched,
+                evidenceHash: ph,
+                attestedAt: ts2,
+                disputeEndsAt: disputeEndsAt,
+                status: 'pending',
+                challenged: false,
+                network: window.activeNet || 'tn12',
+                proofHash: ph
+              })
             });
 
-            await firebase.database().ref('markets/' + mid + '/autoAttested').set(true);
+            await fetch('/api/markets/' + mid, {
+              method: 'PATCH',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({autoAttested: true})
+            });
             OD.resolved = (OD.resolved || 0) + 1;
             if (typeof uiSync === 'function') uiSync();
             if (typeof odlog === 'function') odlog('Auto-attested: ' + mid.substring(0, 12) + ' → ' + matched);
