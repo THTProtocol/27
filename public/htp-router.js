@@ -716,7 +716,7 @@ window.screenOracle = async function() {
             '<td style="color:#ff6b6b;font-family:monospace;font-size:.78rem">' + (d.claimed_winner||"").slice(0,14) + '\u2026</td>' +
             '<td>' + (d.blocks_remaining !== undefined ? d.blocks_remaining + " blk" : "?") + '</td>' +
             '<td><span class="htp-badge htp-badge-disputed">' + (d.status||"DISPUTED").toUpperCase() + '</span></td>' +
-            '<td><button class="htp-btn htp-btn-ghost htp-btn-sm" onclick="htpSlashFromDispute(\'' + d.game_id + '\',\'' + (d.oracle_addr||"") + \')">Slash</button></td>' +
+            '<td><button class="htp-btn htp-btn-ghost htp-btn-sm" onclick="htpSlashFromDispute(\x27' + d.game_id + '\x27,\x27' + (d.oracle_addr||"") + '\x27)">Slash</button></td>' +
             '</tr>';
         }).join("") +
         '</tbody></table></div>';
@@ -773,8 +773,11 @@ window.screenWallet = screenWallet;
       ".stat-games": gamesCount,
       "#stat-pool": totalPool.toFixed(2) + " KAS",
       "#stat-markets": eventsCount,
-      "#stat-games": gamesCount
-    };
+      "#stat-games": gamesCount,
+    "#statPool": totalPool.toFixed(2) + " KAS",
+    "#statMarkets": eventsCount,
+    "#statEntrants": gamesCount
+  };
     for (var sel in els) {
       document.querySelectorAll(sel).forEach(function(el){ el.textContent = els[sel]; });
     }
