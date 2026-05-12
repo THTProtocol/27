@@ -306,3 +306,34 @@ h1{text-shadow:0 0 80px rgba(0,255,163,0.15),0 0 30px rgba(0,255,163,0.08)}
   transform: translateX(-50%) translateY(0) !important;
   pointer-events: auto;
 }
+/* ═══════════════════════════════════════════════════
+   FIXED HEADER — always pinned to viewport top
+   May 2026
+   ═══════════════════════════════════════════════════ */
+
+/* Override sticky/relative on .hdr */
+.hdr {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1000 !important;
+  width: 100% !important;
+}
+
+/* Push main content below fixed header */
+body > .main-content,
+#htp-root,
+.view-container,
+main {
+  padding-top: 64px !important;
+}
+
+/* Mobile: tighter header → smaller padding */
+@media (max-width: 768px) {
+  #htp-root,
+  .view-container,
+  main {
+    padding-top: 56px !important;
+  }
+}
