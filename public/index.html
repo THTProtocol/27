@@ -22645,3 +22645,26 @@ window.addEventListener('htp:balance:updated', function(e) {
   color: rgba(255,255,255,0.65) !important;
 }
 </style>
+<style id="htp-glass-header">
+.hdr {
+  background: rgba(0, 15, 8, 0.55) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-bottom: 1px solid rgba(0,255,163,0.08) !important;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.4) !important;
+}
+.hdr-in {
+  background: transparent !important;
+}
+/* Logo glow — kaspa green */
+.logo {
+  box-shadow: 0 0 20px rgba(0,255,163,0.20), 0 0 60px rgba(0,255,163,0.08) !important;
+}
+/* Brand subtitle already uses --accent, keep it */
+/* Mobile nav open state */
+.hdr-nav.open {
+  background: rgba(0, 12, 6, 0.92) !important;
+  backdrop-filter: blur(24px) !important;
+  border-top: 1px solid rgba(0,255,163,0.08) !important;
+}
+</style>
