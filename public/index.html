@@ -2,12 +2,12 @@
 <html data-theme="dark" lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
+<meta http-equiv=40"Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv=40"Pragma" content="no-cache">
+<meta http-equiv=40"Expires" content="0">
 <meta name="version" content="2026.04.28.v4">
 <title>High Table Protocol — Skill Games &amp; Prediction Markets on Kaspa</title>
-    <link rel="stylesheet" href="htp-theme.css?v=41">
+    <link rel="stylesheet" href="htp-theme.css?v=40">
 <script>
   // Early global network resolver. Prevents ReferenceError for `net` in nested handlers.
   (function(){
@@ -412,8 +412,6 @@
         .hw-flow-line {
             display: none
         }
-
-
         @media(min-width:960px) {
             .hdr-nav {
                 display: flex
@@ -469,7 +467,7 @@
         /* ── hero ── */
         .hero-wrap {
             position: relative;
-            min-height: calc(80vh - 100px);
+            min-height: auto;
             display: flex;
             align-items: center;
             overflow: hidden
@@ -517,7 +515,7 @@
             font-weight: 900;
             line-height: 1.08;
             letter-spacing: -0.03em;
-            margin: 0 0 16px;
+            margin: 0 0 8px;
             background: linear-gradient(135deg, #e2faf3 0%, #ffffff 40%, #7c6ff7 80%, #ffffff 100%);
             background-size: 300% auto;
             -webkit-background-clip: text;
@@ -554,7 +552,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            margin-bottom: 28px
+            margin-bottom: 16px
         }
 
         .pill {
@@ -569,10 +567,7 @@
         }
 
         .hero-cta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: center
+
         }
         .cta1 {
             display: inline-flex;
@@ -622,8 +617,6 @@
             transform: translateY(-1px);
             filter: brightness(1.05);
         }
-
-
 
         /* ── DAG info panel ── */
         .dag-panel {
@@ -1475,10 +1468,6 @@
             font-size: 16px;
             font-weight: 700
         }
-
-
-
-
         /* ── wallet ── */
         .w-grid {
             display: grid;
@@ -1764,8 +1753,6 @@
             color: var(--accent);
             font-variant-numeric: tabular-nums
         }
-
-
         /* ── Select dropdown fix: dark background for options ── */
         select,
         select option,
@@ -1798,8 +1785,6 @@
             outline: none;
             box-shadow: 0 0 0 2px rgba(255,255,255,0.10);
         }
-
-
         /* ── Improved section spacing ── */
         .sec-pad { overflow:visible;
             padding: 20px 0 40px;
@@ -1856,8 +1841,6 @@
         .match-form {
             margin-top: 32px;
         }
-
-
         /* •••••••••••••••••••••••••••••••••••••••••••••••••• */
         /* ── MOBILE RESPONSIVE ── */
         /* •••••••••••••••••••••••••••••••••••••••••••••••••• */
@@ -2088,8 +2071,6 @@
             .lifecycle {
                 flex-wrap: wrap;
             }
-
-
             /* Wallet cards */
             .w-card {
                 padding: 16px;
@@ -2316,8 +2297,6 @@
                 font-size: 14px
             }
         }
-
-
         /* ── Chess Board ── */
         .chess-overlay {
   position: fixed;
@@ -2328,7 +2307,7 @@
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(10px);
-  overflow-y: auto;
+  overflow-y: visible;
   padding: 24px;
   box-sizing: border-box;
 }
@@ -2642,10 +2621,6 @@ html { scroll-behavior: auto; }
 /* DAG canvas runs everywhere at full strength */
 body #dagCanvas { opacity: 0.92 !important; }
 body.on-overview #dagCanvas { opacity: 0.95 !important; }
-body:not(.on-overview) 
-body:not(.on-overview) 
-body:not(.on-overview) 
-
         /* Ensure content fills viewport without blank space */
         body {
             min-height: 100vh;
@@ -2673,8 +2648,6 @@ body:not(.on-overview)
         body:not(.on-overview) .hero-wrap {
             display: none !important;
         }
-
-
         
         input[type=text], input[type=number], input[type=password],
         input[type=email], input[type=datetime-local], textarea, select {
@@ -3128,8 +3101,6 @@ body:not(.on-overview)
             border-color: rgba(255,255,255,0.10) !important;
             background: rgba(255,255,255,0.10) !important;
         }
-
-
         /* Enhanced game selector in Create Match */
         .game-pick {
             display: grid;
@@ -3648,18 +3619,37 @@ body:not(.on-overview)
 
         
         /* === Spacing & Layout Fixes === */
-        /* Hero section proper spacing */
+        /* Hero and all sections: flush to header, no top gap */
         .hero-wrap {
-            padding-top: 24px !important;
-            padding-bottom: 32px !important;
+            padding-top: 0 !important;
+            margin-top: 0 !important;
         }
         .hero {
-            gap: 40px !important;
+            gap: 32px !important;
+            padding: 0 0 16px !important;
+            margin-top: 0 !important;
         }
-        /* Section padding consistency */
         .sec-pad, .mx.sec-pad { overflow:visible;
-            padding-top: 20px !important;
-            padding-bottom: 40px !important;
+            padding-top: 0 !important;
+            padding-bottom: 32px !important;
+        }
+        .view > .mx,
+        .view > .mx.sec-pad,
+        #v-overview > .mx,
+        #v-markets > .mx.sec-pad,
+        #v-create > .mx.sec-pad,
+        #v-skill > .mx.sec-pad,
+        #v-oracle > .mx.sec-pad,
+        #v-portfolio > .mx.sec-pad,
+        #v-wallet > .mx.sec-pad,
+        #v-kaspa > .mx.sec-pad {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+        }
+        .view .sh:first-child,
+        .view .card:first-child,
+        .view .stats-strip:first-child {
+            margin-top: 0 !important;
         }
         /* Section header spacing */
         .sh {
@@ -3773,14 +3763,6 @@ body:not(.on-overview)
   fill: #f5f5f5 !important;
   stroke: #f5f5f5 !important;
 }
-
-
-
-
-
-
-
-
 /* HTP HOTFIX V4: top balance only after real wallet connection */
 .htp-balance-pill-fixed {
   position: fixed !important;
@@ -3840,8 +3822,6 @@ body:not(.on-overview)
     transform-origin: top right;
   }
 }
-
-
 /* Cancel button for match creator */
 .htp-cancel-btn {
   background: rgba(180, 40, 40, 0.15) !important;
@@ -3856,8 +3836,6 @@ body:not(.on-overview)
 .htp-cancel-btn:hover {
   background: rgba(180, 40, 40, 0.35) !important;
 }
-
-
 /* === forced dark portfolio bg === */
 html, body {
   background: radial-gradient(ellipse at 50% 20%, #021014 0%, #01070a 60%, #000000 100%) !important;
@@ -3872,8 +3850,6 @@ body::before {
     radial-gradient(circle at 80% 70%, rgba(255,255,255,0.10), transparent 40%);
   z-index: 0;
 }
-
-
 /* === hide portfolio top strip === */
 .view-portfolio .topbar,
 .view-portfolio .top-strip,
@@ -3883,6 +3859,13 @@ body::before {
   display: none !important;
 }
 
+.htp-grid + .htp-empty-state { margin-top: 40px; }
+.htp-page { padding-bottom: 20px; }
+.htp-page-title { margin-bottom: 8px; }
+.htp-empty-state { min-height: 200px; display: flex; align-items: center; justify-content: center; opacity: 0.7; margin: 20px 0; }
+.htp-page-subtitle { margin-bottom: 20px; }
+.htp-empty { min-height: 200px; display: flex; align-items: center; justify-content: center; opacity: 0.7; }
+.htp-empty-state { min-height: 300px; display: flex; align-items: center; justify-content: center; }
 </style>
 
 <style>
@@ -3951,8 +3934,8 @@ html,body{background:#071a0e!important;}
 /* Section headers */
 .sh{background:transparent!important;}
 </style>
-<link rel="stylesheet" href="htp-skill-v3.css?v=41">
-<link rel="stylesheet" href="htp-buttons-v2.css?v=41">
+<link rel="stylesheet" href="htp-skill-v3.css?v=40">
+<link rel="stylesheet" href="htp-buttons-v2.css?v=40">
 <style id="htp-mob-responsive">
 @media(max-width:768px){
   .hdr{padding:10px 14px!important;}
@@ -3973,8 +3956,8 @@ html,body{background:#071a0e!important;}
 }
 </style>
 <style id="kaspa-bg-flat">html,body{background:#071a0e !important;}</style>
-  <link rel="stylesheet" href="/htp-design-system.css?v=billion1">
-  <link rel="stylesheet" href="/htp-skeletons.css?v=1">
+  <link rel="stylesheet" href="/htp-design-system.css?v=40billion1">
+  <link rel="stylesheet" href="/htp-skeletons.css?v=40">
   <link rel="stylesheet" href="/htp-skeletons.css">
 </head>
 <style id="htp-master-theme">
@@ -4195,8 +4178,6 @@ hr, .divider { border-color: rgba(0,255,163,0.1) !important; }
         </script>
 
         <!-- BPS counter -->
-
-
         <header class="hdr">
             <div class="hdr-in">
                 <a href="javascript:void(0)" class="hdr-brand" onclick="go('overview');return false">
@@ -4208,13 +4189,13 @@ hr, .divider { border-color: rgba(0,255,163,0.1) !important; }
                 <button class="menu-toggle" onclick="this.nextElementSibling.classList.toggle('open')"
                     aria-label="Menu">&#9776;</button>
                 <nav class="hdr-nav" id="htp-nav">
-                    <button class="nav-btn act" data-v="overview" onclick="go('overview')">Overview</button>
-                    <button class="nav-btn" data-v="markets" onclick="go('markets')">Events</button>
-                    <button class="nav-btn" data-v="create" onclick="go('create')">Create</button>
-                    <button class="nav-btn" data-v="skill" onclick="go('skill')">Games</button>
-                    <button class="nav-btn" data-v="oracle" onclick="go('oracle')" data-nav="true">Oracle Network</button>
-                    <button class="nav-btn" data-v="portfolio" onclick="go('portfolio')">Portfolio</button>
-                    <button class="nav-btn" data-v="wallet" onclick="go('wallet')">Wallet</button>
+                    <button class="nav-btn act" data-v=40"overview" onclick="go('overview')">Overview</button>
+                    <button class="nav-btn" data-v=40"markets" onclick="go('markets')">Events</button>
+                    <button class="nav-btn" data-v=40"create" onclick="go('create')">Create</button>
+                    <button class="nav-btn" data-v=40"skill" onclick="go('skill')">Games</button>
+                    <button class="nav-btn" data-v=40"oracle" onclick="go('oracle')" data-nav=40"true">Oracle Network</button>
+                    <button class="nav-btn" data-v=40"portfolio" onclick="go('portfolio')">Portfolio</button>
+                    <button class="nav-btn" data-v=40"wallet" onclick="go('wallet')">Wallet</button>
                 </nav>
                     <div class="hdr-r">
                     <div style="position:relative;display:inline-flex;align-items:center;
@@ -4292,12 +4273,10 @@ hr, .divider { border-color: rgba(0,255,163,0.1) !important; }
                                         <div class="pill pill-glow">ZK oracles</div>
                                     </div>
                                     <div class="hero-cta">
-                                        <button class="cta1" onclick="go('markets')">Explore Markets</button>
-                                        <button class="cta2" onclick="go('create')">Create Event</button>
-                                        <button class="cta2" onclick="go('kaspa')">Why Kaspa</button>
+
                                     </div>
                                 </div>
-                                <div>
+                                <div class="htp-excess-content">
                                     <div style="width:100%">
                                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
                                         <h4 class="live-dag-label">
@@ -4456,8 +4435,6 @@ hr, .divider { border-color: rgba(0,255,163,0.1) !important; }
                                 <div class="emr"><span class="badge" id="evNB"></span><span id="evP"></span><span
                                         id="evE"></span><span id="evS"></span></div>
                                 <div id="evDetails"></div>
-
-
                             </div>
                             <div class="el-s">
                                 <div class="card et">
@@ -4850,8 +4827,6 @@ hr, .divider { border-color: rgba(0,255,163,0.1) !important; }
                         <p>Write covenant logic that compiles to Kaspa lock rules. Use examples below or write from
                             scratch.</p>
                     </div>
-
-
 
                     <!-- Reference panel (hidden by default) -->
                     <div id="ssRef" class="card" hidden
@@ -5809,8 +5784,6 @@ event MyMarket {
                         <p>Connect via extension or enter your address. Supports TN12 testnet and mainnet.</p>
                         <div id="wasmStatus" style="font-size:11px;margin-top:6px"></div>
                     </div>
-
-
                     <div class="w-grid" style="display:flex;flex-direction:column;gap:8px;">
                         <div class="card w-card" onclick="selWallet('KasWare')">
                             <div class="w-icon" style="background:#0d1117;border:1px solid var(--border)"><img src="https://www.google.com/s2/favicons?domain=kaspa.org&sz=64" alt="KasWare" style="width:30px;height:30px;border-radius:6px" onerror="this.onerror=null;this.style.display='none'" /></div>
@@ -5846,7 +5819,7 @@ event MyMarket {
                   <input id="htpEscrowInput" type="password" placeholder="12 or 24-word mnemonic for escrow wallet"
                     style="width:100%;padding:8px 10px;background:rgba(10,15,30,0.6);border:1px solid #333;color:var(--text);border-radius:6px;font-size:12px;font-family:monospace;box-sizing:border-box;margin-bottom:6px;">
                   <button onclick="
-                    var v=document.getElementById('htpEscrowInput').value.trim();
+                    var v=40document.getElementById('htpEscrowInput').value.trim();
                     if(v.split(' ').length<12){showToast('Enter a valid 12 or 24 word mnemonic','error');return;}
                     localStorage.setItem('htpEscrowMnemonic',v);
                     document.getElementById('htpEscrowInput').value='';
@@ -5858,10 +5831,6 @@ event MyMarket {
                   <div style="font-size:10px;color:#475569;margin-top:4px;">Stored in localStorage only. Never transmitted. Used only to sign payout TXs from match escrow.</div>
                 </div>
                 
-
-
-
-
                 <div class="w-sec" style="margin-bottom:16px">
                     <h3>Custom Node</h3>
                     <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Connect to your own Kaspa node for dedicated access. Defaults to public resolvers if empty.</p>
@@ -5953,8 +5922,6 @@ event MyMarket {
                 <h2 style="background:linear-gradient(135deg,var(--text),var(--accent));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Why Kaspa</h2>
                 <p style="max-width:600px">The BlockDAG that High Table Protocol settles on.</p>
             </div>
-
-
 <div class="card" style="padding:16px 20px;margin-bottom:20px;background:linear-gradient(135deg,rgba(255,255,255,0.10),rgba(124,111,247,.04));border-color:rgba(255,255,255,0.10)">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
         <div>
@@ -5967,10 +5934,6 @@ event MyMarket {
             Go to Oracle Dashboard</button>
     </div>
 </div>
-
-
-
-
 <!-- Hero statement -->
             <div class="card"
                 style="padding:32px;margin-bottom:32px;text-align:center;background:linear-gradient(135deg,rgba(255,255,255,0.10),rgba(10,15,30,.5));border:1px solid rgba(255,255,255,0.10)">
@@ -5983,8 +5946,6 @@ event MyMarket {
                     guarantees of Nakamoto-style proof of work. No staking. No validators. No premine. Every block
                     counts.</p>
             </div>
-
-
             <!-- Live DAG Visualizer -->
             <div style="margin-bottom:32px; width: 100%; max-width: 100%; padding: 0;">
                 <h4 class="live-dag-label">
@@ -6365,8 +6326,6 @@ event MyMarket {
             </div>
         </div>
     </section>
-
-
     </main>
     <footer class="ftr">
         <div class="ftr-in"><span style="font-weight:600">HIGH TABLE PROTOCOL</span>
@@ -6387,8 +6346,6 @@ event MyMarket {
     </a>
 </footer>
     </div>
-
-
     <style>
         /* SilverScript responsive */
         @media(max-width:900px) {
@@ -6499,8 +6456,6 @@ event MyMarket {
         }
     </style>
 
-
-
   <!-- ========================================================
        SCRIPTS (Modular Architecture)
        ======================================================== -->
@@ -6517,7 +6472,7 @@ event MyMarket {
   <script src="htp-events-v3.js"></script>
   
   <!-- HTP Core -->
-  <script src="htp-router.js?v=39"></script>
+  <script src="htp-router.js?v=40"></script>
   <script src="htp-init.js"></script>
   <script src="chess.min.js"></script>
   
@@ -6564,7 +6519,7 @@ event MyMarket {
   <script src="htp-cancel-flow.js"></script>
   <script src="htp-match-deadline.js"></script>
   <script src="htp-maximizer-ui.js"></script>
-  <script src="htp-blockdag-viz.js?v=99"></script>
+  <script src="htp-blockdag-viz.js?v=40"></script>
   <script src="htp-silverscript-live.js"></script>
 <script src="htp-zk-settlement.js"></script>
   
@@ -6604,8 +6559,6 @@ event MyMarket {
             }
         }
 
-
-
         function showToast(msg, type) {
             var el = document.createElement('div');
             var bg = type === 'error' ? 'rgba(239,68,68,.95)' : type === 'success' ? 'rgba(255,255,255,0.10)' : 'rgba(30,30,30,.95)';
@@ -6616,8 +6569,6 @@ event MyMarket {
             setTimeout(function () { el.style.opacity = '0'; }, 2500);
             setTimeout(function () { el.remove(); }, 3000);
         }
-
-
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
         // KASPA NODE CONNECTION LAYER - Mainnet REST + TN12 wRPC
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
@@ -7149,8 +7100,6 @@ event MyMarket {
         function setTN12REST(url) {
             KASPA_NETS.tn12.rest = url;
         }
-
-
         // ••• BLOCKDAG CANVAS ANIMATION •••
         // Inspired by github.com/Macmachi/kaspa-network-visualizer
         (function () {
@@ -7795,8 +7744,6 @@ event MyMarket {
                 console.log('HTP Balance poller stopped');
             }
         }
-
-
         // Connect button in header
         function togConn() {
             // Always go to wallet view for now
@@ -7825,8 +7772,6 @@ event MyMarket {
         }
 
         // Recovery - real wallets handle this internally
-
-
 
         // --- Market Data ---
         const cMap = { Macro: "#0ea5e9", Crypto: "#a855f7", Politics: "#ef4444", Sports: "#f59e0b", Kaspa: "#22c55e", Skill: "#06b6d4" };
@@ -8058,8 +8003,6 @@ function go(v) {
                         'Parimutuel pool: all stakes aggregate. Winners split the losing side\'s pool pro-rata.' +
                         '</div></div>';
                 }
-
-
                 $('evT').textContent = selMkt.title;
                 var col = cMap[selMkt.cat] || '#888';
                 var statusCol = selMkt.st === 'open' ? '#22c55e' : selMkt.st === 'closed' ? '#ef4444' : '#f59e0b';
@@ -8334,8 +8277,6 @@ function go(v) {
                                     if (signed.serializeToObject) txObj = signed.serializeToObject();
                                     else if (signed.serializeToSafeJSON) txObj = JSON.parse(signed.serializeToSafeJSON());
                                     else txObj = signed;
-
-
                                     // Transform SDK tx format -> REST API format
                                     function formatTxForApi(tx) {
                                         var out = {
@@ -8456,11 +8397,7 @@ function go(v) {
 
             throw new Error('No wallet connected.');
         }
-
-
         // --- Unified Transaction Sender (mnemonic or extension) ---
-
-
 
         // --- HTP Unified Transaction Handler ---
 
@@ -8587,8 +8524,6 @@ function go(v) {
         async function placeTrade() {
             if (!conn || !walletAddress) { alert('Connect a wallet first.'); go('wallet'); return; }
             if (!selMkt) { alert('Select a market first.'); return; }
-
-
 
             var amtKAS = parseInt($('stk') ? $('stk').value : 0);
             if (!amtKAS || amtKAS <= 0) { alert('Enter a stake amount.'); return; }
@@ -8788,8 +8723,6 @@ function go(v) {
             var disclosure = document.querySelector('.fee-disclosure');
             if (disclosure) disclosure.textContent = label;
         }
-
-
         function updPreview() {
             var g = $('sgGame');
             if (!g) return;
@@ -8842,15 +8775,11 @@ function go(v) {
             try { if (g.value && typeof window.htpRenderGameExtras === 'function') window.htpRenderGameExtras(g.value); } catch(e){}
             updPreview();
         }
-
-
         // --- Mnemonic Generation (BIP39-compatible) ---
         // Uses Web Crypto API for entropy, maps to BIP39 English wordlist
         const bip39words = "abandon ability able about above absent absorb abstract absurd abuse access accident account accuse achieve acid acoustic acquire across act action actor actress actual adapt add addict address adjust admit adult advance advice aerobic affair afford afraid again age agent agree ahead aim air airport aisle alarm album alcohol alert alien all alley allow almost alone alpha already also alter always amateur amazing among amount amused analyst anchor ancient anger angle angry animal ankle announce annual another answer antenna antique anxiety any apart apology appear apple approve april arch arctic area arena argue arm armed armor army around arrange arrest arrive arrow art artefact artist artwork ask aspect assault asset assist assume asthma athlete atom attack attend attitude attract auction audit august aunt author auto autumn average avocado avoid awake aware awesome awful awkward axis baby bachelor bacon badge bag balance balcony ball bamboo banana banner bar barely bargain barrel base basic basket battle beach bean beauty because become beef before begin behave behind believe below bench benefit best betray better between beyond bicycle bid bike bind biology bird birth bitter black blade blame blanket blast blaze bless blind blood blossom blow blue blur blush board boat body boil bomb bone bonus book boost border boring borrow boss bottom bounce box boy bracket brain brand brass brave bread breeze brick bridge brief bright bring brisk broccoli broken bronze broom brother brown brush bubble buddy budget buffalo build bulb bulk bullet bundle bunny burden burger burst bus business busy butter buyer buzz cabbage cabin cable cactus cage cake call calm camera camp can canal cancel candy cannon canoe canvas canyon capable capital captain car carbon card cargo carpet carry cart case cash casino castle casual cat catalog catch category cattle caught cause caution cave ceiling celery cement census century cereal certain chair chalk champion change chaos chapter charge chase cheap check cheese chef cherry chest chicken chief child chimney choice choose chronic chuckle chunk churn citizen city civil claim clap clarify claw clay clean clerk clever click client cliff climb clinic clip clock clog close cloth cloud clown club clump cluster clutch coach coast coconut code coffee coil coin collect color column combine come comfort comic common company concert conduct confirm congress connect consider control convince cook cool copper copy coral core corn correct cost cotton couch country couple course cousin cover coyote crack cradle craft cram crane crash crater crawl crazy cream credit creek crew cricket crime crisp critic crop cross crouch crowd crucial cruel cruise crumble crush cry crystal cube culture cup cupboard curious current curtain curve cushion custom cute cycle dad damage damp dance danger daring dash daughter dawn day deal debate debris decade december decide decline decorate decrease deer defense define defy degree delay deliver demand demise denial dentist deny depart depend deposit depth deputy derive describe desert design desk despair destroy detail detect develop device devote diagram dial diamond diary dice diesel diet differ digital dignity dilemma dinner dinosaur direct dirt disagree discover disease dish dismiss disorder display distance divert divide divorce dizzy doctor document dog doll dolphin domain donate donkey donor door dose double dove draft dragon drama drastic draw dream dress drift drill drink drip drive drop drum dry duck dumb dune during dust dutch duty dwarf dynamic eager eagle early earn earth easily east easy echo ecology economy edge edit educate effort egg eight either elbow elder electric elegant element elephant elevator elite else embark embody embrace emerge emotion employ empower empty enable encourage end endless energy enforce engage engine enhance enjoy enlist enough enrich enroll ensure enter entire entry envelope episode equal equip era erase erode erosion error erupt escape essay essence estate eternal ethics evidence evil evoke evolve exact example excess exchange excite exclude excuse execute exercise exhaust exhibit exile exist exit exotic expand expect expire explain expose express extend extra eye eyebrow fabric face faculty fade faint faith fall false fame family famous fan fancy fantasy farm fashion fat fatal father fatigue fault favorite feature february federal fee feed feel female fence festival fetch fever few fiber fiction field figure file film filter final find fine finger finish fire firm fiscal fish fit fitness fix flag flame flash flat flavor flee flight flip float flock floor flower fluid flush fly foam focus fog foil fold follow food foot force forest forget fork fortune forum forward fossil foster found fox fragile frame frequent fresh friend fringe frog front frost frown frozen fruit fuel fun funny furnace fury future gadget gain galaxy gallery game gap garage garbage garden garlic garment gas gasp gate gather gauge gaze general genius genre gentle genuine gesture ghost giant gift giggle ginger giraffe girl give glad glance glare glass glide glimpse globe gloom glory glove glow glue goat goddess gold good goose gorilla gospel gossip govern gown grab grace grain grant grape grass gravity great green grid grief grit grocery group grow grunt guard guess guide guilt guitar gun gym habit hair half hammer hamster hand happy harbor hard harsh harvest hat have hawk hazard head health heart heavy hedgehog height hello helmet help hen hero hip hire history hobby hockey hold hole holiday hollow home honey hood hope horn horror horse hospital host hotel hour hover hub huge human humble humor hundred hungry hunt hurdle hurry hurt husband hybrid ice icon idea identify idle ignore ill illegal illness image imitate immense immune impact impose improve impulse inch include income increase index indicate indoor industry infant inflict inform initial inject inmate inner innocent input inquiry insane insect inside inspire install intact interest into invest invite involve iron island isolate issue item ivory jacket jaguar jar jazz jealous jeans jelly jewel job join joke journey joy judge juice jump jungle junior junk just kangaroo keen keep ketchup key kick kid kidney kind kingdom kiss kit kitchen kite kitten kiwi knee knife knock know lab label labor ladder lady lake lamp language laptop large later latin laugh laundry lava law lawn lawsuit layer lazy leader leaf learn leave lecture left leg legal legend leisure lemon lend length lens leopard lesson letter level liberty library license life lift light like limb limit link lion liquid list little live lizard load loan lobster local lock logic lonely long loop lottery loud lounge love loyal lucky luggage lumber lunar lunch luxury lyrics machine mad magic magnet maid mail main major make mammal man manage mandate mango mansion manual maple marble march margin marine market marriage mask mass master match material math matrix matter maximum maze meadow mean measure meat mechanic medal media melody melt member memory mention menu mercy merge merit merry mesh message metal method middle midnight milk million mimic mind minimum minor minute miracle mirror misery miss mistake mix mixed mixture mobile model modify mom moment monitor monkey monster month moon moral more morning mosquito mother motion motor mountain mouse move movie much muffin mule multiply muscle museum mushroom music must mutual myself mystery myth naive name napkin narrow nasty nation nature near neck need negative neglect neither nephew nerve nest net network neutral never news next nice night noble noise nominee noodle normal north nose notable nothing notice novel now nuclear number nurse nut oak obey object oblige obscure observe obtain obvious occur ocean october odor off offer office often oil okay old olive olympic omit once one onion online only open opera opinion oppose option orange orbit orchard order ordinary organ orient original orphan ostrich other outdoor outer output outside oval oven over own owner oxygen oyster ozone pact paddle page pair palace palm panda panel panic panther paper parade parent park parrot party pass patch path patient patrol pattern pause pave payment peace peanut pear peasant pelican pen penalty pencil people pepper perfect permit person pet phone photo phrase physical piano picnic picture piece pig pigeon pill pilot pink pioneer pipe pistol pitch pizza place planet plastic plate play please pledge pluck plug plunge poem poet point polar pole police pond pony pool popular portion position possible post potato pottery poverty powder power practice praise predict prefer prepare present pretty prevent price pride primary print priority prison private prize problem process produce profit program promote proof property prosper protect proud provide public pudding pull pulp pulse pumpkin punch pupil puppy purchase purity purpose purse push put puzzle pyramid quality quantum quarter question quick quit quiz quote rabbit raccoon race rack radar radio rage rail rain raise rally ramp ranch random range rapid rare rate rather raven raw razor ready real reason rebel rebuild recall receive recipe record recycle reduce reflect reform region regret regular reject relax release relief rely remain remember remind remove render renew rent reopen repair repeat replace report require rescue resemble resist resource response result retire retreat return reunion reveal review reward rhythm rib ribbon rice rich ride ridge rifle right rigid ring riot ripple risk ritual rival river road roast robot robust rocket romance roof rookie room rose rotate rough round route royal rubber rude rug rule run runway rural sad saddle sadness safe sail salad salmon salon salt salute same sample sand satisfy satoshi sauce sausage save say scale scan scare scatter scene scheme school science scissors scorpion scout scrap screen script scrub sea search season seat second secret section security seed seek segment select sell seminar senior sense sentence series service session settle setup seven shadow shaft shallow share shed shell sheriff shield shift shine ship shiver shock shoe shoot shop short shoulder shove shrimp shrug shuffle shy sibling sick side siege sight sign silent silk silly silver similar simple since sing siren sister situate six size skate sketch ski skill skin skirt skull slab slam sleep slender slice slide slight slim slogan slot slow slush small smart smile smoke smooth snack snake snap sniff snow soap soccer social sock soda soft solar soldier solid solution someone song soon sorry sort soul sound soup source south space spare spatial spawn speak special speed spell spend sphere spice spider spike spin spirit split sponsor spoon sport spot spray spread spring spy square squeeze squirrel stable stadium staff stage stairs stamp stand start state stay steak steel stem step stereo stick still sting stock stomach stone stool story strategy street strike strong struggle student stuff stumble style subject submit subway success such sudden suffer sugar suggest suit summer sun sunny sunrise super supply supreme sure surface surge surprise surround survey suspect sustain swallow swamp swap swarm sweet swim swing switch sword symbol symptom syrup system table tackle tag tail talent talk tank tape target task taste tattoo taxi teach team tell ten tenant tennis tent term test text thank that theme then theory there thick thigh thing think third this thought three thrive throw thumb thunder ticket tide tiger tilt timber time tiny tip tired tissue title toast today toddler toe together toilet token tomato tomorrow tone tongue tonight tool top topic topple torch tornado tortoise toss total tourist toward tower town toy track trade traffic tragic train transfer trap trash travel tray treat tree trend trial tribe trick trigger trim trip trophy trouble truck true truly trumpet trust truth try tube tuna tunnel turkey turn turtle twelve twenty twice twin twist two type typical ugly umbrella unable unaware uncle uncover under undo unfair unfold unhappy uniform unique unit universe unknown unlock until unusual unveil update upgrade uphold upon upper upset urban usage use used useful useless usual utility vacant vacuum vague valid valley valve van vanish vapor various vast vault vehicle velvet vendor venture venue verb verify version very vessel veteran viable vibrant vicious victory video view village vintage violin virtual virus visa visit visual vital vivid vocal voice void volcano volume vote voyage wage wait walk wall walnut want warfare warm warrior wash wasp waste water wave way wealth weapon wear weasel weather web wedding weekend weird welcome west wet whale what wheat wheel when where whip whisper wide width wife wild will win window wine wing wink winner winter wire wisdom wise wish witness wolf woman wonder wood wool word work world worry worth wrap wreck wrestle wrist write wrong yard year yellow you young youth zebra zero zone zoo".split(" ");
 
         function loadBIP39() { return bip39words; }
-
-
 
         function recW() {
             var mn = $('recMn') ? $('recMn').value.trim() : '';
@@ -9072,8 +9001,6 @@ function go(v) {
             if ($('w12')) $('w12').classList.toggle('chip-a', count === 12);
             if ($('w24')) $('w24').classList.toggle('chip-a', count === 24);
         }
-
-
         // --- Dynamic Match Lifecycle ---
         let matchState = 0; // 0=none, 1=created, 2=accepted, 3=playing, 4=resolved, 5=settled
 
@@ -9122,8 +9049,6 @@ function go(v) {
         function onMatchSettled() {
             updateLifecycle(5);
         }
-
-
         // --- Oracle State ---
         let oracleBond = 0;
         let oracleResolved = 0;
@@ -9204,8 +9129,6 @@ function go(v) {
             var amt = parseInt($('oBondAmt').value) || 5000;
             if (amt < 5000) { alert('Minimum bond is 5,000 KAS.'); return; }
 
-
-
             var sompi = kasToSompi(amt);
             if (walletBalance.total < sompi) {
                 alert('Insufficient balance. Need ' + amt + ' KAS. Balance: ' + sompiToKAS(walletBalance.total) + ' KAS');
@@ -9248,8 +9171,6 @@ function go(v) {
             var evidence = $('attestEvidence').value;
 
             if (!evidence) { alert('Provide evidence source.'); return; }
-
-
 
             // Generate evidence hash
             var encoder = new TextEncoder();
@@ -9337,8 +9258,6 @@ function go(v) {
 
             var evidence = $('challengeEvidence').value;
             if (!evidence) { alert('Provide counter-evidence.'); return; }
-
-
 
             var sompi = kasToSompi(bondAmt);
             if (walletBalance.total < sompi) {
@@ -9844,8 +9763,6 @@ function go(v) {
                 showToast('Refund failed: ' + (e.message || e), 'error');
             }
         }
-
-
         function closeEv() { if ($('evC')) $('evC').style.display = 'none'; }
 
         // ── Cancel Market (creator only, no bets placed) ──
@@ -9880,10 +9797,6 @@ function go(v) {
                 if (typeof showToast === 'function') showToast('Cancel failed: ' + (e.message || ''), 'error'); else console.error('Cancel failed:', e);
             }
         }
-
-
-
-
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
         // SILVERSCRIPT COMPILER ENGINE - Full DSL Parser + Covenant Gen
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
@@ -9909,8 +9822,6 @@ function go(v) {
                 'verify', 'hash', 'true', 'false', 'null', 'mainnet', 'tn12', 'both',
                 'covenantId', 'authOutput', 'introspect', 'threshold', 'zkProof', 'groth16', 'sompi'
             ]
-
-
             var BUILTINS = {
                 'fromDate': { args: ['string'], ret: 'daaScore', desc: 'Convert ISO date to estimated DAA score' },
                 'fromDAA': { args: ['number'], ret: 'daaScore', desc: 'Use raw DAA score as locktime' },
@@ -10593,8 +10504,6 @@ function go(v) {
                 }
                 return Math.floor((Date.now() - 1636300800000) / 1000);
             }
-
-
             // ── Public API ──
             return {
                 compile: function (src) {
@@ -10736,8 +10645,6 @@ function go(v) {
             var text = out.innerText || out.textContent;
             copyToClip(text, event && event.target ? event.target : null);
         }
-
-
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
         // POSITION TRACKER - localStorage Persistence
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
@@ -10797,8 +10704,6 @@ function go(v) {
 
             return { getAll: getAll, add: add, getByMarket: getByMarket, getTotalExposure: getTotalExposure, getUnrealizedPnL: getUnrealizedPnL, exportCSV: exportCSV, clear: clear };
         })();
-
-
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
         // COUNTDOWN TIMERS - Real-time closing countdown on market cards
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
@@ -10822,8 +10727,6 @@ function go(v) {
             if (h > 0) return h + 'h ' + m + 'm';
             return m + 'm';
         }
-
-
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
         // DAA SCORE ESTIMATOR - For Create form
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
@@ -10850,15 +10753,13 @@ function go(v) {
                 }
             }
         }
-
-
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
         // DEEP LINKING - Share market links via URL hash
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 
         function handleDeepLink() {
             var hash = window.location.hash;
-            if (!hash) return;
+            if (!hash) { setTimeout(function(){go("overview");}, 100); return; }
             hash = hash.substring(1);
             var parts = hash.split('/');
             if (parts[0] === 'market' && parts[1]) {
@@ -10872,13 +10773,9 @@ function go(v) {
             var url = window.location.origin + window.location.pathname + '#market/' + marketId;
             copyToClip(url, event && event.target ? event.target : null);
         }
-
-
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
         // KEYBOARD SHORTCUTS - Power user navigation
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-
-
         if (typeof window.skillMatches === 'undefined') window.skillMatches = [];
         function renderSkillMatches() {
             var c = document.getElementById('skillMatchList'); if (!c) return;
@@ -10912,8 +10809,6 @@ function go(v) {
                 if (nav && nav.classList.contains('open')) { nav.classList.remove('open'); }
             }
         });
-
-
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
         // PORTFOLIO ENHANCEMENTS - P&L tracking, export
         // •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
@@ -10959,10 +10854,6 @@ function go(v) {
             a.click();
             URL.revokeObjectURL(url);
         }
-
-
-
-
 
         // ── SilverScript Example Loader ──
         var SS_EXAMPLES = {
@@ -11025,10 +10916,6 @@ function go(v) {
             }
         }
 
-
-
-
-
         // ── Featured Markets on Overview ──
         function renderFeatured() {
             var el = $('featuredMarkets');
@@ -11067,8 +10954,6 @@ function go(v) {
                     '</div>' +
                     '</div></div>';
             }).join('');
-
-
             // Update stats
             var totalPool = 0, totalEnt = 0, totalMult = 0, count = 0;
             mkts.forEach(function (m) {
@@ -11082,8 +10967,6 @@ function go(v) {
             if ($('statEntrants')) $('statEntrants').textContent = totalEnt.toLocaleString();
             if ($('statAvgMult')) $('statAvgMult').textContent = (totalMult / count).toFixed(2) + 'x';
         }
-
-
         // --- Init ---
         document.addEventListener('DOMContentLoaded', function () {
             if (typeof updateResolutionInfo === "function") setTimeout(updateResolutionInfo, 500);
@@ -11106,8 +10989,6 @@ function go(v) {
                 }
             }, 500);
         });
-
-
 
         // ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
         // ••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
@@ -11214,8 +11095,6 @@ function go(v) {
                 '<div style="font-size:10px;color:#555;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Move History</div>' +
                 '<div class="chess-moves" id="chessMoves">' + renderMoveHistory() + '</div>' +
                 '<div class="chess-btn-row">' +
-
-
                 (gameOver ? '<button class="chess-btn" onclick="startChessGame({id:chessUI.matchId,time:Math.round(chessUI.timerW/60)+\'|\'+ chessUI.increment})">\u21bb Rematch</button>' : '') +
                 '<button class="chess-btn chess-btn-danger" onclick="resignChess()">Resign</button>' +
                 '</div></div></div></div>';
@@ -11675,8 +11554,6 @@ function go(v) {
             boardWrap.appendChild(grid);
             container.appendChild(boardWrap);
         }
-
-
         function c4Drop(col) {
             if (c4UI.playerSide && c4Game.turn !== c4UI.playerSide) return;
             if (c4Game.gameOver) return;
@@ -11863,8 +11740,6 @@ function go(v) {
     ckUI.playerSide = matchData && matchData.side ? matchData.side : 1;  // 1 = red, 3 = black
     ckUI.flipped = (ckUI.playerSide === 3);
     console.log('Checkers Color set', ckUI.playerSide, 'flipped', ckUI.flipped);
-
-
             ckUI.started = false;
             clearInterval(ckUI.timerInterval);
             var tc = matchData && matchData.time ? matchData.time : '10|0';
@@ -12068,8 +11943,6 @@ function go(v) {
         function launchCheckersFromMatch(matchId, time) {
             startCheckersGame({ id: matchId, time: time || '10|0' });
         }
-
-
         // ==================================================================
         // POKER - Texas Hold'em Heads-Up
         // ==================================================================
@@ -12616,8 +12489,6 @@ function playMatch(matchId) {
     launchMatchGame(m, role);
     console.log("[HTP] playMatch → launchMatchGame:", m.game, "as", role);
 }
-
-
 var htpRelay = { ws: null, matchId: null, playerId: null, gameType: null, connected: false };
 
 function connectRelay(matchId, gameType) {
@@ -12677,8 +12548,6 @@ function handleRelayMessage(msg) {
         showToast('Opponent disconnected...', 'error');
     }
 }
-
-
 
 function applyOpponentMove(msg) {
     if (msg.game === 'chess' && msg.fen && typeof chessGame !== 'undefined') {
@@ -12856,8 +12725,6 @@ function previewMatch(matchId) {
         }
     }, 1500);
 }
-
-
 function closePreview() {
     var o = document.getElementById('matchPreviewOverlay');
     if (o) o.remove();
@@ -12966,8 +12833,6 @@ function renderPreviewCkBoard() {
     }
     el.innerHTML = html;
 }
-
-
 var lobbyWatcherId = null;
 
 function startLobbyWatcher() {
@@ -13004,8 +12869,6 @@ function startLobbyWatcher() {
 function stopLobbyWatcher() {
     if (lobbyWatcherId) { clearInterval(lobbyWatcherId); lobbyWatcherId = null; }
 }
-
-
 
 function buildMatchUrl(m) {
     var p = '#match=' + encodeURIComponent(m.id) +
@@ -13187,8 +13050,6 @@ function checkUrlForMatch() {
 
 window.addEventListener("hashchange", checkUrlForMatch);
 setTimeout(checkUrlForMatch, 1000);
-
-
 
 // ====== WINNER TAKES ALL - PAYOUT SYSTEM ======
 function recordPendingPayout(address, amountKAS, matchId) {
@@ -13589,8 +13450,6 @@ function showGameOverOverlay(title, amountText, color, match) {
             if (sq) sq.textContent = quorumInput ? quorumInput.value : defaultQuorum;
             if (st) st.textContent = count;
         }
-
-
         function updateResolutionInfo() {
             var el = document.getElementById('cResInfo');
             if (!el) return;
@@ -13991,8 +13850,8 @@ function showGameOverOverlay(title, amountText, color, match) {
   // ── Protocol Constants (hardcoded, never configurable) ──────────
   var PROTOCOL_FEE_ADDR = (window.htpNetwork === 'mainnet' || (window.walletAddress && window.walletAddress.startsWith('kaspa:'))) ? 'kaspa:qza6ah0lfqf33c9m00ynkfeettuleluvnpyvmssm5pzz7llwy2ka5nkka4fel' : 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m';
   var PROTOCOL_FEE_RATE = 0.02;
-  var MAXIMIZER_REBATE = 0.50;
-  var MAXIMIZER_INSURANCE = 0.30;
+  var POOL_SPLIT = 0.50;
+  
   var CREATOR_BOND_KAS = 1000;
   var ORACLE_MIN_BOND_KAS = 500;
   var ORACLE_REWARD_KAS = 0.5;
@@ -14000,7 +13859,7 @@ function showGameOverOverlay(title, amountText, color, match) {
 
   // ── Maximizer Odds Engine Constants ─────────────────────────────
   var FEE_BPS = 200;
-  var MAXIMIZER_SPLIT = 0.50;
+  var POOL_SPLIT = 0.50;
 
   // ── SilverScript Opcodes (KIP-10) ──────────────────────────────
   var OP = {
@@ -14367,7 +14226,7 @@ function showGameOverOverlay(title, amountText, color, match) {
   //   maxLosePool = sum of 0.5 * each losing maximizer stake (only pool portion)
   //   Spot winners: stake back + pro-rata share of (spotLosePool + maxLosePool), minus 2% fee on profit
   //   Max winners: full leveraged payout based on nominal stake and odds, minus 2% on profit
-  //   Max losers: floor(X * 0.50) - floor(X * 0.30) net rebate; floor(X * 0.30) goes to totalProtocolFee
+  //   Pass 1 - loser_refund from max pool
 
   window.settleMarket = async function (eventId, winningOutcome) {
     var escrow = _escrowStore['mkt_' + eventId];
@@ -14451,14 +14310,11 @@ function showGameOverOverlay(title, amountText, color, match) {
       });
 
       // ── MAXIMIZER LOSER PAYOUTS ──
-      // Max losers: floor(X * 0.50) - floor(X * 0.30) net rebate; floor(X * 0.30) goes to totalProtocolFee
+      // Pass 1 - loser_refund from max pool
       maxLosers.forEach(function (l) {
-        var rebateBase = Math.floor(l.amount * MAXIMIZER_REBATE);
-        var insurance = Math.floor(l.amount * MAXIMIZER_INSURANCE);
-        var netRebate = rebateBase - insurance;
-        totalProtocolFee += insurance;
+        var refund = Math.floor(l.amount * POOL_SPLIT);
         if (netRebate > 0) {
-          payouts.push({ address: l.address || l.walletAddress, amount: netRebate, type: 'max_rebate' });
+          payouts.push({ address: l.address || l.walletAddress, amount: refund, type: 'loser_refund' });
         }
       });
 
@@ -14828,8 +14684,8 @@ function showGameOverOverlay(title, amountText, color, match) {
       result[o].betCount++;
 
       if (bet.maximizer) {
-        result[o].eventPool += amount * MAXIMIZER_SPLIT;
-        result[o].hedgePool += amount * MAXIMIZER_SPLIT;
+        result[o].eventPool += amount * POOL_SPLIT;
+        result[o].hedgePool += amount * POOL_SPLIT;
       } else {
         result[o].eventPool += amount;
       }
@@ -14882,13 +14738,13 @@ function showGameOverOverlay(title, amountText, color, match) {
     var claimW = oc.claimWeight;
 
     if (isMaximizer) {
-      var winPayout = (B / claimW) * payoutPool + B * MAXIMIZER_SPLIT;
-      var losePayout = B * MAXIMIZER_SPLIT;
+      var winPayout = (B / claimW) * payoutPool + B * POOL_SPLIT;
+      var losePayout = B * POOL_SPLIT;
       return {
         ifWin: winPayout,
         ifLose: losePayout,
         winMult: B > 0 ? winPayout / B : 0,
-        loseMult: MAXIMIZER_SPLIT
+        loseMult: POOL_SPLIT
       };
     } else {
       var winPayoutNormal = (B / claimW) * payoutPool;
@@ -15043,7 +14899,7 @@ function showGameOverOverlay(title, amountText, color, match) {
 
     var subLabel = document.createElement('div');
     subLabel.id = 'maximizerSubLabel';
-    subLabel.style.css?v=30Text = 'font-size:12px;color:var(--muted);margin-top:2px;';
+    subLabel.style.css?v=40Text = 'font-size:12px;color:var(--muted);margin-top:2px;';
     subLabel.textContent = 'Full amount to pool. Higher odds, no protection.';
 
     labelWrap.appendChild(mainLabel);
@@ -15072,8 +14928,8 @@ function showGameOverOverlay(title, amountText, color, match) {
   window.HTP_COVENANT_CONFIG = {
     PROTOCOL_FEE_ADDR: PROTOCOL_FEE_ADDR,
     PROTOCOL_FEE_RATE: PROTOCOL_FEE_RATE,
-    MAXIMIZER_INSURANCE: MAXIMIZER_INSURANCE,
-    MAXIMIZER_REBATE: MAXIMIZER_REBATE,
+    POOL_SPLIT: POOL_SPLIT,
+    
     CREATOR_BOND_KAS: CREATOR_BOND_KAS,
     ORACLE_MIN_BOND_KAS: ORACLE_MIN_BOND_KAS,
     ORACLE_REWARD_KAS: ORACLE_REWARD_KAS,
@@ -15090,12 +14946,12 @@ function showGameOverOverlay(title, amountText, color, match) {
     renderMaximizerToggle: renderMaximizerToggle,
     getMaximizerState: getMaximizerState,
     FEE_BPS: FEE_BPS,
-    MAXIMIZER_SPLIT: MAXIMIZER_SPLIT
+    POOL_SPLIT: POOL_SPLIT
   };
 
   console.log('[HTP Covenants] Consolidated module loaded -- match/market/oracle escrows, maximizer engine ready');
   console.log('[HTP Covenants] Protocol fee addr:', PROTOCOL_FEE_ADDR);
-  console.log('[HTP Covenants] MAXIMIZER_INSURANCE:', MAXIMIZER_INSURANCE, 'MAXIMIZER_REBATE:', MAXIMIZER_REBATE);
+  console.log('[HTP Covenants] pool model active, POOL_SPLIT:', POOL_SPLIT);
 })();
 
 </script>
@@ -15153,8 +15009,6 @@ function quotaSafeSet(key, value) {
 
 // v69.9: localStorage quota-safe wrapper
 
-
-
 // ═══ FIX 1: PURGE BLOATED LOCALSTORAGE FIRST ═══
 (function(){
   try{
@@ -15189,8 +15043,6 @@ function quotaSafeSet(key, value) {
     }
   }catch(e){console.warn('HTP Purge error:',e)}
 })();
-
-
 // ═══ PERSISTENCE STORE ═══
 
 const HTP_STORE={
@@ -15256,8 +15108,6 @@ const HTP_STORE={
     if(found)console.log('HTP Chain index:',found,'new positions. Total:',this._g(this.PK).length);
   }
 };
-
-
 // ═══ FIX 2: COVENANT BUILDER -- WAITS FOR WASM ═══
 
 const HTP_COVENANT={
@@ -15315,8 +15165,6 @@ const HTP_COVENANT={
     return event;
   }
 };
-
-
 // ═══ FIX 3: WRAP htpSendTx -- PERSIST + CATCH DOUBLE-SUBMIT ═══
 
 (function(){
@@ -15351,8 +15199,6 @@ const HTP_COVENANT={
   }
   wrap();
 })();
-
-
 // ═══ UI: ODDS + PORTFOLIO ═══
 
 function updateOddsDisplay(){
@@ -15380,8 +15226,6 @@ function renderPortfolio(){
     '<div style="margin-top:8px">'+en.positions.slice(-5).map(p=>'<div style="font-size:11px;color:#6b7d8e;margin-top:2px">'+p.side.toUpperCase()+' '+(p.amount/1e8).toFixed(2)+' KAS <a href="https://explorer-tn12.kaspa.org/txs/'+p.txId+'" target="_blank" style="color:#4a9eff">'+p.txId.slice(0,12)+'…</a></div>').join('')+'</div></div>';
   }).join('');
 }
-
-
 // ═══ SILVERSCRIPT + EVENT DETAIL ═══
 
 function genSS(e){
@@ -15406,7 +15250,7 @@ function hlSS(c){return c.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
 
 function openEventDetail(eid){
   const e=HTP_STORE.getEvent(eid);if(!e)return;
-  const o=HTP_STORE.getOdds(eid),s=genSS(e),cov=!!e.covenantScript;
+  const o=HTP_STORE.getOdds(eid),s=genSS(e),cov=40!!e.covenantScript;
   let p=document.getElementById('event-detail-panel');if(p)p.remove();
   p=document.createElement('div');p.id='event-detail-panel';p.dataset.eventId=eid;
   p.style.cssText='position:fixed;top:0;right:0;width:540px;height:100vh;background:#0d1117;border-left:1px solid #2a3a4a;z-index:10000;overflow-y:auto;padding:24px;box-shadow:-4px 0 24px rgba(0,0,0,0.5)';
@@ -15433,8 +15277,6 @@ function openEventDetail(eid){
     '<pre id="ss-raw" style="display:none">'+s+'</pre></div>';
   document.body.appendChild(p);
 }
-
-
 // ═══ SEED EVENTS + INIT ═══
 
 function seedEvents(){
@@ -16584,7 +16426,7 @@ else setTimeout(initV69,300);
 
     var ov = document.createElement('div');
     ov.id = 'gameOverOverlay';
-    ov.style.css?v=30Text = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease;';
+    ov.style.css?v=40Text = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease;';
 
     var matchInfo = match ? (match.game + ' \u00B7 ' + match.timeControl + ' \u00B7 ' + match.stake + ' KAS') : '';
 
@@ -18360,7 +18202,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
   /* ── Bond Oracle tab ─────────────────────────────────────────── */
   function renderBondTab(parent) {
     var desc = document.createElement('p');
-    desc.style.css?v=30Text = 'color:var(--muted);font-size:14px;line-height:1.6;margin:0 0 20px;';
+    desc.style.css?v=40Text = 'color:var(--muted);font-size:14px;line-height:1.6;margin:0 0 20px;';
     desc.textContent = 'Human-verified resolution. Submit the winning outcome by posting a KAS bond. If unchallenged during the counter-bond period, the market resolves. Others can challenge by posting a counter-bond. The side with more total bonded KAS wins. Losers\' bonds are slashed and distributed to truth-tellers proportional to their bond contribution.';
     parent.appendChild(desc);
 
@@ -19209,7 +19051,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
 
       var mRight = document.createElement('div');
       var mResult = (m.result || '--').toUpperCase();
-      mRight.style.css?v=30Text = 'font-weight:700;color:' + resultColor(m.result) + ';';
+      mRight.style.css?v=40Text = 'font-weight:700;color:' + resultColor(m.result) + ';';
       mRight.textContent = mResult + ' | ' + (parseFloat(m.netPLKAS) >= 0 ? '+' : '') + (parseFloat(m.netPLKAS) || 0).toFixed(2) + ' KAS';
       mRow.appendChild(mRight);
 
@@ -19723,7 +19565,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
 
     var btn = document.createElement('button');
     btn.textContent = 'Unlock';
-    btn.style.css?v=30Text = 'background:linear-gradient(135deg,#ffffff,#00cc82);color:#030816;font-weight:600;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;';
+    btn.style.css?v=40Text = 'background:linear-gradient(135deg,#ffffff,#00cc82);color:#030816;font-weight:600;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;';
 
     btn.addEventListener('click', function() {
       var words = input.value.trim();
@@ -19844,7 +19686,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
   /* ── Protocol constants (immutable) ──────────────────────────── */
   window.HTP_PROTOCOL = {
     FEE_BPS: 200,
-    MAXIMIZER_SPLIT: 0.50,
+    POOL_SPLIT: 0.50,
     CREATOR_BOND_KAS: 1000,
     SPAM_CHALLENGE_BOND_KAS: 500,
     FEE_ADDRESS: 'kaspatest:qpyfz03k6quxwf2jglwkhczvt758d8xrq99gl37p6h3vsqur27ltjhn68354m',
@@ -19933,7 +19775,7 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
 
     var dcBtn = document.createElement('button');
     dcBtn.textContent = 'Disconnect';
-    dcBtn.style.css?v=30Text = 'background:#ff4444;color:white;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:600;';
+    dcBtn.style.css?v=40Text = 'background:#ff4444;color:white;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:600;';
     dcBtn.addEventListener('click', function() {
       if (typeof window.disconnectWallet === 'function') {
         window.disconnectWallet();
@@ -19955,8 +19797,6 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
       window.htpHideMnemonicField();
     }
   }
-
-
   /* ── Board CSS fixes (v3 addendum) ───────────────────────────── */
   function injectBoardCss() {
     if (document.getElementById('htp-board-fix-css')) return;
@@ -20054,8 +19894,6 @@ if (window.htpSkillUI) window.htpSkillUI.renderWaitingPiece = function() {};
       setTimeout(runHotfixes, 200);
     });
   }
-
-
   /* ── Miner script download helper (blob fallback) ────────────── */
   window.downloadMinerScript = function(network) {
     var filename = 'htp-oracle-miner-' + (network || 'tn12') + '.js';
@@ -20708,9 +20546,9 @@ function _patchGo(){
         _b(v);
         _VIEWS.forEach(function(n){document.body.classList.remove('view-'+n);});
         document.body.classList.add('view-'+(v||'overview'));
-        if(v==='oracle')   { if(window.screenOracle) window.screenOracle(); else setTimeout(_refreshOracle,120); }
-        if(v==='portfolio')setTimeout(_refreshPortfolio,120);
-        if(v==='kaspa')    setTimeout(_initMinerUI,200);
+        if(v=40=='oracle')   { if(window.screenOracle) window.screenOracle(); else setTimeout(_refreshOracle,120); }
+        if(v=40=='portfolio')setTimeout(_refreshPortfolio,120);
+        if(v=40=='kaspa')    setTimeout(_initMinerUI,200);
     };
     W.go._vt3=true;
 }
@@ -20790,7 +20628,7 @@ function _refreshPortfolio(){
 setInterval(function(){
     var cur=typeof W.walletAddress!=='undefined'?W.walletAddress:null;
     if(cur===_lastW)return;_lastW=cur;
-    var av=document.querySelector('.view.show');
+    var av=40document.querySelector('.view.show');
     if(av&&av.id==='v-portfolio'){
         _refreshPortfolio();
         // Refresh claim panel if it is the active tab
@@ -20877,7 +20715,7 @@ W.buildAtomicSettlementTx=async function(utxos,outputs,privHex){
     var k=W.kaspaSDK;
     if(k&&k.createTransaction&&k.TransactionOutput&&k.PrivateKey){
         try{
-            var priv=new k.PrivateKey(privHex);
+            var priv=40new k.PrivateKey(privHex);
             var outs=outputs.map(function(o){return new k.TransactionOutput(BigInt(o.amount),new k.Address(o.address));});
             var tx=k.createTransaction(utxos,outs,10000n);
             var signed=k.signTransaction?k.signTransaction(tx,[priv]):(tx.sign?tx.sign([priv]):tx);
@@ -21026,7 +20864,7 @@ function mlog(msg,lv){
     if(!lv||lv<=2)console.log('[MINER]',msg);
     var el=document.getElementById('minerLog');if(!el)return;
     var d=document.createElement('div');
-    d.style.cssText='font-size:11px;margin-bottom:1px;color:'+(lv===1?'#ef4444':'#94a3b8');
+    d.style.cssText='font-size:11px;margin-bottom:1px;color:'+(lv=40==1?'#ef4444':'#94a3b8');
     d.textContent=new Date().toTimeString().slice(0,8)+' '+msg;
     el.insertBefore(d,el.firstChild);while(el.children.length>50)el.removeChild(el.lastChild);
 }
@@ -21150,6 +20988,7 @@ console.log('[HTP Runtime v3] Loaded -- covenants, atomic settlement, ZK oracle,
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     document.body.classList.add('on-overview');
+    if (!window.location.hash) { setTimeout(function(){ if(typeof go==="function") go("overview"); }, 200); }
     // stub any missing onclick targets so no ReferenceError on load
     ['stakeOracleBond','submitAttestation','setOracleMode','challengeResolution',
      'addApiSource','removeApiSource','addOutcome','removeOutcome',
@@ -21170,7 +21009,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 400);
 });
 </script>
-
 <script id="htp-oracle-daemon">
 (function(W){'use strict';
 var OD={run:false,nodeRest:'http://localhost:17110',oracleAddr:null,
@@ -21309,7 +21147,7 @@ W.htpOracleDaemonSyncInputs=function(){
 };
 // Restore saved config
 try{
-    var _sv=JSON.parse(localStorage.getItem('htpNodeCfg')||'{}');
+    var _sv=40JSON.parse(localStorage.getItem('htpNodeCfg')||'{}');
     if(_sv.rest)OD.nodeRest=_sv.rest;
     document.addEventListener('DOMContentLoaded',function(){
         var re=$$('cfgNodeRest');if(re&&_sv.rest)re.value=_sv.rest;
@@ -21929,8 +21767,6 @@ window.htpConnectManual = function(addr) {
 
 <script>
 
-
-
         // KGI iframe fallback , detect X-Frame-Options block
         (function() {
             var iframe = document.getElementById('kgiFrame');
@@ -21986,7 +21822,7 @@ document.querySelectorAll('button').forEach(function(b){
     if (document.getElementById('htpGlowDefs')) return;
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.id = 'htpGlowDefs';
-    svg.style.css?v=30Text = 'position:absolute;width:0;height:0;overflow:hidden;';
+    svg.style.css?v=40Text = 'position:absolute;width:0;height:0;overflow:hidden;';
     svg.innerHTML = `<defs>
       <filter id="kaspaGlow" x="-40%" y="-40%" width="180%" height="180%">
         <feGaussianBlur stdDeviation="2.5" result="blur1"/>
@@ -22323,8 +22159,6 @@ document.querySelectorAll('button').forEach(function(b){
   waitAndPatch();
 })();
 </script>
-
-
 <script>
 (function(){
   function showPill(addr, bal){
@@ -22588,11 +22422,6 @@ window.addEventListener('htp:balance:updated', function(e) {
 })();
 </script>
 
-<script src="htp-demo-match.js"></script>
-
-
-
-
   <!-- stats refresh — ensures hero stats reflect real API data -->
   <script>
   (function(){
@@ -22636,7 +22465,7 @@ window.addEventListener('htp:balance:updated', function(e) {
       <span class="tab-dot"></span>
     </div>
   </div>
-    <script src="/htp-theme-toggle.js?v=1"></script>
+    <script src="/htp-theme-toggle.js?v=40"></script>
 
     <script>
     (function(){
@@ -22670,7 +22499,7 @@ window.addEventListener('htp:balance:updated', function(e) {
     })();
     </script>
     
-    <script src="/htp-animations.js?v=1"></script>
+    <script src="/htp-animations.js?v=40"></script>
 <script>
 /* HTP Safety Net — wire any undefined onclick functions */
 (function(){
@@ -22697,7 +22526,8 @@ window.addEventListener('htp:balance:updated', function(e) {
 })();
 </script>
 
-    <script src="/htp-featured-event.js?v=1"></script>
+    <script src="/htp-featured-event.js?v=40"></script>
+
 </body>
 </html>
 <style id="htp-unified-theme">
