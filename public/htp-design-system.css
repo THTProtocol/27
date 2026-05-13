@@ -542,35 +542,9 @@ button:active, .btn:active, .nav-btn:active,
   --dur-data: 600ms;
 }
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --surface-0: #FAFAF8;
-    --surface-1: #F2F0EB;
-    --surface-2: #E8E5DC;
-    --surface-3: #DDD9CE;
-    --border-subtle: rgba(0,140,80,0.10);
-    --border-active: rgba(0,140,80,0.28);
-    --text-primary: #1A1A14;
-    --text-secondary: #4A4A38;
-    --text-tertiary: #7A7A62;
-    --text-mono: #006B3F;
-    --color-primary: #00A862;
-  }
-}
 
-[data-theme="light"] {
-  --surface-0: #FAFAF8;
-  --surface-1: #F2F0EB;
-  --surface-2: #E8E5DC;
-  --surface-3: #DDD9CE;
-  --border-subtle: rgba(0,140,80,0.10);
-  --border-active: rgba(0,140,80,0.28);
-  --text-primary: #1A1A14;
-  --text-secondary: #4A4A38;
-  --text-tertiary: #7A7A62;
-  --text-mono: #006B3F;
-  --color-primary: #00A862;
-}
+
+
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -771,3 +745,24 @@ button:active, .btn:active, .nav-btn:active,
 html, body { overflow-y: auto !important; height: auto !important; min-height: 100% !important; }
 #htp-root, .view-container, .app-wrap, main, .page-wrap { overflow-y: auto !important; height: auto !important; }
 .view { overflow-y: auto !important; min-height: 100vh; height: auto !important; }
+
+/* === HTP SCROLL FIX FINAL === */
+html, body {
+  overflow-y: auto !important;
+  height: auto !important;
+  min-height: 100vh;
+}
+#htp-root, .app-wrap, .view-container, .main-content, main {
+  overflow-y: auto !important;
+  height: auto !important;
+}
+.view {
+  overflow-y: auto !important;
+  height: auto !important;
+  min-height: calc(100vh - 64px);
+  display: block !important;
+}
+/* Remove any position:fixed traps that could clip content */
+.view.show {
+  overflow-y: auto !important;
+}
