@@ -4351,17 +4351,10 @@ hr, .divider { border-color: rgba(0,255,163,0.1) !important; }
                     </div>
                 </div>
 
-                <!-- HTP-DESIGN-V2.0 Live Ticker Strip -->
-                <div class="htp-ticker-wrap" id="htpTicker">
-                  <div class="htp-ticker-track" id="htpTickerTrack">
-                    <span class="htp-ticker-item">Waiting for on-chain settlement... next block ~0.8s</span>
-                  </div>
-                </div>
-
                 <!-- Featured Markets -->
                 <div class="mx sec-pad">
-
-                    
+                    <div id="htpFeaturedEvent" style="margin-bottom:6px"></div>
+                </div>
 
                 <!-- How it works - connected flow -->
                 <div class="mx sec-pad">
@@ -7909,11 +7902,15 @@ function go(v) {
                 if (typeof loadPortfolioPositions === 'function') setTimeout(loadPortfolioPositions, 80);
             }
             if (v === 'oracle') {
-                if (typeof window.screenOracle === 'function') { window.screenOracle(); }
-                else {
-                    if (typeof renderOracleEventsPanel === 'function') setTimeout(renderOracleEventsPanel, 80);
-                    if (typeof htpOracleDaemonSyncInputs === 'function') htpOracleDaemonSyncInputs();
-                    if (typeof refreshOracleStats === 'function') setTimeout(refreshOracleStats, 100);
+                try {
+                    if (typeof window.screenOracle === 'function') { window.screenOracle(); }
+                    else {
+                        if (typeof renderOracleEventsPanel === 'function') setTimeout(renderOracleEventsPanel, 80);
+                        if (typeof htpOracleDaemonSyncInputs === 'function') htpOracleDaemonSyncInputs();
+                        if (typeof refreshOracleStats === 'function') setTimeout(refreshOracleStats, 100);
+                    }
+                } catch(oracleErr) {
+                    console.error('[go] nav oracle error:', oracleErr);
                 }
             }
             if (v === 'markets') {
@@ -7921,12 +7918,14 @@ function go(v) {
             }
         } catch(e) {
             console.error('[go] nav error:', e);
-        // sync mobile tab bar
-        document.querySelectorAll('.tab-item').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === v); });
         } finally {
-            // ensure nav buttons are re-enabled
-            document.querySelectorAll('.nav-btn').forEach(function(b) {
+            // sync mobile tab bar
+            document.querySelectorAll('.tab-item').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === v); });
+            // ensure nav buttons are always re-enabled
+            document.querySelectorAll('.nav-btn, .tab-item, .htp-mobile-tab').forEach(function(b) {
+                b.disabled = false;
                 b.style.pointerEvents = '';
+                b.classList.remove('disabled', 'locked');
             });
         }
         }
@@ -22638,7 +22637,6 @@ window.addEventListener('htp:balance:updated', function(e) {
     </div>
   </div>
     <script src="/htp-theme-toggle.js?v=1"></script>
-    <script src="/htp-ticker.js?v=1"></script>
 
     <script>
     (function(){
@@ -22699,6 +22697,7 @@ window.addEventListener('htp:balance:updated', function(e) {
 })();
 </script>
 
+    <script src="/htp-featured-event.js?v=1"></script>
 </body>
 </html>
 <style id="htp-unified-theme">
