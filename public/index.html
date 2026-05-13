@@ -22673,6 +22673,32 @@ window.addEventListener('htp:balance:updated', function(e) {
     </script>
     
     <script src="/htp-animations.js?v=1"></script>
+<script>
+/* HTP Safety Net — wire any undefined onclick functions */
+(function(){
+  // showView fallback (wraps go() if available)
+  if(typeof window.showView!=='function'){
+    window.showView=function(name){
+      if(typeof go==='function'){ go(name); return; }
+      document.querySelectorAll('.view').forEach(function(v){v.classList.remove('show');});
+      var t=document.getElementById('view-'+name)||document.querySelector('[data-view="'+name+'"]');
+      if(t)t.classList.add('show');
+      location.hash=name;
+      document.querySelectorAll('[data-nav]').forEach(function(b){
+        b.classList.toggle('active',b.getAttribute('data-nav')===name);
+      });
+    };
+  }
+  // htpClaimNow fallback
+  if(typeof window.htpClaimNow!=='function'){
+    window.htpClaimNow=function(){
+      if(typeof showToast==='function') showToast('Claim flow not loaded yet — connect wallet first','info');
+      else alert('Connect wallet first');
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
 <style id="htp-unified-theme">

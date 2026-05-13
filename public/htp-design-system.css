@@ -767,3 +767,7 @@ button:active, .btn:active, .nav-btn:active,
   .mx, .sec-pad { padding: 12px !important; }
   h1, .hero-title { font-size: 22px !important; }
 }
+/* === SCROLL FIX === */
+html, body { overflow-y: auto !important; height: auto !important; min-height: 100% !important; }
+#htp-root, .view-container, .app-wrap, main, .page-wrap { overflow-y: auto !important; height: auto !important; }
+.view { overflow-y: auto !important; min-height: 100vh; height: auto !important; }
